@@ -25,7 +25,8 @@ export function App() {
         id: item.uid,
         name: item.name,
         value: item.basePrice
-      })),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)), // Sort items by name
     [itemsData]
   )
 
@@ -50,11 +51,11 @@ export function App() {
   const isThresholdMet = total >= THRESHOLD
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 py-8 flex items-center justify-center">
-      <Card className="bg-gray-800 border-gray-700 shadow-lg w-96">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100 p-4">
+      <Card className="bg-gray-800 border-gray-700 shadow-lg w-96 py-8 px-4">
         <CardContent className="p-6">
-          <h1 className="text-3xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
-            <Skull className="mr-2" /> Cultist Ritual <Skull className="ml-2" />
+          <h1 className="text-2xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
+            <Skull className="mr-2" /> Cultist Calculator <Skull className="ml-2" />
           </h1>
           <div className="space-y-4">
             {selectedItems.map((item, index) => (
