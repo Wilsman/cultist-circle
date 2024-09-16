@@ -90,3 +90,13 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes float {
+  0% { transform: translatey(0); }
+  50% { transform: translatey(-5px); }
+  100% { transform: translatey(0); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
