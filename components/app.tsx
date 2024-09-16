@@ -52,7 +52,7 @@ export function App() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100 p-4">
-      <Card className="bg-gray-800 border-gray-700 shadow-lg w-96 py-8 px-4">
+      <Card className="bg-gray-800 border-gray-700 shadow-lg w-96 max-h-[90vh] overflow-auto py-8 px-4">
         <CardContent className="p-6">
           <h1 className="text-2xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
             <Skull className="mr-2" /> Cultist Calculator <Skull className="ml-2" />
