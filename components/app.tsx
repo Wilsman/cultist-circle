@@ -4,18 +4,16 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Skull, Droplet, X } from 'lucide-react'
+import { Skull, X } from 'lucide-react'
 
 // Import the JSON data
 import itemsData from '../public/all_items_PVE.json' // Adjust the path as necessary
 
 const THRESHOLD = 350001
-const HIGH_VALUE_THRESHOLD = 80000
 
 export function App() {
   const [selectedItems, setSelectedItems] = useState(Array(5).fill(null))
   const [total, setTotal] = useState(0)
-  const [highValueChance, setHighValueChance] = useState(false)
 
   // Memoize and filter the JSON data to only include "Barter" items
   const items = useMemo(() => 
@@ -33,7 +31,6 @@ export function App() {
   useEffect(() => {
     const newTotal = selectedItems.reduce((sum, item) => sum + (item?.value || 0), 0)
     setTotal(newTotal)
-    setHighValueChance(selectedItems.some(item => item && item.value > HIGH_VALUE_THRESHOLD))
   }, [selectedItems])
 
   const handleSelectItem = (itemId: string, index: number) => {
@@ -106,13 +103,6 @@ export function App() {
                 ? 'Ritual complete! The cultists are summoned...' 
                 : `₽${(THRESHOLD - total).toLocaleString()} more to complete the ritual`}
             </div>
-            {highValueChance && (
-              <div className="mt-2 text-blue-400 flex items-center justify-center">
-                <Droplet className="mr-2" />
-                Chance for rare loot increased!
-                <Droplet className="ml-2" />
-              </div>
-            )}
           </div>
         </CardContent>
         <footer className="mt-4 text-center text-gray-400 text-sm">
