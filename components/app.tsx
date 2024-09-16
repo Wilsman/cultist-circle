@@ -7,9 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Skull, X, HelpCircle } from 'lucide-react'
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog"
-import itemsData from '../public/all_items_PVE.json'
+import { Switch } from "@/components/ui/switch" // Import the Switch component
+import itemsDataPVE from '../public/all_items_PVE.json'
+import itemsDataPVP from '../public/all_items_PVP.json'
 
 const THRESHOLD = 350001
+
+const IGNORED_ITEMS = ["Metal fuel tank (0/100)"]; // List of items to ignore
 
 interface Item {
   id: string;
@@ -19,19 +23,25 @@ interface Item {
 }
 
 export function App() {
+  const [isPVE, setIsPVE] = useState(true); // State to toggle between PVE and PVP
   const [selectedItems, setSelectedItems] = useState<Array<Item | null>>(Array(5).fill(null))
   const [total, setTotal] = useState<number>(0)
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0))
 
+  const itemsData = isPVE ? itemsDataPVE : itemsDataPVP; // Choose data based on toggle
+
   const items = useMemo(() => {
     return itemsData
-      .filter(item => item.tags.includes("Barter"))
+      .filter(item => item.tags.includes("Barter") && !IGNORED_ITEMS.includes(item.name)) // Exclude ignored items
       .map(({ uid, name, basePrice, avg24hPrice }) => ({ id: uid, name, value: basePrice, avg24hPrice }))
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [])
+  }, [itemsData]) // Depend on itemsData
 
   useEffect(() => {
+    // Calculate total ritual value
     setTotal(selectedItems.reduce((sum, item) => sum + (item?.value || 0), 0))
+    // Calculate total flea costs
+    setFleaCosts(selectedItems.map(item => item ? item.avg24hPrice : 0))
   }, [selectedItems])
 
   const updateSelectedItem = (itemId: string, index: number) => {
@@ -39,72 +49,78 @@ export function App() {
     const newSelectedItems = [...selectedItems]
     newSelectedItems[index] = selectedItem
     setSelectedItems(newSelectedItems)
-    updateFleaCosts(newSelectedItems, index, selectedItem)
-  }
-
-  const updateFleaCosts = (newSelectedItems: Array<Item | null>, index: number, selectedItem: Item | null) => {
-    const newFleaCosts = [...fleaCosts]
-    newFleaCosts[index] = selectedItem ? selectedItem.avg24hPrice : 0
-    setFleaCosts(newFleaCosts)
+    // Flea costs are updated via useEffect
   }
 
   const handleResetItem = (index: number) => {
     const newSelectedItems = [...selectedItems]
     newSelectedItems[index] = null
     setSelectedItems(newSelectedItems)
-    updateFleaCosts(newSelectedItems, index, null)
+    // Flea costs are updated via useEffect
   }
 
   const handleAutoSelect = () => {
     const validItems = items.filter(item => item.avg24hPrice > 0)
-    const bestCombination = findBestCombination(validItems)
+    const bestCombination = findBestCombination(validItems, THRESHOLD, 5)
 
-    // Prepare new selected items and flea costs in one go
-    const newSelectedItems = bestCombination.selected.slice(0, 5);
-    const newFleaCosts = newSelectedItems.map(item => item.avg24hPrice);
+    if (bestCombination.selected.length === 0) {
+      alert("No combination of items meets the threshold.")
+      return
+    }
 
-    // Update state once
-    setSelectedItems(newSelectedItems);
-    setFleaCosts(newFleaCosts);
+    // Fill selectedItems with the best combination, allowing duplicates
+    const newSelectedItems: Array<Item | null> = Array(5).fill(null)
+    bestCombination.selected.forEach((item, idx) => {
+      if (idx < 5) {
+        newSelectedItems[idx] = item
+      }
+    })
+    setSelectedItems(newSelectedItems)
   }
 
-  const findBestCombination = (validItems: Item[]) => {
-    const maxValue = validItems.reduce((sum, item) => sum + item.value, 0);
-    const dpSize = Math.min(maxValue, THRESHOLD + 100); // Limit DP size
-    const dp: number[] = Array(dpSize + 1).fill(Infinity);
-    dp[0] = 0; // Base case: 0 value costs nothing
+  const findBestCombination = (validItems: Item[], threshold: number, maxItems: number) => {
+    // Initialize DP table
+    const dp: Array<Array<number>> = Array(maxItems + 1).fill(null).map(() => Array(threshold + 1001).fill(Infinity))
+    const itemTracking: Array<Array<Array<number>>> = Array(maxItems + 1).fill(null).map(() => Array(threshold + 1001).fill(null).map(() => []))
 
-    const itemSelection: number[][] = Array(dpSize + 1).fill(null).map(() => []);
+    dp[0][0] = 0 // Base case: 0 value with 0 items costs nothing
 
-    for (let i = 0; i < validItems.length; i++) {
-      const { value, avg24hPrice } = validItems[i];
-
-      for (let v = dpSize; v >= value; v--) {
-        if (dp[v - value] + avg24hPrice < dp[v]) {
-          dp[v] = dp[v - value] + avg24hPrice;
-          itemSelection[v] = [...itemSelection[v - value], i];
+    // Populate DP table
+    for (let c = 1; c <= maxItems; c++) {
+      for (let i = 0; i < validItems.length; i++) {
+        const { value, avg24hPrice } = validItems[i]
+        for (let v = 0; v <= threshold + 1000; v++) {
+          if (v - value >= 0 && dp[c - 1][v - value] + avg24hPrice < dp[c][v]) {
+            dp[c][v] = dp[c - 1][v - value] + avg24hPrice
+            itemTracking[c][v] = [...itemTracking[c - 1][v - value], i]
+          }
         }
       }
     }
 
-    let minCost = Infinity;
-    let bestValue = -1;
+    // Find the best combination
+    let minFleaCost = Infinity
+    let bestC = -1
+    let bestV = -1
 
-    for (let v = THRESHOLD; v <= dpSize; v++) {
-      if (dp[v] < minCost) {
-        minCost = dp[v];
-        bestValue = v;
+    for (let c = 1; c <= maxItems; c++) {
+      for (let v = threshold; v <= threshold + 1000; v++) {
+        if (dp[c][v] < minFleaCost) {
+          minFleaCost = dp[c][v]
+          bestC = c
+          bestV = v
+        }
       }
     }
 
-    if (bestValue === -1) {
-      return { selected: [], totalFleaCost: 0 };
+    if (bestC === -1) {
+      return { selected: [], totalFleaCost: 0 }
     }
 
-    const selectedIndices = itemSelection[bestValue];
-    const selectedItems = selectedIndices.map(index => validItems[index]);
+    const selectedIndices = itemTracking[bestC][bestV]
+    const selectedItems = selectedIndices.map(index => validItems[index])
 
-    return { selected: selectedItems, totalFleaCost: minCost };
+    return { selected: selectedItems, totalFleaCost: minFleaCost }
   }
 
   const isThresholdMet = total >= THRESHOLD
@@ -137,6 +153,17 @@ export function App() {
           <h1 className="text-3xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
             <Skull className="mr-2" /> Cultist Calculator <Skull className="ml-2" />
           </h1>
+          <div className="flex items-center justify-center mb-4">
+            <Switch 
+              checked={isPVE} 
+              onCheckedChange={(checked) => {
+                setIsPVE(checked);
+                setSelectedItems(Array(5).fill(null)); // Reset selected items on toggle
+              }} 
+              className="mr-2"
+            />
+            <span className="text-gray-300">{isPVE ? 'PVE Mode' : 'PVP Mode'}</span>
+          </div>
           <div className="space-y-4 w-full">
             {selectedItems.map((item, index) => (
               <div key={index} className="flex flex-col items-start space-y-1 w-full">
@@ -201,9 +228,9 @@ export function App() {
           <Button 
             variant='default'
             onClick={handleAutoSelect} 
-            className="flex mt-4 mx-auto"
+            className="flex mt-4 mx-auto text-pink-500 animate-pulse"
           >
-            Auto Select Best Combination
+            Auto Select
           </Button>
         </CardContent>
         <Separator className="my-1" />
