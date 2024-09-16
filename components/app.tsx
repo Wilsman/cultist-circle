@@ -27,7 +27,7 @@ export function App() {
         value: item.basePrice
       }))
       .sort((a, b) => a.name.localeCompare(b.name)), // Sort items by name
-    [itemsData]
+    [/* itemsData */] // Removed itemsData
   )
 
   useEffect(() => {
@@ -51,24 +51,37 @@ export function App() {
   const isThresholdMet = total >= THRESHOLD
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100 p-4">
-      <Card className="bg-gray-800 border-gray-700 shadow-lg w-96 max-h-[90vh] overflow-auto py-8 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4">
+      <Card className="bg-gray-800 border-gray-700 shadow-lg w-full max-w-md max-h-[90vh] overflow-auto py-8 px-4">
         <CardContent className="p-6">
-          <h1 className="text-2xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
+          <h1 className="text-3xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
             <Skull className="mr-2" /> Cultist Calculator <Skull className="ml-2" />
           </h1>
-          <div className="space-y-4">
+          <div className="space-y-4 w-full">
             {selectedItems.map((item, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <Select onValueChange={(value) => handleSelectItem(value, index)} value={item?.id.toString() || ""}>
+              <div key={index} className="flex items-center space-x-2 w-full">
+                <Select onValueChange={(value) => handleSelectItem(value, index)} value={item?.id.toString() || ""} 
+                >
                   <SelectTrigger className="w-full bg-gray-700 border-gray-600 text-gray-100">
                     <SelectValue placeholder="Choose an item" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-700 border-gray-600">
-                    {items.map(item => (
-                      <SelectItem key={item.id} value={item.id.toString()} className="text-gray-100">
-                        {item.name} (₽{item.value.toLocaleString()})
-                      </SelectItem>
+                    {Object.entries(
+                      items.reduce((acc, item) => {
+                        const firstLetter = item.name[0].toUpperCase();
+                        if (!acc[firstLetter]) acc[firstLetter] = [];
+                        acc[firstLetter].push(item);
+                        return acc;
+                      }, {} as Record<string, typeof items>)
+                    ).map(([letter, groupedItems]) => (
+                      <div key={letter}>
+                        <div className="font-bold text-gray-300">{letter}</div>
+                        {groupedItems.map(item => (
+                          <SelectItem key={item.id} value={item.id.toString()} className="text-gray-100">
+                            {item.name} (₽{item.value.toLocaleString()})
+                          </SelectItem>
+                        ))}
+                      </div>
                     ))}
                   </SelectContent>
                 </Select>
@@ -85,7 +98,7 @@ export function App() {
           </div>
           <div className="mt-6 text-center">
             <h2 className="text-xl mb-2 text-gray-300">Ritual Value</h2>
-            <div className={`text-4xl font-bold ${isThresholdMet ? 'text-green-500 animate-pulse' : 'text-red-500'}`}>
+            <div className={`text-5xl font-bold ${isThresholdMet ? 'text-green-500 animate-pulse' : 'text-red-500'}`}>
               ₽{total.toLocaleString()}
             </div>
             <div className="mt-2 text-gray-400">
