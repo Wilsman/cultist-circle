@@ -70,7 +70,7 @@ export function App() {
       <Card className="bg-gray-800 border-gray-700 shadow-lg w-full max-w-md max-h-[90vh] overflow-auto py-8 px-4 relative"> {/* Added relative positioning */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <div className="absolute top-3 left-2 animate-float text-white"> {/* Removed button */}
+            <div className="absolute top-3 left-2 animate-float text-white hover:text-green-300"> {/* Removed button */}
               <HelpCircle className="h-5 w-5" />
             </div>
           </AlertDialogTrigger>
@@ -80,6 +80,7 @@ export function App() {
               <AlertDialogDescription>
                 Select items from the dropdown to calculate the total ritual value. 
                 Ensure the total meets the cultist threshold for rewards.
+                Flea prices are based on 24h average (As of September 16, 2024).
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -131,7 +132,7 @@ export function App() {
                   </Button>
                 </div>
                 {/* Display flea cost below the dropdown */}
-                <div className="text-gray-500 text-xs">Flea cost: ₽{fleaCosts[index].toLocaleString()}</div>
+                <div className="text-gray-500 text-xs">Flea cost (24h avg): ₽{fleaCosts[index].toLocaleString()}</div>
               </div>
             ))} 
           </div>
@@ -147,7 +148,7 @@ export function App() {
                 : `₽${(THRESHOLD - total).toLocaleString()} more to meet the threshold`}
             </div>
             <div className="mt-2 text-gray-400 text-sm">
-              Total Flea Cost: ₽{totalFleaCost.toLocaleString()}
+              Total Flea Cost (24h avg): ₽{totalFleaCost.toLocaleString()}
             </div>
           </div>
         </CardContent>
