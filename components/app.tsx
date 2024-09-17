@@ -11,7 +11,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Skull, X, HelpCircle } from "lucide-react";
+import { X, HelpCircle, FlameKindling } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -216,8 +216,8 @@ export function App() {
         </AlertDialog>
         <CardContent className="p-6">
           <h1 className="text-3xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
-            <Skull className="mr-2" /> Cultist Calculator{" "}
-            <Skull className="ml-2" />
+            <FlameKindling className="mr-2" /> Cultist Calculator{" "}
+            <FlameKindling className="ml-2" />
           </h1>
           <div className="flex items-center justify-center mb-4">
             <Switch
@@ -280,32 +280,23 @@ export function App() {
                 </div>
                 {fleaCosts[index] > 0 && (
                   <div className="text-gray-500 text-xs">
-                    Flea cost (24h avg): ₽{fleaCosts[index].toLocaleString()}
+                    Flea cost ≈ ₽{fleaCosts[index].toLocaleString()}
                   </div>
                 )}
               </div>
             ))}
           </div>
           <div className="mt-6 text-center">
-            <h2 className="text-xl mb-2 text-gray-300">Ritual Value</h2>
+            <h2 className="text-3xl font-bold mb-2 text-gray-300">Sacrifice Value</h2>
             <div
-              className={`text-6xl font-bold ${
-                isThresholdMet
-                  ? "text-green-500 animate-pulse"
-                  : "text-red-500 animate-pulse"
+              className={`text-7xl font-extrabold ${
+                isThresholdMet ? "text-green-500 animate-pulse" : "text-red-500 animate-pulse"
               }`}
             >
               ₽{total.toLocaleString()}
             </div>
-            <div className="mt-2 text-gray-300">
-              {isThresholdMet
-                ? "Cultist Threshold Met!"
-                : `₽${(
-                    THRESHOLD - total
-                  ).toLocaleString()} more to meet the threshold`}
-            </div>
-            <div className="mt-2 text-gray-400 text-sm">
-              Total Flea Cost (24h avg): ₽{totalFleaCost.toLocaleString()}
+            <div className="mt-6">
+              <div className="text-sm font-semibold text-gray-400">Flea Cost ≈ ₽{totalFleaCost.toLocaleString()}</div>
             </div>
           </div>
           {isCalculating ? (
