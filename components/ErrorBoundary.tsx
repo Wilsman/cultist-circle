@@ -42,7 +42,7 @@ export class ErrorBoundary extends React.Component<
             Something went wrong.
           </h2>
           <p className="mt-4 text-gray-300">
-            We're sorry for the inconvenience. Please try refreshing the page or
+            We&apos;re sorry for the inconvenience. Please try refreshing the page or
             come back later.
           </p>
         </div>
