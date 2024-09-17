@@ -216,8 +216,8 @@ export function App() {
         </AlertDialog>
         <CardContent className="p-6">
           <h1 className="text-3xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
-            <FlameKindling className="mr-2" /> Cultist Calculator{" "}
-            <FlameKindling className="ml-2" />
+            <FlameKindling className="mr-2 text-red-450 animate-pulse" /> Cultist Calculator{" "}
+            <FlameKindling className="ml-2 text-red-450 animate-pulse" />
           </h1>
           <div className="flex items-center justify-center mb-4">
             <Switch
