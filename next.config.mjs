@@ -1,7 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ["cdn.buymeacoffee.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.buymeacoffee.com",
+      },
+      {
+        protocol: "https",
+        hostname: "api.tarkov-market.app",
+      },
+    ],
   },
 };
 
