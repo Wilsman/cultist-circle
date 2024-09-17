@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(fetchUrl, {
       headers: {
-        'x-api-key': API_KEY || ''
+        'x-api-key': API_KEY as string,
       }
     });
     if (!response.ok) {
