@@ -295,6 +295,11 @@ export function App() {
             >
               ₽{total.toLocaleString()}
             </div>
+            { !isThresholdMet && (
+              <div className="text-red-500 mt-2">
+                Remaining Value Needed: ₽{(THRESHOLD - total).toLocaleString()}
+              </div>
+            )}
             <div className="mt-6">
               <div className="text-sm font-semibold text-gray-400">Flea Cost ≈ ₽{totalFleaCost.toLocaleString()}</div>
             </div>
