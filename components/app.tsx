@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Skull, X, HelpCircle } from 'lucide-react'
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog"
-import { Switch } from "@/components/ui/switch" // Import the Switch component
+import { Switch } from "@/components/ui/switch"
 import itemsDataPVE from '../public/all_items_PVE.json'
 import itemsDataPVP from '../public/all_items_PVP.json'
+import { Progress } from "@/components/ui/progress"; // Import the Progress component
+import Image from 'next/image'; // Import the Image component
 
 const THRESHOLD = 350001
 
@@ -27,6 +29,8 @@ export function App() {
   const [selectedItems, setSelectedItems] = useState<Array<Item | null>>(Array(5).fill(null))
   const [total, setTotal] = useState<number>(0)
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0))
+  const [isCalculating, setIsCalculating] = useState(false); // State for calculating
+  const [progressValue, setProgressValue] = useState(0); // State for progress value
 
   const itemsData = isPVE ? itemsDataPVE : itemsDataPVP; // Choose data based on toggle
 
@@ -59,9 +63,26 @@ export function App() {
     // Flea costs are updated via useEffect
   }
 
-  const handleAutoSelect = () => {
-    const validItems = items.filter(item => item.avg24hPrice > 0)
-    const bestCombination = findBestCombination(validItems, THRESHOLD, 5)
+  const handleAutoSelect = async () => {
+    setIsCalculating(true); // Set calculating state
+    setProgressValue(0); // Reset progress value
+
+    const validItems = items.filter(item => item.avg24hPrice > 0);
+    
+    // Simulate a delay for the calculation (if needed)
+    const interval = setInterval(() => {
+      setProgressValue(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 10; // Increment progress value
+      });
+    }, 100); // Update every 100ms
+
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate calculation time
+
+    const bestCombination = findBestCombination(validItems, THRESHOLD, 5);
 
     if (bestCombination.selected.length === 0) {
       alert("No combination of items meets the threshold.")
@@ -76,6 +97,8 @@ export function App() {
       }
     })
     setSelectedItems(newSelectedItems)
+    setIsCalculating(false); // Reset calculating state
+    clearInterval(interval); // Clear interval after calculation
   }
 
   const findBestCombination = (validItems: Item[], threshold: number, maxItems: number) => {
@@ -127,7 +150,7 @@ export function App() {
   const totalFleaCost = fleaCosts.reduce((sum, cost) => sum + cost, 0)
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4">
+    <div className="h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-hidden">
       <Card className="bg-gray-800 border-gray-700 shadow-lg w-full max-w-md max-h-[90vh] overflow-auto py-8 px-4 relative">
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -225,13 +248,17 @@ export function App() {
               Total Flea Cost (24h avg): ₽{totalFleaCost.toLocaleString()}
             </div>
           </div>
-          <Button 
-            variant='default'
-            onClick={handleAutoSelect} 
-            className="flex mt-4 mx-auto text-pink-500 animate-pulse"
-          >
-            Auto Select
-          </Button>
+          {isCalculating ? (
+            <Progress className="mt-4" value={progressValue} /> // Show progress component while calculating
+          ) : (
+            <Button 
+              variant='default'
+              onClick={handleAutoSelect} 
+              className="flex mt-4 mx-auto text-pink-500"
+            >
+              Auto Select
+            </Button>
+          )}
         </CardContent>
         <Separator className="my-1" />
         <footer className="mt-4 text-center text-gray-400 text-sm">
@@ -243,6 +270,17 @@ export function App() {
           >
             Data provided by Tarkov Market
           </a>
+          <div className="flex justify-center mt-2">
+            <a href="https://www.buymeacoffee.com/myleswilsot" target="_blank">
+              <Image 
+                src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" 
+                alt="Buy Me A Coffee" 
+                width={120} 
+                height={30} 
+                priority={true}
+              />
+            </a>
+          </div>
         </footer>
       </Card>
     </div>

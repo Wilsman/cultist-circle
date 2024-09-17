@@ -15,7 +15,7 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator",
-  description: "Calculate the chance of getting a cultist circle with your items",
+  description: "A tool to calculate the total ritual value of items for cultist rewards in Tarkov.",
 };
 
 export default function RootLayout({
