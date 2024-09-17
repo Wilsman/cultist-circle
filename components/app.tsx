@@ -271,7 +271,7 @@ export function App() {
             Data provided by Tarkov Market
           </a>
           <div className="flex justify-center mt-2">
-            <a href="https://www.buymeacoffee.com/myleswilsot" target="_blank">
+            <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
               <Image 
                 src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" 
                 alt="Buy Me A Coffee" 
