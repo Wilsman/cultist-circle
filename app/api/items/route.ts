@@ -61,7 +61,11 @@ export async function GET(request: NextRequest) {
   // Fetch new data if cache is empty or expired
   const fetchUrl = validatedMode === 'pve' ? PVE_URL : PVP_URL;
   try {
-    const response = await fetch(fetchUrl);
+    const response = await fetch(fetchUrl, {
+      headers: {
+        'x-api-key': API_KEY || ''
+      }
+    });
     if (!response.ok) {
       const errorText = await response.text();
       if (process.env.NODE_ENV === 'development') {
@@ -69,14 +73,14 @@ export async function GET(request: NextRequest) {
       }
       return NextResponse.json({ error: 'Failed to fetch data from external API.' }, { status: response.status });
     }
-    
+  
     const data: Item[] = await response.json(); // Use the defined type
-    
+  
     // Log two elements from the JSON response
     if (process.env.NODE_ENV === 'development') {
       console.log("Raw data from API:", data.slice(0, 2));
     }
-    
+  
     // Validate data structure
     if (!Array.isArray(data)) {
       if (process.env.NODE_ENV === 'development') {
@@ -84,7 +88,7 @@ export async function GET(request: NextRequest) {
       }
       return NextResponse.json({ error: 'Invalid data format received from external API.' }, { status: 500 });
     }
-    
+  
     // Transform the data to match expected structure
     const transformedData = data.map((item: Item) => ({
       uid: item.uid,
@@ -93,27 +97,27 @@ export async function GET(request: NextRequest) {
       price: item.price,
       tags: item.tags,
     }));
-    
+  
     // Log two elements after the mapping
     if (process.env.NODE_ENV === 'development') {
       console.log("Transformed data:", transformedData.slice(0, 2));
     }
-    
+  
     // Cache the new data
     cachedData[validatedMode] = transformedData;
     cacheTimestamps[validatedMode] = currentTime;
-    
+  
     if (process.env.NODE_ENV === 'development') {
       console.log(`Fetched new data for mode: ${validatedMode}`);
       console.log(`Current time: ${new Date(currentTime).toLocaleTimeString()}`);
       console.log(`Last cache time: ${new Date(lastFetched).toLocaleTimeString()}`);
     }
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error fetching items:", error);
-      }
-      return NextResponse.json({ error: 'Failed to fetch items' }, { status: 500 });
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error("Error fetching items:", error);
     }
-    
-    return NextResponse.json(cachedData[validatedMode]);
+    return NextResponse.json({ error: 'Failed to fetch items' }, { status: 500 });
+  }
+  
+  return NextResponse.json(cachedData[validatedMode]);
 }
