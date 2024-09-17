@@ -150,7 +150,7 @@ export function App() {
   const totalFleaCost = fleaCosts.reduce((sum, cost) => sum + cost, 0)
 
   return (
-    <div className="h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-hidden">
+    <div className="h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-auto"> {/* Change overflow-hidden to overflow-auto */}
       <Card className="bg-gray-800 border-gray-700 shadow-lg w-full max-w-md max-h-[90vh] overflow-auto py-8 px-4 relative">
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -170,6 +170,7 @@ export function App() {
             <AlertDialogFooter>
               <AlertDialogCancel>Close</AlertDialogCancel>
             </AlertDialogFooter>
+            
           </AlertDialogContent>
         </AlertDialog>
         <CardContent className="p-6">
@@ -270,7 +271,10 @@ export function App() {
           >
             Data provided by Tarkov Market
           </a>
-          <div className="flex justify-center mt-2">
+          <div className="text-center mt-1">
+              Credit to <a href="https://www.twitch.tv/verybadscav" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">VeryBadSCAV</a> for helping with this tool.
+            </div>
+          <div className="flex justify-center mt-4">
             <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
               <Image 
                 src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" 
