@@ -18,7 +18,7 @@ const cacheTimestamps: { [key: string]: number } = {};
 
 // Define a type for the item structure
 type Item = {
-  id: string;
+  uid: string;
   name: string;
   basePrice: number;
   price: number;
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     
     // Transform the data to match expected structure
     const transformedData = data.map((item: Item) => ({
-      id: item.uid,
+      uid: item.uid,
       name: item.name,
       basePrice: item.basePrice,
       price: item.price,
@@ -115,4 +115,5 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch items' }, { status: 500 });
     }
     
-    return NextResponse.json(cachedData[validatedMode])}
+    return NextResponse.json(cachedData[validatedMode]);
+}

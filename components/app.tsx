@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // app.tsx
 
 "use client";
@@ -44,37 +43,47 @@ const IGNORED_ITEMS = ["Metal fuel tank (0/100)"]; // List of items to ignore
 
 export function App() {
   const [isPVE, setIsPVE] = useState(true); // State to toggle between PVE and PVP
-  const [selectedItems, setSelectedItems] = useState<Array<any | null>>(Array(5).fill(null));
+  const [selectedItems, setSelectedItems] = useState<Array<Item | null>>(Array(5).fill(null));
   const [total, setTotal] = useState<number>(0);
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
   const [isCalculating, setIsCalculating] = useState(false); // State for calculating
   const [progressValue, setProgressValue] = useState(0); // State for progress value
-  const [itemsData, setItemsData] = useState<Array<any>>([]);
+  const [itemsData, setItemsData] = useState<Array<Item>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Define the item type
+  interface Item {
+    uid: string;
+    name: string;
+    basePrice: number;
+    price: number;
+    tags: string[];
+  }
 
   // Memoize the items array
   const items = useMemo(() => {
     return itemsData
       .filter(
-        (item) =>
+        (item: Item) =>
           item.tags.includes("Barter") &&
           !IGNORED_ITEMS.includes(item.name) &&
-          item.id // Ensure item.id exists
+          item.uid // Ensure item.uid exists
       )
-      .map(({ id, name, basePrice, price, tags }: any) => ({
-        id,
+      .map(({ uid, name, basePrice, price, tags }: Item) => ({
+        uid,
         name,
-        value: basePrice, // Map price to value
+        basePrice, // Include basePrice
+        value: basePrice, // Map basePrice to value
         price,
         tags,
       }))
-      .sort((a: any, b: any) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [itemsData]);
 
   // Handler to update selected item
-  const updateSelectedItem = useCallback((itemId: string, index: number) => {
-    const selectedItem = items.find((item) => item.id === itemId) || null;
+  const updateSelectedItem = useCallback((itemUid: string, index: number) => {
+    const selectedItem = items.find((item) => item.uid === itemUid) || null;
     const newSelectedItems = [...selectedItems];
     newSelectedItems[index] = selectedItem ? { ...selectedItem } : null; // Ensure selectedItem is valid
     setSelectedItems(newSelectedItems);
@@ -89,9 +98,9 @@ export function App() {
     // Flea costs are updated via useEffect
   }, [selectedItems]);
 
-    const findBestCombination = useCallback(
+  const findBestCombination = useCallback(
     (
-      validItems: Array<any>,
+      validItems: Array<Item>,
       threshold: number,
       maxItems: number
     ) => {
@@ -112,12 +121,12 @@ export function App() {
       // Populate DP table
       for (let c = 1; c <= maxItems; c++) {
         for (let i = 0; i < validItems.length; i++) {
-          const { value, price } = validItems[i]; // Use price instead of avg24hPrice
-          for (let v = value; v <= threshold + 1000; v++) {
+          const { basePrice, price } = validItems[i]; // Use basePrice instead of value
+          for (let v = basePrice; v <= threshold + 1000; v++) {
             // Start from value to avoid negative indices
-            if (dp[c - 1][v - value] + price < dp[c][v]) {
-              dp[c][v] = dp[c - 1][v - value] + price;
-              itemTracking[c][v] = [...itemTracking[c - 1][v - value], i];
+            if (dp[c - 1][v - basePrice] + price < dp[c][v]) {
+              dp[c][v] = dp[c - 1][v - basePrice] + price;
+              itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
             }
           }
         }
@@ -180,8 +189,8 @@ export function App() {
     }
 
     // Fill selectedItems with the best combination, allowing duplicates
-    const newSelectedItems: Array<any | null> = Array(5).fill(null);
-    bestCombination.selected.forEach((item: any, idx: number) => {
+    const newSelectedItems: Array<Item | null> = Array(5).fill(null);
+    bestCombination.selected.forEach((item: Item, idx: number) => {
       if (idx < 5) {
         newSelectedItems[idx] = item;
       }
@@ -210,7 +219,7 @@ export function App() {
         setLoading(false);
         return;
       }
-  
+      
       try {
         const response = await fetch(`/api/items?mode=${mode}`);
         if (!response.ok) {
@@ -218,31 +227,36 @@ export function App() {
           console.error("Error fetching items:", response.status, errorText);
           throw new Error(`Error ${response.status}: ${errorText}`);
         }
-        const data: Array<any> = await response.json();
-  
+        const data: Item[] = await response.json(); // Use the defined Item type
+      
         // Validate data structure
         if (!Array.isArray(data)) {
           throw new Error("Invalid data format received from server.");
         }
-  
+      
         setItemsData(data);
         localStorage.setItem(storageKey, JSON.stringify(data));
         localStorage.setItem(`${storageKey}_timestamp`, Date.now().toString());
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error fetching items:", error);
-        setError(error.message || "Failed to fetch items.");
+      
+        // Use type guard to check if error is an instance of Error
+        if (error instanceof Error) {
+          setError(error.message || "Failed to fetch items.");
+        } else {
+          setError("An unknown error occurred.");
+        }
       } finally {
         setLoading(false);
-      }
-    };
-  
+      }};
+    
     fetchItems();
   }, [isPVE]);
 
   // Calculate totals when selectedItems change
   useEffect(() => {
     // Calculate total ritual value
-    setTotal(selectedItems.reduce((sum, item) => sum + (item?.value || 0), 0));
+    setTotal(selectedItems.reduce((sum, item) => sum + (item?.basePrice || 0), 0));
     // Calculate total flea costs
     setFleaCosts(selectedItems.map((item) => (item ? item.price : 0)));
   }, [selectedItems]);
@@ -250,7 +264,7 @@ export function App() {
   const isThresholdMet = total >= THRESHOLD;
   const totalFleaCost = fleaCosts.reduce((sum, cost) => sum + cost, 0);
 
-    return (
+  return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-auto">
       {error ? (
         <div className="flex flex-col items-center justify-center space-y-4">
@@ -329,7 +343,7 @@ export function App() {
                         onValueChange={(value) =>
                           updateSelectedItem(value, index)
                         }
-                        value={item?.id.toString() || ""}
+                        value={item?.uid || ""}
                         aria-label={`Select item ${index + 1}`}
                       >
                         <SelectTrigger
@@ -349,8 +363,8 @@ export function App() {
                             .sort((a, b) => a.delta - b.delta)
                             .map((item) => (
                               <SelectItem
-                                key={item.id}
-                                value={item.id.toString()}
+                                key={item.uid}
+                                value={item.uid}
                                 className="text-gray-100 px-2 py-1"
                               >
                                 {item.name} (₽{item.value})
