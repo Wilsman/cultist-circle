@@ -27,6 +27,7 @@ import itemsDataPVE from "../public/all_items_PVE.json";
 import itemsDataPVP from "../public/all_items_PVP.json";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
+import BetaBadge from "./ui/beta-badge";
 
 const THRESHOLD = 350001;
 
@@ -189,7 +190,6 @@ export function App() {
   return (
     <div className="h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-auto">
       {" "}
-      {/* Change overflow-hidden to overflow-auto */}
       <Card className="bg-gray-800 border-gray-700 shadow-lg w-full max-w-md max-h-[90vh] overflow-auto py-8 px-4 relative">
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -216,8 +216,12 @@ export function App() {
         </AlertDialog>
         <CardContent className="p-6">
           <h1 className="text-3xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
-            <FlameKindling className="mr-2 text-red-450 animate-pulse" /> Cultist Calculator{" "}
+            <FlameKindling className="mr-2 text-red-450 animate-pulse" />{" "}
+            Cultist Calculator{" "}
             <FlameKindling className="ml-2 text-red-450 animate-pulse" />
+            <div className="ml-2">
+              <BetaBadge />
+            </div>
           </h1>
           <div className="flex items-center justify-center mb-4">
             <Switch
@@ -287,21 +291,27 @@ export function App() {
             ))}
           </div>
           <div className="mt-6 text-center">
-            <h2 className="text-3xl font-bold mb-2 text-gray-300">Sacrifice Value</h2>
+            <h2 className="text-3xl font-bold mb-2 text-gray-300">
+              Sacrifice Value
+            </h2>
             <div
               className={`text-7xl font-extrabold ${
-                isThresholdMet ? "text-green-500 animate-pulse" : "text-red-500 animate-pulse"
+                isThresholdMet
+                  ? "text-green-500 animate-pulse"
+                  : "text-red-500 animate-pulse"
               }`}
             >
               ₽{total.toLocaleString()}
             </div>
-            { !isThresholdMet && (
+            {!isThresholdMet && (
               <div className="text-red-500 mt-2">
                 Remaining Value Needed: ₽{(THRESHOLD - total).toLocaleString()}
               </div>
             )}
             <div className="mt-6">
-              <div className="text-sm font-semibold text-gray-400">Flea Cost ≈ ₽{totalFleaCost.toLocaleString()}</div>
+              <div className="text-sm font-semibold text-gray-400">
+                Flea Cost ≈ ₽{totalFleaCost.toLocaleString()}
+              </div>
             </div>
           </div>
           {isCalculating ? (
