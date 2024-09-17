@@ -10,8 +10,8 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { Switch } from "@/components/ui/switch"
 import itemsDataPVE from '../public/all_items_PVE.json'
 import itemsDataPVP from '../public/all_items_PVP.json'
-import { Progress } from "@/components/ui/progress"; // Import the Progress component
-import Image from 'next/image'; // Import the Image component
+import { Progress } from "@/components/ui/progress";
+import Image from 'next/image';
 
 const THRESHOLD = 350001
 
@@ -162,9 +162,10 @@ export function App() {
             <AlertDialogHeader>
               <AlertDialogTitle>How to Use</AlertDialogTitle>
               <AlertDialogDescription>
-                Select items from the dropdown to calculate the total ritual value. 
-                Ensure the total meets the cultist threshold for rewards.
-                Flea prices are based on PVE 24h average (As of September 16, 2024).
+                Explore the Cultist Calculator to optimize your ritual rewards. 
+                Select items from the dropdown to calculate the total ritual value, ensuring it meets the cultist threshold. Use the auto-select button to find the best combination of items.
+                Note: Flea prices are based on 24h average (As of September 17, 2024).
+                Tip: Toggle between PVE and PVP modes to adjust your strategy.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -272,7 +273,7 @@ export function App() {
             Data provided by Tarkov Market
           </a>
           <div className="text-center mt-1">
-              Credit to <a href="https://www.twitch.tv/verybadscav" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">VeryBadSCAV</a> for helping with this tool.
+              Credit to <a href="https://bio.link/verybadscav" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">VeryBadSCAV</a> for helping with this tool.
             </div>
           <div className="flex justify-center mt-4">
             <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
