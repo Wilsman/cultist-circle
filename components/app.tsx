@@ -259,7 +259,7 @@ export function App() {
                 <ul>
                   <li>🔵 Toggle between PVE and PVP modes to use correct flea prices.</li>
                   <li>🔵 Select items from the dropdown to calculate the total ritual value.</li>
-                  <li>🔵 Ensure the total value meets the cultist threshold of 350,001 roubles.</li>
+                  <li>🔵 Ensure the total value meets the cultist threshold of 350,001(base value).</li>
                   <li>🔵 Use the auto-select button to find the best combination of items.</li>
                   <li>🔵 If the threshold is met, sacrifice the items to receive a 14-hour countdown.</li>
                   <li>🟡 14 HR Highest Value Outcome - 350,001 6 HR Quest / HO Outcome - 400,000 ( Not Fully Confirmed )</li>
