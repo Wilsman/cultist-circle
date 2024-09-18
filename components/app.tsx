@@ -1,6 +1,7 @@
+// app.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Select,
   SelectContent,
@@ -28,6 +29,7 @@ import itemsDataPVP from "../public/all_items_PVP.json";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 import BetaBadge from "./ui/beta-badge";
+import Fuse from "fuse.js";
 
 const THRESHOLD = 350001;
 
@@ -49,23 +51,37 @@ export function App() {
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
   const [isCalculating, setIsCalculating] = useState(false); // State for calculating
   const [progressValue, setProgressValue] = useState(0); // State for progress value
+  const [searchQueries, setSearchQueries] = useState<string[]>(Array(5).fill(""));
 
   const itemsData = isPVE ? itemsDataPVE : itemsDataPVP; // Choose data based on toggle
 
-  const items = useMemo(() => {
+  const FILTER_TAGS = useMemo(() => ["Barter", "Provisions", "Repair", "Keys"], []);
+
+  const items: Item[] = useMemo(() => {
     return itemsData
       .filter(
-        (item) =>
-          item.tags.includes("Barter") && !IGNORED_ITEMS.includes(item.name)
-      ) // Exclude ignored items
-      .map(({ uid, name, basePrice, avg24hPrice }) => ({
+        (item: { uid: string; name: string; basePrice: number; avg24hPrice: number; tags: string[] }) =>
+          FILTER_TAGS.some(tag => item.tags.includes(tag)) &&
+          !IGNORED_ITEMS.includes(item.name)
+      ) // Include only specified items and exclude ignored items
+      .map(({ uid, name, basePrice, avg24hPrice }: { uid: string; name: string; basePrice: number; avg24hPrice: number }) => ({
         id: uid,
         name,
         value: basePrice,
         avg24hPrice,
       }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [itemsData]); // Depend on itemsData
+      .sort((a: Item, b: Item) => a.name.localeCompare(b.name));
+  }, [itemsData, FILTER_TAGS]); // Depend on itemsData and FILTER_TAGS
+
+  // Initialize Fuse.js once for all Selects
+  const fuseInstances = useMemo(() => {
+    return searchQueries.map(() =>
+      new Fuse(items, {
+        keys: ["name"],
+        threshold: 0.3,
+      })
+    );
+  }, [items, searchQueries]);
 
   useEffect(() => {
     // Calculate total ritual value
@@ -112,6 +128,8 @@ export function App() {
 
     if (bestCombination.selected.length === 0) {
       alert("No combination of items meets the threshold.");
+      setIsCalculating(false);
+      clearInterval(interval);
       return;
     }
 
@@ -183,13 +201,15 @@ export function App() {
 
     return { selected: selectedItems, totalFleaCost: minFleaCost };
   };
-
+  
   const isThresholdMet = total >= THRESHOLD;
   const totalFleaCost = fleaCosts.reduce((sum, cost) => sum + cost, 0);
 
+  // Refs to manage focus for each search input
+  const searchInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
   return (
     <div className="h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-auto">
-      {" "}
       <Card className="bg-gray-800 border-gray-700 shadow-lg w-full max-w-md max-h-[90vh] overflow-auto py-8 px-4 relative">
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -215,20 +235,21 @@ export function App() {
           </AlertDialogContent>
         </AlertDialog>
         <CardContent className="p-6">
-          <h1 className="text-3xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
-            <FlameKindling className="mr-2 text-red-450 animate-pulse" />{" "}
-            Cultist Calculator{" "}
+          <h1 className="text-3xl font-bold mb-1 text-center text-red-500 flex items-center justify-center">
+            <FlameKindling className="mr-2 text-red-450 animate-pulse" /> 
+            Cultist Calculator 
             <FlameKindling className="ml-2 text-red-450 animate-pulse" />
             <div className="ml-2">
               <BetaBadge />
             </div>
           </h1>
-          <div className="flex items-center justify-center mb-4">
+          <div className="flex items-center justify-center mb-6">
             <Switch
               checked={isPVE}
               onCheckedChange={(checked) => {
                 setIsPVE(checked);
                 setSelectedItems(Array(5).fill(null)); // Reset selected items on toggle
+                setSearchQueries(Array(5).fill("")); // Reset search queries on toggle
               }}
               className="mr-2"
             />
@@ -236,7 +257,18 @@ export function App() {
               {isPVE ? "PVE Mode" : "PVP Mode"}
             </span>
           </div>
-          <div className="space-y-4 w-full">
+          <div className="space-y-2 w-full">
+            {isCalculating ? (
+              <Progress className="mt-4 w-full" value={progressValue} /> // Show progress component while calculating
+            ) : (
+              <Button
+                variant="default"
+                onClick={handleAutoSelect}
+                className="flex mt-4 mx-auto text-gray-200 bg-gray-500 hover:bg-gray-900"
+              >
+                Auto Select
+              </Button>
+            )}
             {selectedItems.map((item, index) => (
               <div
                 key={index}
@@ -248,36 +280,66 @@ export function App() {
                     value={item?.id.toString() || ""}
                   >
                     <SelectTrigger
-                      className={`w-full bg-gray-700 border-gray-600 text-gray-100 transition-all duration-300 ${
+                      className={`w-full max-w-[300px] bg-gray-700 border-gray-600 text-gray-100 text-xs transition-all duration-300 ${
                         item ? "border-2 border-blue-500" : ""
                       }`}
                     >
                       <SelectValue placeholder="Choose an item" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-700 border-gray-600 max-h-60 overflow-auto">
-                      {items
-                        .filter((item) => item.avg24hPrice > 0) // Exclude items with 0 avg24hPrice
-                        .map((item) => ({
-                          ...item,
-                          delta: item.avg24hPrice / item.value, // Calculate delta as avg24hPrice per value
-                        }))
-                        .sort((a, b) => a.delta - b.delta) // Sort by delta low to high (cheapest avg24hPrice per value)
-                        .map((item) => (
-                          <SelectItem
-                            key={item.id}
-                            value={item.id.toString()}
-                            className="text-gray-100 px-2 py-1"
-                          >
-                            {item.name} (₽{item.value.toLocaleString()})
-                          </SelectItem>
-                        ))}
+                      {/* Search input */}
+                      <div className="px-2 py-1">
+                        <input
+                          type="text"
+                          placeholder="Search..."
+                          value={searchQueries[index]}
+                          onChange={(e) => {
+                            const newQueries = [...searchQueries];
+                            newQueries[index] = e.target.value;
+                            setSearchQueries(newQueries);
+                          }}
+                          onKeyDown={(e) => e.stopPropagation()} // Prevent Select from handling key events
+                          ref={(el) => {
+                            searchInputRefs.current[index] = el;
+                          }}
+                          className="w-full px-2 py-1 bg-gray-600 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      {/* Filtered items */}
+                      {(() => {
+                        const query = searchQueries[index];
+                        const fuse = fuseInstances[index];
+                        const filteredItems = query
+                          ? fuse.search(query).map((result) => result.item)
+                          : items.filter((item) => item.avg24hPrice > 0)
+                              .sort(
+                                (a, b) =>
+                                  a.avg24hPrice / a.value - b.avg24hPrice / b.value
+                              );
+
+                        return filteredItems
+                          .map((item) => ({
+                            ...item,
+                            delta: item.avg24hPrice / item.value, // Calculate delta as avg24hPrice per value
+                          }))
+                          .sort((a, b) => a.delta - b.delta) // Sort by delta low to high (cheapest avg24hPrice per value)
+                          .map((item) => (
+                            <SelectItem
+                              key={item.id}
+                              value={item.id.toString()}
+                              className="text-gray-100 px-2 py-1"
+                            >
+                              {item.name} (₽{item.value.toLocaleString()})
+                            </SelectItem>
+                          ));
+                      })()}
                     </SelectContent>
                   </Select>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => handleResetItem(index)}
-                    className="bg-gray-700 hover:bg-gray-600"
+                    className="bg-gray-700 hover:bg-gray-600 flex-shrink-0"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -295,7 +357,7 @@ export function App() {
               Sacrifice Value
             </h2>
             <div
-              className={`text-7xl font-extrabold ${
+              className={`text-6xl font-extrabold ${
                 isThresholdMet
                   ? "text-green-500 animate-pulse"
                   : "text-red-500 animate-pulse"
@@ -314,17 +376,6 @@ export function App() {
               </div>
             </div>
           </div>
-          {isCalculating ? (
-            <Progress className="mt-4" value={progressValue} /> // Show progress component while calculating
-          ) : (
-            <Button
-              variant="default"
-              onClick={handleAutoSelect}
-              className="flex mt-4 mx-auto text-pink-500"
-            >
-              Auto Select
-            </Button>
-          )}
         </CardContent>
         <Separator className="my-1" />
         <footer className="mt-4 text-center text-gray-400 text-sm">
