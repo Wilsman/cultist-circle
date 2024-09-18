@@ -13,16 +13,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { X, HelpCircle, FlameKindling, Edit } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import itemsDataPVE from "../public/all_items_PVE.json";
 import itemsDataPVP from "../public/all_items_PVP.json";
@@ -36,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
@@ -242,38 +233,38 @@ export function App() {
   };
 
   return (
-    <div className="h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-auto">
-      <Card className="bg-gray-800 border-gray-700 shadow-lg w-full max-w-md max-h-[90vh] overflow-auto py-8 px-4 relative">
-        {/* **4. Alert Dialog for Instructions** */}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-auto">
+      <Card className="bg-gray-800 border-gray-700 shadow-lg max-w-[70vw] max-h-[90vh] overflow-auto py-8 px-4 relative">
+        {/* **4. Dialog for Instructions** */}
+        <Dialog>
+          <DialogTrigger asChild>
             <div className="absolute top-4 left-2 animate-float hover:text-green-300 text-yellow-500">
               <HelpCircle className="h-10 w-10" />
             </div>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>How to Use</AlertDialogTitle>
-              <AlertDialogDescription>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>How to Use</DialogTitle>
+              <DialogDescription>
+                Follow these instructions to use the app effectively.
+              </DialogDescription>
+              <DialogContent>
                 <h3>How to Use the App:</h3>
                 <ul>
                   <li>🔵 Toggle between PVE and PVP modes to use correct flea prices.</li>
                   <li>🔵 Select items from the dropdown to calculate the total ritual value.</li>
-                  <li>🔵 Ensure the total value meets the cultist threshold of 350,001(base value).</li>
+                  <li>🔵 Ensure the total value meets the cultist threshold of 350,001 (base value).</li>
                   <li>🔵 Use the auto-select button to find the best combination of items.</li>
                   <li>🔵 If the threshold is met, sacrifice the items to receive a 14-hour countdown.</li>
-                  <li>🟡 14 HR Highest Value Outcome - 350,001 6 HR Quest / HO Outcome - 400,000 ( Not Fully Confirmed )</li>
-                  <li>🔴 14-hour result has known bug which can outcome empty.</li>
                   <li>🔵 Ability to edit the threshold value through the interface.</li>
+                  <li>🔴 BUG: 14-hour result has known bug which can outcome empty.</li>
+                  <li>🟢 Note: 14 HR Highest Value Outcome - 350,001 6 HR Quest / HO Outcome - 400,000 (Not Fully Confirmed)</li>
                   <li>🟢 Note: Flea prices are based on 24h average (As of September 18, 2024).</li>
                 </ul>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Close</AlertDialogCancel>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </DialogContent>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
 
         <CardContent className="p-6">
           {/* **5. Header with Title and Beta Badge** */}
