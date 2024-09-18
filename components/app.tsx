@@ -40,7 +40,7 @@ interface Item {
 }
 
 export function App() {
-  const [isPVE, setIsPVE] = useState(true); // Toggle between PVE and PVP
+  const [isPVE, setIsPVE] = useState(false); // Toggle between PVE and PVP
   const [selectedItems, setSelectedItems] = useState<Array<Item | null>>(
     Array(5).fill(null)
   );
@@ -259,7 +259,8 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-gray-900 text-gray-100 p-4 overflow-clip">
+    // layout fills the screen height so there is no scrolling outside of the Card
+    <div className="h-screen grid place-items-center bg-gray-900 text-gray-100 p-4 overflow-hidden">
       <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-[90vh] overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto">
         {/* **4. Dialog for Instructions** */}
         <Dialog>
@@ -279,15 +280,15 @@ export function App() {
                   </li>
                   <li>
                     🔵 Select items from the dropdown to calculate the total
-                    ritual value.
+                    sacrifice value.
                   </li>
                   <li>
                     🔵 Ensure the total value meets the cultist threshold of
                     350,001 (base value).
                   </li>
                   <li>
-                    🔵 Use the auto-select button to find the best combination
-                    of items.
+                    🔵 Use the Auto Pick button to find the cheapest costing
+                    combination that meets the threshold .
                   </li>
                   <li>
                     🔵 If the threshold is met, sacrifice the items to receive a
@@ -298,8 +299,8 @@ export function App() {
                     interface.
                   </li>
                   <li>
-                    🔴 BUG: 14-hour result has known bug which can outcome
-                    empty.
+                    🔴 BUG: 14-hour result has known bug which can result in an
+                    empty reward.
                   </li>
                   <li>🟢 Note: 14 HR Highest Value Outcome {">"}= 350,001</li>
                   <li>
@@ -398,7 +399,7 @@ export function App() {
                 onClick={handleAutoSelect}
                 className="flex mt-4 mx-auto text-gray-200 bg-gray-500 hover:bg-gray-900"
               >
-                Auto Select
+                Auto Pick
               </Button>
             )}
 
