@@ -247,8 +247,8 @@ export function App() {
         {/* **4. Alert Dialog for Instructions** */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <div className="absolute top-3 left-2 animate-float text-white hover:text-green-300">
-              <HelpCircle className="h-5 w-5" />
+            <div className="absolute top-4 left-2 animate-float hover:text-green-300 text-yellow-500">
+              <HelpCircle className="h-10 w-10" />
             </div>
           </AlertDialogTrigger>
           <AlertDialogContent>
