@@ -1,8 +1,12 @@
 // app/api/pvp-items/route.ts
-
 import { NextResponse } from "next/server";
+import { SimplifiedItem } from "@/types/SimplifiedItem"; // Import SimplifiedItem
 
 const PVP_API_URL = "https://api.tarkov-market.app/api/v1/items/all";
+
+// Define the tags and ignored items
+const FILTER_TAGS = ["Barter", "Provisions", "Repair", "Keys"];
+const IGNORED_ITEMS = ["Metal fuel tank (0/100)"];
 
 export async function GET() {
   try {
@@ -10,7 +14,7 @@ export async function GET() {
       headers: {
         "x-api-key": process.env.API_KEY || "",
       },
-      cache: "no-store",
+      cache: "no-store", // Disable caching
     });
 
     if (!response.ok) {
@@ -21,21 +25,31 @@ export async function GET() {
       );
     }
 
-    const data: Item[] = await response.json();
+    const data = await response.json();
 
-    // Optional: Filter or map the data to include only necessary fields
-    // const filteredData = data.map(item => ({
-    //   uid: item.uid,
-    //   name: item.name,
-    //   price: item.price,
-    //   basePrice: item.basePrice,
-    //   // Add other necessary fields
-    // }));
+    // Filter and transform data to SimplifiedItem[]
+    const simplifiedData: SimplifiedItem[] = data
+      .filter(
+        (item: SimplifiedItem) =>
+          FILTER_TAGS.some((tag) => item.tags?.includes(tag)) &&
+          !IGNORED_ITEMS.includes(item.name)
+      )
+      .map((item: SimplifiedItem) => ({
+        uid: item.uid,
+        name: item.name,
+        basePrice: item.basePrice,
+        price: item.price,
+      }))
+      .sort((a: SimplifiedItem, b: SimplifiedItem) =>
+        a.name.localeCompare(b.name)
+      );
 
-    return NextResponse.json(data);
-  } catch (error: any) {
+    return NextResponse.json(simplifiedData);
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An unexpected error occurred";
     return NextResponse.json(
-      { error: error.message || "An unexpected error occurred" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

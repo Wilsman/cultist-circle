@@ -27,45 +27,17 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-// Ignored items list
-const IGNORED_ITEMS = ["Metal fuel tank (0/100)"]; // List of items to ignore
-
-interface Item {
-  uid: string;
-  name: string;
-  tags: string[];
-  shortName: string;
-  price: number;
-  basePrice: number;
-  avg24hPrice: number;
-  avg7daysPrice: number;
-  traderName: string;
-  traderPrice: number;
-  traderPriceCur: string;
-  updated: string;
-  slots: number;
-  diff24h: number;
-  diff7days: number;
-  icon: string;
-  link: string;
-  wikiLink: string;
-  img: string;
-  imgBig: string;
-  bsgId: string;
-  isFunctional: boolean;
-  reference: string;
-}
+import { SimplifiedItem } from "@/types/SimplifiedItem"; // Newly added SimplifiedItem interface
 
 export function App() {
-  const [isPVE, setIsPVE] = useState(false); // Toggle between PVE and PVP
-  const [selectedItems, setSelectedItems] = useState<Array<Item | null>>(
-    Array(5).fill(null)
-  );
+  const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
+  const [selectedItems, setSelectedItems] = useState<
+    Array<SimplifiedItem | null>
+  >(Array(5).fill(null));
   const [total, setTotal] = useState<number>(0);
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
-  const [isCalculating, setIsCalculating] = useState(false); // Calculating state
-  const [progressValue, setProgressValue] = useState(0); // Progress value
+  const [isCalculating, setIsCalculating] = useState<boolean>(false); // Calculating state
+  const [progressValue, setProgressValue] = useState<number>(0); // Progress value
   const [searchQueries, setSearchQueries] = useState<string[]>(
     Array(5).fill("")
   );
@@ -75,11 +47,12 @@ export function App() {
   const [tempThreshold, setTempThreshold] = useState<string>(
     threshold.toLocaleString()
   );
-  const [isThresholdDialogOpen, setIsThresholdDialogOpen] = useState(false);
+  const [isThresholdDialogOpen, setIsThresholdDialogOpen] =
+    useState<boolean>(false);
 
   // **2. State for Fetched Data**
-  const [itemsDataPVE, setItemsDataPVE] = useState<Item[]>([]);
-  const [itemsDataPVP, setItemsDataPVP] = useState<Item[]>([]);
+  const [itemsDataPVE, setItemsDataPVE] = useState<SimplifiedItem[]>([]);
+  const [itemsDataPVP, setItemsDataPVP] = useState<SimplifiedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,14 +75,16 @@ export function App() {
           throw new Error(errorData.error || "Failed to fetch PVP data");
         }
 
-        const pveData: Item[] = await pveResponse.json();
-        const pvpData: Item[] = await pvpResponse.json();
+        const pveData: SimplifiedItem[] = await pveResponse.json();
+        const pvpData: SimplifiedItem[] = await pvpResponse.json();
 
         setItemsDataPVE(pveData);
         setItemsDataPVP(pvpData);
         setLoading(false);
-      } catch (err: any) {
-        setError(err.message || "An error occurred");
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "An error occurred";
+        setError(errorMessage);
         setLoading(false);
       }
     };
@@ -118,49 +93,15 @@ export function App() {
   }, []);
 
   // **4. Choose Data Based on Mode**
-  const itemsData = isPVE ? itemsDataPVE : itemsDataPVP;
+  const itemsData: SimplifiedItem[] = isPVE ? itemsDataPVE : itemsDataPVP;
 
-  const FILTER_TAGS = useMemo(
-    () => ["Barter", "Provisions", "Repair", "Keys"],
-    []
-  );
-
-  const items: Item[] = useMemo(() => {
-    return itemsData
-      .filter(
-        (item: {
-          uid: string;
-          name: string;
-          basePrice: number;
-          price: number;
-          tags: string[];
-        }) =>
-          FILTER_TAGS.some((tag) => item.tags.includes(tag)) &&
-          !IGNORED_ITEMS.includes(item.name)
-      )
-      .map(
-        ({
-          uid,
-          name,
-          basePrice,
-          price,
-        }: {
-          uid: string;
-          name: string;
-          basePrice: number;
-          price: number;
-        }) => ({
-          uid: uid,
-          name,
-          value: basePrice,
-          price,
-        })
-      )
-      .sort((a: Item, b: Item) => a.name.localeCompare(b.name));
-  }, [itemsData, FILTER_TAGS]);
+  // **5. Remove Client-Side Filtering**
+  const items: SimplifiedItem[] = useMemo(() => {
+    return [...itemsData].sort((a, b) => a.name.localeCompare(b.name));
+  }, [itemsData]);
 
   // Initialize Fuse.js for each search input
-  const fuseInstances = useMemo(() => {
+  const fuseInstances: Fuse<SimplifiedItem>[] = useMemo(() => {
     return searchQueries.map(
       () =>
         new Fuse(items, {
@@ -170,15 +111,17 @@ export function App() {
     );
   }, [items, searchQueries]);
 
-  // **5. Effect to Recalculate Total and Flea Costs**
+  // **6. Effect to Recalculate Total and Flea Costs**
   useEffect(() => {
     // Calculate total ritual value
-    setTotal(selectedItems.reduce((sum, item) => sum + (item?.value || 0), 0));
+    setTotal(
+      selectedItems.reduce((sum, item) => sum + (item?.basePrice || 0), 0)
+    );
     // Calculate total flea costs
     setFleaCosts(selectedItems.map((item) => (item ? item.price : 0)));
   }, [selectedItems, threshold]); // Added threshold as a dependency
 
-  const updateSelectedItem = (itemId: string, index: number) => {
+  const updateSelectedItem = (itemId: string, index: number): void => {
     const selectedItem = items.find((item) => item.uid === itemId) || null;
     const newSelectedItems = [...selectedItems];
     newSelectedItems[index] = selectedItem;
@@ -186,18 +129,18 @@ export function App() {
     // Flea costs are updated via useEffect
   };
 
-  const handleResetItem = (index: number) => {
+  const handleResetItem = (index: number): void => {
     const newSelectedItems = [...selectedItems];
     newSelectedItems[index] = null;
     setSelectedItems(newSelectedItems);
     // Flea costs are updated via useEffect
   };
 
-  const handleAutoSelect = async () => {
+  const handleAutoSelect = async (): Promise<void> => {
     setIsCalculating(true); // Start calculating
     setProgressValue(0); // Reset progress
 
-    const validItems = items.filter((item) => item.price > 0);
+    const validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
 
     // Simulate calculation progress
     const interval = setInterval(() => {
@@ -222,7 +165,7 @@ export function App() {
     }
 
     // Populate selectedItems with the best combination
-    const newSelectedItems: Array<Item | null> = Array(5).fill(null);
+    const newSelectedItems: Array<SimplifiedItem | null> = Array(5).fill(null);
     bestCombination.selected.forEach((item, idx) => {
       if (idx < 5) {
         newSelectedItems[idx] = item;
@@ -243,10 +186,10 @@ export function App() {
    * @returns An object containing the selected items and the total flea cost
    */
   const findBestCombination = (
-    validItems: Item[],
+    validItems: SimplifiedItem[],
     threshold: number,
     maxItems: number
-  ) => {
+  ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
     // Initialize DP table
     const dp: Array<Array<number>> = Array(maxItems + 1)
       .fill(null)
@@ -264,11 +207,11 @@ export function App() {
     // Populate DP table
     for (let c = 1; c <= maxItems; c++) {
       for (let i = 0; i < validItems.length; i++) {
-        const { value, price } = validItems[i];
-        for (let v = value; v <= threshold + 1000; v++) {
-          if (dp[c - 1][v - value] + price < dp[c][v]) {
-            dp[c][v] = dp[c - 1][v - value] + price;
-            itemTracking[c][v] = [...itemTracking[c - 1][v - value], i];
+        const { basePrice, price } = validItems[i];
+        for (let v = basePrice; v <= threshold + 1000; v++) {
+          if (dp[c - 1][v - basePrice] + price < dp[c][v]) {
+            dp[c][v] = dp[c - 1][v - basePrice] + price;
+            itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
           }
         }
       }
@@ -299,14 +242,14 @@ export function App() {
     return { selected: selectedItems, totalFleaCost: minFleaCost };
   };
 
-  const isThresholdMet = total >= threshold;
-  const totalFleaCost = fleaCosts.reduce((sum, cost) => sum + cost, 0);
+  const isThresholdMet: boolean = total >= threshold;
+  const totalFleaCost: number = fleaCosts.reduce((sum, cost) => sum + cost, 0);
 
   // Refs for search inputs
   const searchInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  // **6. Handle Threshold Change Submission**
-  const handleThresholdSubmit = (e: React.FormEvent) => {
+  // **7. Handle Threshold Change Submission**
+  const handleThresholdSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     const parsed = parseInt(tempThreshold.replace(/,/g, ""), 10);
     if (!isNaN(parsed) && parsed > 0) {
@@ -317,14 +260,14 @@ export function App() {
     }
   };
 
-  // **7. Handle Mode Toggle Reset**
-  const handleModeToggle = (checked: boolean) => {
+  // **8. Handle Mode Toggle Reset**
+  const handleModeToggle = (checked: boolean): void => {
     setIsPVE(checked);
     setSelectedItems(Array(5).fill(null)); // Reset selected items
     setSearchQueries(Array(5).fill("")); // Reset search queries
   };
 
-  // **8. Render Loading and Error States**
+  // **9. Render Loading and Error States**
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-900 text-gray-100">
@@ -493,7 +436,9 @@ export function App() {
               >
                 <div className="flex items-center space-x-2 w-full justify-center">
                   <Select
-                    onValueChange={(value) => updateSelectedItem(value, index)}
+                    onValueChange={(value: string) =>
+                      updateSelectedItem(value, index)
+                    }
                     value={item?.uid.toString() || ""}
                   >
                     <SelectTrigger
@@ -510,7 +455,9 @@ export function App() {
                           type="text"
                           placeholder="Search..."
                           value={searchQueries[index]}
-                          onChange={(e) => {
+                          onChange={(
+                            e: React.ChangeEvent<HTMLInputElement>
+                          ) => {
                             const newQueries = [...searchQueries];
                             newQueries[index] = e.target.value;
                             setSearchQueries(newQueries);
@@ -532,13 +479,13 @@ export function App() {
                               .filter((item) => item.price > 0)
                               .sort(
                                 (a, b) =>
-                                  a.price / a.value - b.price / b.value
+                                  a.price / a.basePrice - b.price / b.basePrice
                               );
 
                         return filteredItems
                           .map((item) => ({
                             ...item,
-                            delta: item.price / item.value, // Calculate delta as price per value
+                            delta: item.price / item.basePrice, // Calculate delta as price per value
                           }))
                           .sort((a, b) => a.delta - b.delta) // Sort by delta low to high
                           .map((item) => (
@@ -547,7 +494,7 @@ export function App() {
                               value={item.uid.toString()}
                               className="text-gray-100 px-2 py-1"
                             >
-                              {item.name} (₽{item.value.toLocaleString()})
+                              {item.name} (₽{item.basePrice.toLocaleString()})
                             </SelectItem>
                           ));
                       })()}
