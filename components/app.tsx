@@ -52,6 +52,8 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [clientCacheTimestamp, setClientCacheTimestamp] = useState<number | null>(null);
+
   // Define the item type
   interface Item {
     uid: string;
@@ -59,6 +61,7 @@ export function App() {
     basePrice: number;
     price: number;
     tags: string[];
+    updated: number;
   }
 
   // Memoize the items array
@@ -70,13 +73,14 @@ export function App() {
           !IGNORED_ITEMS.includes(item.name) &&
           item.uid // Ensure item.uid exists
       )
-      .map(({ uid, name, basePrice, price, tags }: Item) => ({
+      .map(({ uid, name, basePrice, price, tags, updated }: Item) => ({
         uid,
         name,
         basePrice, // Include basePrice
         value: basePrice, // Map basePrice to value
         price,
         tags,
+        updated,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [itemsData]);
@@ -205,7 +209,7 @@ export function App() {
     return Date.now() - timestamp > thirtyMinutes;
   };
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchItems = async () => {
       setLoading(true);
       setError(null); // Reset error state
@@ -216,6 +220,7 @@ export function App() {
   
       if (storedData && storedTimestamp && !isDataStale(Number(storedTimestamp))) {
         setItemsData(JSON.parse(storedData));
+        setClientCacheTimestamp(Number(storedTimestamp));
         setLoading(false);
         return;
       }
@@ -227,7 +232,7 @@ export function App() {
           console.error("Error fetching items:", response.status, errorText);
           throw new Error(`Error ${response.status}: ${errorText}`);
         }
-        const data: Item[] = await response.json(); // Use the defined Item type
+        const { data } = await response.json();
       
         // Validate data structure
         if (!Array.isArray(data)) {
@@ -235,8 +240,10 @@ export function App() {
         }
       
         setItemsData(data);
+
         localStorage.setItem(storageKey, JSON.stringify(data));
         localStorage.setItem(`${storageKey}_timestamp`, Date.now().toString());
+        setClientCacheTimestamp(Date.now());
       } catch (error: unknown) {
         console.error("Error fetching items:", error);
       
@@ -248,7 +255,8 @@ export function App() {
         }
       } finally {
         setLoading(false);
-      }};
+      }
+    };
     
     fetchItems();
   }, [isPVE]);
@@ -263,6 +271,13 @@ export function App() {
 
   const isThresholdMet = total >= THRESHOLD;
   const totalFleaCost = fleaCosts.reduce((sum, cost) => sum + cost, 0);
+
+  // Function to format the cache age
+  const formatCacheAge = (timestamp: number | null) => {
+    if (!timestamp) return "N/A";
+    const ageInMinutes = Math.floor((Date.now() - timestamp) / 60000);
+    return `${ageInMinutes} minute${ageInMinutes !== 1 ? 's' : ''} ago`;
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-auto">
@@ -299,7 +314,7 @@ export function App() {
             </AlertDialogContent>
           </AlertDialog>
           <CardContent className="p-6">
-            <h1 className="text-3xl font-bold mb-6 text-center text-red-500 flex items-center justify-center">
+            <h1 className="text-3xl font-bold mb-1 text-center text-red-500 flex items-center justify-center">
               <FlameKindling className="mr-2 text-red-450 animate-pulse" />{" "}
               Cultist Calculator{" "}
               <FlameKindling className="ml-2 text-red-450 animate-pulse" />
@@ -309,6 +324,9 @@ export function App() {
                 </Suspense>
               </div>
             </h1>
+            <div className="text-xs text-gray-400 mt-2 mb-6 text-center">
+              Sync: {formatCacheAge(clientCacheTimestamp)}
+            </div>
             <div className="flex items-center justify-center mb-4">
               <Switch
                 checked={isPVE}
@@ -334,60 +352,60 @@ export function App() {
                 </div>
               ) : (
                 selectedItems.map((item, index) => (
-                  <div
+                    <div
                     key={index}
                     className="flex flex-col items-start space-y-1 w-full"
-                  >
+                    >
                     <div className="flex items-center space-x-2 w-full">
                       <Select
-                        onValueChange={(value) =>
-                          updateSelectedItem(value, index)
-                        }
-                        value={item?.uid || ""}
-                        aria-label={`Select item ${index + 1}`}
+                      onValueChange={(value) =>
+                        updateSelectedItem(value, index)
+                      }
+                      value={item?.uid || ""}
+                      aria-label={`Select item ${index + 1}`}
                       >
-                        <SelectTrigger
-                          className={`w-full bg-gray-700 border-gray-600 text-gray-100 transition-all duration-300 ${
-                            item ? "border-2 border-blue-500" : ""
-                          }`}
-                        >
-                          <SelectValue placeholder="Choose an item" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-700 border-gray-600 max-h-60 overflow-auto" role="listbox">
-                          {items
-                            .filter((item) => item.price > 0)
-                            .map((item) => ({
-                              ...item,
-                              delta: item.price / item.value,
-                            }))
-                            .sort((a, b) => a.delta - b.delta)
-                            .map((item) => (
-                              <SelectItem
-                                key={item.uid}
-                                value={item.uid}
-                                className="text-gray-100 px-2 py-1"
-                              >
-                                {item.name} (₽{item.value})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
+                      <SelectTrigger
+                        className={`w-full bg-gray-700 border-gray-600 text-gray-100 transition-all duration-300 ${
+                        item ? "border-2 border-blue-500" : ""
+                        }`}
+                      >
+                        <SelectValue placeholder="Choose an item" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-700 border-gray-600 max-h-60 overflow-auto" role="listbox">
+                        {items
+                        .filter((item) => item.price > 0)
+                        .map((item) => ({
+                          ...item,
+                          delta: item.price / item.value,
+                        }))
+                        .sort((a, b) => a.delta - b.delta)
+                        .map((item) => (
+                          <SelectItem
+                          key={item.uid}
+                          value={item.uid}
+                          className="text-gray-100 px-2 py-1"
+                          >
+                          {item.name} (₽{item.value.toLocaleString()})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                       </Select>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleResetItem(index)}
-                        className="bg-gray-700 hover:bg-gray-600"
-                        aria-label={`Reset selection ${index + 1}`}
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleResetItem(index)}
+                      className="bg-gray-700 hover:bg-gray-600"
+                      aria-label={`Reset selection ${index + 1}`}
                       >
-                        <X className="h-4 w-4" />
+                      <X className="h-4 w-4" />
                       </Button>
                     </div>
                     {fleaCosts[index] > 0 && (
-                      <div className="text-gray-500 text-xs">
-                        Flea cost ≈ ₽{fleaCosts[index].toLocaleString()}
-                      </div>
+                        <div className="text-gray-500 text-xs">
+                        Flea cost ≈ ₽{fleaCosts[index].toLocaleString()} (Updated: {item?.updated ? new Date(item.updated).toLocaleString() : "N/A"})
+                        </div>
                     )}
-                  </div>
+                    </div>
                 ))
               )}
             </div>

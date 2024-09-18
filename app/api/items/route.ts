@@ -20,6 +20,7 @@ type Item = {
   basePrice: number;
   price: number;
   tags: string[];
+  updated: number;
 };
 
 const querySchema = z.object({
@@ -47,6 +48,7 @@ async function fetchData(url: string): Promise<Item[]> {
     basePrice: item.basePrice,
     price: item.price,
     tags: item.tags,
+    updated: item.updated
   }));
 }
 
@@ -75,7 +77,10 @@ export async function GET(request: NextRequest) {
     cachedData[validatedMode] = data;
     cacheTimestamps[validatedMode] = currentTime;
     logDevelopmentInfo(`Fetched new data for mode: ${validatedMode}`);
-    return NextResponse.json(data);
+    return NextResponse.json({
+      data,
+      cacheTimestamp: currentTime // Include the cache timestamp in the response
+    });
   } catch (error) {
     logDevelopmentInfo("Error fetching items:", { error: 'Error details hidden for security.' });
     return NextResponse.json({ error: 'Failed to fetch items' }, { status: 500 });
