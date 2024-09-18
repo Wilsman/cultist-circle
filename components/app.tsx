@@ -259,8 +259,8 @@ export function App() {
   };
 
   return (
-    <div className="h-screen w-screen grid place-items-center bg-gray-900 text-gray-100 p-4 overflow-clip">
-      <Card className="bg-gray-800 border-gray-700 shadow-lg max-w-[70vw] max-h-[90vh] overflow-auto py-8 px-6 relative ">
+    <div className="min-h-screen grid place-items-center bg-gray-900 text-gray-100 p-4 overflow-clip">
+      <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-[90vh] overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto">
         {/* **4. Dialog for Instructions** */}
         <Dialog>
           <DialogTrigger asChild>
@@ -268,7 +268,7 @@ export function App() {
               <HelpCircle className="h-10 w-10" />
             </div>
           </DialogTrigger>
-          <DialogContent className="flex bg-gray-800 sm:max-w-[600px] sm:max-h-[90vh] max-h-[90vh]">
+          <DialogContent className="flex bg-gray-800 sm:max-w-[600px] sm:max-h-[90vh] max-h-[90vh] w-full mx-auto">
             <DialogHeader>
               <DialogTitle>How to Use</DialogTitle>
               <DialogDescription className="text-left">
@@ -318,7 +318,7 @@ export function App() {
 
         <CardContent className="p-6">
           {/* **5. Header with Title and Beta Badge** */}
-          <h1 className="text-3xl font-bold mb-1 text-center text-red-500 flex items-center justify-center">
+          <h1 className="text-3xl font-bold mb-1 text-center text-red-500 flex items-center justify-center w-full">
             <FlameKindling className="mr-2 text-red-450 animate-pulse" />
             Cultist Calculator
             <FlameKindling className="ml-2 text-red-450 animate-pulse" />
@@ -328,7 +328,7 @@ export function App() {
           </h1>
 
           {/* **6. Mode Toggle (PVE/PVP)** */}
-          <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center justify-center mb-6 w-full">
             <Switch
               checked={isPVE}
               onCheckedChange={(checked) => {
@@ -344,7 +344,7 @@ export function App() {
           </div>
 
           {/* **7. Display Current Threshold and Edit Button** */}
-          <div className="flex items-center justify-center mb-4">
+          <div className="flex items-center justify-center mb-4 w-full">
             <span className="text-gray-500 mr-2">Threshold:</span>
             <span className="text-xl font-semibold text-gray-300">
               ₽{threshold.toLocaleString()}
@@ -362,7 +362,7 @@ export function App() {
                   <Edit className="h-5 w-5 text-gray-400 hover:text-gray-200" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[400px] bg-gray-800">
+              <DialogContent className="sm:max-w-[400px] bg-gray-800 w-full mx-auto">
                 <DialogHeader>
                   <DialogTitle>Edit Threshold</DialogTitle>
                 </DialogHeader>
@@ -391,7 +391,7 @@ export function App() {
           {/* **8. Auto Select Button and Progress Bar** */}
           <div className="space-y-2 w-full">
             {isCalculating ? (
-              <Progress className="mt-4 w-full" value={progressValue} /> // Show progress
+              <Progress className="mx-auto mt-4 w-full" value={progressValue} /> // Show progress
             ) : (
               <Button
                 variant="default"
@@ -406,21 +406,21 @@ export function App() {
             {selectedItems.map((item, index) => (
               <div
                 key={index}
-                className="flex flex-col items-start space-y-1 w-full"
+                className="flex flex-col items-center space-y-1 flex-grow w-full"
               >
-                <div className="flex items-center space-x-2 w-full">
+                <div className="flex items-center space-x-2 w-full justify-center">
                   <Select
                     onValueChange={(value) => updateSelectedItem(value, index)}
                     value={item?.id.toString() || ""}
                   >
                     <SelectTrigger
-                      className={`w-full max-w-[300px] bg-gray-700 border-gray-600 text-gray-100 text-xs transition-all duration-300 ${
+                      className={`w-full max-w-[400px] bg-gray-700 border-gray-600 text-gray-100 text-xs transition-all duration-300 ${
                         item ? "border-2 border-blue-500" : ""
                       }`}
                     >
                       <SelectValue placeholder="Choose an item" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600 max-h-60 overflow-auto">
+                    <SelectContent className="bg-gray-700 border-gray-600 max-h-60 overflow-auto w-full">
                       {/* Search Input */}
                       <div className="px-2 py-1">
                         <input
@@ -490,7 +490,7 @@ export function App() {
           </div>
 
           {/* **10. Sacrifice Value Display** */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center w-full">
             <h2 className="text-3xl font-bold mb-2 text-gray-300">
               Sacrifice Value
             </h2>
@@ -519,7 +519,7 @@ export function App() {
         <Separator className="my-1" />
 
         {/* **11. Footer with Credits and Links** */}
-        <footer className="mt-4 text-center text-gray-400 text-sm">
+        <footer className="mt-4 text-center text-gray-400 text-sm w-full">
           <a
             href="https://tarkov-market.com"
             target="_blank"

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     images: [
       {
-        url: "/opengraph-image/cultist-circle.jpeg",
+        url: "https://www.cultistcircle.com/images/cultist-circle.jpeg",
         width: 800,
         height: 600,
         alt: "Cultist Circle",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   twitter: {
     images: [
       {
-        url: "/twitter-image/cultist-circle.jpeg",
+        url: "https://www.cultistcircle.com/images/cultist-circle.jpeg",
         width: 800,
         height: 600,
         alt: "Cultist Circle",
