@@ -255,12 +255,17 @@ export function App() {
             <AlertDialogHeader>
               <AlertDialogTitle>How to Use</AlertDialogTitle>
               <AlertDialogDescription>
-                Explore the Cultist Calculator to optimize your ritual rewards.
-                Select items from the dropdown to calculate the total ritual
-                value, ensuring it meets the cultist threshold. Use the
-                auto-select button to find the best combination of items. Note:
-                Flea prices are based on 24h average (As of September 18, 2024).
-                Tip: Toggle between PVE and PVP modes to adjust your strategy.
+                <h3>How to Use the App:</h3>
+                <ul>
+                  <li>🔵 Toggle between PVE and PVP modes to use correct flea prices.</li>
+                  <li>🔵 Select items from the dropdown to calculate the total ritual value.</li>
+                  <li>🔵 Ensure the total value meets the cultist threshold of 350,001 roubles.</li>
+                  <li>🔵 Use the auto-select button to find the best combination of items.</li>
+                  <li>🔵 If the threshold is met, sacrifice the items to receive a 14-hour countdown.</li>
+                  <li>🔴 14-hour result has known bug which can outcome empty.</li>
+                  <li>🔵 Ability to edit the threshold value through the interface.</li>
+                  <li>🟢 Note: Flea prices are based on 24h average (As of September 18, 2024).</li>
+                </ul>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
