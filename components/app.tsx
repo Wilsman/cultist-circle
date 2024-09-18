@@ -14,8 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { X, HelpCircle, FlameKindling, Edit } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import itemsDataPVE from "../public/all_items_PVE.json";
-import itemsDataPVP from "../public/all_items_PVP.json";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 import BetaBadge from "./ui/beta-badge";
@@ -30,13 +28,33 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
+// Ignored items list
 const IGNORED_ITEMS = ["Metal fuel tank (0/100)"]; // List of items to ignore
 
 interface Item {
   uid: string;
   name: string;
-  value: number;
+  tags: string[];
+  shortName: string;
   price: number;
+  basePrice: number;
+  avg24hPrice: number;
+  avg7daysPrice: number;
+  traderName: string;
+  traderPrice: number;
+  traderPriceCur: string;
+  updated: string;
+  slots: number;
+  diff24h: number;
+  diff7days: number;
+  icon: string;
+  link: string;
+  wikiLink: string;
+  img: string;
+  imgBig: string;
+  bsgId: string;
+  isFunctional: boolean;
+  reference: string;
 }
 
 export function App() {
@@ -59,7 +77,48 @@ export function App() {
   );
   const [isThresholdDialogOpen, setIsThresholdDialogOpen] = useState(false);
 
-  const itemsData = isPVE ? itemsDataPVE : itemsDataPVP; // Choose data based on mode
+  // **2. State for Fetched Data**
+  const [itemsDataPVE, setItemsDataPVE] = useState<Item[]>([]);
+  const [itemsDataPVP, setItemsDataPVP] = useState<Item[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // **3. Fetch Data from Internal API Routes**
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [pveResponse, pvpResponse] = await Promise.all([
+          fetch("/api/pve-items"),
+          fetch("/api/pvp-items"),
+        ]);
+
+        if (!pveResponse.ok) {
+          const errorData = await pveResponse.json();
+          throw new Error(errorData.error || "Failed to fetch PVE data");
+        }
+        if (!pvpResponse.ok) {
+          const errorData = await pvpResponse.json();
+          throw new Error(errorData.error || "Failed to fetch PVP data");
+        }
+
+        const pveData: Item[] = await pveResponse.json();
+        const pvpData: Item[] = await pvpResponse.json();
+
+        setItemsDataPVE(pveData);
+        setItemsDataPVP(pvpData);
+        setLoading(false);
+      } catch (err: any) {
+        setError(err.message || "An error occurred");
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // **4. Choose Data Based on Mode**
+  const itemsData = isPVE ? itemsDataPVE : itemsDataPVP;
 
   const FILTER_TAGS = useMemo(
     () => ["Barter", "Provisions", "Repair", "Keys"],
@@ -111,7 +170,7 @@ export function App() {
     );
   }, [items, searchQueries]);
 
-  // **2. Effect to Recalculate Total and Flea Costs**
+  // **5. Effect to Recalculate Total and Flea Costs**
   useEffect(() => {
     // Calculate total ritual value
     setTotal(selectedItems.reduce((sum, item) => sum + (item?.value || 0), 0));
@@ -246,7 +305,7 @@ export function App() {
   // Refs for search inputs
   const searchInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  // **3. Handle Threshold Change Submission**
+  // **6. Handle Threshold Change Submission**
   const handleThresholdSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = parseInt(tempThreshold.replace(/,/g, ""), 10);
@@ -257,6 +316,33 @@ export function App() {
       alert("Please enter a valid positive number.");
     }
   };
+
+  // **7. Handle Mode Toggle Reset**
+  const handleModeToggle = (checked: boolean) => {
+    setIsPVE(checked);
+    setSelectedItems(Array(5).fill(null)); // Reset selected items
+    setSearchQueries(Array(5).fill("")); // Reset search queries
+  };
+
+  // **8. Render Loading and Error States**
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-900 text-gray-100">
+        <div className="text-center">
+          <Progress className="mb-4" value={50} />
+          <p>Loading data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-900 text-red-500">
+        <p>Error: {error}</p>
+      </div>
+    );
+  }
 
   return (
     // layout fills the screen height so there is no scrolling outside of the Card
@@ -288,7 +374,7 @@ export function App() {
                   </li>
                   <li>
                     🔵 Use the Auto Pick button to find the cheapest costing
-                    combination that meets the threshold .
+                    combination that meets the threshold.
                   </li>
                   <li>
                     🔵 If the threshold is met, sacrifice the items to receive a
@@ -332,11 +418,7 @@ export function App() {
           <div className="flex items-center justify-center mb-6 w-full">
             <Switch
               checked={isPVE}
-              onCheckedChange={(checked) => {
-                setIsPVE(checked);
-                setSelectedItems(Array(5).fill(null)); // Reset selected items
-                setSearchQueries(Array(5).fill("")); // Reset search queries
-              }}
+              onCheckedChange={handleModeToggle}
               className="mr-2"
             />
             <span className="text-gray-300">
@@ -449,7 +531,8 @@ export function App() {
                           : items
                               .filter((item) => item.price > 0)
                               .sort(
-                                (a, b) => a.price / a.value - b.price / b.value
+                                (a, b) =>
+                                  a.price / a.value - b.price / b.value
                               );
 
                         return filteredItems
