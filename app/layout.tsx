@@ -15,7 +15,28 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator",
-  description: "A tool to calculate the total ritual value of items for cultist rewards in Tarkov.",
+  description:
+    "A tool to calculate the total ritual value of items for cultist rewards in Tarkov.",
+  openGraph: {
+    images: [
+      {
+        url: "/opengraph-image/cultist-circle.jpeg",
+        width: 800,
+        height: 600,
+        alt: "Cultist Circle",
+      },
+    ],
+  },
+  twitter: {
+    images: [
+      {
+        url: "/twitter-image/cultist-circle.jpeg",
+        width: 800,
+        height: 600,
+        alt: "Cultist Circle",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
