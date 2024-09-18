@@ -33,10 +33,10 @@ import { Input } from "@/components/ui/input";
 const IGNORED_ITEMS = ["Metal fuel tank (0/100)"]; // List of items to ignore
 
 interface Item {
-  id: string;
+  uid: string;
   name: string;
   value: number;
-  avg24hPrice: number;
+  price: number;
 }
 
 export function App() {
@@ -73,7 +73,7 @@ export function App() {
           uid: string;
           name: string;
           basePrice: number;
-          avg24hPrice: number;
+          price: number;
           tags: string[];
         }) =>
           FILTER_TAGS.some((tag) => item.tags.includes(tag)) &&
@@ -84,17 +84,17 @@ export function App() {
           uid,
           name,
           basePrice,
-          avg24hPrice,
+          price,
         }: {
           uid: string;
           name: string;
           basePrice: number;
-          avg24hPrice: number;
+          price: number;
         }) => ({
-          id: uid,
+          uid: uid,
           name,
           value: basePrice,
-          avg24hPrice,
+          price,
         })
       )
       .sort((a: Item, b: Item) => a.name.localeCompare(b.name));
@@ -116,11 +116,11 @@ export function App() {
     // Calculate total ritual value
     setTotal(selectedItems.reduce((sum, item) => sum + (item?.value || 0), 0));
     // Calculate total flea costs
-    setFleaCosts(selectedItems.map((item) => (item ? item.avg24hPrice : 0)));
+    setFleaCosts(selectedItems.map((item) => (item ? item.price : 0)));
   }, [selectedItems, threshold]); // Added threshold as a dependency
 
   const updateSelectedItem = (itemId: string, index: number) => {
-    const selectedItem = items.find((item) => item.id === itemId) || null;
+    const selectedItem = items.find((item) => item.uid === itemId) || null;
     const newSelectedItems = [...selectedItems];
     newSelectedItems[index] = selectedItem;
     setSelectedItems(newSelectedItems);
@@ -138,7 +138,7 @@ export function App() {
     setIsCalculating(true); // Start calculating
     setProgressValue(0); // Reset progress
 
-    const validItems = items.filter((item) => item.avg24hPrice > 0);
+    const validItems = items.filter((item) => item.price > 0);
 
     // Simulate calculation progress
     const interval = setInterval(() => {
@@ -178,7 +178,7 @@ export function App() {
    * **findBestCombination Function**
    * Finds the best combination of items that meets or exceeds the threshold with minimal flea cost.
    *
-   * @param validItems - Array of items with avg24hPrice > 0
+   * @param validItems - Array of items with price > 0
    * @param threshold - Current threshold value
    * @param maxItems - Maximum number of items to select
    * @returns An object containing the selected items and the total flea cost
@@ -205,10 +205,10 @@ export function App() {
     // Populate DP table
     for (let c = 1; c <= maxItems; c++) {
       for (let i = 0; i < validItems.length; i++) {
-        const { value, avg24hPrice } = validItems[i];
+        const { value, price } = validItems[i];
         for (let v = value; v <= threshold + 1000; v++) {
-          if (dp[c - 1][v - value] + avg24hPrice < dp[c][v]) {
-            dp[c][v] = dp[c - 1][v - value] + avg24hPrice;
+          if (dp[c - 1][v - value] + price < dp[c][v]) {
+            dp[c][v] = dp[c - 1][v - value] + price;
             itemTracking[c][v] = [...itemTracking[c - 1][v - value], i];
           }
         }
@@ -412,7 +412,7 @@ export function App() {
                 <div className="flex items-center space-x-2 w-full justify-center">
                   <Select
                     onValueChange={(value) => updateSelectedItem(value, index)}
-                    value={item?.id.toString() || ""}
+                    value={item?.uid.toString() || ""}
                   >
                     <SelectTrigger
                       className={`w-full max-w-[400px] bg-gray-700 border-gray-600 text-gray-100 text-xs transition-all duration-300 ${
@@ -447,23 +447,21 @@ export function App() {
                         const filteredItems = query
                           ? fuse.search(query).map((result) => result.item)
                           : items
-                              .filter((item) => item.avg24hPrice > 0)
+                              .filter((item) => item.price > 0)
                               .sort(
-                                (a, b) =>
-                                  a.avg24hPrice / a.value -
-                                  b.avg24hPrice / b.value
+                                (a, b) => a.price / a.value - b.price / b.value
                               );
 
                         return filteredItems
                           .map((item) => ({
                             ...item,
-                            delta: item.avg24hPrice / item.value, // Calculate delta as avg24hPrice per value
+                            delta: item.price / item.value, // Calculate delta as price per value
                           }))
                           .sort((a, b) => a.delta - b.delta) // Sort by delta low to high
                           .map((item) => (
                             <SelectItem
-                              key={item.id}
-                              value={item.id.toString()}
+                              key={item.uid}
+                              value={item.uid.toString()}
                               className="text-gray-100 px-2 py-1"
                             >
                               {item.name} (₽{item.value.toLocaleString()})
