@@ -262,6 +262,7 @@ export function App() {
                   <li>🔵 Ensure the total value meets the cultist threshold of 350,001 roubles.</li>
                   <li>🔵 Use the auto-select button to find the best combination of items.</li>
                   <li>🔵 If the threshold is met, sacrifice the items to receive a 14-hour countdown.</li>
+                  <li>🟡 14 HR Highest Value Outcome - 350,001 6 HR Quest / HO Outcome - 400,000 ( Not Fully Confirmed )</li>
                   <li>🔴 14-hour result has known bug which can outcome empty.</li>
                   <li>🔵 Ability to edit the threshold value through the interface.</li>
                   <li>🟢 Note: Flea prices are based on 24h average (As of September 18, 2024).</li>
