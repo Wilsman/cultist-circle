@@ -48,40 +48,66 @@ export function App() {
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
   const [isCalculating, setIsCalculating] = useState(false); // Calculating state
   const [progressValue, setProgressValue] = useState(0); // Progress value
-  const [searchQueries, setSearchQueries] = useState<string[]>(Array(5).fill(""));
+  const [searchQueries, setSearchQueries] = useState<string[]>(
+    Array(5).fill("")
+  );
 
   // **1. Threshold as State**
   const [threshold, setThreshold] = useState<number>(350001);
-  const [tempThreshold, setTempThreshold] = useState<string>(threshold.toLocaleString());
+  const [tempThreshold, setTempThreshold] = useState<string>(
+    threshold.toLocaleString()
+  );
   const [isThresholdDialogOpen, setIsThresholdDialogOpen] = useState(false);
 
   const itemsData = isPVE ? itemsDataPVE : itemsDataPVP; // Choose data based on mode
 
-  const FILTER_TAGS = useMemo(() => ["Barter", "Provisions", "Repair", "Keys"], []);
+  const FILTER_TAGS = useMemo(
+    () => ["Barter", "Provisions", "Repair", "Keys"],
+    []
+  );
 
   const items: Item[] = useMemo(() => {
     return itemsData
       .filter(
-        (item: { uid: string; name: string; basePrice: number; avg24hPrice: number; tags: string[] }) =>
-          FILTER_TAGS.some(tag => item.tags.includes(tag)) &&
+        (item: {
+          uid: string;
+          name: string;
+          basePrice: number;
+          avg24hPrice: number;
+          tags: string[];
+        }) =>
+          FILTER_TAGS.some((tag) => item.tags.includes(tag)) &&
           !IGNORED_ITEMS.includes(item.name)
       )
-      .map(({ uid, name, basePrice, avg24hPrice }: { uid: string; name: string; basePrice: number; avg24hPrice: number }) => ({
-        id: uid,
-        name,
-        value: basePrice,
-        avg24hPrice,
-      }))
+      .map(
+        ({
+          uid,
+          name,
+          basePrice,
+          avg24hPrice,
+        }: {
+          uid: string;
+          name: string;
+          basePrice: number;
+          avg24hPrice: number;
+        }) => ({
+          id: uid,
+          name,
+          value: basePrice,
+          avg24hPrice,
+        })
+      )
       .sort((a: Item, b: Item) => a.name.localeCompare(b.name));
   }, [itemsData, FILTER_TAGS]);
 
   // Initialize Fuse.js for each search input
   const fuseInstances = useMemo(() => {
-    return searchQueries.map(() =>
-      new Fuse(items, {
-        keys: ["name"],
-        threshold: 0.3,
-      })
+    return searchQueries.map(
+      () =>
+        new Fuse(items, {
+          keys: ["name"],
+          threshold: 0.3,
+        })
     );
   }, [items, searchQueries]);
 
@@ -223,7 +249,7 @@ export function App() {
   // **3. Handle Threshold Change Submission**
   const handleThresholdSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = parseInt(tempThreshold.replace(/,/g, ''), 10);
+    const parsed = parseInt(tempThreshold.replace(/,/g, ""), 10);
     if (!isNaN(parsed) && parsed > 0) {
       setThreshold(parsed);
       setIsThresholdDialogOpen(false);
@@ -233,8 +259,8 @@ export function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100 p-4 overflow-auto">
-      <Card className="bg-gray-800 border-gray-700 shadow-lg max-w-[70vw] max-h-[90vh] overflow-auto py-8 px-4 relative">
+    <div className="h-screen w-screen grid place-items-center bg-gray-900 text-gray-100 p-4 overflow-clip">
+      <Card className="bg-gray-800 border-gray-700 shadow-lg max-w-[70vw] max-h-[90vh] overflow-auto py-8 px-6 relative ">
         {/* **4. Dialog for Instructions** */}
         <Dialog>
           <DialogTrigger asChild>
@@ -242,26 +268,50 @@ export function App() {
               <HelpCircle className="h-10 w-10" />
             </div>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="flex bg-gray-800 sm:max-w-[600px] sm:max-h-[90vh] max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>How to Use</DialogTitle>
-              <DialogDescription>
-                Follow these instructions to use the app effectively.
-              </DialogDescription>
-              <DialogContent>
-                <h3>How to Use the App:</h3>
+              <DialogDescription className="text-left">
                 <ul>
-                  <li>🔵 Toggle between PVE and PVP modes to use correct flea prices.</li>
-                  <li>🔵 Select items from the dropdown to calculate the total ritual value.</li>
-                  <li>🔵 Ensure the total value meets the cultist threshold of 350,001 (base value).</li>
-                  <li>🔵 Use the auto-select button to find the best combination of items.</li>
-                  <li>🔵 If the threshold is met, sacrifice the items to receive a 14-hour countdown.</li>
-                  <li>🔵 Ability to edit the threshold value through the interface.</li>
-                  <li>🔴 BUG: 14-hour result has known bug which can outcome empty.</li>
-                  <li>🟢 Note: 14 HR Highest Value Outcome - 350,001 6 HR Quest / HO Outcome - 400,000 (Not Fully Confirmed)</li>
-                  <li>🟢 Note: Flea prices are based on 24h average (As of September 18, 2024).</li>
+                  <li>
+                    🔵 Toggle between PVE and PVP modes to use correct flea
+                    prices.
+                  </li>
+                  <li>
+                    🔵 Select items from the dropdown to calculate the total
+                    ritual value.
+                  </li>
+                  <li>
+                    🔵 Ensure the total value meets the cultist threshold of
+                    350,001 (base value).
+                  </li>
+                  <li>
+                    🔵 Use the auto-select button to find the best combination
+                    of items.
+                  </li>
+                  <li>
+                    🔵 If the threshold is met, sacrifice the items to receive a
+                    14-hour countdown.
+                  </li>
+                  <li>
+                    🔵 Ability to edit the threshold value through the
+                    interface.
+                  </li>
+                  <li>
+                    🔴 BUG: 14-hour result has known bug which can outcome
+                    empty.
+                  </li>
+                  <li>🟢 Note: 14 HR Highest Value Outcome {">"}= 350,001</li>
+                  <li>
+                    🟢 Note: 6 HR | Quest / Hideout item = 400,000 (Not Fully
+                    Confirmed)
+                  </li>
+                  <li>
+                    🟢 Note: Flea prices are based on 24h average (As of
+                    September 18, 2024).
+                  </li>
                 </ul>
-              </DialogContent>
+              </DialogDescription>
             </DialogHeader>
           </DialogContent>
         </Dialog>
@@ -269,8 +319,8 @@ export function App() {
         <CardContent className="p-6">
           {/* **5. Header with Title and Beta Badge** */}
           <h1 className="text-3xl font-bold mb-1 text-center text-red-500 flex items-center justify-center">
-            <FlameKindling className="mr-2 text-red-450 animate-pulse" /> 
-            Cultist Calculator 
+            <FlameKindling className="mr-2 text-red-450 animate-pulse" />
+            Cultist Calculator
             <FlameKindling className="ml-2 text-red-450 animate-pulse" />
             <div className="ml-2">
               <BetaBadge />
@@ -299,9 +349,16 @@ export function App() {
             <span className="text-xl font-semibold text-gray-300">
               ₽{threshold.toLocaleString()}
             </span>
-            <Dialog open={isThresholdDialogOpen} onOpenChange={setIsThresholdDialogOpen}>
+            <Dialog
+              open={isThresholdDialogOpen}
+              onOpenChange={setIsThresholdDialogOpen}
+            >
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="ml-1 p-0 bg-transparent hover:bg-transparent">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-1 p-0 bg-transparent hover:bg-transparent"
+                >
                   <Edit className="h-5 w-5 text-gray-400 hover:text-gray-200" />
                 </Button>
               </DialogTrigger>
@@ -317,7 +374,11 @@ export function App() {
                     placeholder="Enter a new threshold"
                   />
                   <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="ghost" onClick={() => setIsThresholdDialogOpen(false)}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setIsThresholdDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
                     <Button type="submit">Save</Button>
@@ -384,10 +445,12 @@ export function App() {
                         const fuse = fuseInstances[index];
                         const filteredItems = query
                           ? fuse.search(query).map((result) => result.item)
-                          : items.filter((item) => item.avg24hPrice > 0)
+                          : items
+                              .filter((item) => item.avg24hPrice > 0)
                               .sort(
                                 (a, b) =>
-                                  a.avg24hPrice / a.value - b.avg24hPrice / b.value
+                                  a.avg24hPrice / a.value -
+                                  b.avg24hPrice / b.value
                               );
 
                         return filteredItems
