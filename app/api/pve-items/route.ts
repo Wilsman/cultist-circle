@@ -1,12 +1,10 @@
 // app/api/pve-items/route.ts
+
 import { NextResponse } from "next/server";
 import { SimplifiedItem } from "@/types/SimplifiedItem"; // Import SimplifiedItem
+import { FILTER_TAGS, IGNORED_ITEMS } from "@/config/config"; // Import shared config
 
 const PVE_API_URL = "https://api.tarkov-market.app/api/v1/pve/items/all";
-
-// Define the tags and ignored items
-const FILTER_TAGS = ["Barter", "Provisions", "Repair", "Keys"];
-const IGNORED_ITEMS = ["Metal fuel tank (0/100)"];
 
 export async function GET() {
   try {
