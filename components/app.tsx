@@ -42,7 +42,7 @@ const THRESHOLD = 350001;
 const IGNORED_ITEMS = ["Metal fuel tank (0/100)"]; // List of items to ignore
 
 export function App() {
-  const [isPVE, setIsPVE] = useState(true); // State to toggle between PVE and PVP
+  const [isPVE, setIsPVE] = useState(false); // State to toggle between PVE and PVP
   const [selectedItems, setSelectedItems] = useState<Array<Item | null>>(Array(5).fill(null));
   const [total, setTotal] = useState<number>(0);
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
@@ -201,7 +201,7 @@ export function App() {
   };
 
   const isDataStale = (timestamp: number) => {
-    const thirtyMinutes = 30 * 60 * 1000; // 30 minutes
+    const thirtyMinutes = 10 * 60 * 1000; // 10 minutes
     return Date.now() - timestamp > thirtyMinutes;
   };
 
@@ -400,8 +400,9 @@ export function App() {
                   isThresholdMet
                     ? "text-green-500 animate-pulse"
                     : "text-red-500 animate-pulse"
-                }`}
+                } overflow-hidden text-ellipsis whitespace-nowrap`}
                 aria-live="polite"
+                style={{ maxWidth: '100%', fontSize: 'clamp(3rem, 5vw, 4rem)' }}
               >
                 ₽{total.toLocaleString()}
               </div>
@@ -461,6 +462,7 @@ export function App() {
                   height={30}
                   priority={false}
                   loading="lazy"
+                  style={{ width: "auto", height: "auto" }}
                 />
               </a>
             </div>
