@@ -205,7 +205,7 @@ export function App() {
                 Select items from the dropdown to calculate the total ritual
                 value, ensuring it meets the cultist threshold. Use the
                 auto-select button to find the best combination of items. Note:
-                Flea prices are based on 24h average (As of September 17, 2024).
+                Flea prices are based on 24h average (As of September 18, 2024).
                 Tip: Toggle between PVE and PVP modes to adjust your strategy.
               </AlertDialogDescription>
             </AlertDialogHeader>
