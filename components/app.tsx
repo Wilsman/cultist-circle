@@ -271,10 +271,21 @@ export function App() {
   // **9. Render Loading and Error States**
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-900 text-gray-100">
+      <div className="h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100">
         <div className="text-center">
           <Progress className="mb-4" value={50} />
           <p>Loading data...</p>
+        </div>
+        <div className="flex justify-center mt-4">
+          <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
+            <Image
+              src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+              alt="Buy Me A Coffee"
+              width={120}
+              height={30}
+              priority={true}
+            />
+          </a>
         </div>
       </div>
     );
