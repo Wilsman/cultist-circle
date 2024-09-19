@@ -172,6 +172,7 @@ export function App() {
       }
     });
     setSelectedItems(newSelectedItems);
+    setSearchQueries(Array(5).fill("")); // Reset search queries to empty strings
     setIsCalculating(false); // End calculating
     clearInterval(interval); // Clear progress interval
   };
