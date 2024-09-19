@@ -61,10 +61,7 @@ export function App() {
 
   const itemsData = isPVE ? itemsDataPVE : itemsDataPVP; // Choose data based on mode
 
-  const FILTER_TAGS = useMemo(
-    () => ["Barter", "Provisions", "Repair", "Keys"],
-    []
-  );
+  const FILTER_TAGS = useMemo(() => ["Barter", "Provisions"], []);
 
   const items: Item[] = useMemo(() => {
     return itemsData
