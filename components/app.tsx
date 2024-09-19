@@ -337,8 +337,8 @@ export function App() {
                     Confirmed)
                   </li>
                   <li>
-                    🟢 Note: Flea prices are based on 24h average (As of
-                    September 18, 2024).
+                    🟢 Note: Flea prices are live prices provided by
+                    tarko-market.
                   </li>
                 </ul>
               </DialogDescription>
