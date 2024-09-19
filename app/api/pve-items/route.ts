@@ -4,10 +4,11 @@ import { NextResponse } from "next/server";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { FILTER_TAGS, IGNORED_ITEMS } from "@/config/config";
 import { cache } from "@/config/cache";
+import limiter from "@/app/lib/rateLimiter";
 
 const PVE_API_URL = "https://api.tarkov-market.app/api/v1/pve/items/all";
 const CACHE_KEY = "pve-items";
-const CACHE_DURATION = 60 * 1000; // 1 minute in milliseconds
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export async function GET() {
   const now = Date.now();
@@ -21,12 +22,15 @@ export async function GET() {
   console.log(`[${new Date().toISOString()}] Fetching new PVE items from external API`);
 
   try {
-    const response = await fetch(PVE_API_URL, {
-      headers: {
-        "x-api-key": process.env.API_KEY || "",
-      },
-      cache: "no-store",
-    });
+    // Use Bottleneck to rate limit the external API call
+    const response = await limiter.schedule(() =>
+      fetch(PVE_API_URL, {
+        headers: {
+          "x-api-key": process.env.API_KEY || "",
+        },
+        cache: "no-store",
+      })
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
