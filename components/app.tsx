@@ -309,7 +309,7 @@ export function App() {
                   </li>
                   <li>
                     🟢 Note: Flea prices are based on 24h average (As of
-                    September 18, 2024).
+                    September 19, 2024).
                   </li>
                 </ul>
               </DialogDescription>
