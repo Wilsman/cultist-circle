@@ -350,8 +350,8 @@ export function App() {
 
   return (
     // layout fills the screen height so there is no scrolling outside of the Card
-    <div className="h-screen grid place-items-center bg-gray-900 text-gray-100 p-4 overflow-hidden">
-      <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-[90vh] overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto">
+    <div className="min-h-screen grid place-items-center bg-my_bg_image text-gray-100 p-4 overflow-auto ">
+      <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
         {/* **4. Dialog for Instructions** */}
         <Dialog>
           <DialogTrigger asChild>
@@ -409,7 +409,7 @@ export function App() {
 
         <CardContent className="p-6">
           {/* **5. Header with Title and Beta Badge** */}
-          <h1 className="text-3xl font-bold mb-1 text-center text-red-500 flex items-center justify-center w-full">
+          <h1 className="sm:text-4xl text-2xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
             <FlameKindling className="mr-2 text-red-450 animate-pulse" />
             Cultist Calculator
             <FlameKindling className="ml-2 text-red-450 animate-pulse" />
