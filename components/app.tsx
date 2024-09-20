@@ -12,7 +12,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { X, HelpCircle, FlameKindling, Edit } from "lucide-react";
+import { X, HelpCircle, FlameKindling, Edit, Copy } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
@@ -57,38 +57,38 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
 
   // **3. Fetch Data from Internal API Routes**
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [pveResponse, pvpResponse] = await Promise.all([
-          fetch("/api/pve-items"),
-          fetch("/api/pvp-items"),
-        ]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [pveResponse, pvpResponse] = await Promise.all([
+        fetch("/api/pve-items"),
+        fetch("/api/pvp-items"),
+      ]);
 
-        if (!pveResponse.ok) {
-          const errorData = await pveResponse.json();
-          throw new Error(errorData.error || "Failed to fetch PVE data");
-        }
-        if (!pvpResponse.ok) {
-          const errorData = await pvpResponse.json();
-          throw new Error(errorData.error || "Failed to fetch PVP data");
-        }
-
-        const pveData: SimplifiedItem[] = await pveResponse.json();
-        const pvpData: SimplifiedItem[] = await pvpResponse.json();
-
-        setItemsDataPVE(pveData);
-        setItemsDataPVP(pvpData);
-        setLoading(false);
-      } catch (err: unknown) {
-        const errorMessage =
-          err instanceof Error ? err.message : "An error occurred";
-        setError(errorMessage);
-        setLoading(false);
+      if (!pveResponse.ok) {
+        const errorData = await pveResponse.json();
+        throw new Error(errorData.error || "Failed to fetch PVE data");
       }
-    };
+      if (!pvpResponse.ok) {
+        const errorData = await pvpResponse.json();
+        throw new Error(errorData.error || "Failed to fetch PVP data");
+      }
 
+      const pveData: SimplifiedItem[] = await pveResponse.json();
+      const pvpData: SimplifiedItem[] = await pvpResponse.json();
+
+      setItemsDataPVE(pveData);
+      setItemsDataPVP(pvpData);
+      setLoading(false);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      setError(errorMessage);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -331,6 +331,23 @@ export function App() {
     return `${Math.floor(seconds)} second${seconds > 1 ? "s" : ""} ago`;
   }
 
+  function handleCopytoClipboard(index: number): void {
+    const item = selectedItems[index];
+    if (item) {
+      const textToCopy = `${item.name}`;
+      navigator.clipboard.writeText(textToCopy).then(
+        () => {
+          alert("Item details copied to clipboard!");
+        },
+        (err) => {
+          console.error("Failed to copy text: ", err);
+        }
+      );
+    } else {
+      alert("No item selected to copy.");
+    }
+  }
+
   return (
     // layout fills the screen height so there is no scrolling outside of the Card
     <div className="h-screen grid place-items-center bg-gray-900 text-gray-100 p-4 overflow-hidden">
@@ -544,6 +561,14 @@ export function App() {
                       })()}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleCopytoClipboard(index)}
+                    className="bg-gray-700 hover:bg-gray-600 flex-shrink-0 hidden sm:flex items-center justify-center w-8 h-8"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"

@@ -5,7 +5,7 @@ export interface SimplifiedItem {
     name: string;
     basePrice: number; // This represents basePrice
     price: number;
-    updated: Date;
+    updated: string;
     tags?: string[];
   }
   
