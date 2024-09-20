@@ -44,6 +44,7 @@ export async function GET() {
           name: item.name,
           basePrice: item.basePrice,
           price: item.price,
+          updated: item.updated,
         }))
         .sort((a: SimplifiedItem, b: SimplifiedItem) =>
           a.name.localeCompare(b.name)

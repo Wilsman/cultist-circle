@@ -299,6 +299,38 @@ export function App() {
     );
   }
 
+  function timeAgo(date: Date): React.ReactNode {
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    let interval = Math.floor(seconds / 31536000);
+    if (interval >= 1) {
+      return `${interval} year${interval > 1 ? "s" : ""} ago`;
+    }
+    interval = Math.floor(seconds / 2592000);
+    if (interval >= 1) {
+      return `${interval} month${interval > 1 ? "s" : ""} ago`;
+    }
+    interval = Math.floor(seconds / 86400);
+    if (interval >= 1) {
+      return `${interval} day${interval > 1 ? "s" : ""} ago`;
+    }
+    interval = Math.floor(seconds / 3600);
+    if (interval >= 1) {
+      return `${interval} hour${interval > 1 ? "s" : ""} ago`;
+    }
+    interval = Math.floor(seconds / 60);
+    if (interval >= 1) {
+      if (interval < 60) {
+        return `${interval} min${interval > 1 ? "s" : ""} ago`;
+      }
+      return `${Math.floor(interval / 60)} hour${
+        Math.floor(interval / 60) > 1 ? "s" : ""
+      } ago`;
+    }
+    return `${Math.floor(seconds)} second${seconds > 1 ? "s" : ""} ago`;
+  }
+
   return (
     // layout fills the screen height so there is no scrolling outside of the Card
     <div className="h-screen grid place-items-center bg-gray-900 text-gray-100 p-4 overflow-hidden">
@@ -521,9 +553,12 @@ export function App() {
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                {fleaCosts[index] > 0 && (
+                {/* Display basePrice | flea cost and last updated */}
+                {selectedItems[index] && fleaCosts[index] > 0 && (
                   <div className="text-gray-500 text-xs">
-                    Flea cost ≈ ₽{fleaCosts[index].toLocaleString()}
+                    Value: ₽{selectedItems[index].basePrice.toLocaleString()} |
+                    Flea ≈ ₽{fleaCosts[index].toLocaleString()} |{" "}
+                    {timeAgo(new Date(selectedItems[index].updated))}
                   </div>
                 )}
               </div>
