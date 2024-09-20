@@ -271,7 +271,7 @@ export function App() {
   // **9. Render Loading and Error States**
   if (loading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-100">
+      <div className="h-screen flex flex-col items-center justify-center bg-my_bg_image text-gray-100">
         <div className="text-center">
           <Progress className="mb-4" value={50} />
           <p>Loading data...</p>
