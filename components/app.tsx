@@ -12,10 +12,8 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { X, HelpCircle, FlameKindling, Edit } from "lucide-react";
+import { X, HelpCircle, FlameKindling, Edit, Copy } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import itemsDataPVE from "../public/all_items_PVE.json";
-import itemsDataPVP from "../public/all_items_PVP.json";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 import BetaBadge from "./ui/beta-badge";
@@ -29,25 +27,17 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-const IGNORED_ITEMS = ["Metal fuel tank (0/100)"]; // List of items to ignore
-
-interface Item {
-  uid: string;
-  name: string;
-  value: number;
-  price: number;
-}
+import { SimplifiedItem } from "@/types/SimplifiedItem"; // Newly added SimplifiedItem interface
 
 export function App() {
-  const [isPVE, setIsPVE] = useState(false); // Toggle between PVE and PVP
-  const [selectedItems, setSelectedItems] = useState<Array<Item | null>>(
-    Array(5).fill(null)
-  );
+  const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
+  const [selectedItems, setSelectedItems] = useState<
+    Array<SimplifiedItem | null>
+  >(Array(5).fill(null));
   const [total, setTotal] = useState<number>(0);
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
-  const [isCalculating, setIsCalculating] = useState(false); // Calculating state
-  const [progressValue, setProgressValue] = useState(0); // Progress value
+  const [isCalculating, setIsCalculating] = useState<boolean>(false); // Calculating state
+  const [progressValue, setProgressValue] = useState<number>(0); // Progress value
   const [searchQueries, setSearchQueries] = useState<string[]>(
     Array(5).fill("")
   );
@@ -57,48 +47,61 @@ export function App() {
   const [tempThreshold, setTempThreshold] = useState<string>(
     threshold.toLocaleString()
   );
-  const [isThresholdDialogOpen, setIsThresholdDialogOpen] = useState(false);
+  const [isThresholdDialogOpen, setIsThresholdDialogOpen] =
+    useState<boolean>(false);
 
-  const itemsData = isPVE ? itemsDataPVE : itemsDataPVP; // Choose data based on mode
+  // **2. State for Fetched Data**
+  const [itemsDataPVE, setItemsDataPVE] = useState<SimplifiedItem[]>([]);
+  const [itemsDataPVP, setItemsDataPVP] = useState<SimplifiedItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const FILTER_TAGS = useMemo(() => ["Barter", "Provisions"], []);
+  // **3. Fetch Data from Internal API Routes**
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [pveResponse, pvpResponse] = await Promise.all([
+        fetch("/api/pve-items"),
+        fetch("/api/pvp-items"),
+      ]);
 
-  const items: Item[] = useMemo(() => {
-    return itemsData
-      .filter(
-        (item: {
-          uid: string;
-          name: string;
-          basePrice: number;
-          price: number;
-          tags: string[];
-        }) =>
-          FILTER_TAGS.some((tag) => item.tags.includes(tag)) &&
-          !IGNORED_ITEMS.includes(item.name)
-      )
-      .map(
-        ({
-          uid,
-          name,
-          basePrice,
-          price,
-        }: {
-          uid: string;
-          name: string;
-          basePrice: number;
-          price: number;
-        }) => ({
-          uid: uid,
-          name,
-          value: basePrice,
-          price,
-        })
-      )
-      .sort((a: Item, b: Item) => a.name.localeCompare(b.name));
-  }, [itemsData, FILTER_TAGS]);
+      if (!pveResponse.ok) {
+        const errorData = await pveResponse.json();
+        throw new Error(errorData.error || "Failed to fetch PVE data");
+      }
+      if (!pvpResponse.ok) {
+        const errorData = await pvpResponse.json();
+        throw new Error(errorData.error || "Failed to fetch PVP data");
+      }
+
+      const pveData: SimplifiedItem[] = await pveResponse.json();
+      const pvpData: SimplifiedItem[] = await pvpResponse.json();
+
+      setItemsDataPVE(pveData);
+      setItemsDataPVP(pvpData);
+      setLoading(false);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      setError(errorMessage);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // **4. Choose Data Based on Mode**
+  const itemsData: SimplifiedItem[] = isPVE ? itemsDataPVE : itemsDataPVP;
+
+  // **5. Remove Client-Side Filtering**
+  const items: SimplifiedItem[] = useMemo(() => {
+    return [...itemsData].sort((a, b) => a.name.localeCompare(b.name));
+  }, [itemsData]);
 
   // Initialize Fuse.js for each search input
-  const fuseInstances = useMemo(() => {
+  const fuseInstances: Fuse<SimplifiedItem>[] = useMemo(() => {
     return searchQueries.map(
       () =>
         new Fuse(items, {
@@ -108,15 +111,17 @@ export function App() {
     );
   }, [items, searchQueries]);
 
-  // **2. Effect to Recalculate Total and Flea Costs**
+  // **6. Effect to Recalculate Total and Flea Costs**
   useEffect(() => {
     // Calculate total ritual value
-    setTotal(selectedItems.reduce((sum, item) => sum + (item?.value || 0), 0));
+    setTotal(
+      selectedItems.reduce((sum, item) => sum + (item?.basePrice || 0), 0)
+    );
     // Calculate total flea costs
     setFleaCosts(selectedItems.map((item) => (item ? item.price : 0)));
   }, [selectedItems, threshold]); // Added threshold as a dependency
 
-  const updateSelectedItem = (itemId: string, index: number) => {
+  const updateSelectedItem = (itemId: string, index: number): void => {
     const selectedItem = items.find((item) => item.uid === itemId) || null;
     const newSelectedItems = [...selectedItems];
     newSelectedItems[index] = selectedItem;
@@ -124,18 +129,18 @@ export function App() {
     // Flea costs are updated via useEffect
   };
 
-  const handleResetItem = (index: number) => {
+  const handleResetItem = (index: number): void => {
     const newSelectedItems = [...selectedItems];
     newSelectedItems[index] = null;
     setSelectedItems(newSelectedItems);
     // Flea costs are updated via useEffect
   };
 
-  const handleAutoSelect = async () => {
+  const handleAutoSelect = async (): Promise<void> => {
     setIsCalculating(true); // Start calculating
     setProgressValue(0); // Reset progress
 
-    const validItems = items.filter((item) => item.price > 0);
+    const validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
 
     // Simulate calculation progress
     const interval = setInterval(() => {
@@ -160,13 +165,14 @@ export function App() {
     }
 
     // Populate selectedItems with the best combination
-    const newSelectedItems: Array<Item | null> = Array(5).fill(null);
+    const newSelectedItems: Array<SimplifiedItem | null> = Array(5).fill(null);
     bestCombination.selected.forEach((item, idx) => {
       if (idx < 5) {
         newSelectedItems[idx] = item;
       }
     });
     setSelectedItems(newSelectedItems);
+    setSearchQueries(Array(5).fill("")); // Reset search queries to empty strings
     setIsCalculating(false); // End calculating
     clearInterval(interval); // Clear progress interval
   };
@@ -181,10 +187,10 @@ export function App() {
    * @returns An object containing the selected items and the total flea cost
    */
   const findBestCombination = (
-    validItems: Item[],
+    validItems: SimplifiedItem[],
     threshold: number,
     maxItems: number
-  ) => {
+  ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
     // Initialize DP table
     const dp: Array<Array<number>> = Array(maxItems + 1)
       .fill(null)
@@ -202,11 +208,11 @@ export function App() {
     // Populate DP table
     for (let c = 1; c <= maxItems; c++) {
       for (let i = 0; i < validItems.length; i++) {
-        const { value, price } = validItems[i];
-        for (let v = value; v <= threshold + 1000; v++) {
-          if (dp[c - 1][v - value] + price < dp[c][v]) {
-            dp[c][v] = dp[c - 1][v - value] + price;
-            itemTracking[c][v] = [...itemTracking[c - 1][v - value], i];
+        const { basePrice, price } = validItems[i];
+        for (let v = basePrice; v <= threshold + 1000; v++) {
+          if (dp[c - 1][v - basePrice] + price < dp[c][v]) {
+            dp[c][v] = dp[c - 1][v - basePrice] + price;
+            itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
           }
         }
       }
@@ -237,14 +243,14 @@ export function App() {
     return { selected: selectedItems, totalFleaCost: minFleaCost };
   };
 
-  const isThresholdMet = total >= threshold;
-  const totalFleaCost = fleaCosts.reduce((sum, cost) => sum + cost, 0);
+  const isThresholdMet: boolean = total >= threshold;
+  const totalFleaCost: number = fleaCosts.reduce((sum, cost) => sum + cost, 0);
 
   // Refs for search inputs
   const searchInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  // **3. Handle Threshold Change Submission**
-  const handleThresholdSubmit = (e: React.FormEvent) => {
+  // **7. Handle Threshold Change Submission**
+  const handleThresholdSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     const parsed = parseInt(tempThreshold.replace(/,/g, ""), 10);
     if (!isNaN(parsed) && parsed > 0) {
@@ -255,10 +261,97 @@ export function App() {
     }
   };
 
+  // **8. Handle Mode Toggle Reset**
+  const handleModeToggle = (checked: boolean): void => {
+    setIsPVE(checked);
+    setSelectedItems(Array(5).fill(null)); // Reset selected items
+    setSearchQueries(Array(5).fill("")); // Reset search queries
+  };
+
+  // **9. Render Loading and Error States**
+  if (loading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-my_bg_image text-gray-100">
+        <div className="text-center">
+          <Progress className="mb-4" value={50} />
+          <p>Loading data...</p>
+        </div>
+        <div className="flex justify-center mt-4">
+          <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
+            <Image
+              src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+              alt="Buy Me A Coffee"
+              width={120}
+              height={30}
+              priority={true}
+            />
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-900 text-red-500">
+        <p>Error: {error}</p>
+      </div>
+    );
+  }
+
+  function timeAgo(date: Date): React.ReactNode {
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    let interval = Math.floor(seconds / 31536000);
+    if (interval >= 1) {
+      return `${interval} year${interval > 1 ? "s" : ""} ago`;
+    }
+    interval = Math.floor(seconds / 2592000);
+    if (interval >= 1) {
+      return `${interval} month${interval > 1 ? "s" : ""} ago`;
+    }
+    interval = Math.floor(seconds / 86400);
+    if (interval >= 1) {
+      return `${interval} day${interval > 1 ? "s" : ""} ago`;
+    }
+    interval = Math.floor(seconds / 3600);
+    if (interval >= 1) {
+      return `${interval} hour${interval > 1 ? "s" : ""} ago`;
+    }
+    interval = Math.floor(seconds / 60);
+    if (interval >= 1) {
+      if (interval < 60) {
+        return `${interval} min${interval > 1 ? "s" : ""} ago`;
+      }
+      return `${Math.floor(interval / 60)} hour${
+        Math.floor(interval / 60) > 1 ? "s" : ""
+      } ago`;
+    }
+    return `${Math.floor(seconds)} second${seconds > 1 ? "s" : ""} ago`;
+  }
+
+  function handleCopytoClipboard(index: number): void {
+    const item = selectedItems[index];
+    if (item) {
+      const textToCopy = `${item.name}`;
+      navigator.clipboard.writeText(textToCopy).then(
+        () => {
+          alert("Item details copied to clipboard!");
+        },
+        (err) => {
+          console.error("Failed to copy text: ", err);
+        }
+      );
+    } else {
+      alert("No item selected to copy.");
+    }
+  }
+
   return (
     // layout fills the screen height so there is no scrolling outside of the Card
-    <div className="h-screen grid place-items-center bg-gray-900 text-gray-100 p-4 overflow-hidden">
-      <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-[90vh] overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto">
+    <div className="min-h-screen grid place-items-center bg-my_bg_image text-gray-100 p-4 overflow-auto ">
+      <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
         {/* **4. Dialog for Instructions** */}
         <Dialog>
           <DialogTrigger asChild>
@@ -285,7 +378,7 @@ export function App() {
                   </li>
                   <li>
                     🔵 Use the Auto Pick button to find the cheapest costing
-                    combination that meets the threshold .
+                    combination that meets the threshold.
                   </li>
                   <li>
                     🔵 If the threshold is met, sacrifice the items to receive a
@@ -305,8 +398,8 @@ export function App() {
                     Confirmed)
                   </li>
                   <li>
-                    🟢 Note: Flea prices are based on 24h average (As of
-                    September 19, 2024).
+                    🟢 Note: Flea prices are live prices provided by
+                    tarko-market.
                   </li>
                 </ul>
               </DialogDescription>
@@ -316,7 +409,7 @@ export function App() {
 
         <CardContent className="p-6">
           {/* **5. Header with Title and Beta Badge** */}
-          <h1 className="text-3xl font-bold mb-1 text-center text-red-500 flex items-center justify-center w-full">
+          <h1 className="sm:text-4xl text-2xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
             <FlameKindling className="mr-2 text-red-450 animate-pulse" />
             Cultist Calculator
             <FlameKindling className="ml-2 text-red-450 animate-pulse" />
@@ -329,11 +422,7 @@ export function App() {
           <div className="flex items-center justify-center mb-6 w-full">
             <Switch
               checked={isPVE}
-              onCheckedChange={(checked) => {
-                setIsPVE(checked);
-                setSelectedItems(Array(5).fill(null)); // Reset selected items
-                setSearchQueries(Array(5).fill("")); // Reset search queries
-              }}
+              onCheckedChange={handleModeToggle}
               className="mr-2"
             />
             <span className="text-gray-300">
@@ -389,7 +478,7 @@ export function App() {
           {/* **8. Auto Select Button and Progress Bar** */}
           <div className="space-y-2 w-full">
             {isCalculating ? (
-              <Progress className="mx-auto mt-4 w-full" value={progressValue} /> // Show progress
+              <Progress className="mx-auto mt-4 mb-4 w-full" value={progressValue} /> // Show progress
             ) : (
               <Button
                 variant="default"
@@ -408,7 +497,9 @@ export function App() {
               >
                 <div className="flex items-center space-x-2 w-full justify-center">
                   <Select
-                    onValueChange={(value) => updateSelectedItem(value, index)}
+                    onValueChange={(value: string) =>
+                      updateSelectedItem(value, index)
+                    }
                     value={item?.uid.toString() || ""}
                   >
                     <SelectTrigger
@@ -425,7 +516,9 @@ export function App() {
                           type="text"
                           placeholder="Search..."
                           value={searchQueries[index]}
-                          onChange={(e) => {
+                          onChange={(
+                            e: React.ChangeEvent<HTMLInputElement>
+                          ) => {
                             const newQueries = [...searchQueries];
                             newQueries[index] = e.target.value;
                             setSearchQueries(newQueries);
@@ -446,13 +539,14 @@ export function App() {
                           : items
                               .filter((item) => item.price > 0)
                               .sort(
-                                (a, b) => a.price / a.value - b.price / b.value
+                                (a, b) =>
+                                  a.price / a.basePrice - b.price / b.basePrice
                               );
 
                         return filteredItems
                           .map((item) => ({
                             ...item,
-                            delta: item.price / item.value, // Calculate delta as price per value
+                            delta: item.price / item.basePrice, // Calculate delta as price per value
                           }))
                           .sort((a, b) => a.delta - b.delta) // Sort by delta low to high
                           .map((item) => (
@@ -461,12 +555,20 @@ export function App() {
                               value={item.uid.toString()}
                               className="text-gray-100 px-2 py-1"
                             >
-                              {item.name} (₽{item.value.toLocaleString()})
+                              {item.name} (₽{item.basePrice.toLocaleString()})
                             </SelectItem>
                           ));
                       })()}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleCopytoClipboard(index)}
+                    className="bg-gray-700 hover:bg-gray-600 flex-shrink-0 hidden sm:flex items-center justify-center w-8 h-8"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -476,9 +578,12 @@ export function App() {
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                {fleaCosts[index] > 0 && (
+                {/* Display basePrice | flea cost and last updated */}
+                {selectedItems[index] && fleaCosts[index] > 0 && (
                   <div className="text-gray-500 text-xs">
-                    Flea cost ≈ ₽{fleaCosts[index].toLocaleString()}
+                    Value: ₽{selectedItems[index].basePrice.toLocaleString()} |
+                    Flea ≈ ₽{fleaCosts[index].toLocaleString()} |{" "}
+                    {timeAgo(new Date(selectedItems[index].updated))}
                   </div>
                 )}
               </div>
