@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SimplifiedItem } from "@/types/SimplifiedItem"; // Newly added SimplifiedItem interface
+import { FeedbackForm } from "./feedback-form";
 
 export function App() {
   const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
@@ -41,6 +42,7 @@ export function App() {
   const [searchQueries, setSearchQueries] = useState<string[]>(
     Array(5).fill("")
   );
+  const [isFeedbackFormVisible, setIsFeedbackFormVisible] = useState<boolean>(false);
 
   // **1. Threshold as State**
   const [threshold, setThreshold] = useState<number>(350001);
@@ -621,42 +623,49 @@ export function App() {
 
         {/* **11. Footer with Credits and Links** */}
         <footer className="mt-4 text-center text-gray-400 text-sm w-full">
+        <a
+          href="https://tarkov-market.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-gray-300 transition-colors"
+        >
+          Data provided by Tarkov Market
+        </a>
+        <div className="text-center mt-1">
+          Credit to{" "}
           <a
-            href="https://tarkov-market.com"
+            href="https://bio.link/verybadscav"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-gray-300 transition-colors"
+            className="text-blue-500 hover:text-blue-700"
           >
-            Data provided by Tarkov Market
+            VeryBadSCAV
+          </a>{" "}
+          for helping with this tool.
+        </div>
+        <div className="flex justify-center mt-4 space-x-4">
+          <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
+            <Image
+              src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+              alt="Buy Me A Coffee"
+              width={120}
+              height={30}
+              priority={true}
+            />
           </a>
-          <div className="text-center mt-1">
-            Credit to{" "}
-            <a
-              href="https://bio.link/verybadscav"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-700"
-            >
-              VeryBadSCAV
-            </a>{" "}
-            for helping with this tool.
-          </div>
-          <div className="flex justify-center mt-4">
-            <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
-              <Image
-                src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-                alt="Buy Me A Coffee"
-                width={120}
-                height={30}
-                priority={true}
-              />
-            </a>
-          </div>
-        </footer>
-      </Card>
-      <div className="background-credit">Background by Zombiee</div>
-      <div className="background-creator">Created by Wilsman77</div>
-    </div>
-    
-  );
+          <Button onClick={() => setIsFeedbackFormVisible(true)} className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out">
+            Feedback
+          </Button>
+        </div>
+      </footer>
+    </Card>
+    <div className="background-credit">Background by Zombiee</div>
+    <div className="background-creator">Created by Wilsman77</div>
+    {isFeedbackFormVisible && (
+      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <FeedbackForm onClose={() => setIsFeedbackFormVisible(false)}  />
+      </div>
+    )}
+  </div>
+);
 }

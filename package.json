@@ -17,6 +17,7 @@
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-switch": "^1.1.0",
+    "@supabase/supabase-js": "^2.45.4",
     "bottleneck": "^2.19.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -25,6 +26,7 @@
     "next": "14.2.11",
     "react": "^18",
     "react-dom": "^18",
+    "supabase": "^1.192.5",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7"
   },
