@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { supabase } from "@/lib/supabaseClient";
 
 export function FeedbackForm({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState<string>("");
@@ -29,13 +28,19 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase
-        .from("feedback")
-        .insert([{ feedback_type: type, description }]);
+      const response = await fetch('/api/submit-feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type, description }),
+      });
 
-      if (error) throw error;
+      const result = await response.json();
 
-      console.log("Feedback submitted successfully", data);
+      if (!response.ok) throw new Error(result.error);
+
+      console.log("Feedback submitted successfully", result.data);
       onClose();
     } catch (error) {
       console.error("Error submitting feedback:", error);
