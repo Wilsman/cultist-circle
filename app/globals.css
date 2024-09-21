@@ -100,3 +100,33 @@ body {
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+
+.background-credit {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .background-credit {
+    display: block;
+  }
+}
+
+.background-creator {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .background-creator {
+    display: block;
+  }
+}

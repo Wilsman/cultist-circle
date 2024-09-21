@@ -51,8 +51,8 @@ export function App() {
     useState<boolean>(false);
 
   // **2. State for Fetched Data**
-  const [itemsDataPVE, setItemsDataPVE] = useState<SimplifiedItem[]>([]);
   const [itemsDataPVP, setItemsDataPVP] = useState<SimplifiedItem[]>([]);
+  const [itemsDataPVE, setItemsDataPVE] = useState<SimplifiedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -654,6 +654,9 @@ export function App() {
           </div>
         </footer>
       </Card>
+      <div className="background-credit">Background by Zombiee</div>
+      <div className="background-creator">Created by Wilsman77</div>
     </div>
+    
   );
 }
