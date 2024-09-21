@@ -44,13 +44,13 @@ export async function GET() {
       } else {
         console.log(`[${new Date().toISOString()}] Fetching new PVE items from external API`);
 
-        // Use Bottleneck to rate limit the external API call
+        // Change cache option from "no-store" to "default"
         const response = await limiter.schedule(() =>
           fetch(PVE_API_URL, {
             headers: {
               "x-api-key": process.env.API_KEY || "",
             },
-            cache: "no-store",
+            cache: "default", // Updated cache option
           })
         );
 
