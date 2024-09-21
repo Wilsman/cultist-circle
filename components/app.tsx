@@ -1,7 +1,7 @@
 // app.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Select,
   SelectContent,
@@ -65,7 +65,7 @@ export function App() {
   const dataFetchedRef = useRef(false);
 
   // **3. Fetch Data from Internal API Routes**
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
 
@@ -78,14 +78,18 @@ export function App() {
 
       setItemsDataPVE(pveData);
       setItemsDataPVP(pvpData);
-      setLoading(false);
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : "An error occurred";
+        err instanceof Error ? `Fetch Error: ${err.message}` : "An error occurred";
       setError(errorMessage);
+    } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const fetchCachedData = async (url: string, cacheKey: string): Promise<SimplifiedItem[]> => {
     try {
@@ -105,21 +109,13 @@ export function App() {
         throw new Error(errorData.error || `Failed to fetch data for ${cacheKey}`);
       }
       const data: SimplifiedItem[] = await response.json();
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
-      } catch (e) {
-        console.warn('Failed to save data to localStorage:', e);
-      }
+      localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
       return data;
     } catch (error) {
       console.error(`Error in fetchCachedData for ${cacheKey}:`, error);
       throw error;
     }
   };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   // **4. Choose Data Based on Mode**
   const itemsData: SimplifiedItem[] = isPVE ? itemsDataPVE : itemsDataPVP;
@@ -650,49 +646,49 @@ export function App() {
 
         {/* **11. Footer with Credits and Links** */}
         <footer className="mt-4 text-center text-gray-400 text-sm w-full">
-        <a
-          href="https://tarkov-market.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-gray-300 transition-colors"
-        >
-          Data provided by Tarkov Market
-        </a>
-        <div className="text-center mt-1">
-          Credit to{" "}
           <a
-            href="https://bio.link/verybadscav"
+            href="https://tarkov-market.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:text-blue-700"
+            className="hover:text-gray-300 transition-colors"
           >
-            VeryBadSCAV
-          </a>{" "}
-          for helping with this tool.
-        </div>
-        <div className="flex justify-center mt-4 space-x-4">
-          <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
-            <Image
-              src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-              alt="Buy Me A Coffee"
-              width={120}
-              height={30}
-              priority={true}
-            />
+            Data provided by Tarkov Market
           </a>
+          <div className="text-center mt-1">
+            Credit to{" "}
+            <a
+              href="https://bio.link/verybadscav"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:text-blue-700"
+            >
+              VeryBadSCAV
+            </a>{" "}
+            for helping with this tool.
+          </div>
+          <div className="flex justify-center mt-4 space-x-4">
+            <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
+              <Image
+                src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+                alt="Buy Me A Coffee"
+                width={120}
+                height={30}
+                priority={true}
+              />
+            </a>
           <Button onClick={() => setIsFeedbackFormVisible(true)} className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out">
-            Feedback
-          </Button>
-        </div>
-      </footer>
-    </Card>
-    <div className="background-credit">Background by Zombiee</div>
-    <div className="background-creator">Created by Wilsman77</div>
-    {isFeedbackFormVisible && (
-      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+              Feedback
+            </Button>
+          </div>
+        </footer>
+      </Card>
+      <div className="background-credit">Background by Zombiee</div>
+      <div className="background-creator">Created by Wilsman77</div>
+      {isFeedbackFormVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <FeedbackForm onClose={() => setIsFeedbackFormVisible(false)}  />
-      </div>
-    )}
-  </div>
-);
+        </div>
+      )}
+    </div>
+  );
 }
