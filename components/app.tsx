@@ -478,7 +478,7 @@ export function App() {
           {/* **8. Auto Select Button and Progress Bar** */}
           <div className="space-y-2 w-full">
             {isCalculating ? (
-              <Progress className="mx-auto mt-4 w-full" value={progressValue} /> // Show progress
+              <Progress className="mx-auto mt-4 mb-4 w-full" value={progressValue} /> // Show progress
             ) : (
               <Button
                 variant="default"
