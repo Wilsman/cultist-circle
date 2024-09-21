@@ -30,6 +30,10 @@ import { Input } from "@/components/ui/input";
 import { SimplifiedItem } from "@/types/SimplifiedItem"; // Newly added SimplifiedItem interface
 import { FeedbackForm } from "./feedback-form";
 
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+const PVE_CACHE_KEY = "pveItemsCache";
+const PVP_CACHE_KEY = "pvpItemsCache";
+
 export function App() {
   const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
   const [selectedItems, setSelectedItems] = useState<
@@ -58,26 +62,19 @@ export function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const dataFetchedRef = useRef(false);
+
   // **3. Fetch Data from Internal API Routes**
   const fetchData = async () => {
+    if (dataFetchedRef.current) return;
+    dataFetchedRef.current = true;
+
     try {
       setLoading(true);
-      const [pveResponse, pvpResponse] = await Promise.all([
-        fetch("/api/pve-items"),
-        fetch("/api/pvp-items"),
+      const [pveData, pvpData] = await Promise.all([
+        fetchCachedData("/api/pve-items", PVE_CACHE_KEY),
+        fetchCachedData("/api/pvp-items", PVP_CACHE_KEY),
       ]);
-
-      if (!pveResponse.ok) {
-        const errorData = await pveResponse.json();
-        throw new Error(errorData.error || "Failed to fetch PVE data");
-      }
-      if (!pvpResponse.ok) {
-        const errorData = await pvpResponse.json();
-        throw new Error(errorData.error || "Failed to fetch PVP data");
-      }
-
-      const pveData: SimplifiedItem[] = await pveResponse.json();
-      const pvpData: SimplifiedItem[] = await pvpResponse.json();
 
       setItemsDataPVE(pveData);
       setItemsDataPVP(pvpData);
@@ -87,6 +84,36 @@ export function App() {
         err instanceof Error ? err.message : "An error occurred";
       setError(errorMessage);
       setLoading(false);
+    }
+  };
+
+  const fetchCachedData = async (url: string, cacheKey: string): Promise<SimplifiedItem[]> => {
+    try {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        const { timestamp, data } = JSON.parse(cachedData);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          console.log(`Using cached data for ${cacheKey}`);
+          return data;
+        }
+      }
+
+      console.log(`Fetching fresh data for ${cacheKey}`);
+      const response = await fetch(url);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to fetch data for ${cacheKey}`);
+      }
+      const data: SimplifiedItem[] = await response.json();
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
+      } catch (e) {
+        console.warn('Failed to save data to localStorage:', e);
+      }
+      return data;
+    } catch (error) {
+      console.error(`Error in fetchCachedData for ${cacheKey}:`, error);
+      throw error;
     }
   };
 
