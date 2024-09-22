@@ -50,7 +50,7 @@ export async function GET() {
             headers: {
               "x-api-key": process.env.API_KEY || "",
             },
-            cache: "default", // Updated cache option
+            cache: "no-store", // Updated cache option
           })
         );
 
