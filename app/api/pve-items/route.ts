@@ -13,6 +13,8 @@ const CACHE_KEY = "pve-items";
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === 'true';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const data = await getCachedData(CACHE_KEY, async () => {
@@ -50,7 +52,7 @@ export async function GET() {
             headers: {
               "x-api-key": process.env.API_KEY || "",
             },
-            cache: "default", // Updated cache option
+            cache: "no-store", // Updated cache option
           })
         );
 
