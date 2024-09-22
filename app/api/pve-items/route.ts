@@ -10,7 +10,7 @@ import path from 'path';
 
 const PVE_API_URL = "https://api.tarkov-market.app/api/v1/pve/items/all";
 const CACHE_KEY = "pve-items";
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === 'true';
 
 export const dynamic = 'force-dynamic';
