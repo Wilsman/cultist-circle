@@ -10,8 +10,10 @@ import path from 'path';
 
 const PVP_API_URL = "https://api.tarkov-market.app/api/v1/items/all";
 const CACHE_KEY = "pvp-items";
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === 'true';
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
@@ -44,13 +46,13 @@ export async function GET() {
       } else {
         console.log(`[${new Date().toISOString()}] Fetching new PVP items from external API`);
 
-        // Use Bottleneck to rate limit the external API call
+        // Change cache option from "no-store" to "default"
         const response = await limiter.schedule(() =>
           fetch(PVP_API_URL, {
             headers: {
               "x-api-key": process.env.API_KEY || "",
             },
-            cache: "no-store",
+            cache: "no-store", // Updated cache option
           })
         );
 

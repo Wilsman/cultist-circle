@@ -1,7 +1,13 @@
 // app.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import {
   Select,
   SelectContent,
@@ -28,8 +34,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SimplifiedItem } from "@/types/SimplifiedItem"; // Newly added SimplifiedItem interface
+import { FeedbackForm } from "./feedback-form";
+
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+const PVE_CACHE_KEY = "pveItemsCache";
+const PVP_CACHE_KEY = "pvpItemsCache";
 
 export function App() {
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
   const [selectedItems, setSelectedItems] = useState<
     Array<SimplifiedItem | null>
@@ -41,6 +53,8 @@ export function App() {
   const [searchQueries, setSearchQueries] = useState<string[]>(
     Array(5).fill("")
   );
+  const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
+    useState<boolean>(false);
 
   // **1. Threshold as State**
   const [threshold, setThreshold] = useState<number>(350001);
@@ -56,41 +70,70 @@ export function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const dataFetchedRef = useRef(false);
+
   // **3. Fetch Data from Internal API Routes**
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (dataFetchedRef.current) return;
+    dataFetchedRef.current = true;
+
     try {
       setLoading(true);
-      const [pveResponse, pvpResponse] = await Promise.all([
-        fetch("/api/pve-items"),
-        fetch("/api/pvp-items"),
+      const [pveData, pvpData] = await Promise.all([
+        fetchCachedData("/api/pve-items", PVE_CACHE_KEY),
+        fetchCachedData("/api/pvp-items", PVP_CACHE_KEY),
       ]);
-
-      if (!pveResponse.ok) {
-        const errorData = await pveResponse.json();
-        throw new Error(errorData.error || "Failed to fetch PVE data");
-      }
-      if (!pvpResponse.ok) {
-        const errorData = await pvpResponse.json();
-        throw new Error(errorData.error || "Failed to fetch PVP data");
-      }
-
-      const pveData: SimplifiedItem[] = await pveResponse.json();
-      const pvpData: SimplifiedItem[] = await pvpResponse.json();
 
       setItemsDataPVE(pveData);
       setItemsDataPVP(pvpData);
-      setLoading(false);
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : "An error occurred";
+        err instanceof Error
+          ? `Fetch Error: ${err.message}`
+          : "An error occurred";
       setError(errorMessage);
+    } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  const fetchCachedData = async (
+    url: string,
+    cacheKey: string
+  ): Promise<SimplifiedItem[]> => {
+    try {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        const { timestamp, data } = JSON.parse(cachedData);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          console.log(`Using cached data for ${cacheKey}`);
+          return data;
+        }
+      }
+
+      console.log(`Fetching fresh data for ${cacheKey}`);
+      const response = await fetch(url);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || `Failed to fetch data for ${cacheKey}`
+        );
+      }
+      const data: SimplifiedItem[] = await response.json();
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({ timestamp: Date.now(), data })
+      );
+      return data;
+    } catch (error) {
+      console.error(`Error in fetchCachedData for ${cacheKey}:`, error);
+      throw error;
+    }
+  };
 
   // **4. Choose Data Based on Mode**
   const itemsData: SimplifiedItem[] = isPVE ? itemsDataPVE : itemsDataPVP;
@@ -331,20 +374,20 @@ export function App() {
     return `${Math.floor(seconds)} second${seconds > 1 ? "s" : ""} ago`;
   }
 
+
   function handleCopytoClipboard(index: number): void {
     const item = selectedItems[index];
     if (item) {
       const textToCopy = `${item.name}`;
       navigator.clipboard.writeText(textToCopy).then(
         () => {
-          alert("Item details copied to clipboard!");
+          setCopiedIndex(index);
+          setTimeout(() => setCopiedIndex(null), 500); // Reset after 0.5 seconds
         },
         (err) => {
           console.error("Failed to copy text: ", err);
         }
       );
-    } else {
-      alert("No item selected to copy.");
     }
   }
 
@@ -478,7 +521,10 @@ export function App() {
           {/* **8. Auto Select Button and Progress Bar** */}
           <div className="space-y-2 w-full">
             {isCalculating ? (
-              <Progress className="mx-auto mt-4 mb-4 w-full" value={progressValue} /> // Show progress
+              <Progress
+                className="mx-auto mt-4 mb-4 w-full"
+                value={progressValue}
+              /> // Show progress
             ) : (
               <Button
                 variant="default"
@@ -565,7 +611,9 @@ export function App() {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleCopytoClipboard(index)}
-                    className="bg-gray-700 hover:bg-gray-600 flex-shrink-0 hidden sm:flex items-center justify-center w-8 h-8"
+                    className={`bg-gray-700 hover:bg-gray-600 flex-shrink-0 hidden sm:flex items-center justify-center w-8 h-8 transition-colors duration-300 ${
+                      copiedIndex === index ? 'bg-green-500' : ''
+                    }`}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -641,7 +689,7 @@ export function App() {
             </a>{" "}
             for helping with this tool.
           </div>
-          <div className="flex justify-center mt-4">
+          <div className="flex justify-center mt-4 space-x-4">
             <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
               <Image
                 src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
@@ -651,12 +699,22 @@ export function App() {
                 priority={true}
               />
             </a>
+            <Button
+              onClick={() => setIsFeedbackFormVisible(true)}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out"
+            >
+              Feedback
+            </Button>
           </div>
         </footer>
       </Card>
       <div className="background-credit">Background by Zombiee</div>
       <div className="background-creator">Created by Wilsman77</div>
+      {isFeedbackFormVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <FeedbackForm onClose={() => setIsFeedbackFormVisible(false)} />
+        </div>
+      )}
     </div>
-    
   );
 }
