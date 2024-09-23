@@ -1,4 +1,4 @@
-// app.tsx
+// components/app.tsx
 "use client";
 
 import React, {
@@ -8,22 +8,14 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { X, HelpCircle, FlameKindling, Edit, Copy } from "lucide-react";
+import { HelpCircle, FlameKindling, Edit } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 import BetaBadge from "./ui/beta-badge";
-import Fuse from "fuse.js";
 import {
   Dialog,
   DialogContent,
@@ -33,15 +25,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { SimplifiedItem } from "@/types/SimplifiedItem"; // Newly added SimplifiedItem interface
 import { FeedbackForm } from "./feedback-form";
+
+import ItemSelector from "@/components/ui/ItemSelector"; // Ensure correct path
+import { SimplifiedItem } from "@/types/SimplifiedItem";
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
 const PVP_CACHE_KEY = "pvpItemsCache";
-
 export function App() {
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
   const [selectedItems, setSelectedItems] = useState<
     Array<SimplifiedItem | null>
@@ -50,11 +42,10 @@ export function App() {
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
   const [isCalculating, setIsCalculating] = useState<boolean>(false); // Calculating state
   const [progressValue, setProgressValue] = useState<number>(0); // Progress value
-  const [searchQueries, setSearchQueries] = useState<string[]>(
-    Array(5).fill("")
-  );
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
+    
+  const [pinnedItems, setPinnedItems] = useState<boolean[]>(Array(5).fill(false));
 
   // **1. Threshold as State**
   const [threshold, setThreshold] = useState<number>(350001);
@@ -138,23 +129,73 @@ export function App() {
   // **4. Choose Data Based on Mode**
   const itemsData: SimplifiedItem[] = isPVE ? itemsDataPVE : itemsDataPVP;
 
-  // **5. Remove Client-Side Filtering**
+  // **5. Precompute and Sort Items**
   const items: SimplifiedItem[] = useMemo(() => {
     return [...itemsData].sort((a, b) => a.name.localeCompare(b.name));
   }, [itemsData]);
 
-  // Initialize Fuse.js for each search input
-  const fuseInstances: Fuse<SimplifiedItem>[] = useMemo(() => {
-    return searchQueries.map(
-      () =>
-        new Fuse(items, {
-          keys: ["name"],
-          threshold: 0.3,
-        })
-    );
-  }, [items, searchQueries]);
+  // **7. Function to Find Best Combination**
+  const findBestCombination = useCallback(
+    (
+      validItems: SimplifiedItem[],
+      threshold: number,
+      maxItems: number
+    ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
+      // Initialize DP table
+      const dp: Array<Array<number>> = Array(maxItems + 1)
+        .fill(null)
+        .map(() => Array(threshold + 1001).fill(Infinity));
+      const itemTracking: Array<Array<Array<number>>> = Array(maxItems + 1)
+        .fill(null)
+        .map(() =>
+          Array(threshold + 1001)
+            .fill(null)
+            .map(() => [])
+        );
 
-  // **6. Effect to Recalculate Total and Flea Costs**
+      dp[0][0] = 0; // Base case
+
+      // Populate DP table
+      for (let c = 1; c <= maxItems; c++) {
+        for (let i = 0; i < validItems.length; i++) {
+          const { basePrice, price } = validItems[i];
+          for (let v = basePrice; v <= threshold + 1000; v++) {
+            if (dp[c - 1][v - basePrice] + price < dp[c][v]) {
+              dp[c][v] = dp[c - 1][v - basePrice] + price;
+              itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
+            }
+          }
+        }
+      }
+
+      // Find the best combination
+      let minFleaCost = Infinity;
+      let bestC = -1;
+      let bestV = -1;
+
+      for (let c = 1; c <= maxItems; c++) {
+        for (let v = threshold; v <= threshold + 1000; v++) {
+          if (dp[c][v] < minFleaCost) {
+            minFleaCost = dp[c][v];
+            bestC = c;
+            bestV = v;
+          }
+        }
+      }
+
+      if (bestC === -1) {
+        return { selected: [], totalFleaCost: 0 };
+      }
+
+      const selectedIndices = itemTracking[bestC][bestV];
+      const selectedItems = selectedIndices.map((index) => validItems[index]);
+
+      return { selected: selectedItems, totalFleaCost: minFleaCost };
+    },
+    []
+  );
+
+  // **8. Effect to Recalculate Total and Flea Costs**
   useEffect(() => {
     // Calculate total ritual value
     setTotal(
@@ -162,137 +203,81 @@ export function App() {
     );
     // Calculate total flea costs
     setFleaCosts(selectedItems.map((item) => (item ? item.price : 0)));
-  }, [selectedItems, threshold]); // Added threshold as a dependency
+  }, [selectedItems, threshold]);
 
-  const updateSelectedItem = (itemId: string, index: number): void => {
-    const selectedItem = items.find((item) => item.uid === itemId) || null;
+  // **9. Update Selected Item**
+  const updateSelectedItem = (
+    item: SimplifiedItem | null,
+    index: number
+  ): void => {
     const newSelectedItems = [...selectedItems];
-    newSelectedItems[index] = selectedItem;
+    newSelectedItems[index] = item;
     setSelectedItems(newSelectedItems);
     // Flea costs are updated via useEffect
   };
 
-  const handleResetItem = (index: number): void => {
-    const newSelectedItems = [...selectedItems];
-    newSelectedItems[index] = null;
-    setSelectedItems(newSelectedItems);
-    // Flea costs are updated via useEffect
+  // **11. Handle Auto Select**
+  const handlePinItem = (index: number) => {
+    const newPinnedItems = [...pinnedItems];
+    newPinnedItems[index] = !newPinnedItems[index];
+    setPinnedItems(newPinnedItems);
   };
 
   const handleAutoSelect = async (): Promise<void> => {
-    setIsCalculating(true); // Start calculating
-    setProgressValue(0); // Reset progress
+    setIsCalculating(true);
+    setProgressValue(0);
 
     const validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
 
     // Simulate calculation progress
     const interval = setInterval(() => {
-      setProgressValue((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 10; // Increment progress
-      });
-    }, 100); // Every 100ms
+      setProgressValue((prev) => (prev >= 100 ? 100 : prev + 10));
+    }, 100);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate calculation time
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const bestCombination = findBestCombination(validItems, threshold, 5);
+    const pinnedTotal = selectedItems.reduce(
+      (sum, item, index) =>
+        sum + (pinnedItems[index] && item ? item.basePrice : 0),
+      0
+    );
 
-    if (bestCombination.selected.length === 0) {
-      alert("No combination of items meets the threshold.");
+    const remainingThreshold = Math.max(0, threshold - pinnedTotal);
+
+    const bestCombination = findBestCombination(
+      validItems.filter(
+        (item) =>
+          !selectedItems.some(
+            (selected, index) =>
+              pinnedItems[index] && selected?.uid === item.uid
+          )
+      ),
+      remainingThreshold,
+      5 - pinnedItems.filter(Boolean).length
+    );
+
+    if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
+      alert("No combination of items meets the remaining threshold.");
       setIsCalculating(false);
       clearInterval(interval);
       return;
     }
 
-    // Populate selectedItems with the best combination
-    const newSelectedItems: Array<SimplifiedItem | null> = Array(5).fill(null);
-    bestCombination.selected.forEach((item, idx) => {
-      if (idx < 5) {
-        newSelectedItems[idx] = item;
+    const newSelectedItems: Array<SimplifiedItem | null> = [...selectedItems];
+    let combinationIndex = 0;
+    for (let i = 0; i < 5; i++) {
+      if (!pinnedItems[i]) {
+        newSelectedItems[i] =
+          bestCombination.selected[combinationIndex] || null;
+        combinationIndex++;
       }
-    });
+    }
     setSelectedItems(newSelectedItems);
-    setSearchQueries(Array(5).fill("")); // Reset search queries to empty strings
-    setIsCalculating(false); // End calculating
-    clearInterval(interval); // Clear progress interval
+    setIsCalculating(false);
+    clearInterval(interval);
   };
 
-  /**
-   * **findBestCombination Function**
-   * Finds the best combination of items that meets or exceeds the threshold with minimal flea cost.
-   *
-   * @param validItems - Array of items with price > 0
-   * @param threshold - Current threshold value
-   * @param maxItems - Maximum number of items to select
-   * @returns An object containing the selected items and the total flea cost
-   */
-  const findBestCombination = (
-    validItems: SimplifiedItem[],
-    threshold: number,
-    maxItems: number
-  ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
-    // Initialize DP table
-    const dp: Array<Array<number>> = Array(maxItems + 1)
-      .fill(null)
-      .map(() => Array(threshold + 1001).fill(Infinity));
-    const itemTracking: Array<Array<Array<number>>> = Array(maxItems + 1)
-      .fill(null)
-      .map(() =>
-        Array(threshold + 1001)
-          .fill(null)
-          .map(() => [])
-      );
-
-    dp[0][0] = 0; // Base case
-
-    // Populate DP table
-    for (let c = 1; c <= maxItems; c++) {
-      for (let i = 0; i < validItems.length; i++) {
-        const { basePrice, price } = validItems[i];
-        for (let v = basePrice; v <= threshold + 1000; v++) {
-          if (dp[c - 1][v - basePrice] + price < dp[c][v]) {
-            dp[c][v] = dp[c - 1][v - basePrice] + price;
-            itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
-          }
-        }
-      }
-    }
-
-    // Find the best combination
-    let minFleaCost = Infinity;
-    let bestC = -1;
-    let bestV = -1;
-
-    for (let c = 1; c <= maxItems; c++) {
-      for (let v = threshold; v <= threshold + 1000; v++) {
-        if (dp[c][v] < minFleaCost) {
-          minFleaCost = dp[c][v];
-          bestC = c;
-          bestV = v;
-        }
-      }
-    }
-
-    if (bestC === -1) {
-      return { selected: [], totalFleaCost: 0 };
-    }
-
-    const selectedIndices = itemTracking[bestC][bestV];
-    const selectedItems = selectedIndices.map((index) => validItems[index]);
-
-    return { selected: selectedItems, totalFleaCost: minFleaCost };
-  };
-
-  const isThresholdMet: boolean = total >= threshold;
-  const totalFleaCost: number = fleaCosts.reduce((sum, cost) => sum + cost, 0);
-
-  // Refs for search inputs
-  const searchInputRefs = useRef<Array<HTMLInputElement | null>>([]);
-
-  // **7. Handle Threshold Change Submission**
+  // **12. Handle Threshold Change Submission**
   const handleThresholdSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     const parsed = parseInt(tempThreshold.replace(/,/g, ""), 10);
@@ -304,14 +289,31 @@ export function App() {
     }
   };
 
-  // **8. Handle Mode Toggle Reset**
+  // **13. Handle Mode Toggle Reset**
   const handleModeToggle = (checked: boolean): void => {
     setIsPVE(checked);
     setSelectedItems(Array(5).fill(null)); // Reset selected items
-    setSearchQueries(Array(5).fill("")); // Reset search queries
+    setPinnedItems(Array(5).fill(false)); // Reset pinned items
   };
 
-  // **9. Render Loading and Error States**
+  // **14. Handle Copy to Clipboard**
+  const handleCopyToClipboard = (index: number): void => {
+    const item = selectedItems[index];
+    if (item) {
+      const textToCopy = `${item.name}`;
+      navigator.clipboard.writeText(textToCopy).then(
+        () => {
+          console.log(`Copied ${item.name} to clipboard.`);
+          setTimeout(() => console.log("Clipboard reset."), 500); // Reset after 0.5 seconds
+        },
+        (err) => {
+          console.error("Failed to copy text: ", err);
+        }
+      );
+    }
+  };
+
+  // **15. Render Loading and Error States**
   if (loading) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-my_bg_image text-gray-100">
@@ -320,7 +322,11 @@ export function App() {
           <p>Loading data...</p>
         </div>
         <div className="flex justify-center mt-4">
-          <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
+          <a
+            href="https://www.buymeacoffee.com/wilsman77"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Image
               src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
               alt="Buy Me A Coffee"
@@ -342,57 +348,12 @@ export function App() {
     );
   }
 
-  function timeAgo(date: Date): React.ReactNode {
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    let interval = Math.floor(seconds / 31536000);
-    if (interval >= 1) {
-      return `${interval} year${interval > 1 ? "s" : ""} ago`;
-    }
-    interval = Math.floor(seconds / 2592000);
-    if (interval >= 1) {
-      return `${interval} month${interval > 1 ? "s" : ""} ago`;
-    }
-    interval = Math.floor(seconds / 86400);
-    if (interval >= 1) {
-      return `${interval} day${interval > 1 ? "s" : ""} ago`;
-    }
-    interval = Math.floor(seconds / 3600);
-    if (interval >= 1) {
-      return `${interval} hour${interval > 1 ? "s" : ""} ago`;
-    }
-    interval = Math.floor(seconds / 60);
-    if (interval >= 1) {
-      if (interval < 60) {
-        return `${interval} min${interval > 1 ? "s" : ""} ago`;
-      }
-      return `${Math.floor(interval / 60)} hour${
-        Math.floor(interval / 60) > 1 ? "s" : ""
-      } ago`;
-    }
-    return `${Math.floor(seconds)} second${seconds > 1 ? "s" : ""} ago`;
-  }
-
-
-  function handleCopytoClipboard(index: number): void {
-    const item = selectedItems[index];
-    if (item) {
-      const textToCopy = `${item.name}`;
-      navigator.clipboard.writeText(textToCopy).then(
-        () => {
-          setCopiedIndex(index);
-          setTimeout(() => setCopiedIndex(null), 500); // Reset after 0.5 seconds
-        },
-        (err) => {
-          console.error("Failed to copy text: ", err);
-        }
-      );
-    }
-  }
+  // **17. Sacrifice Value Calculations**
+  const isThresholdMet: boolean = total >= threshold;
+  const totalFleaCost: number = fleaCosts.reduce((sum, cost) => sum + cost, 0);
 
   return (
-    // layout fills the screen height so there is no scrolling outside of the Card
+    // Layout fills the screen height so there is no scrolling outside of the Card
     <div className="min-h-screen grid place-items-center bg-my_bg_image text-gray-100 p-4 overflow-auto ">
       <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
         {/* **4. Dialog for Instructions** */}
@@ -435,7 +396,7 @@ export function App() {
                     🔴 BUG: 14-hour result has known bug which can result in an
                     empty reward.
                   </li>
-                  <li>🟢 Note: 14 HR Highest Value Outcome {">"}= 350,001</li>
+                  <li>🟢 Note: 14 HR Highest Value Outcome ≥ 350,001</li>
                   <li>
                     🟢 Note: 6 HR | Quest / Hideout item = 400,000 (Not Fully
                     Confirmed)
@@ -535,106 +496,19 @@ export function App() {
               </Button>
             )}
 
-            {/* **9. Item Selection Dropdowns** */}
+            {/* **9. Item Selection Components** */}
             {selectedItems.map((item, index) => (
-              <div
+              <ItemSelector
                 key={index}
-                className="flex flex-col items-center space-y-1 flex-grow w-full"
-              >
-                <div className="flex items-center space-x-2 w-full justify-center">
-                  <Select
-                    onValueChange={(value: string) =>
-                      updateSelectedItem(value, index)
-                    }
-                    value={item?.uid.toString() || ""}
-                  >
-                    <SelectTrigger
-                      className={`w-full max-w-[400px] bg-gray-700 border-gray-600 text-gray-100 text-xs transition-all duration-300 ${
-                        item ? "border-2 border-blue-500" : ""
-                      }`}
-                    >
-                      <SelectValue placeholder="Choose an item" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600 max-h-60 overflow-auto w-full">
-                      {/* Search Input */}
-                      <div className="px-2 py-1">
-                        <input
-                          type="text"
-                          placeholder="Search..."
-                          value={searchQueries[index]}
-                          onChange={(
-                            e: React.ChangeEvent<HTMLInputElement>
-                          ) => {
-                            const newQueries = [...searchQueries];
-                            newQueries[index] = e.target.value;
-                            setSearchQueries(newQueries);
-                          }}
-                          onKeyDown={(e) => e.stopPropagation()} // Prevent Select from handling key events
-                          ref={(el) => {
-                            searchInputRefs.current[index] = el;
-                          }}
-                          className="w-full px-2 py-1 bg-gray-600 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      {/* Filtered Items */}
-                      {(() => {
-                        const query = searchQueries[index];
-                        const fuse = fuseInstances[index];
-                        const filteredItems = query
-                          ? fuse.search(query).map((result) => result.item)
-                          : items
-                              .filter((item) => item.price > 0)
-                              .sort(
-                                (a, b) =>
-                                  a.price / a.basePrice - b.price / b.basePrice
-                              );
-
-                        return filteredItems
-                          .map((item) => ({
-                            ...item,
-                            delta: item.price / item.basePrice, // Calculate delta as price per value
-                          }))
-                          .sort((a, b) => a.delta - b.delta) // Sort by delta low to high
-                          .map((item) => (
-                            <SelectItem
-                              key={item.uid}
-                              value={item.uid.toString()}
-                              className="text-gray-100 px-2 py-1"
-                            >
-                              {item.name} (₽{item.basePrice.toLocaleString()})
-                            </SelectItem>
-                          ));
-                      })()}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCopytoClipboard(index)}
-                    className={`bg-gray-700 hover:bg-gray-600 flex-shrink-0 hidden sm:flex items-center justify-center w-8 h-8 transition-colors duration-300 ${
-                      copiedIndex === index ? 'bg-green-500' : ''
-                    }`}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleResetItem(index)}
-                    className="bg-gray-700 hover:bg-gray-600 flex-shrink-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                {/* Display basePrice | flea cost and last updated */}
-                {selectedItems[index] && fleaCosts[index] > 0 && (
-                  <div className="text-gray-500 text-xs">
-                    Value: ₽{selectedItems[index].basePrice.toLocaleString()} |
-                    Flea ≈ ₽{fleaCosts[index].toLocaleString()} |{" "}
-                    {timeAgo(new Date(selectedItems[index].updated))}
-                  </div>
-                )}
-              </div>
+                items={items}
+                selectedItem={item}
+                onSelect={(selectedItem) =>
+                  updateSelectedItem(selectedItem, index)
+                }
+                onCopy={() => handleCopyToClipboard(index)}
+                onPin={() => handlePinItem(index)}
+                isPinned={pinnedItems[index]}
+              />
             ))}
           </div>
 
@@ -690,7 +564,11 @@ export function App() {
             for helping with this tool.
           </div>
           <div className="flex justify-center mt-4 space-x-4">
-            <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
+            <a
+              href="https://www.buymeacoffee.com/wilsman77"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Image
                 src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
                 alt="Buy Me A Coffee"
