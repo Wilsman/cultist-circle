@@ -26,13 +26,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { FeedbackForm } from "./feedback-form";
-
 import ItemSelector from "@/components/ui/ItemSelector"; // Ensure correct path
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
 const PVP_CACHE_KEY = "pvpItemsCache";
+
 export function App() {
   const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
   const [selectedItems, setSelectedItems] = useState<
@@ -44,10 +44,11 @@ export function App() {
   const [progressValue, setProgressValue] = useState<number>(0); // Progress value
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
-    
-  const [pinnedItems, setPinnedItems] = useState<boolean[]>(Array(5).fill(false));
+  const [pinnedItems, setPinnedItems] = useState<boolean[]>(
+    Array(5).fill(false)
+  );
 
-  // **1. Threshold as State**
+  // State to manage the threshold value for the ritual
   const [threshold, setThreshold] = useState<number>(350001);
   const [tempThreshold, setTempThreshold] = useState<string>(
     threshold.toLocaleString()
@@ -55,28 +56,25 @@ export function App() {
   const [isThresholdDialogOpen, setIsThresholdDialogOpen] =
     useState<boolean>(false);
 
-  // **2. State for Fetched Data**
-  const [itemsDataPVP, setItemsDataPVP] = useState<SimplifiedItem[]>([]);
-  const [itemsDataPVE, setItemsDataPVE] = useState<SimplifiedItem[]>([]);
+  // State for storing fetched items data, loading status, and error messages
+  const [itemsData, setItemsData] = useState<SimplifiedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const dataFetchedRef = useRef(false);
 
-  // **3. Fetch Data from Internal API Routes**
+  // Fetch data from internal API routes based on the selected mode (PVE or PVP)
   const fetchData = useCallback(async () => {
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
 
+    const cacheKey = isPVE ? PVE_CACHE_KEY : PVP_CACHE_KEY;
+    const apiUrl = isPVE ? "/api/pve-items" : "/api/pvp-items";
+
     try {
       setLoading(true);
-      const [pveData, pvpData] = await Promise.all([
-        fetchCachedData("/api/pve-items", PVE_CACHE_KEY),
-        fetchCachedData("/api/pvp-items", PVP_CACHE_KEY),
-      ]);
-
-      setItemsDataPVE(pveData);
-      setItemsDataPVP(pvpData);
+      const data = await fetchCachedData(apiUrl, cacheKey);
+      setItemsData(data);
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
@@ -86,11 +84,11 @@ export function App() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isPVE]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, isPVE]);
 
   const fetchCachedData = async (
     url: string,
@@ -126,15 +124,12 @@ export function App() {
     }
   };
 
-  // **4. Choose Data Based on Mode**
-  const itemsData: SimplifiedItem[] = isPVE ? itemsDataPVE : itemsDataPVP;
-
-  // **5. Precompute and Sort Items**
+  // Precompute and sort items alphabetically by name
   const items: SimplifiedItem[] = useMemo(() => {
     return [...itemsData].sort((a, b) => a.name.localeCompare(b.name));
   }, [itemsData]);
 
-  // **7. Function to Find Best Combination**
+  // Function to find the best combination of items that meets the threshold with the minimum flea cost
   const findBestCombination = useCallback(
     (
       validItems: SimplifiedItem[],
@@ -195,7 +190,7 @@ export function App() {
     []
   );
 
-  // **8. Effect to Recalculate Total and Flea Costs**
+  // Effect to recalculate the total ritual value and flea costs whenever selected items or threshold changes
   useEffect(() => {
     // Calculate total ritual value
     setTotal(
@@ -205,7 +200,7 @@ export function App() {
     setFleaCosts(selectedItems.map((item) => (item ? item.price : 0)));
   }, [selectedItems, threshold]);
 
-  // **9. Update Selected Item**
+  // Update the selected item in the list
   const updateSelectedItem = (
     item: SimplifiedItem | null,
     index: number
@@ -294,6 +289,7 @@ export function App() {
     setIsPVE(checked);
     setSelectedItems(Array(5).fill(null)); // Reset selected items
     setPinnedItems(Array(5).fill(false)); // Reset pinned items
+    dataFetchedRef.current = false; // Reset data fetch flag
   };
 
   // **14. Handle Copy to Clipboard**
