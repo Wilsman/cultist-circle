@@ -365,42 +365,39 @@ export function App() {
               <DialogDescription className="text-left">
                 <ul>
                   <li>
-                    🔵 Toggle between PVE and PVP modes to use correct flea
+                    1️⃣ Toggle between PVE and PVP modes to use correct flea
                     prices.
                   </li>
+                  <li>2️⃣ Edit threshold (see below for suggestions)</li>
                   <li>
-                    🔵 Select items from the dropdown to calculate the total
+                    3️⃣ Select items from the dropdown to calculate the total
                     sacrifice value.
                   </li>
                   <li>
-                    🔵 Ensure the total value meets the cultist threshold of
-                    350,001 (base value).
+                    4️⃣ Use Auto Pick to find the cheapest combination meeting
+                    the threshold.
                   </li>
                   <li>
-                    🔵 Use the Auto Pick button to find the cheapest costing
-                    combination that meets the threshold.
+                    5️⃣ Ensure the total value meets the cultist threshold (base
+                    value).
                   </li>
-                  <li>
-                    🔵 If the threshold is met, sacrifice the items to receive a
-                    14-hour countdown.
-                  </li>
-                  <li>
-                    🔵 Ability to edit the threshold value through the
-                    interface.
-                  </li>
+                  <li>6️⃣ If the threshold is met, sacrifice the items.</li>
+                  <Separator className="mt-3 mb-3" />
                   <li>
                     🔴 BUG: 14-hour result has known bug which can result in an
                     empty reward.
                   </li>
-                  <li>🟢 Note: 14 HR Highest Value Outcome ≥ 350,001</li>
                   <li>
-                    🟢 Note: 6 HR | Quest / Hideout item = 400,000 (Not Fully
-                    Confirmed)
+                    🟢 Note: ≥400k base value = 6h (25% success) | Active
+                    tasks/hideout item
                   </li>
+                  <li>🟢 Note: ≥350,001 base value = 14h | High-Value item</li>
                   <li>
                     🟢 Note: Flea prices are live prices provided by
                     tarko-market.
                   </li>
+                  <Separator className="mt-3 mb-1" />
+                  <li>💖 Thank you for checking out the app - Wilsman77</li>
                 </ul>
               </DialogDescription>
             </DialogHeader>
