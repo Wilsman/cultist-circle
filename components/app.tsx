@@ -393,8 +393,8 @@ export function App() {
                   </li>
                   <li>🟢 Note: ≥350,001 base value = 14h | High-Value item</li>
                   <li>
-                    🟢 Note: Flea prices are live prices provided by
-                    tarko-market.
+                    🟢 Note: Flea prices are latest prices provided by
+                    tarkov-market.
                   </li>
                   <Separator className="mt-3 mb-1" />
                   <li>💖 Thank you for checking out the app - Wilsman77</li>
@@ -417,14 +417,13 @@ export function App() {
 
           {/* **6. Mode Toggle (PVE/PVP)** */}
           <div className="flex items-center justify-center mb-6 w-full">
+            <span className="text-gray-300">PVP</span>
             <Switch
               checked={isPVE}
               onCheckedChange={handleModeToggle}
-              className="mr-2"
+              className="mx-2 data-[state=checked]:bg-white data-[state=unchecked]:bg-white"
             />
-            <span className="text-gray-300">
-              {isPVE ? "PVE Mode" : "PVP Mode"}
-            </span>
+            <span className="text-gray-300">PVE</span>
           </div>
 
           {/* **7. Display Current Threshold and Edit Button** */}
@@ -556,6 +555,10 @@ export function App() {
             </a>{" "}
             for helping with this tool.
           </div>
+          <div className="text-center mt-1">
+            {/* maker with cool icons */}
+            🔥 Made by Wilsman77 🔥
+          </div>
           <div className="flex justify-center mt-4 space-x-4">
             <a
               href="https://www.buymeacoffee.com/wilsman77"
@@ -580,7 +583,6 @@ export function App() {
         </footer>
       </Card>
       <div className="background-credit">Background by Zombiee</div>
-      <div className="background-creator">Created by Wilsman77</div>
       {isFeedbackFormVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <FeedbackForm onClose={() => setIsFeedbackFormVisible(false)} />
