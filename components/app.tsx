@@ -11,7 +11,7 @@ import React, {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { HelpCircle, FlameKindling, Edit } from "lucide-react";
+import { HelpCircle, FlameKindling } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
@@ -24,10 +24,11 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { FeedbackForm } from "./feedback-form";
 import ItemSelector from "@/components/ui/ItemSelector"; // Ensure correct path
 import { SimplifiedItem } from "@/types/SimplifiedItem";
+import ThresholdSelector from "@/components/ui/threshold-selector";
+import Cookies from 'js-cookie';
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
@@ -48,13 +49,18 @@ export function App() {
     Array(5).fill(false)
   );
 
+  // Initialize threshold state with cookie value or default
+  const [threshold, setThreshold] = useState<number>(() => {
+    const savedThreshold = Cookies.get('userThreshold');
+    return savedThreshold ? Number(savedThreshold) : 350001;
+  });
+
   // State to manage the threshold value for the ritual
-  const [threshold, setThreshold] = useState<number>(350001);
-  const [tempThreshold, setTempThreshold] = useState<string>(
-    threshold.toLocaleString()
-  );
-  const [isThresholdDialogOpen, setIsThresholdDialogOpen] =
-    useState<boolean>(false);
+  const handleThresholdChange = (newValue: number) => {
+    setThreshold(newValue);
+    Cookies.set('userThreshold', newValue.toString(), { expires: 365 });
+    // You might want to trigger any calculations that depend on the threshold here
+  };
 
   // State for storing fetched items data, loading status, and error messages
   const [itemsData, setItemsData] = useState<SimplifiedItem[]>([]);
@@ -272,18 +278,6 @@ export function App() {
     clearInterval(interval);
   };
 
-  // **12. Handle Threshold Change Submission**
-  const handleThresholdSubmit = (e: React.FormEvent): void => {
-    e.preventDefault();
-    const parsed = parseInt(tempThreshold.replace(/,/g, ""), 10);
-    if (!isNaN(parsed) && parsed > 0) {
-      setThreshold(parsed);
-      setIsThresholdDialogOpen(false);
-    } else {
-      alert("Please enter a valid positive number.");
-    }
-  };
-
   // **13. Handle Mode Toggle Reset**
   const handleModeToggle = (checked: boolean): void => {
     setIsPVE(checked);
@@ -428,47 +422,10 @@ export function App() {
 
           {/* **7. Display Current Threshold and Edit Button** */}
           <div className="flex items-center justify-center mb-4 w-full">
-            <span className="text-gray-500 mr-2">Threshold:</span>
-            <span className="text-xl font-semibold text-gray-300">
-              ₽{threshold.toLocaleString()}
-            </span>
-            <Dialog
-              open={isThresholdDialogOpen}
-              onOpenChange={setIsThresholdDialogOpen}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="ml-1 p-0 bg-transparent hover:bg-transparent"
-                >
-                  <Edit className="h-5 w-5 text-gray-400 hover:text-gray-200" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[400px] bg-gray-800 w-full mx-auto">
-                <DialogHeader>
-                  <DialogTitle>Edit Threshold</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleThresholdSubmit} className="space-y-4">
-                  <Input
-                    type="text"
-                    value={tempThreshold}
-                    onChange={(e) => setTempThreshold(e.target.value)}
-                    placeholder="Enter a new threshold"
-                  />
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setIsThresholdDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit">Save</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <ThresholdSelector
+              value={threshold}
+              onChange={handleThresholdChange}
+            />
           </div>
 
           {/* **8. Auto Select Button and Progress Bar** */}
