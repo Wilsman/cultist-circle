@@ -11,7 +11,7 @@ import React, {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { HelpCircle, FlameKindling } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
@@ -28,7 +28,7 @@ import { FeedbackForm } from "./feedback-form";
 import ItemSelector from "@/components/ui/ItemSelector"; // Ensure correct path
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import ThresholdSelector from "@/components/ui/threshold-selector";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
@@ -51,14 +51,14 @@ export function App() {
 
   // Initialize threshold state with cookie value or default
   const [threshold, setThreshold] = useState<number>(() => {
-    const savedThreshold = Cookies.get('userThreshold');
+    const savedThreshold = Cookies.get("userThreshold");
     return savedThreshold ? Number(savedThreshold) : 350001;
   });
 
   // State to manage the threshold value for the ritual
   const handleThresholdChange = (newValue: number) => {
     setThreshold(newValue);
-    Cookies.set('userThreshold', newValue.toString(), { expires: 365 });
+    Cookies.set("userThreshold", newValue.toString(), { expires: 365 });
     // You might want to trigger any calculations that depend on the threshold here
   };
 
@@ -306,7 +306,7 @@ export function App() {
   // **15. Render Loading and Error States**
   if (loading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-my_bg_image text-gray-100">
+      <div className="h-screen flex flex-col items-center justify-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100">
         <div className="text-center">
           <Progress className="mb-4" value={50} />
           <p>Loading data...</p>
@@ -344,7 +344,7 @@ export function App() {
 
   return (
     // Layout fills the screen height so there is no scrolling outside of the Card
-    <div className="min-h-screen grid place-items-center bg-my_bg_image text-gray-100 p-4 overflow-auto ">
+    <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
       <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
         {/* **4. Dialog for Instructions** */}
         <Dialog>
@@ -400,14 +400,17 @@ export function App() {
 
         <CardContent className="p-6">
           {/* **5. Header with Title and Beta Badge** */}
-          <h1 className="sm:text-4xl text-2xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
-            <FlameKindling className="mr-2 text-red-450 animate-pulse" />
-            Cultist Calculator
-            <FlameKindling className="ml-2 text-red-450 animate-pulse" />
+            <h1 className="sm:text-3xl text-xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
+            <Image
+              src="/images/Cultist-Calulator.webp"
+              alt="Cultist calulator logo"
+              width={400}
+              height={128}
+            />
             <div className="ml-2">
               <BetaBadge />
             </div>
-          </h1>
+            </h1>
 
           {/* **6. Mode Toggle (PVE/PVP)** */}
           <div className="flex items-center justify-center mb-6 w-full">
