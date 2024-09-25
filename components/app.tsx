@@ -24,6 +24,12 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 import { FeedbackForm } from "./feedback-form";
 import ItemSelector from "@/components/ui/ItemSelector"; // Ensure correct path
 import { SimplifiedItem } from "@/types/SimplifiedItem";
@@ -142,25 +148,24 @@ export function App() {
       threshold: number,
       maxItems: number
     ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
-      // Initialize DP table
+      const maxThreshold = threshold + 5000;
       const dp: Array<Array<number>> = Array(maxItems + 1)
         .fill(null)
-        .map(() => Array(threshold + 1001).fill(Infinity));
+        .map(() => Array(maxThreshold + 1).fill(Infinity));
       const itemTracking: Array<Array<Array<number>>> = Array(maxItems + 1)
         .fill(null)
         .map(() =>
-          Array(threshold + 1001)
+          Array(maxThreshold + 1)
             .fill(null)
             .map(() => [])
         );
 
-      dp[0][0] = 0; // Base case
+      dp[0][0] = 0;
 
-      // Populate DP table
       for (let c = 1; c <= maxItems; c++) {
         for (let i = 0; i < validItems.length; i++) {
           const { basePrice, price } = validItems[i];
-          for (let v = basePrice; v <= threshold + 1000; v++) {
+          for (let v = basePrice; v <= maxThreshold; v++) {
             if (dp[c - 1][v - basePrice] + price < dp[c][v]) {
               dp[c][v] = dp[c - 1][v - basePrice] + price;
               itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
@@ -169,29 +174,28 @@ export function App() {
         }
       }
 
-      // Find the best combination
-      let minFleaCost = Infinity;
-      let bestC = -1;
-      let bestV = -1;
-
+      const validCombinations: { c: number; v: number; cost: number }[] = [];
       for (let c = 1; c <= maxItems; c++) {
-        for (let v = threshold; v <= threshold + 1000; v++) {
-          if (dp[c][v] < minFleaCost) {
-            minFleaCost = dp[c][v];
-            bestC = c;
-            bestV = v;
+        for (let v = threshold; v <= maxThreshold; v++) {
+          if (dp[c][v] !== Infinity) {
+            validCombinations.push({ c, v, cost: dp[c][v] });
           }
         }
       }
 
-      if (bestC === -1) {
+      // Sort by cost and then randomly select one of the top 5 combinations
+      validCombinations.sort((a, b) => a.cost - b.cost);
+      const topCombinations = validCombinations.slice(0, Math.min(5, validCombinations.length));
+      const selectedCombination = topCombinations[Math.floor(Math.random() * topCombinations.length)];
+
+      if (!selectedCombination) {
         return { selected: [], totalFleaCost: 0 };
       }
 
-      const selectedIndices = itemTracking[bestC][bestV];
+      const selectedIndices = itemTracking[selectedCombination.c][selectedCombination.v];
       const selectedItems = selectedIndices.map((index) => validItems[index]);
 
-      return { selected: selectedItems, totalFleaCost: minFleaCost };
+      return { selected: selectedItems, totalFleaCost: selectedCombination.cost };
     },
     []
   );
@@ -245,14 +249,19 @@ export function App() {
 
     const remainingThreshold = Math.max(0, threshold - pinnedTotal);
 
+    const filteredItems = validItems.filter(
+      (item) =>
+        !selectedItems.some(
+          (selected, index) =>
+            pinnedItems[index] && selected?.uid === item.uid
+        )
+    );
+
+    // Shuffle the filtered items to increase randomness
+    const shuffledItems = [...filteredItems].sort(() => Math.random() - 0.5);
+
     const bestCombination = findBestCombination(
-      validItems.filter(
-        (item) =>
-          !selectedItems.some(
-            (selected, index) =>
-              pinnedItems[index] && selected?.uid === item.uid
-          )
-      ),
+      shuffledItems,
       remainingThreshold,
       5 - pinnedItems.filter(Boolean).length
     );
@@ -431,7 +440,7 @@ export function App() {
             />
           </div>
 
-          {/* **8. Auto Select Button and Progress Bar** */}
+                    {/* **8. Auto Select Button and Progress Bar** */}
           <div className="space-y-2 w-full">
             {isCalculating ? (
               <Progress
@@ -439,13 +448,22 @@ export function App() {
                 value={progressValue}
               /> // Show progress
             ) : (
-              <Button
-                variant="default"
-                onClick={handleAutoSelect}
-                className="flex mt-4 mx-auto text-gray-200 bg-gray-500 hover:bg-gray-900"
-              >
-                Auto Pick
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="default"
+                      onClick={handleAutoSelect}
+                      className="flex mt-4 mx-auto text-gray-200 bg-gray-500 hover:bg-gray-900"
+                    >
+                      Auto Pick
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Automatically select best items
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
 
             {/* **9. Item Selection Components** */}
