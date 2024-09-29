@@ -4,7 +4,7 @@ export const FILTER_TAGS: string[] = [
   "Barter",
   "Provisions",
   "Containers",
-  "Weapon_parts",
+  // "Weapon_parts",
 ];
 
 export const IGNORED_ITEMS: string[] = [
