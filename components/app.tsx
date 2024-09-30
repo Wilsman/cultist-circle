@@ -11,7 +11,7 @@ import React, {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Settings } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
@@ -35,6 +35,7 @@ import ItemSelector from "@/components/ui/ItemSelector"; // Ensure correct path
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import ThresholdSelector from "@/components/ui/threshold-selector";
 import Cookies from "js-cookie";
+import { SettingsPane } from "@/components/settings-pane";
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
@@ -54,6 +55,11 @@ export function App() {
   const [pinnedItems, setPinnedItems] = useState<boolean[]>(
     Array(5).fill(false)
   );
+  const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
+    useState<boolean>(false);
+  const [sortOption, setSortOption] = useState<string>(() => {
+    return localStorage.getItem("sortOption") || "az";
+  });
 
   // Initialize threshold state with cookie value or default
   const [threshold, setThreshold] = useState<number>(() => {
@@ -136,10 +142,20 @@ export function App() {
     }
   };
 
-  // Precompute and sort items alphabetically by name
+  // Precompute and sort items based on the sortOption
   const items: SimplifiedItem[] = useMemo(() => {
-    return [...itemsData].sort((a, b) => a.name.localeCompare(b.name));
-  }, [itemsData]);
+    const sortedItems = [...itemsData];
+    if (sortOption === "az") {
+      sortedItems.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOption === "price") {
+      sortedItems.sort((a, b) => a.price - b.price);
+    }
+    return sortedItems;
+  }, [itemsData, sortOption]);
+
+  const handleSortChange = useCallback((newSortOption: string) => {
+    setSortOption(newSortOption);
+  }, []);
 
   // Function to find the best combination of items that meets the threshold with the minimum flea cost
   const findBestCombination = useCallback(
@@ -185,17 +201,25 @@ export function App() {
 
       // Sort by cost and then randomly select one of the top 5 combinations
       validCombinations.sort((a, b) => a.cost - b.cost);
-      const topCombinations = validCombinations.slice(0, Math.min(5, validCombinations.length));
-      const selectedCombination = topCombinations[Math.floor(Math.random() * topCombinations.length)];
+      const topCombinations = validCombinations.slice(
+        0,
+        Math.min(5, validCombinations.length)
+      );
+      const selectedCombination =
+        topCombinations[Math.floor(Math.random() * topCombinations.length)];
 
       if (!selectedCombination) {
         return { selected: [], totalFleaCost: 0 };
       }
 
-      const selectedIndices = itemTracking[selectedCombination.c][selectedCombination.v];
+      const selectedIndices =
+        itemTracking[selectedCombination.c][selectedCombination.v];
       const selectedItems = selectedIndices.map((index) => validItems[index]);
 
-      return { selected: selectedItems, totalFleaCost: selectedCombination.cost };
+      return {
+        selected: selectedItems,
+        totalFleaCost: selectedCombination.cost,
+      };
     },
     []
   );
@@ -252,8 +276,7 @@ export function App() {
     const filteredItems = validItems.filter(
       (item) =>
         !selectedItems.some(
-          (selected, index) =>
-            pinnedItems[index] && selected?.uid === item.uid
+          (selected, index) => pinnedItems[index] && selected?.uid === item.uid
         )
     );
 
@@ -407,9 +430,17 @@ export function App() {
           </DialogContent>
         </Dialog>
 
+        <Button
+          variant="ghost"
+          className="absolute top-4 right-2 hover:text-green-300 text-yellow-500"
+          onClick={() => setIsSettingsPaneVisible(true)}
+        >
+          <Settings className="h-10 w-10" />
+        </Button>
+
         <CardContent className="p-6">
           {/* **5. Header with Title and Beta Badge** */}
-            <h1 className="sm:text-3xl text-xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
+          <h1 className="sm:text-3xl text-xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
             <Image
               src="/images/Cultist-Calulator.webp"
               alt="Cultist calulator logo"
@@ -419,7 +450,7 @@ export function App() {
             <div className="ml-2">
               <BetaBadge />
             </div>
-            </h1>
+          </h1>
 
           {/* **6. Mode Toggle (PVE/PVP)** */}
           <div className="flex items-center justify-center mb-6 w-full">
@@ -440,7 +471,7 @@ export function App() {
             />
           </div>
 
-                    {/* **8. Auto Select Button and Progress Bar** */}
+          {/* **8. Auto Select Button and Progress Bar** */}
           <div className="space-y-2 w-full">
             {isCalculating ? (
               <Progress
@@ -564,6 +595,14 @@ export function App() {
       {isFeedbackFormVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <FeedbackForm onClose={() => setIsFeedbackFormVisible(false)} />
+        </div>
+      )}
+      {isSettingsPaneVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <SettingsPane
+            onClose={() => setIsSettingsPaneVisible(false)}
+            onSortChange={handleSortChange}
+          />
         </div>
       )}
     </div>
