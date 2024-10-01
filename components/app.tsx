@@ -58,8 +58,19 @@ export function App() {
   const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
     useState<boolean>(false);
   const [sortOption, setSortOption] = useState<string>(() => {
-    return localStorage.getItem("sortOption") || "az";
+    // Initialize from localStorage if available, otherwise default to "az"
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("sortOption") || "az";
+    }
+    return "az";
   });
+
+  const handleSortChange = useCallback((newSortOption: string) => {
+    setSortOption(newSortOption);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sortOption", newSortOption);
+    }
+  }, []);
 
   // Initialize threshold state with cookie value or default
   const [threshold, setThreshold] = useState<number>(() => {
@@ -147,15 +158,11 @@ export function App() {
     const sortedItems = [...itemsData];
     if (sortOption === "az") {
       sortedItems.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortOption === "price") {
-      sortedItems.sort((a, b) => a.price - b.price);
+    } else if (sortOption === "base-value") {
+      sortedItems.sort((a, b) => a.basePrice - b.basePrice);
     }
     return sortedItems;
   }, [itemsData, sortOption]);
-
-  const handleSortChange = useCallback((newSortOption: string) => {
-    setSortOption(newSortOption);
-  }, []);
 
   // Function to find the best combination of items that meets the threshold with the minimum flea cost
   const findBestCombination = useCallback(
@@ -602,6 +609,7 @@ export function App() {
           <SettingsPane
             onClose={() => setIsSettingsPaneVisible(false)}
             onSortChange={handleSortChange}
+            currentSortOption={sortOption}
           />
         </div>
       )}
