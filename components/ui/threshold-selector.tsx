@@ -11,13 +11,10 @@ import Cookies from 'js-cookie';
 
 interface ThresholdSelectorProps {
   value: number;
-  onChange: (newValue: number) => void;
+  onChange: (value: number) => void;
 }
 
-export default function ThresholdSelector({
-  value,
-  onChange,
-}: ThresholdSelectorProps) {
+export default function ThresholdSelector({ value, onChange }: ThresholdSelectorProps) {
   const [isCustom, setIsCustom] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

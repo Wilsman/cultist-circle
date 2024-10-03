@@ -36,6 +36,7 @@ import { SimplifiedItem } from "@/types/SimplifiedItem";
 import ThresholdSelector from "@/components/ui/threshold-selector";
 import Cookies from "js-cookie";
 import { SettingsPane } from "@/components/settings-pane";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
@@ -64,6 +65,9 @@ export function App() {
     }
     return "az";
   });
+  const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number | null>(
+    null
+  );
 
   const handleSortChange = useCallback((newSortOption: string) => {
     setSortOption(newSortOption);
@@ -72,11 +76,19 @@ export function App() {
     }
   }, []);
 
-  // Initialize threshold state with cookie value or default
+  // Initialize threshold state with a function
   const [threshold, setThreshold] = useState<number>(() => {
-    const savedThreshold = Cookies.get("userThreshold");
-    return savedThreshold ? Number(savedThreshold) : 350001;
+    // Use a default value that will be consistent on both server and client
+    return 350001;
   });
+
+  // Use useEffect to update the threshold from the cookie after initial render
+  useEffect(() => {
+    const savedThreshold = Cookies.get("userThreshold");
+    if (savedThreshold) {
+      setThreshold(Number(savedThreshold));
+    }
+  }, []);
 
   // State to manage the threshold value for the ritual
   const handleThresholdChange = (newValue: number) => {
@@ -104,6 +116,7 @@ export function App() {
       setLoading(true);
       const data = await fetchCachedData(apiUrl, cacheKey);
       setItemsData(data);
+      setLastFetchTimestamp(Date.now()); // Set the last fetch timestamp
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
@@ -114,6 +127,28 @@ export function App() {
       setLoading(false);
     }
   }, [isPVE]);
+
+  const [nextFetchTime, setNextFetchTime] = useState<string>("N/A");
+
+  useEffect(() => {
+    if (lastFetchTimestamp) {
+      const interval = setInterval(() => {
+        const remainingTime = lastFetchTimestamp + CACHE_DURATION - Date.now();
+        if (remainingTime <= 0) {
+          setNextFetchTime("Refresh Available");
+          clearInterval(interval);
+        } else {
+          const minutes = Math.floor(
+            (remainingTime % (1000 * 60 * 60)) / (1000 * 60)
+          );
+          const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+          setNextFetchTime(`${minutes}m ${seconds}s`);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [lastFetchTimestamp]);
 
   useEffect(() => {
     fetchData();
@@ -231,6 +266,10 @@ export function App() {
     []
   );
 
+  const [overriddenPrices, setOverriddenPrices] = useState<
+    Record<string, number>
+  >({});
+
   // Effect to recalculate the total ritual value and flea costs whenever selected items or threshold changes
   useEffect(() => {
     // Calculate total ritual value
@@ -238,18 +277,48 @@ export function App() {
       selectedItems.reduce((sum, item) => sum + (item?.basePrice || 0), 0)
     );
     // Calculate total flea costs
-    setFleaCosts(selectedItems.map((item) => (item ? item.price : 0)));
-  }, [selectedItems, threshold]);
+    setFleaCosts(
+      selectedItems.map((item) =>
+        item ? overriddenPrices[item.uid] || item.price : 0
+      )
+    );
+  }, [selectedItems, threshold, overriddenPrices]);
 
   // Update the selected item in the list
   const updateSelectedItem = (
     item: SimplifiedItem | null,
-    index: number
+    index: number,
+    overriddenPrice?: number | null
   ): void => {
     const newSelectedItems = [...selectedItems];
     newSelectedItems[index] = item;
     setSelectedItems(newSelectedItems);
-    // Flea costs are updated via useEffect
+
+    if (item && overriddenPrice !== undefined) {
+      if (overriddenPrice !== null) {
+        // Update overridden price
+        setOverriddenPrices((prev) => ({
+          ...prev,
+          [item.uid]: overriddenPrice,
+        }));
+      } else {
+        // Remove overridden price for this item
+        setOverriddenPrices((prev) => {
+          const newOverriddenPrices = { ...prev };
+          delete newOverriddenPrices[item.uid];
+          return newOverriddenPrices;
+        });
+      }
+    } else if (!item) {
+      // Item is null, remove any overridden price for previous item at this index
+      const newOverriddenPrices = { ...overriddenPrices };
+      const uid = selectedItems[index]?.uid;
+      if (uid) {
+        delete newOverriddenPrices[uid];
+      }
+      setOverriddenPrices(newOverriddenPrices);
+    }
+    // Do not delete overridden price if overriddenPrice is undefined
   };
 
   // **11. Handle Auto Select**
@@ -259,7 +328,10 @@ export function App() {
     setPinnedItems(newPinnedItems);
   };
 
+  const [isAutoPickActive, setIsAutoPickActive] = useState(false);
+
   const handleAutoSelect = async (): Promise<void> => {
+    setIsAutoPickActive(true);
     setIsCalculating(true);
     setProgressValue(0);
 
@@ -287,11 +359,22 @@ export function App() {
         )
     );
 
-    // Shuffle the filtered items to increase randomness
-    const shuffledItems = [...filteredItems].sort(() => Math.random() - 0.5);
+    // Adjust prices in filteredItems to use overridden prices where applicable
+    const adjustedItems = filteredItems.map((item) => {
+      const overriddenPrice = overriddenPrices[item.uid];
+      if (overriddenPrice !== undefined) {
+        return { ...item, price: overriddenPrice };
+      }
+      return item;
+    });
+
+    // Shuffle the adjusted items to increase randomness
+    const shuffledAdjustedItems = [...adjustedItems].sort(
+      () => Math.random() - 0.5
+    );
 
     const bestCombination = findBestCombination(
-      shuffledItems,
+      shuffledAdjustedItems,
       remainingThreshold,
       5 - pinnedItems.filter(Boolean).length
     );
@@ -300,6 +383,7 @@ export function App() {
       alert("No combination of items meets the remaining threshold.");
       setIsCalculating(false);
       clearInterval(interval);
+      setIsAutoPickActive(false);
       return;
     }
 
@@ -312,9 +396,23 @@ export function App() {
         combinationIndex++;
       }
     }
+
+    // Preserve overridden prices for items that remain selected
+    const newOverriddenPrices = { ...overriddenPrices };
+    for (let i = 0; i < 5; i++) {
+      const item = newSelectedItems[i];
+      if (item && overriddenPrices[item.uid]) {
+        newOverriddenPrices[item.uid] = overriddenPrices[item.uid];
+      } else if (item) {
+        delete newOverriddenPrices[item.uid];
+      }
+    }
+
     setSelectedItems(newSelectedItems);
+    setOverriddenPrices(newOverriddenPrices);
     setIsCalculating(false);
     clearInterval(interval);
+    setIsAutoPickActive(false);
   };
 
   // **13. Handle Mode Toggle Reset**
@@ -322,6 +420,7 @@ export function App() {
     setIsPVE(checked);
     setSelectedItems(Array(5).fill(null)); // Reset selected items
     setPinnedItems(Array(5).fill(false)); // Reset pinned items
+    setOverriddenPrices({}); // Reset overridden prices
     dataFetchedRef.current = false; // Reset data fetch flag
   };
 
@@ -342,33 +441,6 @@ export function App() {
     }
   };
 
-  // **15. Render Loading and Error States**
-  if (loading) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100">
-        <div className="text-center">
-          <Progress className="mb-4" value={50} />
-          <p>Loading data...</p>
-        </div>
-        <div className="flex justify-center mt-4">
-          <a
-            href="https://www.buymeacoffee.com/wilsman77"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-              alt="Buy Me A Coffee"
-              width={120}
-              height={30}
-              priority={true}
-            />
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-900 text-red-500">
@@ -385,6 +457,9 @@ export function App() {
     // Layout fills the screen height so there is no scrolling outside of the Card
     <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
       <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
+        <div className="mt-4 text-center text-gray-400 text-sm">
+          <div>Next Update: {nextFetchTime}</div>
+        </div>
         {/* **4. Dialog for Instructions** */}
         <Dialog>
           <DialogTrigger asChild>
@@ -441,6 +516,7 @@ export function App() {
           variant="ghost"
           className="absolute top-4 right-2 hover:text-green-300 text-yellow-500"
           onClick={() => setIsSettingsPaneVisible(true)}
+          style={{ backgroundColor: "transparent" }}
         >
           <Settings className="h-10 w-10" />
         </Button>
@@ -505,19 +581,45 @@ export function App() {
             )}
 
             {/* **9. Item Selection Components** */}
-            {selectedItems.map((item, index) => (
-              <ItemSelector
-                key={index}
-                items={items}
-                selectedItem={item}
-                onSelect={(selectedItem) =>
-                  updateSelectedItem(selectedItem, index)
-                }
-                onCopy={() => handleCopyToClipboard(index)}
-                onPin={() => handlePinItem(index)}
-                isPinned={pinnedItems[index]}
-              />
-            ))}
+            <div className="space-y-2 w-full">
+              {loading
+                ? // Show skeletons while loading
+                  Array(5)
+                    .fill(0)
+                    .map((_, index) => (
+                      <Skeleton
+                        key={`skeleton-${index}`}
+                        className="h-10 w-full mb-2 bg-slate-500"
+                      />
+                    ))
+                : // Show actual item selectors when loaded
+                  selectedItems.map((item, index) => (
+                    <React.Fragment key={`selector-${index}`}>
+                      <ItemSelector
+                        items={items}
+                        selectedItem={item}
+                        onSelect={(selectedItem, overriddenPrice) =>
+                          updateSelectedItem(
+                            selectedItem,
+                            index,
+                            overriddenPrice
+                          )
+                        }
+                        onCopy={() => handleCopyToClipboard(index)}
+                        onPin={() => handlePinItem(index)}
+                        isPinned={pinnedItems[index]}
+                        overriddenPrice={
+                          item ? overriddenPrices[item.uid] : undefined
+                        }
+                        isAutoPickActive={isAutoPickActive}
+                        overriddenPrices={overriddenPrices}
+                      />
+                      {index < selectedItems.length - 1 && (
+                        <Separator className="my-2" />
+                      )}
+                    </React.Fragment>
+                  ))}
+            </div>
           </div>
 
           {/* **10. Sacrifice Value Display** */}
@@ -525,15 +627,19 @@ export function App() {
             <h2 className="text-3xl font-bold mb-2 text-gray-300">
               Sacrifice Value
             </h2>
-            <div
-              className={`text-6xl font-extrabold ${
-                isThresholdMet
-                  ? "text-green-500 animate-pulse"
-                  : "text-red-500 animate-pulse"
-              }`}
-            >
-              ₽{total.toLocaleString()}
-            </div>
+            {loading ? (
+              <Skeleton className="h-16 w-3/4 mx-auto" />
+            ) : (
+              <div
+                className={`text-6xl font-extrabold ${
+                  isThresholdMet
+                    ? "text-green-500 animate-pulse"
+                    : "text-red-500 animate-pulse"
+                }`}
+              >
+                ₽{total.toLocaleString()}
+              </div>
+            )}
             {!isThresholdMet && (
               <div className="text-red-500 mt-2">
                 Remaining Value Needed: ₽{(threshold - total).toLocaleString()}
@@ -541,7 +647,14 @@ export function App() {
             )}
             <div className="mt-6">
               <div className="text-sm font-semibold text-gray-400">
-                Flea Cost ≈ ₽{totalFleaCost.toLocaleString()}
+                Flea Cost ≈{" "}
+                <span
+                  className={
+                    Object.keys(overriddenPrices).length > 0 ? "font-bold" : ""
+                  }
+                >
+                  ₽{totalFleaCost.toLocaleString()}
+                </span>
               </div>
             </div>
           </div>
