@@ -110,7 +110,7 @@ export default function Page() {
   const filteredItems =
     selectedRecipe === "All Recipes"
       ? tarkovItems
-      : tarkovItems.filter((item) => item.input === selectedRecipe);
+      : tarkovItems.filter((item) => item.output === selectedRecipe);
 
   return (
     <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
@@ -129,7 +129,7 @@ export default function Page() {
         <CardContent className="flex-1 overflow-y-auto">
           <Select value={selectedRecipe} onValueChange={setSelectedRecipe}>
             <SelectTrigger className="w-full justify-between bg-gray-800 text-white">
-              {selectedRecipe || "Select recipe..."}
+              {selectedRecipe || "Select a recipe..."}
             </SelectTrigger>
             <SelectContent>
               <SelectScrollUpButton />
@@ -142,9 +142,9 @@ export default function Page() {
                   All Recipes
                 </SelectItem>
                 {tarkovItems.map((item, index) => (
-                  <SelectItem key={index} value={item.input}>
-                    {item.input}
-                    {selectedRecipe === item.input && (
+                  <SelectItem key={index} value={item.output}>
+                    {item.output}
+                    {selectedRecipe === item.output && (
                       <Check className="ml-auto h-4 w-4" />
                     )}
                   </SelectItem>
