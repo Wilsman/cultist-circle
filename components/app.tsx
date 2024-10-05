@@ -8,6 +8,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -555,23 +556,39 @@ export function App() {
           </div>
 
           {/* **8. Auto Select Button and Progress Bar** */}
-          <div className="space-y-2 w-full">
+          <div className="h-full w-full flex flex-col justify-center items-center">
             {isCalculating ? (
-              <Progress
-                className="mx-auto mt-4 mb-4 w-full"
-                value={progressValue}
-              /> // Show progress
+              <div className="text-center">
+                <p className="text-gray-300 mb-2">
+                  Calculating best combination...
+                </p>
+                <Progress
+                  className="mx-auto mt-4 mb-4 w-full"
+                  value={progressValue}
+                  label={`${progressValue}%`}
+                />
+              </div>
             ) : (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="default"
-                      onClick={handleAutoSelect}
-                      className="flex mt-4 mx-auto text-gray-200 bg-gray-500 hover:bg-gray-900"
-                    >
-                      Auto Pick
-                    </Button>
+                    <div className="flex flex-col justify-center items-center">
+                      <div className="flex justify-center mb-4">
+                        <Button
+                          onClick={handleAutoSelect}
+                          disabled={isCalculating}
+                          className="bg-blue-500 hover:bg-blue-700 min-w-[200px] mr-4"
+                        >
+                          Auto Select
+                        </Button>
+
+                        <Link href="/recipes">
+                          <Button className="bg-red-500 hover:bg-red-700 min-w-[200px]">
+                            Recipes
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent>
                     Automatically select best items
