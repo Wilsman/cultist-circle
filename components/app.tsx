@@ -115,9 +115,9 @@ export function App() {
 
     try {
       setLoading(true);
-      const data = await fetchCachedData(apiUrl, cacheKey);
+      const { data, timestamp } = await fetchCachedData(apiUrl, cacheKey);
       setItemsData(data);
-      setLastFetchTimestamp(Date.now()); // Set the last fetch timestamp
+      setLastFetchTimestamp(timestamp); // Use the server's timestamp
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
@@ -158,14 +158,15 @@ export function App() {
   const fetchCachedData = async (
     url: string,
     cacheKey: string
-  ): Promise<SimplifiedItem[]> => {
+  ): Promise<{ data: SimplifiedItem[]; timestamp: number }> => {
     try {
       const cachedData = localStorage.getItem(cacheKey);
       if (cachedData) {
-        const { timestamp, data } = JSON.parse(cachedData);
-        if (Date.now() - timestamp < CACHE_DURATION) {
+        const { data, timestamp } = JSON.parse(cachedData);
+        const now = Date.now();
+        if (now - timestamp < CACHE_DURATION) {
           console.log(`Using cached data for ${cacheKey}`);
-          return data;
+          return { data, timestamp };
         }
       }
 
@@ -177,12 +178,11 @@ export function App() {
           errorData.error || `Failed to fetch data for ${cacheKey}`
         );
       }
-      const data: SimplifiedItem[] = await response.json();
-      localStorage.setItem(
-        cacheKey,
-        JSON.stringify({ timestamp: Date.now(), data })
-      );
-      return data;
+      const result = await response.json();
+      const { data, timestamp } = result;
+
+      localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp }));
+      return { data, timestamp };
     } catch (error) {
       console.error(`Error in fetchCachedData for ${cacheKey}:`, error);
       throw error;
@@ -577,13 +577,13 @@ export function App() {
                         <Button
                           onClick={handleAutoSelect}
                           disabled={isCalculating}
-                          className="bg-blue-500 hover:bg-blue-700 min-w-[200px] mr-4"
+                          className="bg-blue-500 hover:bg-blue-700 md:min-w-[300px] sm:min-w-[300px] mr-2"
                         >
                           Auto Select
                         </Button>
 
                         <Link href="/recipes">
-                          <Button className="bg-red-500 hover:bg-red-700 min-w-[200px]">
+                          <Button className="bg-red-500 hover:bg-red-700">
                             Recipes
                           </Button>
                         </Link>
@@ -599,43 +599,47 @@ export function App() {
 
             {/* **9. Item Selection Components** */}
             <div className="space-y-2 w-full">
-              {loading
-                ? // Show skeletons while loading
-                  Array(5)
-                    .fill(0)
-                    .map((_, index) => (
-                      <Skeleton
-                        key={`skeleton-${index}`}
-                        className="h-10 w-full mb-2 bg-slate-500"
-                      />
-                    ))
-                : // Show actual item selectors when loaded
-                  selectedItems.map((item, index) => (
-                    <React.Fragment key={`selector-${index}`}>
-                      <ItemSelector
-                        items={items}
-                        selectedItem={item}
-                        onSelect={(selectedItem, overriddenPrice) =>
-                          updateSelectedItem(
-                            selectedItem,
-                            index,
-                            overriddenPrice
-                          )
-                        }
-                        onCopy={() => handleCopyToClipboard(index)}
-                        onPin={() => handlePinItem(index)}
-                        isPinned={pinnedItems[index]}
-                        overriddenPrice={
-                          item ? overriddenPrices[item.uid] : undefined
-                        }
-                        isAutoPickActive={isAutoPickActive}
-                        overriddenPrices={overriddenPrices}
-                      />
-                      {index < selectedItems.length - 1 && (
-                        <Separator className="my-2" />
-                      )}
-                    </React.Fragment>
-                  ))}
+              {loading ? (
+                // Show skeletons while loading
+                Array(5)
+                  .fill(0)
+                  .map((_, index) => (
+                    <Skeleton
+                      key={`skeleton-${index}`}
+                      className="h-10 w-full mb-2 bg-slate-500"
+                    />
+                  ))
+              ) : items.length === 0 ? (
+                // Display message if item list is empty
+                <div className="text-center text-gray-400 mt-4">
+                  No items available at this time. Please wait for the next
+                  update in {nextFetchTime}.
+                </div>
+              ) : (
+                // Show actual item selectors when loaded and items are available
+                selectedItems.map((item, index) => (
+                  <React.Fragment key={`selector-${index}`}>
+                    <ItemSelector
+                      items={items}
+                      selectedItem={item}
+                      onSelect={(selectedItem, overriddenPrice) =>
+                        updateSelectedItem(selectedItem, index, overriddenPrice)
+                      }
+                      onCopy={() => handleCopyToClipboard(index)}
+                      onPin={() => handlePinItem(index)}
+                      isPinned={pinnedItems[index]}
+                      overriddenPrice={
+                        item ? overriddenPrices[item.uid] : undefined
+                      }
+                      isAutoPickActive={isAutoPickActive}
+                      overriddenPrices={overriddenPrices}
+                    />
+                    {index < selectedItems.length - 1 && (
+                      <Separator className="my-2" />
+                    )}
+                  </React.Fragment>
+                ))
+              )}
             </div>
           </div>
 

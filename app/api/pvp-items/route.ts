@@ -13,11 +13,11 @@ const CACHE_KEY = "pvp-items";
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === 'true';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const data = await getCachedData(CACHE_KEY, async () => {
+    const { data: simplifiedData, timestamp } = await getCachedData(CACHE_KEY, async () => {
       if (USE_LOCAL_DATA) {
         console.log(`[${new Date().toISOString()}] Loading PVP items from local JSON file`);
 
@@ -25,7 +25,7 @@ export async function GET() {
         const fileContents = fs.readFileSync(filePath, 'utf-8');
         const rawData = JSON.parse(fileContents);
 
-        const simplifiedData: SimplifiedItem[] = rawData
+        return rawData
           .filter(
             (item: SimplifiedItem) =>
               FILTER_TAGS.some((tag) => item.tags?.includes(tag)) &&
@@ -41,18 +41,16 @@ export async function GET() {
           .sort((a: SimplifiedItem, b: SimplifiedItem) =>
             a.name.localeCompare(b.name)
           );
-
-        return simplifiedData;
+          return simplifiedData;
       } else {
         console.log(`[${new Date().toISOString()}] Fetching new PVP items from external API`);
 
-        // Change cache option from "no-store" to "default"
         const response = await limiter.schedule(() =>
           fetch(PVP_API_URL, {
             headers: {
               "x-api-key": process.env.API_KEY || "",
             },
-            cache: "no-store", // Updated cache option
+            cache: "no-store",
           })
         );
 
@@ -64,7 +62,7 @@ export async function GET() {
 
         const rawData = await response.json();
 
-        const simplifiedData: SimplifiedItem[] = rawData
+        return rawData
           .filter(
             (item: SimplifiedItem) =>
               FILTER_TAGS.some((tag) => item.tags?.includes(tag)) &&
@@ -80,12 +78,12 @@ export async function GET() {
           .sort((a: SimplifiedItem, b: SimplifiedItem) =>
             a.name.localeCompare(b.name)
           );
-
-        return simplifiedData;
+          return simplifiedData;
       }
     }, CACHE_DURATION);
 
-    return NextResponse.json(data);
+    // Include timestamp in the response
+    return NextResponse.json({ data: simplifiedData, timestamp });
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : "An unexpected error occurred";
