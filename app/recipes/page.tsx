@@ -24,79 +24,79 @@ const tarkovItems: { input: string; time: string; output: string }[] = [
     time: "6 min",
     output: "Secure container Gamma (Edge of Darkness Edition)",
   },
-  { input: "Secure container Kappa", time: "1 h 6 min", output: "Waist pouch" },
+  { input: "Secure container Kappa", time: "66 mins", output: "Waist pouch" },
   {
     input: "Cultist figurine ×1",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "Spooky skull mask",
   },
-  { input: "Cultist figurine ×5", time: "1 h 6 min", output: "Cultist knife" },
+  { input: "Cultist figurine ×5", time: "66 mins", output: "Cultist knife" },
   {
     input: "Killa figurine",
-    time: "1 h 6 min",
+    time: "66 mins",
     output:
       "Maska-1SCh bulletproof helmet (Killa Edition), Maska-1SCh face shield (Killa Edition)",
   },
   {
     input: "Tagilla figurine",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: 'Tagilla\'s welding mask "Gorilla", Tagilla\'s welding mask "UBEY"',
   },
   {
     input: "Reshala figurine",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "TT-33 7.62x25 TT pistol (Golden)",
   },
   {
     input: "Den figurine",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "Deadlyslob's beard oil, Baddie's red beard",
   },
   {
     input: "Politician Mutkevich figurine",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "Bottle of Tarkovskaya vodka ×3",
   },
   {
     input: "Scav figurine",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "Scav backpack, Scav Vest",
   },
   {
     input: "Ryzhy figurine",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "Obdolbos cocktail injector, Pack of sugar",
   },
   {
     input: "BEAR operative figurine",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "Grizzly medical kit",
   },
   {
     input: "USEC operative figurine",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "HighCom Trooper TFO body armor (MultiCam)",
   },
   {
     input: "Relaxation room key",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "Bottle of Fierce Hatchling moonshine",
   },
   {
     input: "Dundukk sport sunglasses",
-    time: "1 h 6 min",
+    time: "66 mins",
     output: "Axel parrot figurine",
   },
-  { input: "Soap", time: "1 h 6 min", output: "Awl" },
-  { input: "Zarya stun grenade", time: "1 h 6 min", output: "Light bulb ×2" },
+  { input: "Soap", time: "66 mins", output: "Awl" },
+  { input: "Zarya stun grenade", time: "66 mins", output: "Light bulb ×2" },
   {
     input: "Physical Bitcoin",
-    time: "11 h 6 min",
+    time: "666 mins",
     output: "GreenBat lithium battery ×2, Tetriz portable game console ×2",
   },
   {
     input: "LEDX Skin Transilluminator",
-    time: "11 h 6 min",
+    time: "666 mins",
     output: 'TerraGroup "Blue Folders" materials',
   },
 ];
@@ -122,8 +122,8 @@ export default function Page() {
           >
             <ArrowLeft className="h-6 w-6" />
           </button>
-          <CardTitle className="text-2xl text-center text-red-500">
-            🔥 Tarkov Recipe Viewer 🔥
+          <CardTitle className="text-3xl sm:text-4xl lg:text-5xl text-center text-red-500">
+            👩‍🍳 Recipes 👨‍🍳
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto">
