@@ -127,6 +127,9 @@ export default function Page() {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto">
+            <div className="bg-yellow-200 text-black p-4 rounded-md mb-6">
+            ⚠️ Note: Recipes are only guaranteed to work on the first attempt.
+            </div>
           <Select value={selectedRecipe} onValueChange={setSelectedRecipe}>
             <SelectTrigger className="w-full justify-between bg-gray-800 text-white">
               {selectedRecipe || "Select a recipe..."}

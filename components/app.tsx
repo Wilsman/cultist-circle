@@ -393,7 +393,14 @@ export function App() {
     setIsAutoPickActive(true);
     setIsCalculating(true);
 
-    const validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
+    // Filter validItems based on heuristics
+    let validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
+
+    // Apply filtering heuristics
+    validItems = validItems
+      .filter((item) => item.basePrice >= threshold * 0.1) // Example: Only items contributing at least 10% to the threshold
+      .sort((a, b) => b.basePrice / b.price - a.basePrice / a.price) // Sort by value-to-cost ratio
+      .slice(0, 100); // Limit to top 100 items
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
