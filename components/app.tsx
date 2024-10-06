@@ -60,12 +60,60 @@ export function App() {
   const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
     useState<boolean>(false);
   const [sortOption, setSortOption] = useState<string>(() => {
-    // Initialize from localStorage if available, otherwise default to "az"
     if (typeof window !== "undefined") {
-      return localStorage.getItem("sortOption") || "az";
+      return localStorage.getItem("sortOption") || "az"; // Default sort option
     }
     return "az";
   });
+  const allItemCategories = [
+    "Ammo",
+    "Ammo_boxes",
+    "Barter",
+    "Containers",
+    "Crates",
+    "Currency",
+    "Gear",
+    "Keys",
+    "Magazines",
+    "Maps",
+    "Meds",
+    "Provisions",
+    "Quest_items",
+    "Repair",
+    "Sights",
+    "Special_equipment",
+    "Suppressors",
+    "Tactical_devices",
+    "Weapon",
+    "Weapon_parts",
+  ];
+  const defaultItemCategories = [
+    "Barter",
+    "Provisions",
+    "Containers",
+    // Add any other categories you want as defaults
+  ];
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedCategories = localStorage.getItem("selectedCategories");
+        if (savedCategories) {
+          return JSON.parse(savedCategories);
+        }
+      } catch (e) {
+        console.error("Error parsing selectedCategories from localStorage", e);
+      }
+    }
+    return defaultItemCategories;
+  });
+
+  const handleCategoryChange = useCallback((categories: string[]) => {
+    setSelectedCategories(categories);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("selectedCategories", JSON.stringify(categories));
+    }
+  }, []);
+
   const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number | null>(
     null
   );
@@ -191,14 +239,24 @@ export function App() {
 
   // Precompute and sort items based on the sortOption
   const items: SimplifiedItem[] = useMemo(() => {
-    const sortedItems = [...itemsData];
+    const filteredItems = itemsData.filter(
+      (item) =>
+        selectedCategories.length === 0 ||
+        (Array.isArray(item.tags)
+          ? item.tags.some((tag) => selectedCategories.includes(tag))
+          : selectedCategories.includes(item.tags || ""))
+    );
+
+    // Sort the items based on the selected sort option
+    const sortedItems = [...filteredItems];
     if (sortOption === "az") {
       sortedItems.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortOption === "base-value") {
       sortedItems.sort((a, b) => a.basePrice - b.basePrice);
     }
+
     return sortedItems;
-  }, [itemsData, sortOption]);
+  }, [itemsData, sortOption, selectedCategories]);
 
   // Function to find the best combination of items that meets the threshold with the minimum flea cost
   const findBestCombination = useCallback(
@@ -744,6 +802,9 @@ export function App() {
             onClose={() => setIsSettingsPaneVisible(false)}
             onSortChange={handleSortChange}
             currentSortOption={sortOption}
+            selectedCategories={selectedCategories}
+            onCategoryChange={handleCategoryChange}
+            allCategories={allItemCategories} // Pass all categories
           />
         </div>
       )}
