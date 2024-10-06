@@ -89,7 +89,7 @@ export function SettingsPane({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div
         ref={paneRef}
-        className="flex sm:w-[500px] w-[350px] min-h-[500px] rounded-lg border bg-slate-800 shadow relative"
+        className="flex sm:w-[500px] w-[350px] max-h-[90vh] h-[550px] rounded-lg border bg-slate-800 shadow relative"
       >
         <Button
           variant="ghost"
@@ -120,59 +120,61 @@ export function SettingsPane({
             <Settings className="h-5 w-5" />
           </Button>
         </div>
-        {showFilter ? (
-          <div className="flex-1 p-6">
-            <h2 className="text-lg font-semibold mb-4">Item Filter</h2>
-            <p className="text-sm text-yellow-500 mb-4 bg-yellow-100 bg-opacity-20 p-2 rounded">
-              Warning: Keys, Repair, and Weapon are disabled due to their
-              variable usage/durability impacting prices.
-            </p>
-            {allCategories.map((category) => (
-              <div key={category} className="flex items-center space-x-2">
-                <Checkbox
-                  checked={selectedCategories.includes(category)}
-                  disabled={
-                    disabledCategories.includes(category) ||
-                    (selectedCategories.length === 1 &&
-                      selectedCategories.includes(category))
-                  }
-                  onCheckedChange={() => handleCategoryChange(category)}
-                  className="border-gray-500"
-                />
-                <Label>{category}</Label>
+        <div className="flex-1 p-6 overflow-y-auto">
+          {showFilter ? (
+            <div className="h-full">
+              <h2 className="text-lg font-semibold mb-4">Item Filter</h2>
+              <div className="text-sm text-yellow-500 mb-4 bg-yellow-100 bg-opacity-20 p-2 rounded">
+                Warning: Keys, Repair, and Weapon are disabled due to their
+                variable usage/durability impacting prices.
               </div>
-            ))}
-            <Button
-              variant="ghost"
-              className="absolute bottom-4 right-4 bg-destructive text-white px-4 py-2 rounded"
-              onClick={handleResetCategories}
-            >
-              Reset Filters
-            </Button>
-          </div>
-        ) : (
-          <div className="flex-1 p-6">
-            <h2 className="text-lg font-semibold mb-4">Sort Options</h2>
-            <RadioGroup value={sortOption} onValueChange={setSortOption}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="az"
-                  id="az"
-                  className={sortOption === "az" ? "bg-white" : ""}
-                />
-                <Label htmlFor="az">A-Z</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="base-value"
-                  id="price"
-                  className={sortOption === "base-value" ? "bg-white" : ""}
-                />
-                <Label htmlFor="price">Base Value: Low to High</Label>
-              </div>
-            </RadioGroup>
-          </div>
-        )}
+              {allCategories.map((category) => (
+                <div key={category} className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={selectedCategories.includes(category)}
+                    disabled={
+                      disabledCategories.includes(category) ||
+                      (selectedCategories.length === 1 &&
+                        selectedCategories.includes(category))
+                    }
+                    onCheckedChange={() => handleCategoryChange(category)}
+                    className="border-gray-500"
+                  />
+                  <Label>{category}</Label>
+                </div>
+              ))}
+              <Button
+                variant="ghost"
+                className="absolute bottom-4 right-4 bg-destructive text-white px-4 py-2 rounded"
+                onClick={handleResetCategories}
+              >
+                Reset Filters
+              </Button>
+            </div>
+          ) : (
+            <div className="h-full">
+              <h2 className="text-lg font-semibold mb-4">Sort Options</h2>
+              <RadioGroup value={sortOption} onValueChange={setSortOption}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem
+                    value="az"
+                    id="az"
+                    className={sortOption === "az" ? "bg-white" : ""}
+                  />
+                  <Label htmlFor="az">A-Z</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem
+                    value="base-value"
+                    id="price"
+                    className={sortOption === "base-value" ? "bg-white" : ""}
+                  />
+                  <Label htmlFor="price">Base Value: Low to High</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
