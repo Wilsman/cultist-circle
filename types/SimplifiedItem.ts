@@ -7,4 +7,5 @@ export interface SimplifiedItem {
   price: number;
   updated: string;
   tags?: string[];
+  bannedOnFlea?: boolean;
 }

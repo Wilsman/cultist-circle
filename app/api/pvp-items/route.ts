@@ -44,6 +44,7 @@ export async function GET() {
               price: item.price,
               updated: item.updated,
               tags: item.tags || [],
+              bannedOnFlea: item.bannedOnFlea,
             }))
             .sort((a: SimplifiedItem, b: SimplifiedItem) =>
               a.name.localeCompare(b.name)
@@ -85,6 +86,7 @@ export async function GET() {
               price: item.price,
               updated: item.updated,
               tags: item.tags || [],
+              bannedOnFlea: item.bannedOnFlea,
             }))
             .sort((a: SimplifiedItem, b: SimplifiedItem) =>
               a.name.localeCompare(b.name)

@@ -14,6 +14,8 @@ interface SettingsPaneProps {
   allCategories: string[];
 }
 
+const disabledCategories = ["Repair", "Keys", "Weapon"];
+
 export function SettingsPane({
   onClose,
   onSortChange,
@@ -51,6 +53,10 @@ export function SettingsPane({
   }, [onClose]);
 
   const handleCategoryChange = (category: string) => {
+    if (disabledCategories.includes(category)) {
+      return; // Do nothing if the category is disabled
+    }
+
     if (selectedCategories.includes(category)) {
       // User is trying to uncheck the category
       if (selectedCategories.length === 1) {
@@ -117,17 +123,18 @@ export function SettingsPane({
         {showFilter ? (
           <div className="flex-1 p-6">
             <h2 className="text-lg font-semibold mb-4">Item Filter</h2>
-            <p className="text-sm text-yellow-500 mb-4">
-              Warning: Selecting too many categories may significantly increase
-              calculation time.
+            <p className="text-sm text-yellow-500 mb-4 bg-yellow-100 bg-opacity-20 p-2 rounded">
+              Warning: Keys, Repair, and Weapon are disabled due to their
+              variable usage/durability impacting prices.
             </p>
             {allCategories.map((category) => (
               <div key={category} className="flex items-center space-x-2">
                 <Checkbox
                   checked={selectedCategories.includes(category)}
                   disabled={
-                    selectedCategories.length === 1 &&
-                    selectedCategories.includes(category)
+                    disabledCategories.includes(category) ||
+                    (selectedCategories.length === 1 &&
+                      selectedCategories.includes(category))
                   }
                   onCheckedChange={() => handleCategoryChange(category)}
                   className="border-gray-500"

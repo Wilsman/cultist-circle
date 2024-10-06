@@ -399,7 +399,12 @@ export function App() {
     // Apply filtering heuristics
     validItems = validItems
       .filter((item) => item.basePrice >= threshold * 0.1) // Example: Only items contributing at least 10% to the threshold
-      .filter((item) => new Date(item.updated).getTime() > Date.now() - 1000 * 60 * 60 * 24 * 7) // Filter out items that haven't been updated in the last week
+      .filter((item) => !item.bannedOnFlea) // Filter out items that are banned on the flea market
+      .filter(
+        (item) =>
+          new Date(item.updated).getTime() >
+          Date.now() - 1000 * 60 * 60 * 24 * 7
+      ) // Filter out items that haven't been updated in the last week
       .sort((a, b) => b.basePrice / b.price - a.basePrice / a.price) // Sort by value-to-cost ratio
       .slice(0, 100); // Limit to top 100 items
 
