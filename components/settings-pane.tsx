@@ -1,5 +1,3 @@
-"use client";
-
 import { Filter, Settings, X, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -53,21 +51,39 @@ export function SettingsPane({
   }, [onClose]);
 
   const handleCategoryChange = (category: string) => {
-    const updatedCategories = selectedCategories.includes(category)
-      ? selectedCategories.filter((cat) => cat !== category)
-      : [...selectedCategories, category];
-    onCategoryChange(updatedCategories);
+    if (selectedCategories.includes(category)) {
+      // User is trying to uncheck the category
+      if (selectedCategories.length === 1) {
+        // Don't allow unchecking the last category
+        return;
+      } else {
+        const updatedCategories = selectedCategories.filter(
+          (cat) => cat !== category
+        );
+        onCategoryChange(updatedCategories);
+      }
+    } else {
+      // User is checking the category
+      const updatedCategories = [...selectedCategories, category];
+      onCategoryChange(updatedCategories);
+    }
   };
 
   const handleResetCategories = () => {
-    onCategoryChange(["Barter", "Provisions", "Containers"]);
+    onCategoryChange([
+      "Barter",
+      "Provisions",
+      "Containers",
+      "Maps",
+      "Suppressors",
+    ]);
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div
         ref={paneRef}
-        className="flex h-[400px] w-[600px] rounded-lg border bg-slate-800 shadow relative"
+        className="flex sm:w-[500px] w-[350px] min-h-[500px] rounded-lg border bg-slate-800 shadow relative"
       >
         <Button
           variant="ghost"
@@ -101,10 +117,18 @@ export function SettingsPane({
         {showFilter ? (
           <div className="flex-1 p-6">
             <h2 className="text-lg font-semibold mb-4">Item Filter</h2>
+            <p className="text-sm text-yellow-500 mb-4">
+              Warning: Selecting too many categories may significantly increase
+              calculation time.
+            </p>
             {allCategories.map((category) => (
               <div key={category} className="flex items-center space-x-2">
                 <Checkbox
                   checked={selectedCategories.includes(category)}
+                  disabled={
+                    selectedCategories.length === 1 &&
+                    selectedCategories.includes(category)
+                  }
                   onCheckedChange={() => handleCategoryChange(category)}
                   className="border-gray-500"
                 />

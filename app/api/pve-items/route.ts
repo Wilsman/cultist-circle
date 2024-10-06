@@ -2,7 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
-import { FILTER_TAGS, IGNORED_ITEMS } from "@/config/config";
+import { IGNORED_ITEMS } from "@/config/config";
 import { getCachedData } from "@/config/cache";
 import limiter from "@/app/lib/rateLimiter";
 import fs from "fs";
@@ -34,11 +34,9 @@ export async function GET() {
           const rawData = JSON.parse(fileContents);
 
           return rawData
-            .filter(
-              (item: SimplifiedItem) =>
-                FILTER_TAGS.some((tag) => item.tags?.includes(tag)) &&
-                !IGNORED_ITEMS.includes(item.name)
-            )
+          .filter(
+            (item: SimplifiedItem) => !IGNORED_ITEMS.includes(item.name)
+          )
             .map((item: SimplifiedItem) => ({
               uid: item.uid,
               name: item.name,

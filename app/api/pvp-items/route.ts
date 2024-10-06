@@ -2,7 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
-import { FILTER_TAGS, IGNORED_ITEMS } from "@/config/config";
+import { IGNORED_ITEMS } from "@/config/config";
 import { getCachedData } from "@/config/cache";
 import limiter from "@/app/lib/rateLimiter";
 import fs from "fs";
@@ -42,7 +42,7 @@ export async function GET() {
               name: item.name,
               basePrice: item.basePrice,
               price: item.price,
-              updated: item.updated,             
+              updated: item.updated,
               tags: item.tags || [],
             }))
             .sort((a: SimplifiedItem, b: SimplifiedItem) =>
@@ -76,9 +76,7 @@ export async function GET() {
 
           return rawData
             .filter(
-              (item: SimplifiedItem) =>
-                FILTER_TAGS.some((tag) => item.tags?.includes(tag)) &&
-                !IGNORED_ITEMS.includes(item.name)
+              (item: SimplifiedItem) => !IGNORED_ITEMS.includes(item.name)
             )
             .map((item: SimplifiedItem) => ({
               uid: item.uid,

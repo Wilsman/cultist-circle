@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { HelpCircle, Settings } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 import BetaBadge from "./ui/beta-badge";
 import {
@@ -51,7 +50,6 @@ export function App() {
   const [total, setTotal] = useState<number>(0);
   const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
   const [isCalculating, setIsCalculating] = useState<boolean>(false); // Calculating state
-  const [progressValue, setProgressValue] = useState<number>(0); // Progress value
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
   const [pinnedItems, setPinnedItems] = useState<boolean[]>(
@@ -91,6 +89,8 @@ export function App() {
     "Barter",
     "Provisions",
     "Containers",
+    "Maps",
+    "Suppressors",
     // Add any other categories you want as defaults
   ];
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
@@ -392,14 +392,8 @@ export function App() {
   const handleAutoSelect = async (): Promise<void> => {
     setIsAutoPickActive(true);
     setIsCalculating(true);
-    setProgressValue(0);
 
     const validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
-
-    // Simulate calculation progress
-    const interval = setInterval(() => {
-      setProgressValue((prev) => (prev >= 100 ? 100 : prev + 10));
-    }, 100);
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -441,7 +435,6 @@ export function App() {
     if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
       alert("No combination of items meets the remaining threshold.");
       setIsCalculating(false);
-      clearInterval(interval);
       setIsAutoPickActive(false);
       return;
     }
@@ -470,7 +463,6 @@ export function App() {
     setSelectedItems(newSelectedItems);
     setOverriddenPrices(newOverriddenPrices);
     setIsCalculating(false);
-    clearInterval(interval);
     setIsAutoPickActive(false);
   };
 
@@ -620,11 +612,12 @@ export function App() {
                 <p className="text-gray-300 mb-2">
                   Calculating best combination...
                 </p>
-                <Progress
-                  className="mx-auto mt-4 mb-4 w-full"
-                  value={progressValue}
-                  label={`${progressValue}%`}
-                />
+                <div className="lds-ellipsis">
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                </div>
               </div>
             ) : (
               <TooltipProvider>
