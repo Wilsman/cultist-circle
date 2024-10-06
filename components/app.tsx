@@ -527,7 +527,7 @@ export function App() {
         {/* **4. Dialog for Instructions** */}
         <Dialog>
           <DialogTrigger asChild>
-            <div className="absolute top-8 left-8 animate-float hover:text-green-300 text-yellow-500 flex-row items-center justify-center">
+            <div className="absolute top-6 left-4 animate-float hover:text-green-300 text-yellow-500 flex-row items-center justify-center">
               <HelpCircle className="h-10 w-10" />
               <div className="text-yellow-500 text-sm text-center">Help</div>
             </div>
@@ -579,7 +579,7 @@ export function App() {
 
         <Button
           variant="ghost"
-          className="absolute top-8 right-4 hover:text-green-300 text-yellow-500 flex-col justify-center items-center text-2xl"
+          className="absolute top-8 right-2 hover:text-green-300 text-yellow-500 flex-col justify-center items-center text-2xl"
           onClick={() => setIsSettingsPaneVisible(true)}
           style={{ backgroundColor: "transparent" }}
         >
