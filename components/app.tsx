@@ -527,8 +527,9 @@ export function App() {
         {/* **4. Dialog for Instructions** */}
         <Dialog>
           <DialogTrigger asChild>
-            <div className="absolute top-4 left-2 animate-float hover:text-green-300 text-yellow-500">
+            <div className="absolute top-8 left-8 animate-float hover:text-green-300 text-yellow-500 flex-row items-center justify-center">
               <HelpCircle className="h-10 w-10" />
+              <div className="text-yellow-500 text-sm text-center">Help</div>
             </div>
           </DialogTrigger>
           <DialogContent className="flex bg-gray-800 sm:max-w-[600px] sm:max-h-[90vh] max-h-[90vh] w-full mx-auto">
@@ -578,11 +579,14 @@ export function App() {
 
         <Button
           variant="ghost"
-          className="absolute top-4 right-2 hover:text-green-300 text-yellow-500"
+          className="absolute top-8 right-4 hover:text-green-300 text-yellow-500 flex-col justify-center items-center text-2xl"
           onClick={() => setIsSettingsPaneVisible(true)}
           style={{ backgroundColor: "transparent" }}
         >
-          <Settings className="h-10 w-10" />
+          <div className="flex items-center">
+            <Settings className="h-10 w-10" />
+          </div>
+          <div className="text-orange-500 text-sm text-center">Settings</div>
         </Button>
 
         <CardContent className="p-6">
