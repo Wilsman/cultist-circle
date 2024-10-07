@@ -1,7 +1,16 @@
 // components/ui/ItemSelector.tsx
 
-import React, { useState, useMemo, useEffect } from "react";
-import { Copy, X, Pin, BadgePoundSterling } from "lucide-react";
+"use client";
+
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import {
+  Copy,
+  X as XIcon,
+  Pin,
+  BadgeDollarSign,
+  MoreVertical,
+  Trash2,
+} from "lucide-react";
 import Fuse from "fuse.js";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import {
@@ -11,6 +20,20 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { getRelativeDate } from "@/lib/utils";
+
+// Import Dropdown components
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+
+// Import react-window for virtualization
+import { FixedSizeList as List, ListChildComponentProps } from "react-window";
+import AutoSizer from "react-virtualized-auto-sizer";
 
 interface ItemSelectorProps {
   items: SimplifiedItem[];
@@ -25,6 +48,9 @@ interface ItemSelectorProps {
   overriddenPrice?: number;
   isAutoPickActive: boolean;
   overriddenPrices: Record<string, number>;
+  isExcluded: boolean;
+  onToggleExclude: () => void;
+  excludedItems: Set<string>; // New prop to track excluded items
 }
 
 const ItemSelector: React.FC<ItemSelectorProps> = ({
@@ -37,6 +63,9 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   overriddenPrice,
   isAutoPickActive,
   overriddenPrices,
+  isExcluded,
+  onToggleExclude,
+  excludedItems, // Destructure the new prop
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -53,77 +82,172 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     }
   }, [selectedItem, overriddenPrice]);
 
+  // Initialize Fuse.js
   const fuse = useMemo(() => {
     return new Fuse(items, {
       keys: ["name"],
       threshold: 0.3,
+      includeScore: false,
     });
   }, [items]);
 
+  // Debounced search term
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // 300ms debounce
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  // Filtered items based on search term and focus state
   const filteredItems = useMemo(() => {
-    if (isFocused && !searchTerm) {
-      return items;
+    if (isFocused && !debouncedSearchTerm) {
+      return items.filter((item) => item.price > 0);
     }
-    if (!searchTerm) return [];
+    if (!debouncedSearchTerm) return [];
     return fuse
-      .search(searchTerm)
+      .search(debouncedSearchTerm)
       .map((result) => result.item)
       .filter((item) => item.price > 0);
-  }, [searchTerm, fuse, isFocused, items]);
+  }, [debouncedSearchTerm, fuse, isFocused, items]);
 
-  const handleSelect = (item: SimplifiedItem | null) => {
-    let overriddenPriceToPass: number | undefined | null = undefined;
+  const handleSelect = useCallback(
+    (item: SimplifiedItem | null) => {
+      let overriddenPriceToPass: number | undefined | null = undefined;
 
-    if (item) {
-      if (overriddenPrice !== undefined) {
-        overriddenPriceToPass = overriddenPrice;
-      } else if (priceOverride) {
-        overriddenPriceToPass = Number(priceOverride);
+      if (item) {
+        if (overriddenPrice !== undefined) {
+          overriddenPriceToPass = overriddenPrice;
+        } else if (priceOverride) {
+          overriddenPriceToPass = Number(priceOverride);
+        }
       }
-    }
 
-    onSelect(item, overriddenPriceToPass);
-    setSearchTerm("");
-    setIsFocused(false);
-    setPriceOverride(
-      overriddenPriceToPass !== undefined && overriddenPriceToPass !== null
-        ? overriddenPriceToPass.toString()
-        : ""
-    );
-  };
+      onSelect(item, overriddenPriceToPass);
+      setSearchTerm("");
+      setIsFocused(false);
+      setPriceOverride(
+        overriddenPriceToPass !== undefined && overriddenPriceToPass !== null
+          ? overriddenPriceToPass.toString()
+          : ""
+      );
+    },
+    [onSelect, overriddenPrice, priceOverride]
+  );
 
-  const handleRemove = () => {
+  const handleRemove = useCallback(() => {
     if (isPinned) {
       onPin();
     }
     handleSelect(null);
-  };
+  }, [isPinned, onPin, handleSelect]);
 
-  const clearPriceOverride = () => {
+  const clearPriceOverride = useCallback(() => {
     setPriceOverride("");
     setIsPriceOverrideActive(false);
     if (selectedItem) {
       onSelect(selectedItem, null);
     }
-  };
+  }, [onSelect, selectedItem]);
 
-  const handlePriceOverride = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPriceOverride(value);
-    if (selectedItem && value && isPriceOverrideActive) {
-      onSelect(selectedItem, Number(value) || 0);
-    }
-  };
+  const handlePriceOverride = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      if (/^\d*$/.test(value)) {
+        // Allow only numbers
+        setPriceOverride(value);
+        if (selectedItem && value && isPriceOverrideActive) {
+          onSelect(selectedItem, Number(value) || 0);
+        }
+      }
+    },
+    [onSelect, selectedItem, isPriceOverrideActive]
+  );
 
-  const togglePriceOverride = () => {
-    setIsPriceOverrideActive(!isPriceOverrideActive);
+  const togglePriceOverride = useCallback(() => {
+    setIsPriceOverrideActive((prev) => !prev);
     if (!isPriceOverrideActive && selectedItem && priceOverride) {
       onSelect(selectedItem, Number(priceOverride));
     } else if (isPriceOverrideActive && selectedItem) {
       onSelect(selectedItem, null);
       setPriceOverride("");
     }
-  };
+  }, [isPriceOverrideActive, onSelect, selectedItem, priceOverride]);
+
+  const toggleExclude = useCallback(() => {
+    onToggleExclude();
+  }, [onToggleExclude]);
+
+  // Row component for react-window
+  const Row = useCallback(
+    ({ index, style }: ListChildComponentProps) => {
+      const item = filteredItems[index];
+      const itemOverriddenPrice = overriddenPrices[item.uid];
+      const displayedPrice =
+        itemOverriddenPrice !== undefined ? itemOverriddenPrice : item.price;
+      const isOverridden = itemOverriddenPrice !== undefined;
+      const isItemExcluded = excludedItems.has(item.uid); // Check if the item is excluded
+
+      return (
+        <Tooltip key={item.uid}>
+          <TooltipTrigger asChild>
+            <li
+              style={style}
+              onMouseDown={(e) => e.preventDefault()}
+              onMouseUp={() => handleSelect(item)}
+              className="p-2 hover:bg-gray-600 cursor-pointer text-white flex flex-col"
+            >
+              <div className="flex justify-between items-center">
+                <span className="truncate">{item.name}</span>{" "}
+                {isItemExcluded && (
+                  <span className="text-red-500 ml-2">Excluded</span>
+                )}
+              </div>
+              <div className="text-gray-400 text-sm mt-1">
+                <p>Base Value: ₱{item.basePrice.toLocaleString()}</p>
+                <p>
+                  Estimated Flea Price:{" "}
+                  <span
+                    className={isOverridden ? "text-yellow-300 font-bold" : ""}
+                  >
+                    ₱{displayedPrice.toLocaleString()}
+                  </span>
+                  {isOverridden && (
+                    <span className="text-gray-400 ml-1">(Overridden)</span>
+                  )}
+                </p>
+              </div>
+            </li>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div>
+              <p>Base Value: ₱{item.basePrice.toLocaleString()}</p>
+              <p>
+                Estimated Flea Price:{" "}
+                <span
+                  className={isOverridden ? "text-yellow-300 font-bold" : ""}
+                >
+                  ₱{displayedPrice.toLocaleString()}
+                </span>
+                {isOverridden && (
+                  <span className="text-gray-400 ml-1">(Overridden)</span>
+                )}
+              </p>
+              {isItemExcluded && (
+                <p className="text-red-500">This item is excluded.</p>
+              )}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      );
+    },
+    [filteredItems, handleSelect, overriddenPrices, excludedItems]
+  );
 
   return (
     <TooltipProvider>
@@ -137,7 +261,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             value={selectedItem ? selectedItem.name : searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              if (selectedItem) onSelect(null);
+              if (selectedItem) handleSelect(null);
             }}
             placeholder="Search items..."
             className={`w-full p-2 pr-24 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -145,123 +269,80 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             }`}
           />
           {selectedItem && (
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-2">
-              <button
-                onClick={onPin}
-                className={`p-1 ${
-                  isPinned ? "bg-yellow-500" : "bg-gray-500"
-                } text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500`}
-                title={isPinned ? "Unpin Item" : "Pin Item"}
-              >
-                <Pin size={16} />
-              </button>
-              <button
-                onClick={togglePriceOverride}
-                className={`p-1 ${
-                  isPriceOverrideActive ? "bg-green-500" : "bg-gray-500"
-                } text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                title={
-                  isPriceOverrideActive
-                    ? "Disable Price Override"
-                    : "Enable Price Override"
-                }
-              >
-                <BadgePoundSterling size={16} />
-              </button>
-              <button
-                onClick={onCopy}
-                className="p-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                title="Copy Item Name"
-              >
-                <Copy size={16} />
-              </button>
-              <button
-                onClick={handleRemove}
-                className="p-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                title="Remove Item"
-              >
-                <X size={16} />
-              </button>
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-8 w-8 bg-gray-500 hover:bg-gray-600 text-white"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                    <span className="sr-only">More</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={onPin}>
+                    <Pin className="mr-2 h-4 w-4" />
+                    <span>{isPinned ? "Unpin Item" : "Pin Item"}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={togglePriceOverride}>
+                    <BadgeDollarSign className="mr-2 h-4 w-4" />
+                    <span>
+                      {isPriceOverrideActive
+                        ? "Disable Price Override"
+                        : "Enable Price Override"}
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={toggleExclude}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>{isExcluded ? "Include Item" : "Exclude Item"}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={onCopy}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    <span>Copy Item Name</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={handleRemove}>
+                    <XIcon className="mr-2 h-4 w-4 text-red-500" />
+                    <span className="text-red-500">Remove Item</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>
 
         {!selectedItem && isFocused && (
-          <ul className="absolute z-10 w-full mt-1 bg-gray-700 rounded-md shadow-lg max-h-60 overflow-auto">
-            {filteredItems.map((item) => {
-              const itemOverriddenPrice = overriddenPrices[item.uid];
-              const displayedPrice =
-                itemOverriddenPrice !== undefined
-                  ? itemOverriddenPrice
-                  : item.price;
-              const isOverridden = itemOverriddenPrice !== undefined;
-
-              return (
-                <Tooltip key={item.uid}>
-                  <TooltipTrigger asChild>
-                    <li
-                      onMouseDown={(e) => e.preventDefault()}
-                      onMouseUp={() => handleSelect(item)}
-                      className="p-2 hover:bg-gray-600 cursor-pointer text-white flex flex-col"
-                    >
-                      <div className="flex justify-between">
-                        <span>{item.name}</span>
-                      </div>
-                      <div className="text-gray-400 text-sm mt-1">
-                        <p>Base Value: ₱{item.basePrice.toLocaleString()}</p>
-                        <p>
-                          Estimated Flea Price:{" "}
-                          <span
-                            className={
-                              isOverridden ? "text-yellow-300 font-bold" : ""
-                            }
-                          >
-                            ₱{displayedPrice.toLocaleString()}
-                          </span>
-                          {isOverridden && (
-                            <span className="text-gray-400 ml-1">
-                              (Overridden)
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    </li>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div>
-                      <p>Base Value: ₱{item.basePrice.toLocaleString()}</p>
-                      <p>
-                        Estimated Flea Price:{" "}
-                        <span
-                          className={
-                            isOverridden ? "text-yellow-300 font-bold" : ""
-                          }
-                        >
-                          ₱{displayedPrice.toLocaleString()}
-                        </span>
-                        {isOverridden && (
-                          <span className="text-gray-400 ml-1">
-                            (Overridden)
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
+          <div className="absolute z-10 w-full mt-1 bg-gray-700 rounded-md shadow-lg max-h-60 overflow-hidden">
+            <AutoSizer disableHeight>
+              {({ width }) => (
+                <List
+                  height={240} // Adjust based on desired height
+                  itemCount={filteredItems.length}
+                  itemSize={80} // Adjust based on item height
+                  width={width}
+                >
+                  {Row}
+                </List>
+              )}
+            </AutoSizer>
             {filteredItems.length === 0 && (
-              <li className="p-2 text-gray-400">No items found.</li>
+              <div className="p-2 text-gray-400">No items found.</div>
             )}
-          </ul>
+          </div>
         )}
         {selectedItem && (
-          <div className="text-sm text-gray-400 mt-1 flex flex-col sm:flex-row justify-between">
+          <div className="text-sm text-gray-400 mt-1 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            {" "}
             <span>Base: ₱{selectedItem.basePrice.toLocaleString()}</span>
             <span className={overriddenPrice ? "text-neutral-100" : ""}>
               Flea: ₱{(overriddenPrice || selectedItem.price).toLocaleString()}
             </span>
             <span>Updated: {getRelativeDate(selectedItem.updated)}</span>
+            {isExcluded && (
+              <span className="text-red-500">Excluded from Autopick</span>
+            )}
           </div>
         )}
         {selectedItem && isPriceOverrideActive && !isAutoPickActive && (
@@ -281,7 +362,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 className="ml-2 p-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                 title="Clear Price Override Input"
               >
-                <X size={16} />
+                <XIcon size={16} />
               </button>
             )}
           </div>

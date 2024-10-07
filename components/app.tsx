@@ -153,6 +153,26 @@ export function App() {
 
   const dataFetchedRef = useRef(false);
 
+  // Excluded items state
+  const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
+
+  const toggleExcludedItem = (uid: string) => {
+    setExcludedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(uid)) {
+        newSet.delete(uid);
+      } else {
+        newSet.add(uid);
+      }
+      return newSet;
+    });
+  };
+
+  const resetOverridesAndExclusions = () => {
+    setOverriddenPrices({});
+    setExcludedItems(new Set());
+  };
+
   // Fetch data from internal API routes based on the selected mode (PVE or PVP)
   const fetchData = useCallback(async () => {
     if (dataFetchedRef.current) return;
@@ -405,6 +425,7 @@ export function App() {
           new Date(item.updated).getTime() >
           Date.now() - 1000 * 60 * 60 * 24 * 7
       ) // Filter out items that haven't been updated in the last week
+      .filter((item) => !excludedItems.has(item.uid)) // Exclude user-excluded items
       .sort((a, b) => b.basePrice / b.price - a.basePrice / a.price) // Sort by value-to-cost ratio
       .slice(0, 100); // Limit to top 100 items
 
@@ -485,6 +506,7 @@ export function App() {
     setSelectedItems(Array(5).fill(null)); // Reset selected items
     setPinnedItems(Array(5).fill(false)); // Reset pinned items
     setOverriddenPrices({}); // Reset overridden prices
+    setExcludedItems(new Set()); // Reset excluded items
     dataFetchedRef.current = false; // Reset data fetch flag
   };
 
@@ -701,6 +723,11 @@ export function App() {
                       }
                       isAutoPickActive={isAutoPickActive}
                       overriddenPrices={overriddenPrices}
+                      isExcluded={excludedItems.has(item?.uid || "")}
+                      onToggleExclude={() =>
+                        item && toggleExcludedItem(item.uid)
+                      }
+                      excludedItems={excludedItems} // Ensure this prop is passed
                     />
                     {index < selectedItems.length - 1 && (
                       <Separator className="my-2" />
@@ -815,6 +842,7 @@ export function App() {
             selectedCategories={selectedCategories}
             onCategoryChange={handleCategoryChange}
             allCategories={allItemCategories} // Pass all categories
+            onReset={resetOverridesAndExclusions} // Pass reset function
           />
         </div>
       )}

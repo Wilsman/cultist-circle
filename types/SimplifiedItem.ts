@@ -8,4 +8,5 @@ export interface SimplifiedItem {
   updated: string;
   tags?: string[];
   bannedOnFlea?: boolean;
+  isExcluded?: boolean; // Add this line
 }
