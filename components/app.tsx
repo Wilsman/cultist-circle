@@ -12,7 +12,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { HelpCircle, Settings } from "lucide-react";
+import { HelpCircle, Settings, Dices } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
 import BetaBadge from "./ui/beta-badge";
@@ -156,6 +156,9 @@ export function App() {
   // Excluded items state
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
 
+  const [autoSelectClicked, setAutoSelectClicked] = useState(false); // New state variable
+  const isAutoSelectingRef = useRef(false); // Ref to track auto-select process
+
   const toggleExcludedItem = (uid: string) => {
     setExcludedItems((prev) => {
       const newSet = new Set(prev);
@@ -171,6 +174,7 @@ export function App() {
   const resetOverridesAndExclusions = () => {
     setOverriddenPrices({});
     setExcludedItems(new Set());
+    setAutoSelectClicked(false); // Reset Auto Select button
   };
 
   // Fetch data from internal API routes based on the selected mode (PVE or PVP)
@@ -373,6 +377,10 @@ export function App() {
     newSelectedItems[index] = item;
     setSelectedItems(newSelectedItems);
 
+    if (!isAutoSelectingRef.current) {
+      setAutoSelectClicked(false); // Reset when user changes dropdown
+    }
+
     if (item && overriddenPrice !== undefined) {
       if (overriddenPrice !== null) {
         // Update overridden price
@@ -412,6 +420,7 @@ export function App() {
   const handleAutoSelect = async (): Promise<void> => {
     setIsAutoPickActive(true);
     setIsCalculating(true);
+    setAutoSelectClicked(true);
 
     // Filter validItems based on heuristics
     let validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
@@ -498,6 +507,7 @@ export function App() {
     setOverriddenPrices(newOverriddenPrices);
     setIsCalculating(false);
     setIsAutoPickActive(false);
+    isAutoSelectingRef.current = false;
   };
 
   // **13. Handle Mode Toggle Reset**
@@ -508,6 +518,7 @@ export function App() {
     setOverriddenPrices({}); // Reset overridden prices
     setExcludedItems(new Set()); // Reset excluded items
     dataFetchedRef.current = false; // Reset data fetch flag
+    setAutoSelectClicked(false); // Reset Auto Select button
   };
 
   // **14. Handle Copy to Clipboard**
@@ -669,7 +680,14 @@ export function App() {
                           disabled={isCalculating}
                           className="bg-blue-500 hover:bg-blue-700 md:min-w-[300px] sm:min-w-[300px] mr-2"
                         >
-                          Auto Select
+                          {autoSelectClicked ? (
+                            <>
+                              <Dices className="mr-1 h-5 w-5" />
+                              Reroll
+                            </>
+                          ) : (
+                            "Auto Select"
+                          )}
                         </Button>
 
                         <Link href="/recipes">
