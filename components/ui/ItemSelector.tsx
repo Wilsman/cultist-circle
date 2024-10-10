@@ -39,8 +39,8 @@ interface ItemSelectorProps {
   items: SimplifiedItem[];
   selectedItem: SimplifiedItem | null;
   onSelect: (
-    item: SimplifiedItem | null,
-    overriddenPrice?: number | null
+    selectedItem: SimplifiedItem | null,
+    overriddenPrice: number | null | undefined
   ) => void;
   onCopy: () => void;
   onPin: () => void;
@@ -50,7 +50,7 @@ interface ItemSelectorProps {
   overriddenPrices: Record<string, number>;
   isExcluded: boolean;
   onToggleExclude: () => void;
-  excludedItems: Set<string>; // New prop to track excluded items
+  excludedItems: Set<string>;
 }
 
 const ItemSelector: React.FC<ItemSelectorProps> = ({

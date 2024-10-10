@@ -37,18 +37,26 @@ import ThresholdSelector from "@/components/ui/threshold-selector";
 import Cookies from "js-cookie";
 import { SettingsPane } from "@/components/settings-pane";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Toaster } from "@/components/ui/toaster"; // Import Toaster and useToast
+import { useToast } from "@/hooks/use-toast";
+import TourOverlay from "@/components/tour-overlay";
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
 const PVP_CACHE_KEY = "pvpItemsCache";
+const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Storage key for overridden prices
 
 export function App() {
+  // Mode state
   const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
+
+  // Selected items state
   const [selectedItems, setSelectedItems] = useState<
     Array<SimplifiedItem | null>
   >(Array(5).fill(null));
-  const [total, setTotal] = useState<number>(0);
-  const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
+
+  // Settings and UI states
+  const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false); // Tracks if Auto Select has been used
   const [isCalculating, setIsCalculating] = useState<boolean>(false); // Calculating state
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
@@ -107,17 +115,16 @@ export function App() {
     return defaultItemCategories;
   });
 
+  // Handler for category changes
   const handleCategoryChange = useCallback((categories: string[]) => {
     setSelectedCategories(categories);
     if (typeof window !== "undefined") {
       localStorage.setItem("selectedCategories", JSON.stringify(categories));
     }
+    setHasAutoSelected(false); // Reset Auto Select on category change
   }, []);
 
-  const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number | null>(
-    null
-  );
-
+  // Sort option handler
   const handleSortChange = useCallback((newSortOption: string) => {
     setSortOption(newSortOption);
     if (typeof window !== "undefined") {
@@ -125,13 +132,9 @@ export function App() {
     }
   }, []);
 
-  // Initialize threshold state with a function
-  const [threshold, setThreshold] = useState<number>(() => {
-    // Use a default value that will be consistent on both server and client
-    return 350001;
-  });
+  // Threshold state with initialization from cookies
+  const [threshold, setThreshold] = useState<number>(350001); // Default value
 
-  // Use useEffect to update the threshold from the cookie after initial render
   useEffect(() => {
     const savedThreshold = Cookies.get("userThreshold");
     if (savedThreshold) {
@@ -139,14 +142,15 @@ export function App() {
     }
   }, []);
 
-  // State to manage the threshold value for the ritual
+  // Handler for threshold changes
   const handleThresholdChange = (newValue: number) => {
     setThreshold(newValue);
     Cookies.set("userThreshold", newValue.toString(), { expires: 365 });
-    // You might want to trigger any calculations that depend on the threshold here
+    setHasAutoSelected(false); // Reset Auto Select on threshold change
+    toastShownRef.current = false; // Reset toast shown flag when threshold changes
   };
 
-  // State for storing fetched items data, loading status, and error messages
+  // Data fetching states
   const [itemsData, setItemsData] = useState<SimplifiedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -156,9 +160,46 @@ export function App() {
   // Excluded items state
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
 
-  const [autoSelectClicked, setAutoSelectClicked] = useState(false); // New state variable
-  const isAutoSelectingRef = useRef(false); // Ref to track auto-select process
+  // Settings for overridden prices
+  const [overriddenPrices, setOverriddenPrices] = useState<
+    Record<string, number>
+  >(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(OVERRIDDEN_PRICES_KEY);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (e) {
+        console.error("Error loading overriddenPrices from localStorage", e);
+      }
+    }
+    return {};
+  });
 
+  // Save overriddenPrices to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          OVERRIDDEN_PRICES_KEY,
+          JSON.stringify(overriddenPrices)
+        );
+      } catch (e) {
+        console.error("Error saving overriddenPrices to localStorage", e);
+      }
+    }
+  }, [overriddenPrices]);
+
+  // Timestamp for caching
+  const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number | null>(
+    null
+  );
+
+  // Next fetch time display
+  const [nextFetchTime, setNextFetchTime] = useState<string>("N/A");
+
+  // Handler to toggle excluded items
   const toggleExcludedItem = (uid: string) => {
     setExcludedItems((prev) => {
       const newSet = new Set(prev);
@@ -169,15 +210,25 @@ export function App() {
       }
       return newSet;
     });
+    setHasAutoSelected(false); // Reset Auto Select on exclusion change
   };
 
+  // Reset overrides and exclusions
   const resetOverridesAndExclusions = () => {
     setOverriddenPrices({});
     setExcludedItems(new Set());
-    setAutoSelectClicked(false); // Reset Auto Select button
+    setHasAutoSelected(false); // Reset Auto Select button
+    toastShownRef.current = false; // Reset toast shown flag when resetting
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
+      } catch (e) {
+        console.error("Error removing overriddenPrices from localStorage", e);
+      }
+    }
   };
 
-  // Fetch data from internal API routes based on the selected mode (PVE or PVP)
+  // Fetch data based on mode (PVE/PVP)
   const fetchData = useCallback(async () => {
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
@@ -201,8 +252,7 @@ export function App() {
     }
   }, [isPVE]);
 
-  const [nextFetchTime, setNextFetchTime] = useState<string>("N/A");
-
+  // Update next fetch time every second
   useEffect(() => {
     if (lastFetchTimestamp) {
       const interval = setInterval(() => {
@@ -223,10 +273,12 @@ export function App() {
     }
   }, [lastFetchTimestamp]);
 
+  // Fetch data on mount or when mode changes
   useEffect(() => {
     fetchData();
   }, [fetchData, isPVE]);
 
+  // Function to fetch cached data or retrieve from cache
   const fetchCachedData = async (
     url: string,
     cacheKey: string
@@ -261,7 +313,7 @@ export function App() {
     }
   };
 
-  // Precompute and sort items based on the sortOption
+  // Memoized computation of items based on categories and sort option
   const items: SimplifiedItem[] = useMemo(() => {
     const filteredItems = itemsData.filter(
       (item) =>
@@ -282,7 +334,7 @@ export function App() {
     return sortedItems;
   }, [itemsData, sortOption, selectedCategories]);
 
-  // Function to find the best combination of items that meets the threshold with the minimum flea cost
+  // Function to find the best combination of items
   const findBestCombination = useCallback(
     (
       validItems: SimplifiedItem[],
@@ -349,25 +401,25 @@ export function App() {
     []
   );
 
-  const [overriddenPrices, setOverriddenPrices] = useState<
-    Record<string, number>
-  >({});
+  // Memoized total and flea costs
+  const total = useMemo(() => {
+    return selectedItems.reduce((sum, item) => sum + (item?.basePrice || 0), 0);
+  }, [selectedItems]);
 
-  // Effect to recalculate the total ritual value and flea costs whenever selected items or threshold changes
-  useEffect(() => {
-    // Calculate total ritual value
-    setTotal(
-      selectedItems.reduce((sum, item) => sum + (item?.basePrice || 0), 0)
+  const fleaCosts = useMemo(() => {
+    return selectedItems.map((item) =>
+      item ? overriddenPrices[item.uid] || item.price : 0
     );
-    // Calculate total flea costs
-    setFleaCosts(
-      selectedItems.map((item) =>
-        item ? overriddenPrices[item.uid] || item.price : 0
-      )
-    );
-  }, [selectedItems, threshold, overriddenPrices]);
+  }, [selectedItems, overriddenPrices]);
 
-  // Update the selected item in the list
+  // Memoized total flea cost
+  const totalFleaCost = useMemo(() => {
+    return fleaCosts.reduce((sum, cost) => sum + cost, 0);
+  }, [fleaCosts]);
+
+  const isThresholdMet: boolean = total >= threshold;
+
+  // Handler to update selected item
   const updateSelectedItem = (
     item: SimplifiedItem | null,
     index: number,
@@ -377,9 +429,7 @@ export function App() {
     newSelectedItems[index] = item;
     setSelectedItems(newSelectedItems);
 
-    if (!isAutoSelectingRef.current) {
-      setAutoSelectClicked(false); // Reset when user changes dropdown
-    }
+    setHasAutoSelected(false); // Reset Auto Select when user changes selection
 
     if (item && overriddenPrice !== undefined) {
       if (overriddenPrice !== null) {
@@ -408,19 +458,18 @@ export function App() {
     // Do not delete overridden price if overriddenPrice is undefined
   };
 
-  // **11. Handle Auto Select**
+  // Handler to pin/unpin items
   const handlePinItem = (index: number) => {
     const newPinnedItems = [...pinnedItems];
     newPinnedItems[index] = !newPinnedItems[index];
     setPinnedItems(newPinnedItems);
+    setHasAutoSelected(false); // Reset Auto Select on pin change
   };
 
-  const [isAutoPickActive, setIsAutoPickActive] = useState(false);
-
+  // Function to handle auto-select
   const handleAutoSelect = async (): Promise<void> => {
-    setIsAutoPickActive(true);
+    setHasAutoSelected(true);
     setIsCalculating(true);
-    setAutoSelectClicked(true);
 
     // Filter validItems based on heuristics
     let validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
@@ -478,7 +527,7 @@ export function App() {
     if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
       alert("No combination of items meets the remaining threshold.");
       setIsCalculating(false);
-      setIsAutoPickActive(false);
+      setHasAutoSelected(false);
       return;
     }
 
@@ -498,30 +547,35 @@ export function App() {
       const item = newSelectedItems[i];
       if (item && overriddenPrices[item.uid]) {
         newOverriddenPrices[item.uid] = overriddenPrices[item.uid];
-      } else if (item) {
-        delete newOverriddenPrices[item.uid];
       }
+      // Do not delete overridden prices for other items
     }
 
     setSelectedItems(newSelectedItems);
     setOverriddenPrices(newOverriddenPrices);
     setIsCalculating(false);
-    setIsAutoPickActive(false);
-    isAutoSelectingRef.current = false;
   };
 
-  // **13. Handle Mode Toggle Reset**
+  // Handler for mode toggle (PVE/PVP)
   const handleModeToggle = (checked: boolean): void => {
     setIsPVE(checked);
     setSelectedItems(Array(5).fill(null)); // Reset selected items
     setPinnedItems(Array(5).fill(false)); // Reset pinned items
     setOverriddenPrices({}); // Reset overridden prices
     setExcludedItems(new Set()); // Reset excluded items
+    setHasAutoSelected(false); // Reset Auto Select button
     dataFetchedRef.current = false; // Reset data fetch flag
-    setAutoSelectClicked(false); // Reset Auto Select button
+    toastShownRef.current = false; // Reset toast shown flag when mode changes
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
+      } catch (e) {
+        console.error("Error removing overriddenPrices from localStorage", e);
+      }
+    }
   };
 
-  // **14. Handle Copy to Clipboard**
+  // Handler to copy item name to clipboard
   const handleCopyToClipboard = (index: number): void => {
     const item = selectedItems[index];
     if (item) {
@@ -538,6 +592,43 @@ export function App() {
     }
   };
 
+  // Import the useToast hook
+  const { toast } = useToast();
+
+  // Ref to track if toast has been shown
+  const toastShownRef = useRef<boolean>(false);
+
+  // useEffect to trigger toast when threshold is met
+  useEffect(() => {
+    if (isThresholdMet && !toastShownRef.current) {
+      const title = `Threshold Met - ${threshold.toLocaleString()}!`;
+      let description = "";
+
+      if (threshold >= 400000) {
+        description =
+          "25% chance for 6-hour cooldown otherwise 14-hour cooldown for high-value items.";
+      } else if (threshold >= 350000) {
+        // Adjusted to 350000 to match initial state
+        description = "14-hour cooldown for high-value items.";
+      } else {
+        description =
+          "You have met the threshold. A cooldown has been triggered.";
+      }
+
+      toast({
+        title,
+        description,
+      });
+
+      toastShownRef.current = true;
+    }
+
+    // Reset the toastShownRef if threshold is not met
+    if (!isThresholdMet) {
+      toastShownRef.current = false;
+    }
+  }, [isThresholdMet, threshold, toast]);
+
   if (error) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-900 text-red-500">
@@ -546,13 +637,11 @@ export function App() {
     );
   }
 
-  // **17. Sacrifice Value Calculations**
-  const isThresholdMet: boolean = total >= threshold;
-  const totalFleaCost: number = fleaCosts.reduce((sum, cost) => sum + cost, 0);
-
   return (
-    // Layout fills the screen height so there is no scrolling outside of the Card
     <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
+      {/* Render the TourOverlay component */}
+      {!loading && <TourOverlay />}
+
       <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
         <div className="mt-4 text-center text-gray-400 text-sm">
           <div>Next Update: {nextFetchTime}</div>
@@ -627,7 +716,7 @@ export function App() {
           <h1 className="sm:text-3xl text-xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
             <Image
               src="/images/Cultist-Calulator.webp"
-              alt="Cultist calulator logo"
+              alt="Cultist calculator logo"
               width={400}
               height={128}
             />
@@ -637,7 +726,10 @@ export function App() {
           </h1>
 
           {/* **6. Mode Toggle (PVE/PVP)** */}
-          <div className="flex items-center justify-center mb-6 w-full">
+          <div
+            id="pvp-toggle" // Added ID for TourOverlay
+            className="flex items-center justify-center mb-6 w-full"
+          >
             <span className="text-gray-300">PVP</span>
             <Switch
               checked={isPVE}
@@ -648,7 +740,10 @@ export function App() {
           </div>
 
           {/* **7. Display Current Threshold and Edit Button** */}
-          <div className="flex items-center justify-center mb-4 w-full">
+          <div
+            id="threshold" // Added ID for TourOverlay
+            className="flex items-center justify-center mb-4 w-full"
+          >
             <ThresholdSelector
               value={threshold}
               onChange={handleThresholdChange}
@@ -671,16 +766,17 @@ export function App() {
               </div>
             ) : (
               <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex flex-col justify-center items-center">
-                      <div className="flex justify-center mb-4">
+                <div className="flex flex-col justify-center items-center">
+                  <div className="flex justify-center mb-4">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
                         <Button
+                          id="auto-select" // Added ID for TourOverlay
                           onClick={handleAutoSelect}
                           disabled={isCalculating}
                           className="bg-blue-500 hover:bg-blue-700 md:min-w-[300px] sm:min-w-[300px] mr-2"
                         >
-                          {autoSelectClicked ? (
+                          {hasAutoSelected ? (
                             <>
                               <Dices className="mr-1 h-5 w-5" />
                               Reroll
@@ -689,77 +785,93 @@ export function App() {
                             "Auto Select"
                           )}
                         </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Automatically select best items
+                      </TooltipContent>
+                    </Tooltip>
 
+                    <Tooltip>
+                      <TooltipTrigger asChild>
                         <Link href="/recipes">
                           <Button className="bg-red-500 hover:bg-red-700">
                             Recipes
                           </Button>
                         </Link>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Automatically select best items
-                  </TooltipContent>
-                </Tooltip>
+                      </TooltipTrigger>
+                      <TooltipContent>View recipes</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
               </TooltipProvider>
             )}
 
             {/* **9. Item Selection Components** */}
             <div className="space-y-2 w-full">
-              {loading ? (
-                // Show skeletons while loading
-                Array(5)
-                  .fill(0)
-                  .map((_, index) => (
-                    <Skeleton
-                      key={`skeleton-${index}`}
-                      className="h-10 w-full mb-2 bg-slate-500"
-                    />
+              <div id="search-items">
+                {" "}
+                {/* Added ID for TourOverlay */}
+                {loading ? (
+                  // Show skeletons while loading
+                  Array(5)
+                    .fill(0)
+                    .map((_, index) => (
+                      <Skeleton
+                        key={`skeleton-${index}`}
+                        className="h-10 w-full mb-2 bg-slate-500"
+                      />
+                    ))
+                ) : items.length === 0 ? (
+                  // Display message if item list is empty
+                  <div className="text-center text-gray-400 mt-4">
+                    No items available at this time. Please wait for the next
+                    update in {nextFetchTime}.
+                  </div>
+                ) : (
+                  // Show actual item selectors when loaded and items are available
+                  selectedItems.map((item, index) => (
+                    <React.Fragment key={`selector-${index}`}>
+                      <ItemSelector
+                        items={items}
+                        selectedItem={item}
+                        onSelect={(selectedItem, overriddenPrice) =>
+                          updateSelectedItem(
+                            selectedItem,
+                            index,
+                            overriddenPrice
+                          )
+                        }
+                        onCopy={() => handleCopyToClipboard(index)}
+                        onPin={() => handlePinItem(index)}
+                        isPinned={pinnedItems[index]}
+                        overriddenPrice={
+                          item ? overriddenPrices[item.uid] : undefined
+                        }
+                        isAutoPickActive={hasAutoSelected} // Added prop
+                        overriddenPrices={overriddenPrices} // Added prop
+                        isExcluded={excludedItems.has(item?.uid || "")}
+                        onToggleExclude={() =>
+                          item && toggleExcludedItem(item.uid)
+                        }
+                        excludedItems={excludedItems} // Ensure this prop is passed
+                      />
+                      {index < selectedItems.length - 1 && (
+                        <Separator className="my-2" />
+                      )}
+                    </React.Fragment>
                   ))
-              ) : items.length === 0 ? (
-                // Display message if item list is empty
-                <div className="text-center text-gray-400 mt-4">
-                  No items available at this time. Please wait for the next
-                  update in {nextFetchTime}.
-                </div>
-              ) : (
-                // Show actual item selectors when loaded and items are available
-                selectedItems.map((item, index) => (
-                  <React.Fragment key={`selector-${index}`}>
-                    <ItemSelector
-                      items={items}
-                      selectedItem={item}
-                      onSelect={(selectedItem, overriddenPrice) =>
-                        updateSelectedItem(selectedItem, index, overriddenPrice)
-                      }
-                      onCopy={() => handleCopyToClipboard(index)}
-                      onPin={() => handlePinItem(index)}
-                      isPinned={pinnedItems[index]}
-                      overriddenPrice={
-                        item ? overriddenPrices[item.uid] : undefined
-                      }
-                      isAutoPickActive={isAutoPickActive}
-                      overriddenPrices={overriddenPrices}
-                      isExcluded={excludedItems.has(item?.uid || "")}
-                      onToggleExclude={() =>
-                        item && toggleExcludedItem(item.uid)
-                      }
-                      excludedItems={excludedItems} // Ensure this prop is passed
-                    />
-                    {index < selectedItems.length - 1 && (
-                      <Separator className="my-2" />
-                    )}
-                  </React.Fragment>
-                ))
-              )}
+                )}
+              </div>
             </div>
           </div>
 
           {/* **10. Sacrifice Value Display** */}
-          <div className="mt-6 text-center w-full">
+          <div
+            id="sacrifice-value" // Added ID for TourOverlay
+            className="mt-6 text-center w-full"
+          >
             <h2 className="text-3xl font-bold mb-2 text-gray-300">
-              Sacrifice Value
+              Total Base Value
             </h2>
             {loading ? (
               <Skeleton className="h-16 w-3/4 mx-auto" />
@@ -864,6 +976,8 @@ export function App() {
           />
         </div>
       )}
+      {/* **12. Render the Toaster Component** */}
+      <Toaster />
     </div>
   );
 }
