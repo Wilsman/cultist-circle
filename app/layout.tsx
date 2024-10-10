@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/react"
+import { Analytics } from "@vercel/analytics/react";
 import localFont from "next/font/local";
 import "./globals.css";
 import Script from "next/script";
@@ -48,19 +48,27 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-    <head>
-    {/* <!-- Google tag (gtag.js) --> */}
-      <Script async src="https://www.googletagmanager.com/gtag/js?id=G-MDQ1Z37Y5M"></Script>
-      <Script id="google-analytics">
-        {`
+      <head>
+        {/* <!-- Google tag (gtag.js) --> */}
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-MDQ1Z37Y5M"
+        ></Script>
+        <Script id="google-analytics">
+          {`
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
 
         gtag('config', 'G-MDQ1Z37Y5M');
         `}
-      </Script>
-    </head>
+        </Script>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065"
+          crossOrigin="anonymous"
+        ></script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

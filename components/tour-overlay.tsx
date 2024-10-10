@@ -15,7 +15,7 @@ const steps = [
     target: "#threshold",
     title: "Threshold Setting",
     content:
-      "Set your desired threshold value for item selection. 350,001 triggers a 14h cooldown or a theres a 25% chance of a 6h cooldown at 400k.",
+      "Set your desired threshold value for item selection. 350,001 triggers a 14h cooldown or there is a 25% chance of a 6h cooldown at 400k.",
   },
   {
     target: "#auto-select",

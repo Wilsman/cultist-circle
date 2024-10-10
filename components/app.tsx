@@ -40,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster and useToast
 import { useToast } from "@/hooks/use-toast";
 import TourOverlay from "@/components/tour-overlay";
+import AdBanner from "@/components/AdBanner";
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
@@ -871,7 +872,7 @@ export function App() {
             className="mt-6 text-center w-full"
           >
             <h2 className="text-3xl font-bold mb-2 text-gray-300">
-              Total Sacrifice Value
+              Total Sacrifice
             </h2>
             {loading ? (
               <Skeleton className="h-16 w-3/4 mx-auto" />
@@ -893,7 +894,7 @@ export function App() {
             )}
             <div className="mt-6">
               <div className="text-sm font-semibold text-gray-400">
-                Flea Cost ≈{" "}
+                Total flea Cost ≈{" "}
                 <span
                   className={
                     Object.keys(overriddenPrices).length > 0 ? "font-bold" : ""
@@ -954,6 +955,13 @@ export function App() {
             >
               Feedback
             </Button>
+          </div>
+          <div className="bg-black mt-4">
+            <AdBanner
+              dataAdFormat="auto"
+              dataFullWidthResponsive={true}
+              dataAdSlot="1022212363"
+            />
           </div>
         </footer>
       </Card>

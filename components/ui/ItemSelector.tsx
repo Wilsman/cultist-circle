@@ -281,7 +281,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     <span className="sr-only">More</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent className="bg-primary text-secondary" align="end">
                   <DropdownMenuItem onSelect={onPin}>
                     <Pin className="mr-2 h-4 w-4" />
                     <span>{isPinned ? "Unpin Item" : "Pin Item"}</span>
@@ -336,7 +336,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           <div className="text-sm text-gray-400 mt-1 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             {" "}
             <span>Base: ₱{selectedItem.basePrice.toLocaleString()}</span>
-            <span className={overriddenPrice ? "text-neutral-100" : ""}>
+            <span className={overriddenPrice ? "text-blue-500" : ""}>
               Flea: ₱{(overriddenPrice || selectedItem.price).toLocaleString()}
             </span>
             <span>Updated: {getRelativeDate(selectedItem.updated)}</span>

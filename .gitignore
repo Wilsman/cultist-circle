@@ -42,3 +42,6 @@ next-env.d.ts
 /public/all_items_*
 repopack-output.txt
 CCC.md
+
+# vscode
+/.vscode
