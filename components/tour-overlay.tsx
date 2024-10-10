@@ -9,12 +9,13 @@ const steps = [
   {
     target: "#pvp-toggle",
     title: "PVP Toggle",
-    content: "Toggle between PVP and PVE modes to adjust calculations.",
+    content: "Toggle between PVP and PVE item list and flea prices.",
   },
   {
     target: "#threshold",
     title: "Threshold Setting",
-    content: "Set your desired threshold value for item selection.",
+    content:
+      "Set your desired threshold value for item selection. 350,001 triggers a 14h cooldown or a theres a 25% chance of a 6h cooldown at 400k.",
   },
   {
     target: "#auto-select",
@@ -31,7 +32,8 @@ const steps = [
   {
     target: "#sacrifice-value",
     title: "Sacrifice Value",
-    content: "This is the TOTAL base value of the selected items. The base price of any item can be calculated by dividing the trader buyback price with the multiplier of that trader. Traders have a different multiplier.",
+    content:
+      "This is the TOTAL base value of the selected items. The base price of any item can be calculated by dividing the trader buyback price with the multiplier of that trader.",
   },
 ];
 
@@ -64,19 +66,31 @@ export default function TourOverlay() {
   }, []);
 
   useLayoutEffect(() => {
-    if (isVisible && currentStep < steps.length) {
-      const targetElement = document.querySelector(steps[currentStep].target);
-      if (targetElement) {
-        const rect = targetElement.getBoundingClientRect();
-        setTargetRect(rect);
-        targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
-      } else {
-        console.warn(
-          `Element not found for selector: ${steps[currentStep].target}`
-        );
-        setTargetRect(null);
+    const updateTargetRect = () => {
+      if (isVisible && currentStep < steps.length) {
+        const targetElement = document.querySelector(steps[currentStep].target);
+        if (targetElement) {
+          const rect = targetElement.getBoundingClientRect();
+          setTargetRect(rect);
+          targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else {
+          console.warn(
+            `Element not found for selector: ${steps[currentStep].target}`
+          );
+          setTargetRect(null);
+        }
       }
-    }
+    };
+
+    updateTargetRect();
+
+    window.addEventListener("resize", updateTargetRect);
+    window.addEventListener("scroll", updateTargetRect);
+
+    return () => {
+      window.removeEventListener("resize", updateTargetRect);
+      window.removeEventListener("scroll", updateTargetRect);
+    };
   }, [currentStep, isVisible]);
 
   const handleNext = () => {
@@ -95,12 +109,23 @@ export default function TourOverlay() {
 
   if (!isVisible) return null;
 
+  const overlayStyle = targetRect
+    ? {
+        top:
+          targetRect.bottom + 10 > window.innerHeight / 2
+            ? targetRect.top - 10 - 250 // Adjust 250 to the height of your overlay
+            : targetRect.bottom + 10, // Position below the target element
+        left: window.innerWidth <= 768 ? "0%" : "25%",
+        transform: "translateX(-50%)",
+      }
+    : {};
+
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
       <div className="fixed inset-0 bg-black bg-opacity-50"></div>
       {targetRect && (
         <div
-          className="absolute border-2 border-primary pointer-events-none"
+          className="absolute border-4 pointer-events-none border-yellow-300 border-dashed animate-pulse"
           style={{
             top: targetRect.top - 4,
             left: targetRect.left - 4,
@@ -118,20 +143,21 @@ export default function TourOverlay() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -50 }}
           transition={{ duration: 0.3 }}
-          className="fixed z-50 bg-primary rounded-lg shadow-lg p-6 max-w-md w-full mx-4 top-20 left-1/2 transform -translate-x-1/2 pointer-events-auto"
+          className="fixed z-50 w-full max-w-lg p-6 mx-auto rounded-lg shadow-lg pointer-events-auto bg-primary"
+          style={overlayStyle}
         >
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-secondary">
               {steps[currentStep].title}
             </h2>
             <Button variant="ghost" size="icon" onClick={handleSkip}>
-              <X className="h-6 w-6" />
+              <X className="w-6 h-6" />
             </Button>
           </div>
-          <p className="text-muted-foreground mb-6">
+          <p className="mb-6 text-muted-foreground">
             {steps[currentStep].content}
           </p>
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
               Step {currentStep + 1} of {steps.length}
             </span>
@@ -141,7 +167,7 @@ export default function TourOverlay() {
               </Button>
               <Button onClick={handleNext}>
                 {currentStep === steps.length - 1 ? "Finish" : "Next"}
-                <ChevronRight className="ml-2 h-4 w-4" />
+                <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </div>

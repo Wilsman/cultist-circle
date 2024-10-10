@@ -871,7 +871,7 @@ export function App() {
             className="mt-6 text-center w-full"
           >
             <h2 className="text-3xl font-bold mb-2 text-gray-300">
-              Total Base Value
+              Total Sacrifice Value
             </h2>
             {loading ? (
               <Skeleton className="h-16 w-3/4 mx-auto" />
