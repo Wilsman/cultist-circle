@@ -49,7 +49,6 @@ export async function GET() {
             .sort((a: SimplifiedItem, b: SimplifiedItem) =>
               a.name.localeCompare(b.name)
             );
-          return simplifiedData;
         } else {
           console.log(
             `[${new Date().toISOString()}] Fetching new PVE items from external API`
@@ -91,11 +90,18 @@ export async function GET() {
             .sort((a: SimplifiedItem, b: SimplifiedItem) =>
               a.name.localeCompare(b.name)
             );
-          return simplifiedData;
         }
       },
       CACHE_DURATION
     );
+
+    // Check if the simplifiedData list is empty
+    if (!simplifiedData || simplifiedData.length === 0) {
+      return NextResponse.json(
+        { data: [], message: "No PVP items available at the moment." },
+        { status: 200 }
+      );
+    }
 
     // Include timestamp in the response
     return NextResponse.json({ data: simplifiedData, timestamp });
