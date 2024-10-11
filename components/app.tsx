@@ -1,4 +1,3 @@
-// components/app.tsx
 "use client";
 
 import React, {
@@ -31,7 +30,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { FeedbackForm } from "./feedback-form";
-import ItemSelector from "@/components/ui/ItemSelector"; // Ensure correct path
+import ItemSelector from "@/components/ItemSelector";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import ThresholdSelector from "@/components/ui/threshold-selector";
 import Cookies from "js-cookie";
@@ -57,7 +56,6 @@ export function App() {
   >(Array(5).fill(null));
 
   // Settings and UI states
-  const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false); // Tracks if Auto Select has been used
   const [isCalculating, setIsCalculating] = useState<boolean>(false); // Calculating state
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
@@ -115,6 +113,9 @@ export function App() {
     }
     return defaultItemCategories;
   });
+
+  // Define the hasAutoSelected state variable
+  const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
 
   // Handler for category changes
   const handleCategoryChange = useCallback((categories: string[]) => {
@@ -216,10 +217,14 @@ export function App() {
 
   // Reset overrides and exclusions
   const resetOverridesAndExclusions = () => {
+    const clearedOverridesCount = Object.keys(overriddenPrices).length;
+    const clearedExcludedItemsCount = excludedItems.size;
+
     setOverriddenPrices({});
     setExcludedItems(new Set());
     setHasAutoSelected(false); // Reset Auto Select button
     toastShownRef.current = false; // Reset toast shown flag when resetting
+
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
@@ -227,6 +232,11 @@ export function App() {
         console.error("Error removing overriddenPrices from localStorage", e);
       }
     }
+
+    toast({
+      title: "Reset Successful",
+      description: `${clearedOverridesCount} overrides and ${clearedExcludedItemsCount} excluded items have been cleared.`,
+    });
   };
 
   // Fetch data based on mode (PVE/PVP)
@@ -326,10 +336,15 @@ export function App() {
 
     // Sort the items based on the selected sort option
     const sortedItems = [...filteredItems];
+    // Sort by name in ascending order
     if (sortOption === "az") {
       sortedItems.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortOption === "base-value") {
+      // Sort by base price in ascending order
       sortedItems.sort((a, b) => a.basePrice - b.basePrice);
+    } else if (sortOption === "ratio") {
+      // Sort by value-to-cost ratio in descending order
+      sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / a.price);
     }
 
     return sortedItems;
@@ -467,95 +482,110 @@ export function App() {
     setHasAutoSelected(false); // Reset Auto Select on pin change
   };
 
-  // Function to handle auto-select
-  const handleAutoSelect = async (): Promise<void> => {
-    setHasAutoSelected(true);
+  // Function to handle auto-select and reroll
+  const handleAutoPick = useCallback(async (): Promise<void> => {
+    // Perform Auto Select or Reroll regardless of hasAutoSelected state
     setIsCalculating(true);
 
-    // Filter validItems based on heuristics
-    let validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
+    try {
+      // Filter validItems based on heuristics
+      let validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
 
-    // Apply filtering heuristics
-    validItems = validItems
-      .filter((item) => item.basePrice >= threshold * 0.1) // Example: Only items contributing at least 10% to the threshold
-      .filter((item) => !item.bannedOnFlea) // Filter out items that are banned on the flea market
-      .filter(
+      // Apply filtering heuristics
+      validItems = validItems
+        .filter((item) => item.basePrice >= threshold * 0.1) // Example: Only items contributing at least 10% to the threshold
+        .filter((item) => !item.bannedOnFlea) // Filter out items that are banned on the flea market
+        .filter(
+          (item) =>
+            new Date(item.updated).getTime() >
+            Date.now() - 1000 * 60 * 60 * 24 * 7
+        ) // Filter out items that haven't been updated in the last week
+        .filter((item) => !excludedItems.has(item.uid)) // Exclude user-excluded items
+        .sort((a, b) => b.basePrice / b.price - a.basePrice / a.price) // Sort by value-to-cost ratio
+        .slice(0, 100); // Limit to top 100 items
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const pinnedTotal = selectedItems.reduce(
+        (sum, item, index) =>
+          sum + (pinnedItems[index] && item ? item.basePrice : 0),
+        0
+      );
+
+      const remainingThreshold = Math.max(0, threshold - pinnedTotal);
+
+      const filteredItems = validItems.filter(
         (item) =>
-          new Date(item.updated).getTime() >
-          Date.now() - 1000 * 60 * 60 * 24 * 7
-      ) // Filter out items that haven't been updated in the last week
-      .filter((item) => !excludedItems.has(item.uid)) // Exclude user-excluded items
-      .sort((a, b) => b.basePrice / b.price - a.basePrice / a.price) // Sort by value-to-cost ratio
-      .slice(0, 100); // Limit to top 100 items
+          !selectedItems.some(
+            (selected, index) =>
+              pinnedItems[index] && selected?.uid === item.uid
+          )
+      );
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Adjust prices in filteredItems to use overridden prices where applicable
+      const adjustedItems = filteredItems.map((item) => {
+        const overriddenPrice = overriddenPrices[item.uid];
+        if (overriddenPrice !== undefined) {
+          return { ...item, price: overriddenPrice };
+        }
+        return item;
+      });
 
-    const pinnedTotal = selectedItems.reduce(
-      (sum, item, index) =>
-        sum + (pinnedItems[index] && item ? item.basePrice : 0),
-      0
-    );
+      // Shuffle the adjusted items to increase randomness
+      const shuffledAdjustedItems = [...adjustedItems].sort(
+        () => Math.random() - 0.5
+      );
 
-    const remainingThreshold = Math.max(0, threshold - pinnedTotal);
+      const bestCombination = findBestCombination(
+        shuffledAdjustedItems,
+        remainingThreshold,
+        5 - pinnedItems.filter(Boolean).length
+      );
 
-    const filteredItems = validItems.filter(
-      (item) =>
-        !selectedItems.some(
-          (selected, index) => pinnedItems[index] && selected?.uid === item.uid
-        )
-    );
-
-    // Adjust prices in filteredItems to use overridden prices where applicable
-    const adjustedItems = filteredItems.map((item) => {
-      const overriddenPrice = overriddenPrices[item.uid];
-      if (overriddenPrice !== undefined) {
-        return { ...item, price: overriddenPrice };
+      if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
+        alert("No combination of items meets the remaining threshold.");
+        setHasAutoSelected(false); // Ensure it remains as "Auto Select"
+        return;
       }
-      return item;
-    });
 
-    // Shuffle the adjusted items to increase randomness
-    const shuffledAdjustedItems = [...adjustedItems].sort(
-      () => Math.random() - 0.5
-    );
+      const newSelectedItems: Array<SimplifiedItem | null> = [...selectedItems];
+      let combinationIndex = 0;
+      for (let i = 0; i < 5; i++) {
+        if (!pinnedItems[i]) {
+          newSelectedItems[i] =
+            bestCombination.selected[combinationIndex] || null;
+          combinationIndex++;
+        }
+      }
 
-    const bestCombination = findBestCombination(
-      shuffledAdjustedItems,
-      remainingThreshold,
-      5 - pinnedItems.filter(Boolean).length
-    );
+      // Preserve overridden prices for items that remain selected
+      const newOverriddenPrices = { ...overriddenPrices };
+      for (let i = 0; i < 5; i++) {
+        const item = newSelectedItems[i];
+        if (item && overriddenPrices[item.uid]) {
+          newOverriddenPrices[item.uid] = overriddenPrices[item.uid];
+        }
+        // Do not delete overridden prices for other items
+      }
 
-    if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
-      alert("No combination of items meets the remaining threshold.");
+      setSelectedItems(newSelectedItems);
+      setOverriddenPrices(newOverriddenPrices);
+      setHasAutoSelected(true); // Set to true after successful auto-select
+    } catch (error) {
+      console.error("Auto Select Error:", error);
+      setHasAutoSelected(false); // Reset if any error occurs
+    } finally {
       setIsCalculating(false);
-      setHasAutoSelected(false);
-      return;
     }
-
-    const newSelectedItems: Array<SimplifiedItem | null> = [...selectedItems];
-    let combinationIndex = 0;
-    for (let i = 0; i < 5; i++) {
-      if (!pinnedItems[i]) {
-        newSelectedItems[i] =
-          bestCombination.selected[combinationIndex] || null;
-        combinationIndex++;
-      }
-    }
-
-    // Preserve overridden prices for items that remain selected
-    const newOverriddenPrices = { ...overriddenPrices };
-    for (let i = 0; i < 5; i++) {
-      const item = newSelectedItems[i];
-      if (item && overriddenPrices[item.uid]) {
-        newOverriddenPrices[item.uid] = overriddenPrices[item.uid];
-      }
-      // Do not delete overridden prices for other items
-    }
-
-    setSelectedItems(newSelectedItems);
-    setOverriddenPrices(newOverriddenPrices);
-    setIsCalculating(false);
-  };
+  }, [
+    items,
+    threshold,
+    excludedItems,
+    pinnedItems,
+    selectedItems,
+    overriddenPrices,
+    findBestCombination,
+  ]);
 
   // Handler for mode toggle (PVE/PVP)
   const handleModeToggle = (checked: boolean): void => {
@@ -638,6 +668,13 @@ export function App() {
     );
   }
 
+  function clearItemFields(): void {
+    setSelectedItems(Array(5).fill(null));
+    setPinnedItems(Array(5).fill(false));
+    setHasAutoSelected(false);
+    toastShownRef.current = false;
+  }
+
   return (
     <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
       {/* Render the TourOverlay component */}
@@ -651,7 +688,10 @@ export function App() {
         <Dialog>
           <DialogTrigger asChild>
             <div className="absolute top-6 left-4 animate-float hover:text-green-300 text-yellow-500 flex-row items-center justify-center">
-              <HelpCircle className="h-10 w-10" />
+              <HelpCircle
+                id="help" // Added ID for TourOverlay
+                className="h-10 w-10"
+              />
               <div className="text-yellow-500 text-sm text-center">Help</div>
             </div>
           </DialogTrigger>
@@ -700,17 +740,14 @@ export function App() {
           </DialogContent>
         </Dialog>
 
-        <Button
-          variant="ghost"
-          className="absolute top-8 right-2 hover:text-green-300 text-yellow-500 flex-col justify-center items-center text-2xl"
+        <Settings
+          id="settings" // Added ID for TourOverlay
+          className="absolute top-5 right-6 h-10 w-10 hover:text-green-300 text-yellow-500 cursor-pointer"
           onClick={() => setIsSettingsPaneVisible(true)}
-          style={{ backgroundColor: "transparent" }}
-        >
-          <div className="flex items-center">
-            <Settings className="h-10 w-10" />
-          </div>
-          <div className="text-orange-500 text-sm text-center">Settings</div>
-        </Button>
+        />
+        <div className="absolute top-15 right-6 text-orange-500 text-sm text-center">
+          Settings
+        </div>
 
         <CardContent className="p-6">
           {/* **5. Header with Title and Beta Badge** */}
@@ -751,7 +788,7 @@ export function App() {
             />
           </div>
 
-          {/* **8. Auto Select Button and Progress Bar** */}
+          {/* **8. Auto Select / Reroll Button and Progress Bar** */}
           <div className="h-full w-full flex flex-col justify-center items-center">
             {isCalculating ? (
               <div className="text-center">
@@ -773,7 +810,7 @@ export function App() {
                       <TooltipTrigger asChild>
                         <Button
                           id="auto-select" // Added ID for TourOverlay
-                          onClick={handleAutoSelect}
+                          onClick={handleAutoPick}
                           disabled={isCalculating}
                           className="bg-blue-500 hover:bg-blue-700 md:min-w-[300px] sm:min-w-[300px] mr-2"
                         >
@@ -788,7 +825,9 @@ export function App() {
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        Automatically select best items
+                        {hasAutoSelected
+                          ? "Reroll to find a new combination"
+                          : "Automatically select best items"}
                       </TooltipContent>
                     </Tooltip>
 
@@ -864,6 +903,42 @@ export function App() {
                 )}
               </div>
             </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    id="clear-item-fields"
+                    className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary mt-2 w-full"
+                    onClick={clearItemFields}
+                    disabled={selectedItems.every((item) => item === null)}
+                  >
+                    Clear Selected Items
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Clears ALL item fields</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    id="reset-overrides"
+                    className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary mt-2 w-full"
+                    onClick={resetOverridesAndExclusions}
+                    disabled={
+                      Object.keys(overriddenPrices).length === 0 &&
+                      excludedItems.size === 0
+                    }
+                  >
+                    Reset Overrides
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reset overrides and exclusions</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          {/* // simple text saying number overrides & exclusions */}
+          <div className="text-center text-sm mt-2 text-gray-400">
+            {Object.keys(overriddenPrices).length} overrides and{" "}
+            {excludedItems.size} exclusions currently active
           </div>
 
           {/* **10. Sacrifice Value Display** */}
@@ -956,7 +1031,7 @@ export function App() {
               Feedback
             </Button>
           </div>
-          <div className="bg-black mt-4">
+          <div className="mt-4">
             <AdBanner
               dataAdFormat="auto"
               dataFullWidthResponsive={true}

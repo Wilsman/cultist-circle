@@ -281,7 +281,10 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     <span className="sr-only">More</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-primary text-secondary" align="end">
+                <DropdownMenuContent
+                  className="bg-primary text-secondary"
+                  align="end"
+                >
                   <DropdownMenuItem onSelect={onPin}>
                     <Pin className="mr-2 h-4 w-4" />
                     <span>{isPinned ? "Unpin Item" : "Pin Item"}</span>

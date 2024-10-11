@@ -145,10 +145,18 @@ export function SettingsPane({
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem
                     value="base-value"
-                    id="price"
+                    id="base-value"
                     className={sortOption === "base-value" ? "bg-blue-500" : ""}
                   />
-                  <Label htmlFor="price">Base Value: Low to High</Label>
+                  <Label htmlFor="base-value">Base Value: Low to High</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem
+                    value="ratio"
+                    id="ratio"
+                    className={sortOption === "ratio" ? "bg-green-500" : ""}
+                  />
+                  <Label htmlFor="ratio">Value-to-Cost Ratio</Label>
                 </div>
               </RadioGroup>
             </div>

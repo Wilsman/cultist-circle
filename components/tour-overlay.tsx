@@ -7,33 +7,53 @@ import { Button } from "@/components/ui/button";
 
 const steps = [
   {
+    target: "#help",
+    title: "Help",
+    content: "Click here to open the help pane.",
+  },
+  {
+    target: "#settings",
+    title: "Settings",
+    content: "Click here to open the settings pane.",
+  },
+  {
     target: "#pvp-toggle",
     title: "PVP Toggle",
-    content: "Toggle between PVP and PVE item list and flea prices.",
+    content: "Toggle between PVP and PVE item lists and flea market prices.",
   },
   {
     target: "#threshold",
     title: "Threshold Setting",
     content:
-      "Set your desired threshold value for item selection. 350,001 triggers a 14h cooldown or there is a 25% chance of a 6h cooldown at 400k.",
+      "Set your threshold. ≥350,001 triggers a 14-hour timer for a high-value item, and ≥400,000 have a 25% chance of a 6-hour timer which can be a quest/hideout item.",
   },
   {
     target: "#auto-select",
     title: "Auto Select",
     content:
-      "Automatically select the best value-to-priced items based on your threshold.",
+      "Automatically select the best value-to-price items based on your threshold.",
   },
   {
     target: "#search-items",
     title: "Search Items",
     content:
-      "Use the Item Selector to search and choose items based on their Base Value, pin to lock-in, override flea prices if needed and exclude items from Autopick calculations.",
+      "Use the Item Selector to search and choose items based on their Base Value. Pin to lock-in, override flea prices if needed, and exclude items from Autopick calculations.",
+  },
+  {
+    target: "#clear-item-fields",
+    title: "Clear Selected Items",
+    content: "Clears all selected items.",
+  },
+  {
+    target: "#reset-overrides",
+    title: "Reset overrides",
+    content: "Resets all flea price overrides and excluded items.",
   },
   {
     target: "#sacrifice-value",
     title: "Sacrifice Value",
     content:
-      "This is the TOTAL base value of the selected items. The base price of any item can be calculated by dividing the trader buyback price with the multiplier of that trader.",
+      "This is the TOTAL base value of the selected items. (You can find more info about base values via tarkov wiki).",
   },
 ];
 
