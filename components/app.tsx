@@ -1,4 +1,3 @@
-// app.tsx
 "use client";
 
 import React, {
@@ -8,22 +7,14 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { X, HelpCircle, FlameKindling, Edit, Copy } from "lucide-react";
+import { HelpCircle, Settings, Dices } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 import BetaBadge from "./ui/beta-badge";
-import Fuse from "fuse.js";
 import {
   Dialog,
   DialogContent,
@@ -32,60 +23,258 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { SimplifiedItem } from "@/types/SimplifiedItem"; // Newly added SimplifiedItem interface
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 import { FeedbackForm } from "./feedback-form";
+import ItemSelector from "@/components/ItemSelector";
+import { SimplifiedItem } from "@/types/SimplifiedItem";
+import ThresholdSelector from "@/components/ui/threshold-selector";
+import Cookies from "js-cookie";
+import { SettingsPane } from "@/components/settings-pane";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Toaster } from "@/components/ui/toaster"; // Import Toaster and useToast
+import { useToast } from "@/hooks/use-toast";
+import TourOverlay from "@/components/tour-overlay";
+import AdBanner from "@/components/AdBanner";
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
 const PVP_CACHE_KEY = "pvpItemsCache";
+const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Storage key for overridden prices
 
 export function App() {
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  // Mode state
   const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
+
+  // Selected items state
   const [selectedItems, setSelectedItems] = useState<
     Array<SimplifiedItem | null>
   >(Array(5).fill(null));
-  const [total, setTotal] = useState<number>(0);
-  const [fleaCosts, setFleaCosts] = useState<Array<number>>(Array(5).fill(0));
+
+  // Settings and UI states
   const [isCalculating, setIsCalculating] = useState<boolean>(false); // Calculating state
-  const [progressValue, setProgressValue] = useState<number>(0); // Progress value
-  const [searchQueries, setSearchQueries] = useState<string[]>(
-    Array(5).fill("")
-  );
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
-
-  // **1. Threshold as State**
-  const [threshold, setThreshold] = useState<number>(350001);
-  const [tempThreshold, setTempThreshold] = useState<string>(
-    threshold.toLocaleString()
+  const [pinnedItems, setPinnedItems] = useState<boolean[]>(
+    Array(5).fill(false)
   );
-  const [isThresholdDialogOpen, setIsThresholdDialogOpen] =
+  const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
     useState<boolean>(false);
+  const [sortOption, setSortOption] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("sortOption") || "az"; // Default sort option
+    }
+    return "az";
+  });
+  const allItemCategories = [
+    // "Ammo",
+    // "Ammo_boxes",
+    "Barter",
+    "Containers",
+    "Crates",
+    "Currency",
+    "Gear",
+    "Keys",
+    "Magazines",
+    "Maps",
+    "Meds",
+    "Provisions",
+    "Quest_items",
+    "Repair",
+    "Sights",
+    "Special_equipment",
+    "Suppressors",
+    "Tactical_devices",
+    "Weapon",
+    "Weapon_parts",
+  ];
+  const defaultItemCategories = [
+    "Barter",
+    "Provisions",
+    "Containers",
+    "Maps",
+    "Suppressors",
+    // Add any other categories you want as defaults
+  ];
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedCategories = localStorage.getItem("selectedCategories");
+        if (savedCategories) {
+          return JSON.parse(savedCategories);
+        }
+      } catch (e) {
+        console.error("Error parsing selectedCategories from localStorage", e);
+      }
+    }
+    return defaultItemCategories;
+  });
 
-  // **2. State for Fetched Data**
-  const [itemsDataPVP, setItemsDataPVP] = useState<SimplifiedItem[]>([]);
-  const [itemsDataPVE, setItemsDataPVE] = useState<SimplifiedItem[]>([]);
+  // Define the hasAutoSelected state variable
+  const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
+
+  // Handler for category changes
+  const handleCategoryChange = useCallback((categories: string[]) => {
+    setSelectedCategories(categories);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("selectedCategories", JSON.stringify(categories));
+    }
+    // setHasAutoSelected(false); // Reset Auto Select on category change
+  }, []);
+
+  // Sort option handler
+  const handleSortChange = useCallback((newSortOption: string) => {
+    setSortOption(newSortOption);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sortOption", newSortOption);
+    }
+  }, []);
+
+  // Threshold state with initialization from cookies
+  const [threshold, setThreshold] = useState<number>(350001); // Default value
+
+  useEffect(() => {
+    const savedThreshold = Cookies.get("userThreshold");
+    if (savedThreshold) {
+      setThreshold(Number(savedThreshold));
+    }
+  }, []);
+
+  // Handler for threshold changes
+  const handleThresholdChange = (newValue: number) => {
+    setThreshold(newValue);
+    Cookies.set("userThreshold", newValue.toString(), { expires: 365 });
+    // setHasAutoSelected(false); // Reset Auto Select on threshold change
+    toastShownRef.current = false; // Reset toast shown flag when threshold changes
+  };
+
+  // Data fetching states
+  const [itemsData, setItemsData] = useState<SimplifiedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const dataFetchedRef = useRef(false);
 
-  // **3. Fetch Data from Internal API Routes**
+  // Excluded items state
+  const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
+
+  // Settings for overridden prices
+  const [overriddenPrices, setOverriddenPrices] = useState<
+    Record<string, number>
+  >(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(OVERRIDDEN_PRICES_KEY);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (e) {
+        console.error("Error loading overriddenPrices from localStorage", e);
+      }
+    }
+    return {};
+  });
+
+  // Save overriddenPrices to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          OVERRIDDEN_PRICES_KEY,
+          JSON.stringify(overriddenPrices)
+        );
+      } catch (e) {
+        console.error("Error saving overriddenPrices to localStorage", e);
+      }
+    }
+  }, [overriddenPrices]);
+
+  // Timestamp for caching
+  const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number | null>(
+    null
+  );
+
+  // Next fetch time display
+  const [nextFetchTime, setNextFetchTime] = useState<string>("N/A");
+
+  // Handler to toggle excluded items
+  const toggleExcludedItem = (uid: string) => {
+    setExcludedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(uid)) {
+        newSet.delete(uid);
+      } else {
+        newSet.add(uid);
+      }
+      return newSet;
+    });
+    setHasAutoSelected(false); // Reset Auto Select on exclusion change
+  };
+
+  // Reset overrides and exclusions
+  const resetOverridesAndExclusions = () => {
+    const clearedOverridesCount = Object.keys(overriddenPrices).length;
+    const clearedExcludedItemsCount = excludedItems.size;
+
+    setOverriddenPrices({});
+    setExcludedItems(new Set());
+    setHasAutoSelected(false); // Reset Auto Select button
+    toastShownRef.current = false; // Reset toast shown flag when resetting
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
+      } catch (e) {
+        console.error("Error removing overriddenPrices from localStorage", e);
+      }
+    }
+
+    toast({
+      title: "Reset Successful",
+      description: `${clearedOverridesCount} overrides and ${clearedExcludedItemsCount} excluded items have been cleared.`,
+    });
+  };
+
+  // Calls resetOverridesAndExclusions and also clears the users cookies and local storage
+  const hardReset = () => {
+    resetOverridesAndExclusions();
+    Cookies.remove("userThreshold");
+    localStorage.clear();
+    setSelectedItems(Array(5).fill(null));
+    setPinnedItems(Array(5).fill(false));
+    setSelectedCategories(defaultItemCategories);
+    setSortOption("az");
+    setThreshold(350001);
+    setExcludedItems(new Set());
+    setOverriddenPrices({});
+
+    // fetch data
+    fetchData();
+
+    // Show a toast notification
+    toast({
+      title: "Hard Reset Successful",
+      description: ` Hard Reset has been successful. All settings have been reset.`,
+    });
+  };
+
+  // Fetch data based on mode (PVE/PVP)
   const fetchData = useCallback(async () => {
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
 
+    const cacheKey = isPVE ? PVE_CACHE_KEY : PVP_CACHE_KEY;
+    const apiUrl = isPVE ? "/api/pve-items" : "/api/pvp-items";
+
     try {
       setLoading(true);
-      const [pveData, pvpData] = await Promise.all([
-        fetchCachedData("/api/pve-items", PVE_CACHE_KEY),
-        fetchCachedData("/api/pvp-items", PVP_CACHE_KEY),
-      ]);
-
-      setItemsDataPVE(pveData);
-      setItemsDataPVP(pvpData);
+      const { data, timestamp } = await fetchCachedData(apiUrl, cacheKey);
+      setItemsData(data);
+      setLastFetchTimestamp(timestamp); // Use the server's timestamp
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
@@ -95,23 +284,47 @@ export function App() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isPVE]);
 
+  // Update next fetch time every second
+  useEffect(() => {
+    if (lastFetchTimestamp) {
+      const interval = setInterval(() => {
+        const remainingTime = lastFetchTimestamp + CACHE_DURATION - Date.now();
+        if (remainingTime <= 0) {
+          setNextFetchTime("Refresh Available");
+          clearInterval(interval);
+        } else {
+          const minutes = Math.floor(
+            (remainingTime % (1000 * 60 * 60)) / (1000 * 60)
+          );
+          const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+          setNextFetchTime(`${minutes}m ${seconds}s`);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [lastFetchTimestamp]);
+
+  // Fetch data on mount or when mode changes
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, isPVE]);
 
+  // Function to fetch cached data or retrieve from cache
   const fetchCachedData = async (
     url: string,
     cacheKey: string
-  ): Promise<SimplifiedItem[]> => {
+  ): Promise<{ data: SimplifiedItem[]; timestamp: number }> => {
     try {
       const cachedData = localStorage.getItem(cacheKey);
       if (cachedData) {
-        const { timestamp, data } = JSON.parse(cachedData);
-        if (Date.now() - timestamp < CACHE_DURATION) {
+        const { data, timestamp } = JSON.parse(cachedData);
+        const now = Date.now();
+        if (now - timestamp < CACHE_DURATION) {
           console.log(`Using cached data for ${cacheKey}`);
-          return data;
+          return { data, timestamp };
         }
       }
 
@@ -123,216 +336,351 @@ export function App() {
           errorData.error || `Failed to fetch data for ${cacheKey}`
         );
       }
-      const data: SimplifiedItem[] = await response.json();
-      localStorage.setItem(
-        cacheKey,
-        JSON.stringify({ timestamp: Date.now(), data })
-      );
-      return data;
+      const result = await response.json();
+      const { data, timestamp } = result;
+
+      localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp }));
+      return { data, timestamp };
     } catch (error) {
       console.error(`Error in fetchCachedData for ${cacheKey}:`, error);
       throw error;
     }
   };
 
-  // **4. Choose Data Based on Mode**
-  const itemsData: SimplifiedItem[] = isPVE ? itemsDataPVE : itemsDataPVP;
-
-  // **5. Remove Client-Side Filtering**
+  // Memoized computation of items based on categories and sort option
   const items: SimplifiedItem[] = useMemo(() => {
-    return [...itemsData].sort((a, b) => a.name.localeCompare(b.name));
-  }, [itemsData]);
-
-  // Initialize Fuse.js for each search input
-  const fuseInstances: Fuse<SimplifiedItem>[] = useMemo(() => {
-    return searchQueries.map(
-      () =>
-        new Fuse(items, {
-          keys: ["name"],
-          threshold: 0.3,
-        })
+    const filteredItems = itemsData.filter(
+      (item) =>
+        selectedCategories.length === 0 ||
+        (Array.isArray(item.tags)
+          ? item.tags.some((tag) => selectedCategories.includes(tag))
+          : selectedCategories.includes(item.tags || ""))
     );
-  }, [items, searchQueries]);
 
-  // **6. Effect to Recalculate Total and Flea Costs**
-  useEffect(() => {
-    // Calculate total ritual value
-    setTotal(
-      selectedItems.reduce((sum, item) => sum + (item?.basePrice || 0), 0)
-    );
-    // Calculate total flea costs
-    setFleaCosts(selectedItems.map((item) => (item ? item.price : 0)));
-  }, [selectedItems, threshold]); // Added threshold as a dependency
-
-  const updateSelectedItem = (itemId: string, index: number): void => {
-    const selectedItem = items.find((item) => item.uid === itemId) || null;
-    const newSelectedItems = [...selectedItems];
-    newSelectedItems[index] = selectedItem;
-    setSelectedItems(newSelectedItems);
-    // Flea costs are updated via useEffect
-  };
-
-  const handleResetItem = (index: number): void => {
-    const newSelectedItems = [...selectedItems];
-    newSelectedItems[index] = null;
-    setSelectedItems(newSelectedItems);
-    // Flea costs are updated via useEffect
-  };
-
-  const handleAutoSelect = async (): Promise<void> => {
-    setIsCalculating(true); // Start calculating
-    setProgressValue(0); // Reset progress
-
-    const validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
-
-    // Simulate calculation progress
-    const interval = setInterval(() => {
-      setProgressValue((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 10; // Increment progress
-      });
-    }, 100); // Every 100ms
-
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate calculation time
-
-    const bestCombination = findBestCombination(validItems, threshold, 5);
-
-    if (bestCombination.selected.length === 0) {
-      alert("No combination of items meets the threshold.");
-      setIsCalculating(false);
-      clearInterval(interval);
-      return;
+    // Sort the items based on the selected sort option
+    const sortedItems = [...filteredItems];
+    // Sort by name in ascending order
+    if (sortOption === "az") {
+      sortedItems.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOption === "base-value") {
+      // Sort by base price in ascending order
+      sortedItems.sort((a, b) => a.basePrice - b.basePrice);
+    } else if (sortOption === "ratio") {
+      // Sort by value-to-cost ratio in descending order
+      sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / a.price);
     }
 
-    // Populate selectedItems with the best combination
-    const newSelectedItems: Array<SimplifiedItem | null> = Array(5).fill(null);
-    bestCombination.selected.forEach((item, idx) => {
-      if (idx < 5) {
-        newSelectedItems[idx] = item;
-      }
-    });
-    setSelectedItems(newSelectedItems);
-    setSearchQueries(Array(5).fill("")); // Reset search queries to empty strings
-    setIsCalculating(false); // End calculating
-    clearInterval(interval); // Clear progress interval
-  };
+    return sortedItems;
+  }, [itemsData, sortOption, selectedCategories]);
 
-  /**
-   * **findBestCombination Function**
-   * Finds the best combination of items that meets or exceeds the threshold with minimal flea cost.
-   *
-   * @param validItems - Array of items with price > 0
-   * @param threshold - Current threshold value
-   * @param maxItems - Maximum number of items to select
-   * @returns An object containing the selected items and the total flea cost
-   */
-  const findBestCombination = (
-    validItems: SimplifiedItem[],
-    threshold: number,
-    maxItems: number
-  ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
-    // Initialize DP table
-    const dp: Array<Array<number>> = Array(maxItems + 1)
-      .fill(null)
-      .map(() => Array(threshold + 1001).fill(Infinity));
-    const itemTracking: Array<Array<Array<number>>> = Array(maxItems + 1)
-      .fill(null)
-      .map(() =>
-        Array(threshold + 1001)
-          .fill(null)
-          .map(() => [])
-      );
+  // Function to find the best combination of items
+  const findBestCombination = useCallback(
+    (
+      validItems: SimplifiedItem[],
+      threshold: number,
+      maxItems: number
+    ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
+      const maxThreshold = threshold + 5000;
+      const dp: Array<Array<number>> = Array(maxItems + 1)
+        .fill(null)
+        .map(() => Array(maxThreshold + 1).fill(Infinity));
+      const itemTracking: Array<Array<Array<number>>> = Array(maxItems + 1)
+        .fill(null)
+        .map(() =>
+          Array(maxThreshold + 1)
+            .fill(null)
+            .map(() => [])
+        );
 
-    dp[0][0] = 0; // Base case
+      dp[0][0] = 0;
 
-    // Populate DP table
-    for (let c = 1; c <= maxItems; c++) {
-      for (let i = 0; i < validItems.length; i++) {
-        const { basePrice, price } = validItems[i];
-        for (let v = basePrice; v <= threshold + 1000; v++) {
-          if (dp[c - 1][v - basePrice] + price < dp[c][v]) {
-            dp[c][v] = dp[c - 1][v - basePrice] + price;
-            itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
+      for (let c = 1; c <= maxItems; c++) {
+        for (let i = 0; i < validItems.length; i++) {
+          const { basePrice, price } = validItems[i];
+          for (let v = basePrice; v <= maxThreshold; v++) {
+            if (dp[c - 1][v - basePrice] + price < dp[c][v]) {
+              dp[c][v] = dp[c - 1][v - basePrice] + price;
+              itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
+            }
           }
         }
       }
-    }
 
-    // Find the best combination
-    let minFleaCost = Infinity;
-    let bestC = -1;
-    let bestV = -1;
-
-    for (let c = 1; c <= maxItems; c++) {
-      for (let v = threshold; v <= threshold + 1000; v++) {
-        if (dp[c][v] < minFleaCost) {
-          minFleaCost = dp[c][v];
-          bestC = c;
-          bestV = v;
+      const validCombinations: { c: number; v: number; cost: number }[] = [];
+      for (let c = 1; c <= maxItems; c++) {
+        for (let v = threshold; v <= maxThreshold; v++) {
+          if (dp[c][v] !== Infinity) {
+            validCombinations.push({ c, v, cost: dp[c][v] });
+          }
         }
       }
-    }
 
-    if (bestC === -1) {
-      return { selected: [], totalFleaCost: 0 };
-    }
+      // Sort by cost and then randomly select one of the top 5 combinations
+      validCombinations.sort((a, b) => a.cost - b.cost);
+      const topCombinations = validCombinations.slice(
+        0,
+        Math.min(5, validCombinations.length)
+      );
+      const selectedCombination =
+        topCombinations[Math.floor(Math.random() * topCombinations.length)];
 
-    const selectedIndices = itemTracking[bestC][bestV];
-    const selectedItems = selectedIndices.map((index) => validItems[index]);
+      if (!selectedCombination) {
+        return { selected: [], totalFleaCost: 0 };
+      }
 
-    return { selected: selectedItems, totalFleaCost: minFleaCost };
-  };
+      const selectedIndices =
+        itemTracking[selectedCombination.c][selectedCombination.v];
+      const selectedItems = selectedIndices.map((index) => validItems[index]);
+
+      return {
+        selected: selectedItems,
+        totalFleaCost: selectedCombination.cost,
+      };
+    },
+    []
+  );
+
+  // Memoized total and flea costs
+  const total = useMemo(() => {
+    return selectedItems.reduce((sum, item) => sum + (item?.basePrice || 0), 0);
+  }, [selectedItems]);
+
+  const fleaCosts = useMemo(() => {
+    return selectedItems.map((item) =>
+      item ? overriddenPrices[item.uid] || item.price : 0
+    );
+  }, [selectedItems, overriddenPrices]);
+
+  // Memoized total flea cost
+  const totalFleaCost = useMemo(() => {
+    return fleaCosts.reduce((sum, cost) => sum + cost, 0);
+  }, [fleaCosts]);
 
   const isThresholdMet: boolean = total >= threshold;
-  const totalFleaCost: number = fleaCosts.reduce((sum, cost) => sum + cost, 0);
 
-  // Refs for search inputs
-  const searchInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  // Handler to update selected item
+  const updateSelectedItem = (
+    item: SimplifiedItem | null,
+    index: number,
+    overriddenPrice?: number | null
+  ): void => {
+    const newSelectedItems = [...selectedItems];
+    newSelectedItems[index] = item;
+    setSelectedItems(newSelectedItems);
 
-  // **7. Handle Threshold Change Submission**
-  const handleThresholdSubmit = (e: React.FormEvent): void => {
-    e.preventDefault();
-    const parsed = parseInt(tempThreshold.replace(/,/g, ""), 10);
-    if (!isNaN(parsed) && parsed > 0) {
-      setThreshold(parsed);
-      setIsThresholdDialogOpen(false);
-    } else {
-      alert("Please enter a valid positive number.");
+    setHasAutoSelected(false); // Reset Auto Select when user changes selection
+
+    if (item && overriddenPrice !== undefined) {
+      if (overriddenPrice !== null) {
+        // Update overridden price
+        setOverriddenPrices((prev) => ({
+          ...prev,
+          [item.uid]: overriddenPrice,
+        }));
+      } else {
+        // Remove overridden price for this item
+        setOverriddenPrices((prev) => {
+          const newOverriddenPrices = { ...prev };
+          delete newOverriddenPrices[item.uid];
+          return newOverriddenPrices;
+        });
+      }
+    } else if (!item) {
+      // Item is null, remove any overridden price for previous item at this index
+      const newOverriddenPrices = { ...overriddenPrices };
+      const uid = selectedItems[index]?.uid;
+      if (uid) {
+        delete newOverriddenPrices[uid];
+      }
+      setOverriddenPrices(newOverriddenPrices);
     }
+    // Do not delete overridden price if overriddenPrice is undefined
   };
 
-  // **8. Handle Mode Toggle Reset**
+  // Handler to pin/unpin items
+  const handlePinItem = (index: number) => {
+    const newPinnedItems = [...pinnedItems];
+    newPinnedItems[index] = !newPinnedItems[index];
+    setPinnedItems(newPinnedItems);
+    // setHasAutoSelected(false); // Reset Auto Select on pin change
+  };
+
+  // Function to handle auto-select and reroll
+  const handleAutoPick = useCallback(async (): Promise<void> => {
+    // Perform Auto Select or Reroll regardless of hasAutoSelected state
+    setIsCalculating(true);
+
+    try {
+      // Filter validItems based on heuristics
+      let validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
+
+      // Apply filtering heuristics
+      validItems = validItems
+        .filter((item) => item.basePrice >= threshold * 0.1) // Example: Only items contributing at least 10% to the threshold
+        .filter((item) => !item.bannedOnFlea) // Filter out items that are banned on the flea market
+        .filter(
+          (item) =>
+            new Date(item.updated).getTime() > Date.now() - 1000 * 60 * 60 * 24
+        ) // Filter out items that haven't been updated in the last 24 hours
+        .filter((item) => !excludedItems.has(item.uid)) // Exclude user-excluded items
+        .sort((a, b) => b.basePrice / b.price - a.basePrice / a.price) // Sort by value-to-cost ratio
+        .slice(0, 100); // Limit to top 100 items
+
+      // await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const pinnedTotal = selectedItems.reduce(
+        (sum, item, index) =>
+          sum + (pinnedItems[index] && item ? item.basePrice : 0),
+        0
+      );
+
+      const remainingThreshold = Math.max(0, threshold - pinnedTotal);
+
+      const filteredItems = validItems.filter(
+        (item) =>
+          !selectedItems.some(
+            (selected, index) =>
+              pinnedItems[index] && selected?.uid === item.uid
+          )
+      );
+
+      // Adjust prices in filteredItems to use overridden prices where applicable
+      const adjustedItems = filteredItems.map((item) => {
+        const overriddenPrice = overriddenPrices[item.uid];
+        if (overriddenPrice !== undefined) {
+          return { ...item, price: overriddenPrice };
+        }
+        return item;
+      });
+
+      // Shuffle the adjusted items to increase randomness
+      const shuffledAdjustedItems = [...adjustedItems].sort(
+        () => Math.random() - 0.5
+      );
+
+      const bestCombination = findBestCombination(
+        shuffledAdjustedItems,
+        remainingThreshold,
+        5 - pinnedItems.filter(Boolean).length
+      );
+
+      if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
+        alert("No combination of items meets the remaining threshold.");
+        // setHasAutoSelected(false); // Ensure it remains as "Auto Select"
+        return;
+      }
+
+      const newSelectedItems: Array<SimplifiedItem | null> = [...selectedItems];
+      let combinationIndex = 0;
+      for (let i = 0; i < 5; i++) {
+        if (!pinnedItems[i]) {
+          newSelectedItems[i] =
+            bestCombination.selected[combinationIndex] || null;
+          combinationIndex++;
+        }
+      }
+
+      // Preserve overridden prices for items that remain selected
+      const newOverriddenPrices = { ...overriddenPrices };
+      for (let i = 0; i < 5; i++) {
+        const item = newSelectedItems[i];
+        if (item && overriddenPrices[item.uid]) {
+          newOverriddenPrices[item.uid] = overriddenPrices[item.uid];
+        }
+        // Do not delete overridden prices for other items
+      }
+
+      setSelectedItems(newSelectedItems);
+      setOverriddenPrices(newOverriddenPrices);
+      setHasAutoSelected(true); // Set to true after successful auto-select
+    } catch (error) {
+      console.error("Auto Select Error:", error);
+      setHasAutoSelected(false); // Reset if any error occurs
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [
+    items,
+    threshold,
+    excludedItems,
+    pinnedItems,
+    selectedItems,
+    overriddenPrices,
+    findBestCombination,
+  ]);
+
+  // Handler for mode toggle (PVE/PVP)
   const handleModeToggle = (checked: boolean): void => {
     setIsPVE(checked);
     setSelectedItems(Array(5).fill(null)); // Reset selected items
-    setSearchQueries(Array(5).fill("")); // Reset search queries
+    setPinnedItems(Array(5).fill(false)); // Reset pinned items
+    setOverriddenPrices({}); // Reset overridden prices
+    setExcludedItems(new Set()); // Reset excluded items
+    setHasAutoSelected(false); // Reset Auto Select button
+    dataFetchedRef.current = false; // Reset data fetch flag
+    toastShownRef.current = false; // Reset toast shown flag when mode changes
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
+      } catch (e) {
+        console.error("Error removing overriddenPrices from localStorage", e);
+      }
+    }
   };
 
-  // **9. Render Loading and Error States**
-  if (loading) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-my_bg_image text-gray-100">
-        <div className="text-center">
-          <Progress className="mb-4" value={50} />
-          <p>Loading data...</p>
-        </div>
-        <div className="flex justify-center mt-4">
-          <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
-            <Image
-              src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-              alt="Buy Me A Coffee"
-              width={120}
-              height={30}
-              priority={true}
-            />
-          </a>
-        </div>
-      </div>
-    );
-  }
+  // Handler to copy item name to clipboard
+  const handleCopyToClipboard = (index: number): void => {
+    const item = selectedItems[index];
+    if (item) {
+      const textToCopy = `${item.name}`;
+      navigator.clipboard.writeText(textToCopy).then(
+        () => {
+          console.log(`Copied ${item.name} to clipboard.`);
+          setTimeout(() => console.log("Clipboard reset."), 500); // Reset after 0.5 seconds
+        },
+        (err) => {
+          console.error("Failed to copy text: ", err);
+        }
+      );
+    }
+  };
+
+  // Import the useToast hook
+  const { toast } = useToast();
+
+  // Ref to track if toast has been shown
+  const toastShownRef = useRef<boolean>(false);
+
+  // useEffect to trigger toast when threshold is met
+  useEffect(() => {
+    if (isThresholdMet && !toastShownRef.current) {
+      const title = `Threshold Met - ${threshold.toLocaleString()}!`;
+      let description = "";
+
+      if (threshold >= 400000) {
+        description =
+          "25% chance for 6-hour cooldown otherwise 14-hour cooldown for high-value items.";
+      } else if (threshold >= 350000) {
+        // Adjusted to 350000 to match initial state
+        description = "14-hour cooldown for high-value items.";
+      } else {
+        description =
+          "You have met the threshold. A cooldown has been triggered.";
+      }
+
+      toast({
+        title,
+        description,
+      });
+
+      toastShownRef.current = true;
+    }
+
+    // Reset the toastShownRef if threshold is not met
+    if (!isThresholdMet) {
+      toastShownRef.current = false;
+    }
+  }, [isThresholdMet, threshold, toast]);
 
   if (error) {
     return (
@@ -342,64 +690,31 @@ export function App() {
     );
   }
 
-  function timeAgo(date: Date): React.ReactNode {
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    let interval = Math.floor(seconds / 31536000);
-    if (interval >= 1) {
-      return `${interval} year${interval > 1 ? "s" : ""} ago`;
-    }
-    interval = Math.floor(seconds / 2592000);
-    if (interval >= 1) {
-      return `${interval} month${interval > 1 ? "s" : ""} ago`;
-    }
-    interval = Math.floor(seconds / 86400);
-    if (interval >= 1) {
-      return `${interval} day${interval > 1 ? "s" : ""} ago`;
-    }
-    interval = Math.floor(seconds / 3600);
-    if (interval >= 1) {
-      return `${interval} hour${interval > 1 ? "s" : ""} ago`;
-    }
-    interval = Math.floor(seconds / 60);
-    if (interval >= 1) {
-      if (interval < 60) {
-        return `${interval} min${interval > 1 ? "s" : ""} ago`;
-      }
-      return `${Math.floor(interval / 60)} hour${
-        Math.floor(interval / 60) > 1 ? "s" : ""
-      } ago`;
-    }
-    return `${Math.floor(seconds)} second${seconds > 1 ? "s" : ""} ago`;
-  }
-
-
-  function handleCopytoClipboard(index: number): void {
-    const item = selectedItems[index];
-    if (item) {
-      const textToCopy = `${item.name}`;
-      navigator.clipboard.writeText(textToCopy).then(
-        () => {
-          setCopiedIndex(index);
-          setTimeout(() => setCopiedIndex(null), 500); // Reset after 0.5 seconds
-        },
-        (err) => {
-          console.error("Failed to copy text: ", err);
-        }
-      );
-    }
+  function clearItemFields(): void {
+    setSelectedItems(Array(5).fill(null));
+    setPinnedItems(Array(5).fill(false));
+    setHasAutoSelected(false);
+    toastShownRef.current = false;
   }
 
   return (
-    // layout fills the screen height so there is no scrolling outside of the Card
-    <div className="min-h-screen grid place-items-center bg-my_bg_image text-gray-100 p-4 overflow-auto ">
+    <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
+      {/* Render the TourOverlay component */}
+      {!loading && <TourOverlay />}
+
       <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
+        <div className="mt-4 text-center text-gray-400 text-sm">
+          <div>Next Update: {nextFetchTime}</div>
+        </div>
         {/* **4. Dialog for Instructions** */}
         <Dialog>
           <DialogTrigger asChild>
-            <div className="absolute top-4 left-2 animate-float hover:text-green-300 text-yellow-500">
-              <HelpCircle className="h-10 w-10" />
+            <div className="absolute top-6 left-4 animate-float hover:text-green-300 text-yellow-500 flex-row items-center justify-center">
+              <HelpCircle
+                id="help" // Added ID for TourOverlay
+                className="h-10 w-10"
+              />
+              <div className="text-yellow-500 text-sm text-center">Help</div>
             </div>
           </DialogTrigger>
           <DialogContent className="flex bg-gray-800 sm:max-w-[600px] sm:max-h-[90vh] max-h-[90vh] w-full mx-auto">
@@ -408,258 +723,282 @@ export function App() {
               <DialogDescription className="text-left">
                 <ul>
                   <li>
-                    🔵 Toggle between PVE and PVP modes to use correct flea
+                    1️⃣ Toggle between PVE and PVP modes to use correct flea
                     prices.
                   </li>
+                  <li>2️⃣ Edit threshold (see below for suggestions)</li>
                   <li>
-                    🔵 Select items from the dropdown to calculate the total
+                    3️⃣ Select items from the dropdown to calculate the total
                     sacrifice value.
                   </li>
                   <li>
-                    🔵 Ensure the total value meets the cultist threshold of
-                    350,001 (base value).
+                    4️⃣ Use Auto Pick to find the cheapest combination meeting
+                    the threshold.
                   </li>
                   <li>
-                    🔵 Use the Auto Pick button to find the cheapest costing
-                    combination that meets the threshold.
+                    5️⃣ Ensure the total value meets the cultist threshold (base
+                    value).
                   </li>
-                  <li>
-                    🔵 If the threshold is met, sacrifice the items to receive a
-                    14-hour countdown.
-                  </li>
-                  <li>
-                    🔵 Ability to edit the threshold value through the
-                    interface.
-                  </li>
+                  <li>6️⃣ If the threshold is met, sacrifice the items.</li>
+                  <Separator className="mt-3 mb-3" />
                   <li>
                     🔴 BUG: 14-hour result has known bug which can result in an
                     empty reward.
                   </li>
-                  <li>🟢 Note: 14 HR Highest Value Outcome {">"}= 350,001</li>
                   <li>
-                    🟢 Note: 6 HR | Quest / Hideout item = 400,000 (Not Fully
-                    Confirmed)
+                    🟢 Note: ≥400k base value = 6h (25% success) | Active
+                    tasks/hideout item
                   </li>
+                  <li>🟢 Note: ≥350,001 base value = 14h | High-Value item</li>
                   <li>
-                    🟢 Note: Flea prices are live prices provided by
-                    tarko-market.
+                    🟢 Note: Flea prices are latest prices provided by
+                    tarkov-market.
                   </li>
+                  <Separator className="mt-3 mb-1" />
+                  <li>💖 Thank you for checking out the app - Wilsman77</li>
                 </ul>
               </DialogDescription>
             </DialogHeader>
           </DialogContent>
         </Dialog>
 
+        <Settings
+          id="settings" // Added ID for TourOverlay
+          className="absolute top-5 right-6 h-10 w-10 hover:text-green-300 text-yellow-500 cursor-pointer"
+          onClick={() => setIsSettingsPaneVisible(true)}
+        />
+        <div className="absolute top-15 right-6 text-orange-500 text-sm text-center">
+          Settings
+        </div>
+
         <CardContent className="p-6">
           {/* **5. Header with Title and Beta Badge** */}
-          <h1 className="sm:text-4xl text-2xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
-            <FlameKindling className="mr-2 text-red-450 animate-pulse" />
-            Cultist Calculator
-            <FlameKindling className="ml-2 text-red-450 animate-pulse" />
+          <h1 className="sm:text-3xl text-xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
+            <Image
+              src="/images/Cultist-Calulator.webp"
+              alt="Cultist calculator logo"
+              width={400}
+              height={128}
+            />
             <div className="ml-2">
               <BetaBadge />
             </div>
           </h1>
 
           {/* **6. Mode Toggle (PVE/PVP)** */}
-          <div className="flex items-center justify-center mb-6 w-full">
+          <div
+            id="pvp-toggle" // Added ID for TourOverlay
+            className="flex items-center justify-center mb-6 w-full"
+          >
+            <span className="text-gray-300">PVP</span>
             <Switch
               checked={isPVE}
               onCheckedChange={handleModeToggle}
-              className="mr-2"
+              className="mx-2 data-[state=checked]:bg-white data-[state=unchecked]:bg-white"
             />
-            <span className="text-gray-300">
-              {isPVE ? "PVE Mode" : "PVP Mode"}
-            </span>
+            <span className="text-gray-300">PVE</span>
           </div>
 
           {/* **7. Display Current Threshold and Edit Button** */}
-          <div className="flex items-center justify-center mb-4 w-full">
-            <span className="text-gray-500 mr-2">Threshold:</span>
-            <span className="text-xl font-semibold text-gray-300">
-              ₽{threshold.toLocaleString()}
-            </span>
-            <Dialog
-              open={isThresholdDialogOpen}
-              onOpenChange={setIsThresholdDialogOpen}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="ml-1 p-0 bg-transparent hover:bg-transparent"
-                >
-                  <Edit className="h-5 w-5 text-gray-400 hover:text-gray-200" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[400px] bg-gray-800 w-full mx-auto">
-                <DialogHeader>
-                  <DialogTitle>Edit Threshold</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleThresholdSubmit} className="space-y-4">
-                  <Input
-                    type="text"
-                    value={tempThreshold}
-                    onChange={(e) => setTempThreshold(e.target.value)}
-                    placeholder="Enter a new threshold"
-                  />
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setIsThresholdDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit">Save</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+          <div
+            id="threshold" // Added ID for TourOverlay
+            className="flex items-center justify-center mb-4 w-full"
+          >
+            <ThresholdSelector
+              value={threshold}
+              onChange={handleThresholdChange}
+            />
           </div>
 
-          {/* **8. Auto Select Button and Progress Bar** */}
-          <div className="space-y-2 w-full">
+          {/* **8. Auto Select / Reroll Button and Progress Bar** */}
+          <div className="h-full w-full flex flex-col justify-center items-center">
             {isCalculating ? (
-              <Progress
-                className="mx-auto mt-4 mb-4 w-full"
-                value={progressValue}
-              /> // Show progress
+              <div className="text-center">
+                <p className="text-gray-300 mb-2">
+                  Calculating best combination...
+                </p>
+                <div className="lds-ellipsis">
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                </div>
+              </div>
             ) : (
-              <Button
-                variant="default"
-                onClick={handleAutoSelect}
-                className="flex mt-4 mx-auto text-gray-200 bg-gray-500 hover:bg-gray-900"
-              >
-                Auto Pick
-              </Button>
+              <TooltipProvider>
+                <div className="flex flex-col justify-center items-center">
+                  <div className="flex justify-center mb-4">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          id="auto-select" // Added ID for TourOverlay
+                          onClick={handleAutoPick}
+                          disabled={isCalculating}
+                          className="bg-blue-500 hover:bg-blue-700 md:min-w-[300px] sm:min-w-[300px] mr-2"
+                        >
+                          {hasAutoSelected ? (
+                            <>
+                              <Dices className="mr-1 h-5 w-5" />
+                              Reroll
+                            </>
+                          ) : (
+                            "AUTO SELECT"
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {hasAutoSelected
+                          ? "Reroll to find a new combination"
+                          : "Automatically select best items"}
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link href="/recipes" prefetch={false}>
+                          <Button className="bg-red-500 hover:bg-red-700">
+                            Recipes
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>View recipes</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              </TooltipProvider>
             )}
 
-            {/* **9. Item Selection Dropdowns** */}
-            {selectedItems.map((item, index) => (
-              <div
-                key={index}
-                className="flex flex-col items-center space-y-1 flex-grow w-full"
-              >
-                <div className="flex items-center space-x-2 w-full justify-center">
-                  <Select
-                    onValueChange={(value: string) =>
-                      updateSelectedItem(value, index)
-                    }
-                    value={item?.uid.toString() || ""}
-                  >
-                    <SelectTrigger
-                      className={`w-full max-w-[400px] bg-gray-700 border-gray-600 text-gray-100 text-xs transition-all duration-300 ${
-                        item ? "border-2 border-blue-500" : ""
-                      }`}
-                    >
-                      <SelectValue placeholder="Choose an item" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600 max-h-60 overflow-auto w-full">
-                      {/* Search Input */}
-                      <div className="px-2 py-1">
-                        <input
-                          type="text"
-                          placeholder="Search..."
-                          value={searchQueries[index]}
-                          onChange={(
-                            e: React.ChangeEvent<HTMLInputElement>
-                          ) => {
-                            const newQueries = [...searchQueries];
-                            newQueries[index] = e.target.value;
-                            setSearchQueries(newQueries);
-                          }}
-                          onKeyDown={(e) => e.stopPropagation()} // Prevent Select from handling key events
-                          ref={(el) => {
-                            searchInputRefs.current[index] = el;
-                          }}
-                          className="w-full px-2 py-1 bg-gray-600 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      {/* Filtered Items */}
-                      {(() => {
-                        const query = searchQueries[index];
-                        const fuse = fuseInstances[index];
-                        const filteredItems = query
-                          ? fuse.search(query).map((result) => result.item)
-                          : items
-                              .filter((item) => item.price > 0)
-                              .sort(
-                                (a, b) =>
-                                  a.price / a.basePrice - b.price / b.basePrice
-                              );
-
-                        return filteredItems
-                          .map((item) => ({
-                            ...item,
-                            delta: item.price / item.basePrice, // Calculate delta as price per value
-                          }))
-                          .sort((a, b) => a.delta - b.delta) // Sort by delta low to high
-                          .map((item) => (
-                            <SelectItem
-                              key={item.uid}
-                              value={item.uid.toString()}
-                              className="text-gray-100 px-2 py-1"
-                            >
-                              {item.name} (₽{item.basePrice.toLocaleString()})
-                            </SelectItem>
-                          ));
-                      })()}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCopytoClipboard(index)}
-                    className={`bg-gray-700 hover:bg-gray-600 flex-shrink-0 hidden sm:flex items-center justify-center w-8 h-8 transition-colors duration-300 ${
-                      copiedIndex === index ? 'bg-green-500' : ''
-                    }`}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleResetItem(index)}
-                    className="bg-gray-700 hover:bg-gray-600 flex-shrink-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                {/* Display basePrice | flea cost and last updated */}
-                {selectedItems[index] && fleaCosts[index] > 0 && (
-                  <div className="text-gray-500 text-xs">
-                    Value: ₽{selectedItems[index].basePrice.toLocaleString()} |
-                    Flea ≈ ₽{fleaCosts[index].toLocaleString()} |{" "}
-                    {timeAgo(new Date(selectedItems[index].updated))}
+            {/* **9. Item Selection Components** */}
+            <div className="space-y-2 w-full">
+              <div id="search-items">
+                {" "}
+                {/* Added ID for TourOverlay */}
+                {loading ? (
+                  // Show skeletons while loading
+                  Array(5)
+                    .fill(0)
+                    .map((_, index) => (
+                      <Skeleton
+                        key={`skeleton-${index}`}
+                        className="h-10 w-full mb-2 bg-slate-500"
+                      />
+                    ))
+                ) : items.length === 0 ? (
+                  // Display message if item list is empty
+                  <div className="text-center text-gray-400 mt-4">
+                    No items available at this time. Please wait for the next
+                    update in {nextFetchTime}.
                   </div>
+                ) : (
+                  // Show actual item selectors when loaded and items are available
+                  selectedItems.map((item, index) => (
+                    <React.Fragment key={`selector-${index}`}>
+                      <ItemSelector
+                        items={items}
+                        selectedItem={item}
+                        onSelect={(selectedItem, overriddenPrice) =>
+                          updateSelectedItem(
+                            selectedItem,
+                            index,
+                            overriddenPrice
+                          )
+                        }
+                        onCopy={() => handleCopyToClipboard(index)}
+                        onPin={() => handlePinItem(index)}
+                        isPinned={pinnedItems[index]}
+                        overriddenPrice={
+                          item ? overriddenPrices[item.uid] : undefined
+                        }
+                        isAutoPickActive={hasAutoSelected} // Added prop
+                        overriddenPrices={overriddenPrices} // Added prop
+                        isExcluded={excludedItems.has(item?.uid || "")}
+                        onToggleExclude={() =>
+                          item && toggleExcludedItem(item.uid)
+                        }
+                        excludedItems={excludedItems} // Ensure this prop is passed
+                      />
+                      {index < selectedItems.length - 1 && (
+                        <Separator className="my-2" />
+                      )}
+                    </React.Fragment>
+                  ))
                 )}
               </div>
-            ))}
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    id="clear-item-fields"
+                    className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary mt-2 w-full"
+                    onClick={clearItemFields}
+                    disabled={selectedItems.every((item) => item === null)}
+                  >
+                    Clear Selected Items
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Clears ALL item fields</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    id="reset-overrides"
+                    className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary mt-2 w-full"
+                    onClick={resetOverridesAndExclusions}
+                    disabled={
+                      Object.keys(overriddenPrices).length === 0 &&
+                      excludedItems.size === 0
+                    }
+                  >
+                    Reset Overrides
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reset overrides and exclusions</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          {/* // simple text saying number overrides & exclusions */}
+          <div className="text-center text-sm mt-2 text-gray-400">
+            {Object.keys(overriddenPrices).length} overrides and{" "}
+            {excludedItems.size} exclusions currently active
           </div>
 
           {/* **10. Sacrifice Value Display** */}
-          <div className="mt-6 text-center w-full">
+          <div
+            id="sacrifice-value" // Added ID for TourOverlay
+            className="mt-6 text-center w-full"
+          >
             <h2 className="text-3xl font-bold mb-2 text-gray-300">
-              Sacrifice Value
+              Current Total
             </h2>
-            <div
-              className={`text-6xl font-extrabold ${
-                isThresholdMet
-                  ? "text-green-500 animate-pulse"
-                  : "text-red-500 animate-pulse"
-              }`}
-            >
-              ₽{total.toLocaleString()}
-            </div>
+            {loading ? (
+              <Skeleton className="h-16 w-3/4 mx-auto" />
+            ) : (
+              <div
+                className={`text-6xl font-extrabold ${
+                  isThresholdMet
+                    ? "text-green-500 animate-pulse"
+                    : "text-red-500 animate-pulse"
+                }`}
+              >
+                ₽{total.toLocaleString()}
+              </div>
+            )}
             {!isThresholdMet && (
               <div className="text-red-500 mt-2">
-                Remaining Value Needed: ₽{(threshold - total).toLocaleString()}
+                ₽{(threshold - total).toLocaleString()} Needed to meet threshold
               </div>
             )}
             <div className="mt-6">
               <div className="text-sm font-semibold text-gray-400">
-                Flea Cost ≈ ₽{totalFleaCost.toLocaleString()}
+                Total flea Cost ≈{" "}
+                <span
+                  className={
+                    Object.keys(overriddenPrices).length > 0 ? "font-bold" : ""
+                  }
+                >
+                  ₽{totalFleaCost.toLocaleString()}
+                </span>
               </div>
             </div>
           </div>
@@ -689,8 +1028,16 @@ export function App() {
             </a>{" "}
             for helping with this tool.
           </div>
+          <div className="text-center mt-1">
+            {/* maker with cool icons */}
+            🔥 Made by Wilsman77 🔥
+          </div>
           <div className="flex justify-center mt-4 space-x-4">
-            <a href="https://www.buymeacoffee.com/wilsman77" target="_blank">
+            <a
+              href="https://www.buymeacoffee.com/wilsman77"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Image
                 src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
                 alt="Buy Me A Coffee"
@@ -706,15 +1053,37 @@ export function App() {
               Feedback
             </Button>
           </div>
+          <div className="mt-4">
+            <AdBanner
+              dataAdFormat="auto"
+              dataFullWidthResponsive={true}
+              dataAdSlot="1022212363"
+            />
+          </div>
         </footer>
       </Card>
       <div className="background-credit">Background by Zombiee</div>
-      <div className="background-creator">Created by Wilsman77</div>
       {isFeedbackFormVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <FeedbackForm onClose={() => setIsFeedbackFormVisible(false)} />
         </div>
       )}
+      {isSettingsPaneVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <SettingsPane
+            onClose={() => setIsSettingsPaneVisible(false)}
+            onSortChange={handleSortChange}
+            currentSortOption={sortOption}
+            selectedCategories={selectedCategories}
+            onCategoryChange={handleCategoryChange}
+            allCategories={allItemCategories} // Pass all categories
+            // onReset={resetOverridesAndExclusions} // Pass reset function
+            onHardReset={hardReset} // Pass hard reset function
+          />
+        </div>
+      )}
+      {/* **12. Render the Toaster Component** */}
+      <Toaster />
     </div>
   );
 }

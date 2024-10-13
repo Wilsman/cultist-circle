@@ -40,3 +40,8 @@ next-env.d.ts
 
 # local files
 /public/all_items_*
+repopack-output.txt
+CCC.md
+
+# vscode
+/.vscode

@@ -10,7 +10,13 @@ const config: Config = {
   theme: {
     extend: {
       backgroundImage: {
-        my_bg_image: "url('../public/images/bg.jpeg')",
+        my_bg_image: "url('../public/images/bg.webp')",
+      },
+      backgroundSize: {
+        cover: "cover",
+      },
+      backgroundRepeat: {
+        "no-repeat": "no-repeat",
       },
       colors: {
         background: "hsl(var(--background))",
