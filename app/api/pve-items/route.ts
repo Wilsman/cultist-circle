@@ -98,7 +98,7 @@ export async function GET() {
     // Check if the simplifiedData list is empty
     if (!simplifiedData || simplifiedData.length === 0) {
       return NextResponse.json(
-        { data: [], message: "No PVP items available at the moment." },
+        { data: [], message: "No PVE items available at the moment.", timestamp },
         { status: 200 }
       );
     }

@@ -71,8 +71,8 @@ export function App() {
     return "az";
   });
   const allItemCategories = [
-    "Ammo",
-    "Ammo_boxes",
+    // "Ammo",
+    // "Ammo_boxes",
     "Barter",
     "Containers",
     "Crates",
@@ -236,6 +236,29 @@ export function App() {
     toast({
       title: "Reset Successful",
       description: `${clearedOverridesCount} overrides and ${clearedExcludedItemsCount} excluded items have been cleared.`,
+    });
+  };
+
+  // Calls resetOverridesAndExclusions and also clears the users cookies and local storage
+  const hardReset = () => {
+    resetOverridesAndExclusions();
+    Cookies.remove("userThreshold");
+    localStorage.clear();
+    setSelectedItems(Array(5).fill(null));
+    setPinnedItems(Array(5).fill(false));
+    setSelectedCategories(defaultItemCategories);
+    setSortOption("az");
+    setThreshold(350001);
+    setExcludedItems(new Set());
+    setOverriddenPrices({});
+
+    // fetch data
+    fetchData();
+
+    // Show a toast notification
+    toast({
+      title: "Hard Reset Successful",
+      description: ` Hard Reset has been successful. All settings have been reset.`,
     });
   };
 
@@ -497,14 +520,13 @@ export function App() {
         .filter((item) => !item.bannedOnFlea) // Filter out items that are banned on the flea market
         .filter(
           (item) =>
-            new Date(item.updated).getTime() >
-            Date.now() - 1000 * 60 * 60 * 24 * 7
-        ) // Filter out items that haven't been updated in the last week
+            new Date(item.updated).getTime() > Date.now() - 1000 * 60 * 60 * 24
+        ) // Filter out items that haven't been updated in the last 24 hours
         .filter((item) => !excludedItems.has(item.uid)) // Exclude user-excluded items
         .sort((a, b) => b.basePrice / b.price - a.basePrice / a.price) // Sort by value-to-cost ratio
         .slice(0, 100); // Limit to top 100 items
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const pinnedTotal = selectedItems.reduce(
         (sum, item, index) =>
@@ -820,7 +842,7 @@ export function App() {
                               Reroll
                             </>
                           ) : (
-                            "Auto Select"
+                            "AUTO SELECT"
                           )}
                         </Button>
                       </TooltipTrigger>
@@ -833,7 +855,7 @@ export function App() {
 
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Link href="/recipes">
+                        <Link href="/recipes" prefetch={false}>
                           <Button className="bg-red-500 hover:bg-red-700">
                             Recipes
                           </Button>
@@ -1055,7 +1077,8 @@ export function App() {
             selectedCategories={selectedCategories}
             onCategoryChange={handleCategoryChange}
             allCategories={allItemCategories} // Pass all categories
-            onReset={resetOverridesAndExclusions} // Pass reset function
+            // onReset={resetOverridesAndExclusions} // Pass reset function
+            onHardReset={hardReset} // Pass hard reset function
           />
         </div>
       )}

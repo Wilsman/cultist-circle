@@ -14,7 +14,8 @@ const steps = [
   {
     target: "#settings",
     title: "Settings",
-    content: "Click here to open the settings pane.",
+    content:
+      "Click here to open the settings pane. ⚠️ If you are having problems with the app, try resetting from within the settings.",
   },
   {
     target: "#pvp-toggle",
@@ -64,9 +65,7 @@ export default function TourOverlay() {
 
   useEffect(() => {
     const handleLoad = () => {
-      const isDevelopment =
-        process.env.NODE_ENV === "development" ||
-        ["localhost", "127.0.0.1"].includes(window.location.hostname);
+      const isDevelopment = process.env.NODE_ENV === "development";
 
       if (isDevelopment) {
         localStorage.setItem("tourCompleted", "false");

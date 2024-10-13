@@ -14,7 +14,8 @@ interface SettingsPaneProps {
   selectedCategories: string[];
   onCategoryChange: (categories: string[]) => void;
   allCategories: string[];
-  onReset: () => void;
+  // onReset: () => void;
+  onHardReset: () => void;
 }
 
 const disabledCategories = new Set(["Repair", "Keys", "Weapon"]);
@@ -26,7 +27,8 @@ export function SettingsPane({
   selectedCategories,
   onCategoryChange,
   allCategories,
-  onReset,
+  // onReset,
+  onHardReset,
 }: SettingsPaneProps) {
   const [sortOption, setSortOption] = useState(currentSortOption);
   const [activeTab, setActiveTab] = useState("filter"); // New state for active tab
@@ -97,7 +99,7 @@ export function SettingsPane({
         >
           <X className="h-5 w-5" />
         </Button>
-        <div className="flex w-[60px] flex-col items-center border-r pt-4 pb-4">
+        <div className="flex w-[60px] flex-col items-center border-r pt-4 pb-4 h-full">
           <Button
             variant="ghost"
             className={`w-full p-2 ${
@@ -120,7 +122,7 @@ export function SettingsPane({
           </Button>
           <Button
             variant="ghost"
-            className={`w-full p-2 ${
+            className={`w-full p-2 mt-auto ${
               activeTab === "reset" ? "bg-gray-700" : ""
             }`}
             title="Reset"
@@ -190,16 +192,17 @@ export function SettingsPane({
           )}
           {activeTab === "reset" && (
             <div className="h-full flex flex-col justify-center items-center">
-              <h2 className="text-lg font-semibold mb-4">Reset Settings</h2>
+              <h2 className="text-lg font-semibold mb-4">Hard Reset</h2>
               <p className="text-center mb-4">
-                Reset all overrides and exclusions to their default values.
+                Reset all settings to their default values. (including cookies
+                and local cache)
               </p>
               <Button
                 variant="destructive"
                 className="w-full"
-                onClick={onReset}
+                onClick={onHardReset}
               >
-                Reset All Overrides & Exclusions
+                Reset App
               </Button>
             </div>
           )}

@@ -289,21 +289,21 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     <Pin className="mr-2 h-4 w-4" />
                     <span>{isPinned ? "Unpin Item" : "Pin Item"}</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={onCopy}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    <span>Copy Item Name</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={togglePriceOverride}>
                     <BadgeDollarSign className="mr-2 h-4 w-4" />
                     <span>
                       {isPriceOverrideActive
-                        ? "Disable Price Override"
-                        : "Enable Price Override"}
+                        ? "Disable Flea Override"
+                        : "Enable Flea Override"}
                     </span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={toggleExclude}>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    <span>{isExcluded ? "Include Item" : "Exclude Item"}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={onCopy}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    <span>Copy Item Name</span>
+                    <span>{isExcluded ? "Include Item" : "Exclude from Autopick"}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={handleRemove}>
