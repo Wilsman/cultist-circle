@@ -123,7 +123,7 @@ export function App() {
     if (typeof window !== "undefined") {
       localStorage.setItem("selectedCategories", JSON.stringify(categories));
     }
-    setHasAutoSelected(false); // Reset Auto Select on category change
+    // setHasAutoSelected(false); // Reset Auto Select on category change
   }, []);
 
   // Sort option handler
@@ -148,7 +148,7 @@ export function App() {
   const handleThresholdChange = (newValue: number) => {
     setThreshold(newValue);
     Cookies.set("userThreshold", newValue.toString(), { expires: 365 });
-    setHasAutoSelected(false); // Reset Auto Select on threshold change
+    // setHasAutoSelected(false); // Reset Auto Select on threshold change
     toastShownRef.current = false; // Reset toast shown flag when threshold changes
   };
 
@@ -502,7 +502,7 @@ export function App() {
     const newPinnedItems = [...pinnedItems];
     newPinnedItems[index] = !newPinnedItems[index];
     setPinnedItems(newPinnedItems);
-    setHasAutoSelected(false); // Reset Auto Select on pin change
+    // setHasAutoSelected(false); // Reset Auto Select on pin change
   };
 
   // Function to handle auto-select and reroll
@@ -566,7 +566,7 @@ export function App() {
 
       if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
         alert("No combination of items meets the remaining threshold.");
-        setHasAutoSelected(false); // Ensure it remains as "Auto Select"
+        // setHasAutoSelected(false); // Ensure it remains as "Auto Select"
         return;
       }
 
@@ -969,7 +969,7 @@ export function App() {
             className="mt-6 text-center w-full"
           >
             <h2 className="text-3xl font-bold mb-2 text-gray-300">
-              Total Sacrifice
+              Current Total
             </h2>
             {loading ? (
               <Skeleton className="h-16 w-3/4 mx-auto" />
@@ -986,7 +986,7 @@ export function App() {
             )}
             {!isThresholdMet && (
               <div className="text-red-500 mt-2">
-                Remaining Value Needed: ₽{(threshold - total).toLocaleString()}
+                ₽{(threshold - total).toLocaleString()} Needed to meet threshold
               </div>
             )}
             <div className="mt-6">
