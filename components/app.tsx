@@ -39,12 +39,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster and useToast
 import { useToast } from "@/hooks/use-toast";
 import TourOverlay from "@/components/tour-overlay";
-import AdBanner from "@/components/AdBanner";
+import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
+import { resetUserData } from "@/utils/resetUserData";
+
+const AdBanner = dynamic(() => import('@/components/AdBanner'), { 
+  ssr: false,
+  loading: () => <div>Loading ad...</div>
+})
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
 const PVP_CACHE_KEY = "pvpItemsCache";
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Storage key for overridden prices
+
+const CURRENT_VERSION = '1.0.1' // Increment this when you want to trigger a cache clear
 
 export function App() {
   // Mode state
@@ -240,26 +249,19 @@ export function App() {
   };
 
   // Calls resetOverridesAndExclusions and also clears the users cookies and local storage
-  const hardReset = () => {
-    resetOverridesAndExclusions();
-    Cookies.remove("userThreshold");
-    localStorage.clear();
-    setSelectedItems(Array(5).fill(null));
-    setPinnedItems(Array(5).fill(false));
-    setSelectedCategories(defaultItemCategories);
-    setSortOption("az");
-    setThreshold(350001);
-    setExcludedItems(new Set());
-    setOverriddenPrices({});
-
-    // fetch data
-    fetchData();
-
-    // Show a toast notification
-    toast({
-      title: "Hard Reset Successful",
-      description: ` Hard Reset has been successful. All settings have been reset.`,
-    });
+  const handleResetUserData = async () => {
+    await resetUserData(
+      setSelectedItems,
+      setPinnedItems,
+      setSelectedCategories,
+      setSortOption,
+      setThreshold,
+      setExcludedItems,
+      setOverriddenPrices,
+      fetchData,
+      defaultItemCategories,
+      toast
+    );
   };
 
   // Fetch data based on mode (PVE/PVP)
@@ -367,7 +369,7 @@ export function App() {
       sortedItems.sort((a, b) => a.basePrice - b.basePrice);
     } else if (sortOption === "ratio") {
       // Sort by value-to-cost ratio in descending order
-      sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / a.price);
+      sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / b.price);
     }
 
     return sortedItems;
@@ -523,7 +525,7 @@ export function App() {
             new Date(item.updated).getTime() > Date.now() - 1000 * 60 * 60 * 24
         ) // Filter out items that haven't been updated in the last 24 hours
         .filter((item) => !excludedItems.has(item.uid)) // Exclude user-excluded items
-        .sort((a, b) => b.basePrice / b.price - a.basePrice / a.price) // Sort by value-to-cost ratio
+        .sort((a, b) => b.basePrice / b.price - a.basePrice / b.price) // Sort by value-to-cost ratio
         .slice(0, 100); // Limit to top 100 items
 
       // await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -682,6 +684,14 @@ export function App() {
     }
   }, [isThresholdMet, threshold, toast]);
 
+  useEffect(() => {
+    const storedVersion = localStorage.getItem('appVersion')
+    if (storedVersion !== CURRENT_VERSION) {
+      clearUserData()
+      localStorage.setItem('appVersion', CURRENT_VERSION)
+    }
+  }, [])
+
   if (error) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-900 text-red-500">
@@ -697,6 +707,26 @@ export function App() {
     toastShownRef.current = false;
   }
 
+  const clearUserData = async () => {
+    // Clear local storage
+    localStorage.clear()
+
+    // Clear cookies via API route
+    try {
+      const response = await fetch('/api/expire-cookies')
+      if (response.ok) {
+        console.log('Cookies cleared successfully')
+      } else {
+        console.error('Failed to clear cookies')
+      }
+    } catch (error) {
+      console.error('Error clearing cookies:', error)
+    }
+
+    // Refresh the page to ensure all state is reset
+    window.location.reload()
+  }
+
   return (
     <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
       {/* Render the TourOverlay component */}
@@ -704,6 +734,7 @@ export function App() {
 
       <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
         <div className="mt-4 text-center text-gray-400 text-sm">
+          <div>Current Version: {CURRENT_VERSION}</div>
           <div>Next Update: {nextFetchTime}</div>
         </div>
         {/* **4. Dialog for Instructions** */}
@@ -1054,11 +1085,15 @@ export function App() {
             </Button>
           </div>
           <div className="mt-4">
-            <AdBanner
-              dataAdFormat="auto"
-              dataFullWidthResponsive={true}
-              dataAdSlot="1022212363"
-            />
+            <div className="mt-4">
+              <Suspense fallback={<div>Loading ad...</div>}>
+                <AdBanner
+                  dataAdFormat="auto"
+                  dataFullWidthResponsive={true}
+                  dataAdSlot="1022212363"
+                />
+              </Suspense>
+            </div>
           </div>
         </footer>
       </Card>
@@ -1078,7 +1113,7 @@ export function App() {
             onCategoryChange={handleCategoryChange}
             allCategories={allItemCategories} // Pass all categories
             // onReset={resetOverridesAndExclusions} // Pass reset function
-            onHardReset={hardReset} // Pass hard reset function
+            onHardReset={handleResetUserData} // Pass hard reset function
           />
         </div>
       )}
