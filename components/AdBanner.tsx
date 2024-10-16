@@ -1,5 +1,11 @@
 "use client";
 
+declare global {
+  interface Window {
+    adsbygoogle: unknown[];
+  }
+}
+
 import React, { useEffect, useRef } from "react";
 
 type AdBannerProps = {
@@ -33,7 +39,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
     if (window.adsbygoogle) {
       loadAd();
     } else {
-      const script = document.createElement('script');
+      const script = document.createElement("script");
       script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065`;
       script.async = true;
       script.onload = loadAd;
@@ -49,7 +55,12 @@ const AdBanner: React.FC<AdBannerProps> = ({
     <div ref={adRef} className="w-full overflow-hidden">
       <ins
         className="adsbygoogle"
-        style={{ display: "block", width: "100%", height: "auto", minHeight: "100px" }}
+        style={{
+          display: "block",
+          width: "100%",
+          height: "auto",
+          minHeight: "100px",
+        }}
         data-ad-client="ca-pub-4028411901202065"
         data-ad-slot={dataAdSlot}
         data-ad-format={dataAdFormat}
