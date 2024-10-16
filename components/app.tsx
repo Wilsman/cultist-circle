@@ -39,13 +39,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster and useToast
 import { useToast } from "@/hooks/use-toast";
 import TourOverlay from "@/components/tour-overlay";
-import dynamic from 'next/dynamic'
-import { Suspense } from 'react'
+import dynamic from "next/dynamic";
 import { resetUserData } from "@/utils/resetUserData";
+import ErrorBoundary from './ErrorBoundary'
 
 const AdBanner = dynamic(() => import('@/components/AdBanner'), { 
   ssr: false,
-  loading: () => <div>Loading ad...</div>
 })
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
@@ -53,7 +52,7 @@ const PVE_CACHE_KEY = "pveItemsCache";
 const PVP_CACHE_KEY = "pvpItemsCache";
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Storage key for overridden prices
 
-const CURRENT_VERSION = '1.0.1' // Increment this when you want to trigger a cache clear
+const CURRENT_VERSION = "1.0.1"; // Increment this when you want to trigger a cache clear
 
 export function App() {
   // Mode state
@@ -520,10 +519,10 @@ export function App() {
       validItems = validItems
         .filter((item) => item.basePrice >= threshold * 0.1) // Example: Only items contributing at least 10% to the threshold
         .filter((item) => !item.bannedOnFlea) // Filter out items that are banned on the flea market
-        .filter(
-          (item) =>
-            new Date(item.updated).getTime() > Date.now() - 1000 * 60 * 60 * 24
-        ) // Filter out items that haven't been updated in the last 24 hours
+        // .filter(
+        //   (item) =>
+        //     new Date(item.updated).getTime() > Date.now() - 1000 * 60 * 60 * 24
+        // ) // Filter out items that haven't been updated in the last 24 hours
         .filter((item) => !excludedItems.has(item.uid)) // Exclude user-excluded items
         .sort((a, b) => b.basePrice / b.price - a.basePrice / b.price) // Sort by value-to-cost ratio
         .slice(0, 100); // Limit to top 100 items
@@ -685,12 +684,12 @@ export function App() {
   }, [isThresholdMet, threshold, toast]);
 
   useEffect(() => {
-    const storedVersion = localStorage.getItem('appVersion')
+    const storedVersion = localStorage.getItem("appVersion");
     if (storedVersion !== CURRENT_VERSION) {
-      clearUserData()
-      localStorage.setItem('appVersion', CURRENT_VERSION)
+      clearUserData();
+      localStorage.setItem("appVersion", CURRENT_VERSION);
     }
-  }, [])
+  }, []);
 
   if (error) {
     return (
@@ -709,23 +708,23 @@ export function App() {
 
   const clearUserData = async () => {
     // Clear local storage
-    localStorage.clear()
+    localStorage.clear();
 
     // Clear cookies via API route
     try {
-      const response = await fetch('/api/expire-cookies')
+      const response = await fetch("/api/expire-cookies");
       if (response.ok) {
-        console.log('Cookies cleared successfully')
+        console.log("Cookies cleared successfully");
       } else {
-        console.error('Failed to clear cookies')
+        console.error("Failed to clear cookies");
       }
     } catch (error) {
-      console.error('Error clearing cookies:', error)
+      console.error("Error clearing cookies:", error);
     }
 
     // Refresh the page to ensure all state is reset
-    window.location.reload()
-  }
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
@@ -1084,16 +1083,14 @@ export function App() {
               Feedback
             </Button>
           </div>
-          <div className="mt-4">
-            <div className="mt-4">
-              <Suspense fallback={<div>Loading ad...</div>}>
-                <AdBanner
-                  dataAdFormat="auto"
-                  dataFullWidthResponsive={true}
-                  dataAdSlot="1022212363"
-                />
-              </Suspense>
-            </div>
+          <div className="mt-4 w-full">
+            <ErrorBoundary fallback={<div>Error loading ad.</div>}>
+              <AdBanner
+                dataAdFormat="auto"
+                dataFullWidthResponsive={true}
+                dataAdSlot="1022212363"
+              />
+            </ErrorBoundary>
           </div>
         </footer>
       </Card>

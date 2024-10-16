@@ -9,7 +9,7 @@ import {
   Pin,
   BadgeDollarSign,
   MoreVertical,
-  Trash2,
+  CircleSlash,
 } from "lucide-react";
 import Fuse from "fuse.js";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
@@ -269,7 +269,57 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             }`}
           />
           {selectedItem && (
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 hidden sm:flex items-center space-x-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onPin}
+                className={`h-8 w-8 ${
+                  isPinned ? "text-yellow-500" : "text-gray-400"
+                }`}
+              >
+                <Pin className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onCopy}
+                className="h-8 w-8 text-gray-400"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={togglePriceOverride}
+                className={`h-8 w-8 ${
+                  isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
+                }`}
+              >
+                <BadgeDollarSign className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={toggleExclude}
+                className={`h-8 w-8 ${
+                  isExcluded ? "text-red-500" : "text-gray-400"
+                }`}
+              >
+                <CircleSlash className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleRemove}
+                className="h-8 w-8 text-red-500"
+              >
+                <XIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {selectedItem && (
+            <div className="sm:hidden absolute right-2 top-1/2 transform -translate-y-1/2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -302,8 +352,10 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     </span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={toggleExclude}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    <span>{isExcluded ? "Include Item" : "Exclude from Autopick"}</span>
+                    <CircleSlash className="mr-2 h-4 w-4" />
+                    <span>
+                      {isExcluded ? "Include Item" : "Exclude from Autopick"}
+                    </span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={handleRemove}>
