@@ -61,7 +61,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   onPin,
   isPinned,
   overriddenPrice,
-  isAutoPickActive,
   overriddenPrices,
   isExcluded,
   onToggleExclude,
@@ -170,14 +169,21 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   );
 
   const togglePriceOverride = useCallback(() => {
-    setIsPriceOverrideActive((prev) => !prev);
-    if (!isPriceOverrideActive && selectedItem && priceOverride) {
-      onSelect(selectedItem, Number(priceOverride));
-    } else if (isPriceOverrideActive && selectedItem) {
-      onSelect(selectedItem, null);
-      setPriceOverride("");
-    }
-  }, [isPriceOverrideActive, onSelect, selectedItem, priceOverride]);
+    setIsPriceOverrideActive((prev) => {
+      const newState = !prev;
+      if (newState && selectedItem) {
+        if (priceOverride) {
+          onSelect(selectedItem, Number(priceOverride));
+        } else if (overriddenPrice !== undefined) {
+          setPriceOverride(overriddenPrice.toString());
+        }
+      } else if (!newState && selectedItem) {
+        onSelect(selectedItem, null);
+        setPriceOverride("");
+      }
+      return newState;
+    });
+  }, [selectedItem, priceOverride, overriddenPrice, onSelect]);
 
   const toggleExclude = useCallback(() => {
     onToggleExclude();
@@ -400,13 +406,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             )}
           </div>
         )}
-        {selectedItem && isPriceOverrideActive && !isAutoPickActive && (
+        {selectedItem && isPriceOverrideActive && (
           <div className="mt-1 flex items-center">
             <input
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
-              value={priceOverride || ""}
+              value={priceOverride}
               onChange={handlePriceOverride}
               placeholder="Override flea price"
               className="w-1/2 p-1 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

@@ -92,46 +92,55 @@ export function SettingsPane({
         ref={paneRef}
         className="flex sm:w-[500px] w-[350px] max-h-[90vh] h-[550px] rounded-lg border bg-slate-800 shadow-lg relative"
       >
-        <Button
-          variant="ghost"
-          className="absolute top-2 right-2"
+        <button
+          className="absolute top-2 right-2 p-2 rounded-full hover:bg-slate-700 transition-colors"
           onClick={onClose}
+          aria-label="Close settings"
         >
-          <X className="h-5 w-5" />
-        </Button>
-        <div className="flex w-[60px] flex-col items-center border-r pt-4 pb-4 h-full">
-          <Button
-            variant="ghost"
-            className={`w-full p-2 ${
-              activeTab === "filter" ? "bg-gray-700" : ""
-            }`}
-            title="Item Filter"
-            onClick={() => setActiveTab("filter")}
-          >
-            <Filter className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            className={`w-full p-2 ${
-              activeTab === "sort" ? "bg-gray-700" : ""
-            }`}
-            title="Sort Options"
-            onClick={() => setActiveTab("sort")}
-          >
-            <ArrowUpDown className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            className={`w-full p-2 mt-auto ${
-              activeTab === "reset" ? "bg-gray-700" : ""
-            }`}
+          <X className="h-5 w-5 text-primary-foreground" />
+        </button>
+        <div className="flex w-[60px] flex-col items-center justify-between border-r pt-4 pb-4 h-full">
+          <div className="flex flex-col items-center space-y-4">
+            <button
+              className="w-full p-2 flex justify-center focus:outline-none"
+              title="Item Filter"
+              onClick={() => setActiveTab("filter")}
+            >
+              <Filter
+                className={`h-5 w-5 ${
+                  activeTab === "filter"
+                    ? "text-muted-foreground"
+                    : "text-primary"
+                }`}
+              />
+            </button>
+            <button
+              className="w-full p-2 flex justify-center focus:outline-none"
+              title="Sort Options"
+              onClick={() => setActiveTab("sort")}
+            >
+              <ArrowUpDown
+                className={`h-5 w-5 ${
+                  activeTab === "sort"
+                    ? "text-muted-foreground"
+                    : "text-primary"
+                }`}
+              />
+            </button>
+          </div>
+          <button
+            className="w-full p-2 flex justify-center focus:outline-none"
             title="Reset"
             onClick={() => setActiveTab("reset")}
           >
-            <RefreshCcw className="h-5 w-5" />
-          </Button>
+            <RefreshCcw
+              className={`h-5 w-5 ${
+                activeTab === "reset" ? "text-muted-foreground" : "text-primary"
+              }`}
+            />
+          </button>
         </div>
-        <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex-1 p-6 overflow-y-auto text-primary-foreground">
           {activeTab === "sort" && (
             <div className="h-full">
               <h2 className="text-lg font-semibold mb-4">Sort Options</h2>
@@ -164,7 +173,7 @@ export function SettingsPane({
             </div>
           )}
           {activeTab === "filter" && (
-            <div className="h-full relative">
+            <div className="h-full relative text-primary-foreground">
               <h2 className="text-lg font-semibold mb-4">Item Filter</h2>
               <div className="text-sm text-yellow-500 mb-4 bg-yellow-100 bg-opacity-20 p-2 rounded">
                 Warning: {disabledCategoriesMessage} are disabled due to their

@@ -7,22 +7,11 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { HelpCircle, Settings, Dices } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { Settings } from "lucide-react";
 import Image from "next/image";
-import BetaBadge from "./ui/beta-badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipTrigger,
@@ -30,9 +19,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { FeedbackForm } from "./feedback-form";
-import ItemSelector from "@/components/ItemSelector";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
-import ThresholdSelector from "@/components/ui/threshold-selector";
 import Cookies from "js-cookie";
 import { SettingsPane } from "@/components/settings-pane";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,18 +28,28 @@ import { useToast } from "@/hooks/use-toast";
 import TourOverlay from "@/components/tour-overlay";
 import dynamic from "next/dynamic";
 import { resetUserData } from "@/utils/resetUserData";
-import ErrorBoundary from './ErrorBoundary'
+import ErrorBoundary from "./ErrorBoundary";
+import { ThresholdHelperPopup } from "@/components/ThresholdHelperPopup";
+import { InstructionsDialog } from "@/components/InstructionsDialog";
+import { ModeToggle } from "@/components/ModeToggle";
+import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithHelper";
+import { AutoSelectButton } from "@/components/AutoSelectButton";
+import { Suspense } from "react";
 
-const AdBanner = dynamic(() => import('@/components/AdBanner'), { 
+const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
-})
+});
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const PVE_CACHE_KEY = "pveItemsCache";
 const PVP_CACHE_KEY = "pvpItemsCache";
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Storage key for overridden prices
 
-const CURRENT_VERSION = "1.0.1"; // Increment this when you want to trigger a cache clear
+const CURRENT_VERSION = "1.0.2"; // Increment this when you want to trigger a cache clear
+
+const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
+  ssr: false,
+});
 
 export function App() {
   // Mode state
@@ -143,7 +140,7 @@ export function App() {
   }, []);
 
   // Threshold state with initialization from cookies
-  const [threshold, setThreshold] = useState<number>(350001); // Default value
+  const [threshold, setThreshold] = useState<number>(400000); // Default value
 
   useEffect(() => {
     const savedThreshold = Cookies.get("userThreshold");
@@ -365,7 +362,7 @@ export function App() {
       sortedItems.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortOption === "base-value") {
       // Sort by base price in ascending order
-      sortedItems.sort((a, b) => a.basePrice - b.basePrice);
+      sortedItems.sort((a, b) => a.basePrice - b.price);
     } else if (sortOption === "ratio") {
       // Sort by value-to-cost ratio in descending order
       sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / b.price);
@@ -517,17 +514,13 @@ export function App() {
 
       // Apply filtering heuristics
       validItems = validItems
-        .filter((item) => item.basePrice >= threshold * 0.1) // Example: Only items contributing at least 10% to the threshold
+        .filter((item) => item.basePrice >= threshold * 0.1) // Only items contributing at least 10% to the threshold
         .filter((item) => !item.bannedOnFlea) // Filter out items that are banned on the flea market
-        // .filter(
-        //   (item) =>
-        //     new Date(item.updated).getTime() > Date.now() - 1000 * 60 * 60 * 24
-        // ) // Filter out items that haven't been updated in the last 24 hours
         .filter((item) => !excludedItems.has(item.uid)) // Exclude user-excluded items
         .sort((a, b) => b.basePrice / b.price - a.basePrice / b.price) // Sort by value-to-cost ratio
         .slice(0, 100); // Limit to top 100 items
 
-      // await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const pinnedTotal = selectedItems.reduce(
         (sum, item, index) =>
@@ -691,6 +684,23 @@ export function App() {
     }
   }, []);
 
+  const [isThresholdHelperOpen, setIsThresholdHelperOpen] = useState(false);
+
+  // Move these useMemo hooks here, right after the state declarations
+  const isClearButtonDisabled = useMemo(() => {
+    return (
+      selectedItems.every((item) => item === null) &&
+      Object.keys(overriddenPrices).length === 0 &&
+      excludedItems.size === 0
+    );
+  }, [selectedItems, overriddenPrices, excludedItems]);
+
+  const isResetOverridesButtonDisabled = useMemo(() => {
+    return (
+      Object.keys(overriddenPrices).length === 0 && excludedItems.size === 0
+    );
+  }, [overriddenPrices, excludedItems]);
+
   if (error) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-900 text-red-500">
@@ -704,6 +714,8 @@ export function App() {
     setPinnedItems(Array(5).fill(false));
     setHasAutoSelected(false);
     toastShownRef.current = false;
+    setOverriddenPrices({}); // Reset overridden prices
+    setExcludedItems(new Set()); // Reset excluded items
   }
 
   const clearUserData = async () => {
@@ -727,374 +739,266 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
-      {/* Render the TourOverlay component */}
-      {!loading && <TourOverlay />}
+    <>
+      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 p-4 overflow-auto">
+        <div className="min-h-screen flex items-center justify-center">
+          <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50">
+            {/* Render the TourOverlay component */}
+            {!loading && <TourOverlay />}
 
-      <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
-        <div className="mt-4 text-center text-gray-400 text-sm">
-          <div>Current Version: {CURRENT_VERSION}</div>
-          <div>Next Update: {nextFetchTime}</div>
-        </div>
-        {/* **4. Dialog for Instructions** */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <div className="absolute top-6 left-4 animate-float hover:text-green-300 text-yellow-500 flex-row items-center justify-center">
-              <HelpCircle
-                id="help" // Added ID for TourOverlay
-                className="h-10 w-10"
+            <div className="mt-4 text-center text-gray-400 text-sm">
+              <div>Current Version: {CURRENT_VERSION}</div>
+              <div>Next Update: {nextFetchTime}</div>
+            </div>
+
+            {/* Help icon */}
+            <div className="absolute top-4 left-4 flex flex-col items-center justify-center">
+              <InstructionsDialog />
+            </div>
+
+            {/* Settings icon */}
+            <div className="absolute top-4 right-4 flex flex-col items-center justify-center">
+              <Settings
+                id="settings"
+                className="h-8 w-8 hover:text-green-300 text-yellow-500 cursor-pointer"
+                onClick={() => setIsSettingsPaneVisible(true)}
               />
-              <div className="text-yellow-500 text-sm text-center">Help</div>
+              <div className="text-yellow-500 text-xs text-center mt-1">
+                Settings
+              </div>
             </div>
-          </DialogTrigger>
-          <DialogContent className="flex bg-gray-800 sm:max-w-[600px] sm:max-h-[90vh] max-h-[90vh] w-full mx-auto">
-            <DialogHeader>
-              <DialogTitle>How to Use</DialogTitle>
-              <DialogDescription className="text-left">
-                <ul>
-                  <li>
-                    1️⃣ Toggle between PVE and PVP modes to use correct flea
-                    prices.
-                  </li>
-                  <li>2️⃣ Edit threshold (see below for suggestions)</li>
-                  <li>
-                    3️⃣ Select items from the dropdown to calculate the total
-                    sacrifice value.
-                  </li>
-                  <li>
-                    4️⃣ Use Auto Pick to find the cheapest combination meeting
-                    the threshold.
-                  </li>
-                  <li>
-                    5️⃣ Ensure the total value meets the cultist threshold (base
-                    value).
-                  </li>
-                  <li>6️⃣ If the threshold is met, sacrifice the items.</li>
-                  <Separator className="mt-3 mb-3" />
-                  <li>
-                    🔴 BUG: 14-hour result has known bug which can result in an
-                    empty reward.
-                  </li>
-                  <li>
-                    🟢 Note: ≥400k base value = 6h (25% success) | Active
-                    tasks/hideout item
-                  </li>
-                  <li>🟢 Note: ≥350,001 base value = 14h | High-Value item</li>
-                  <li>
-                    🟢 Note: Flea prices are latest prices provided by
-                    tarkov-market.
-                  </li>
-                  <Separator className="mt-3 mb-1" />
-                  <li>💖 Thank you for checking out the app - Wilsman77</li>
-                </ul>
-              </DialogDescription>
-            </DialogHeader>
-          </DialogContent>
-        </Dialog>
 
-        <Settings
-          id="settings" // Added ID for TourOverlay
-          className="absolute top-5 right-6 h-10 w-10 hover:text-green-300 text-yellow-500 cursor-pointer"
-          onClick={() => setIsSettingsPaneVisible(true)}
-        />
-        <div className="absolute top-15 right-6 text-orange-500 text-sm text-center">
-          Settings
-        </div>
+            <CardContent className="p-6">
+              {/* **5. Header with Title and Beta Badge** */}
+              <h1 className="sm:text-3xl text-xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
+                <Image
+                  src="/images/Cultist-Calulator.webp"
+                  alt="Cultist calculator logo"
+                  width={400}
+                  height={128}
+                />
+              </h1>
 
-        <CardContent className="p-6">
-          {/* **5. Header with Title and Beta Badge** */}
-          <h1 className="sm:text-3xl text-xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
-            <Image
-              src="/images/Cultist-Calulator.webp"
-              alt="Cultist calculator logo"
-              width={400}
-              height={128}
-            />
-            <div className="ml-2">
-              <BetaBadge />
-            </div>
-          </h1>
+              {/* Replace the old Mode Toggle with the new ModeToggle component */}
+              <ModeToggle isPVE={isPVE} onToggle={handleModeToggle} />
 
-          {/* **6. Mode Toggle (PVE/PVP)** */}
-          <div
-            id="pvp-toggle" // Added ID for TourOverlay
-            className="flex items-center justify-center mb-6 w-full"
-          >
-            <span className="text-gray-300">PVP</span>
-            <Switch
-              checked={isPVE}
-              onCheckedChange={handleModeToggle}
-              className="mx-2 data-[state=checked]:bg-white data-[state=unchecked]:bg-white"
-            />
-            <span className="text-gray-300">PVE</span>
-          </div>
+              {/* Replace the old Threshold Selector with the new ThresholdSelectorWithHelper component */}
+              <ThresholdSelectorWithHelper
+                threshold={threshold}
+                onThresholdChange={handleThresholdChange}
+                onHelperOpen={() => setIsThresholdHelperOpen(true)}
+              />
 
-          {/* **7. Display Current Threshold and Edit Button** */}
-          <div
-            id="threshold" // Added ID for TourOverlay
-            className="flex items-center justify-center mb-4 w-full"
-          >
-            <ThresholdSelector
-              value={threshold}
-              onChange={handleThresholdChange}
-            />
-          </div>
+              {/* Replace the old Auto Select / Reroll button with the new AutoSelectButton component */}
+              <AutoSelectButton
+                isCalculating={isCalculating}
+                hasAutoSelected={hasAutoSelected}
+                handleAutoPick={handleAutoPick}
+              />
 
-          {/* **8. Auto Select / Reroll Button and Progress Bar** */}
-          <div className="h-full w-full flex flex-col justify-center items-center">
-            {isCalculating ? (
-              <div className="text-center">
-                <p className="text-gray-300 mb-2">
-                  Calculating best combination...
-                </p>
-                <div className="lds-ellipsis">
-                  <div></div>
-                  <div></div>
-                  <div></div>
-                  <div></div>
+              {/* **9. Item Selection Components** */}
+              <div className="space-y-2 w-full">
+                <div id="search-items">
+                  {" "}
+                  {/* Added ID for TourOverlay */}
+                  {loading ? (
+                    // Show skeletons while loading
+                    Array(5)
+                      .fill(0)
+                      .map((_, index) => (
+                        <Skeleton
+                          key={`skeleton-${index}`}
+                          className="h-10 w-full mb-2 bg-slate-500"
+                        />
+                      ))
+                  ) : items.length === 0 ? (
+                    // Display message if item list is empty
+                    <div className="text-center text-gray-400 mt-4">
+                      No items available at this time. Please wait for the next
+                      update in {nextFetchTime}.
+                    </div>
+                  ) : (
+                    // Show actual item selectors when loaded and items are available
+                    selectedItems.map((item, index) => (
+                      <React.Fragment key={`selector-${index}`}>
+                        <Suspense fallback={<div>Loading...</div>}>
+                          <DynamicItemSelector
+                            items={items}
+                            selectedItem={item}
+                            onSelect={(selectedItem, overriddenPrice) =>
+                              updateSelectedItem(
+                                selectedItem,
+                                index,
+                                overriddenPrice
+                              )
+                            }
+                            onCopy={() => handleCopyToClipboard(index)}
+                            onPin={() => handlePinItem(index)}
+                            isPinned={pinnedItems[index]}
+                            overriddenPrice={
+                              item ? overriddenPrices[item.uid] : undefined
+                            }
+                            isAutoPickActive={hasAutoSelected} // Added prop
+                            overriddenPrices={overriddenPrices} // Added prop
+                            isExcluded={excludedItems.has(item?.uid || "")}
+                            onToggleExclude={() =>
+                              item && toggleExcludedItem(item.uid)
+                            }
+                            excludedItems={excludedItems} // Ensure this prop is passed
+                          />
+                        </Suspense>
+                        {index < selectedItems.length - 1 && (
+                          <Separator className="my-2" />
+                        )}
+                      </React.Fragment>
+                    ))
+                  )}
                 </div>
               </div>
-            ) : (
               <TooltipProvider>
-                <div className="flex flex-col justify-center items-center">
-                  <div className="flex justify-center mb-4">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          id="auto-select" // Added ID for TourOverlay
-                          onClick={handleAutoPick}
-                          disabled={isCalculating}
-                          className="bg-blue-500 hover:bg-blue-700 md:min-w-[300px] sm:min-w-[300px] mr-2"
-                        >
-                          {hasAutoSelected ? (
-                            <>
-                              <Dices className="mr-1 h-5 w-5" />
-                              Reroll
-                            </>
-                          ) : (
-                            "AUTO SELECT"
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {hasAutoSelected
-                          ? "Reroll to find a new combination"
-                          : "Automatically select best items"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link href="/recipes" prefetch={false}>
-                          <Button className="bg-red-500 hover:bg-red-700">
-                            Recipes
-                          </Button>
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent>View recipes</TooltipContent>
-                    </Tooltip>
-                  </div>
+                <div className="flex space-x-2 mt-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        id="clear-item-fields"
+                        className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary w-1/2"
+                        onClick={clearItemFields}
+                        disabled={isClearButtonDisabled}
+                      >
+                        Clear Selected Items
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Clears ALL item fields</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        id="reset-overrides"
+                        className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary w-1/2"
+                        onClick={resetOverridesAndExclusions}
+                        disabled={isResetOverridesButtonDisabled}
+                      >
+                        Reset Overrides
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Reset overrides and exclusions
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </TooltipProvider>
-            )}
+            </CardContent>
 
-            {/* **9. Item Selection Components** */}
-            <div className="space-y-2 w-full">
-              <div id="search-items">
-                {" "}
-                {/* Added ID for TourOverlay */}
-                {loading ? (
-                  // Show skeletons while loading
-                  Array(5)
-                    .fill(0)
-                    .map((_, index) => (
-                      <Skeleton
-                        key={`skeleton-${index}`}
-                        className="h-10 w-full mb-2 bg-slate-500"
-                      />
-                    ))
-                ) : items.length === 0 ? (
-                  // Display message if item list is empty
-                  <div className="text-center text-gray-400 mt-4">
-                    No items available at this time. Please wait for the next
-                    update in {nextFetchTime}.
-                  </div>
-                ) : (
-                  // Show actual item selectors when loaded and items are available
-                  selectedItems.map((item, index) => (
-                    <React.Fragment key={`selector-${index}`}>
-                      <ItemSelector
-                        items={items}
-                        selectedItem={item}
-                        onSelect={(selectedItem, overriddenPrice) =>
-                          updateSelectedItem(
-                            selectedItem,
-                            index,
-                            overriddenPrice
-                          )
-                        }
-                        onCopy={() => handleCopyToClipboard(index)}
-                        onPin={() => handlePinItem(index)}
-                        isPinned={pinnedItems[index]}
-                        overriddenPrice={
-                          item ? overriddenPrices[item.uid] : undefined
-                        }
-                        isAutoPickActive={hasAutoSelected} // Added prop
-                        overriddenPrices={overriddenPrices} // Added prop
-                        isExcluded={excludedItems.has(item?.uid || "")}
-                        onToggleExclude={() =>
-                          item && toggleExcludedItem(item.uid)
-                        }
-                        excludedItems={excludedItems} // Ensure this prop is passed
-                      />
-                      {index < selectedItems.length - 1 && (
-                        <Separator className="my-2" />
-                      )}
-                    </React.Fragment>
-                  ))
-                )}
-              </div>
+            {/* // simple text saying number overrides & exclusions */}
+            <div className="text-center text-sm text-gray-400">
+              {Object.keys(overriddenPrices).length} overrides and{" "}
+              {excludedItems.size} exclusions currently active
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    id="clear-item-fields"
-                    className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary mt-2 w-full"
-                    onClick={clearItemFields}
-                    disabled={selectedItems.every((item) => item === null)}
-                  >
-                    Clear Selected Items
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Clears ALL item fields</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    id="reset-overrides"
-                    className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary mt-2 w-full"
-                    onClick={resetOverridesAndExclusions}
-                    disabled={
-                      Object.keys(overriddenPrices).length === 0 &&
-                      excludedItems.size === 0
+
+            {/* **10. Sacrifice Value Display** */}
+            <div id="sacrifice-value" className="mt-6 text-center w-full">
+              <h2 className="text-3xl font-bold mb-2 text-gray-300">
+                Current Total
+              </h2>
+              {loading ? (
+                <Skeleton className="h-16 w-3/4 mx-auto" />
+              ) : (
+                <div
+                  className={`text-6xl font-extrabold ${
+                    isThresholdMet
+                      ? "text-green-500 animate-pulse"
+                      : "text-red-500 animate-pulse"
+                  }`}
+                >
+                  ₽{total.toLocaleString()}
+                </div>
+              )}
+              {!isThresholdMet && (
+                <div className="text-red-500 mt-2">
+                  ₽{(threshold - total).toLocaleString()} Needed to meet
+                  threshold
+                </div>
+              )}
+              <div className="mt-6">
+                <div className="text-sm font-semibold text-gray-400">
+                  Total flea Cost ≈{" "}
+                  <span
+                    className={
+                      Object.keys(overriddenPrices).length > 0
+                        ? "font-bold"
+                        : ""
                     }
                   >
-                    Reset Overrides
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Reset overrides and exclusions</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          {/* // simple text saying number overrides & exclusions */}
-          <div className="text-center text-sm mt-2 text-gray-400">
-            {Object.keys(overriddenPrices).length} overrides and{" "}
-            {excludedItems.size} exclusions currently active
-          </div>
-
-          {/* **10. Sacrifice Value Display** */}
-          <div
-            id="sacrifice-value" // Added ID for TourOverlay
-            className="mt-6 text-center w-full"
-          >
-            <h2 className="text-3xl font-bold mb-2 text-gray-300">
-              Current Total
-            </h2>
-            {loading ? (
-              <Skeleton className="h-16 w-3/4 mx-auto" />
-            ) : (
-              <div
-                className={`text-6xl font-extrabold ${
-                  isThresholdMet
-                    ? "text-green-500 animate-pulse"
-                    : "text-red-500 animate-pulse"
-                }`}
-              >
-                ₽{total.toLocaleString()}
-              </div>
-            )}
-            {!isThresholdMet && (
-              <div className="text-red-500 mt-2">
-                ₽{(threshold - total).toLocaleString()} Needed to meet threshold
-              </div>
-            )}
-            <div className="mt-6">
-              <div className="text-sm font-semibold text-gray-400">
-                Total flea Cost ≈{" "}
-                <span
-                  className={
-                    Object.keys(overriddenPrices).length > 0 ? "font-bold" : ""
-                  }
-                >
-                  ₽{totalFleaCost.toLocaleString()}
-                </span>
+                    ₽{totalFleaCost.toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
 
-        <Separator className="my-1" />
+            <Separator className="my-1" />
 
-        {/* **11. Footer with Credits and Links** */}
-        <footer className="mt-4 text-center text-gray-400 text-sm w-full">
-          <a
-            href="https://tarkov-market.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-gray-300 transition-colors"
-          >
-            Data provided by Tarkov Market
-          </a>
-          <div className="text-center mt-1">
-            Credit to{" "}
-            <a
-              href="https://bio.link/verybadscav"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-700"
-            >
-              VeryBadSCAV
-            </a>{" "}
-            for helping with this tool.
-          </div>
-          <div className="text-center mt-1">
-            {/* maker with cool icons */}
-            🔥 Made by Wilsman77 🔥
-          </div>
-          <div className="flex justify-center mt-4 space-x-4">
-            <a
-              href="https://www.buymeacoffee.com/wilsman77"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Image
-                src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-                alt="Buy Me A Coffee"
-                width={120}
-                height={30}
-                priority={true}
-              />
-            </a>
-            <Button
-              onClick={() => setIsFeedbackFormVisible(true)}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out"
-            >
-              Feedback
-            </Button>
-          </div>
-          <div className="mt-4 w-full">
-            <ErrorBoundary fallback={<div>Error loading ad.</div>}>
-              <AdBanner
-                dataAdFormat="auto"
-                dataFullWidthResponsive={true}
-                dataAdSlot="1022212363"
-              />
-            </ErrorBoundary>
-          </div>
-        </footer>
-      </Card>
+            {/* **11. Footer with Credits and Links** */}
+            <footer className="mt-4 text-center text-gray-400 text-sm w-full">
+              <a
+                href="https://tarkov-market.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-gray-300 transition-colors"
+              >
+                Data provided by Tarkov Market
+              </a>
+              <div className="text-center mt-1">
+                Credit to{" "}
+                <a
+                  href="https://bio.link/verybadscav"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700"
+                >
+                  VeryBadSCAV
+                </a>{" "}
+                for helping with this tool.
+              </div>
+              <div className="text-center mt-1">
+                {/* maker with cool icons */}
+                🔥 Made by Wilsman77 🔥
+              </div>
+              <div className="flex justify-center mt-4 space-x-4">
+                <a
+                  href="https://www.buymeacoffee.com/wilsman77"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Image
+                    src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+                    alt="Buy Me A Coffee"
+                    width={120}
+                    height={30}
+                    priority={true}
+                  />
+                </a>
+                <Button
+                  onClick={() => setIsFeedbackFormVisible(true)}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out"
+                >
+                  Feedback
+                </Button>
+              </div>
+              <div className="mt-4 w-full">
+                <ErrorBoundary fallback={<div>Error loading ad.</div>}>
+                  <AdBanner
+                    dataAdFormat="auto"
+                    dataFullWidthResponsive={true}
+                    dataAdSlot="1022212363"
+                  />
+                </ErrorBoundary>
+              </div>
+            </footer>
+          </Card>
+        </div>
+      </div>
       <div className="background-credit">Background by Zombiee</div>
+
       {isFeedbackFormVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <FeedbackForm onClose={() => setIsFeedbackFormVisible(false)} />
@@ -1108,14 +1012,19 @@ export function App() {
             currentSortOption={sortOption}
             selectedCategories={selectedCategories}
             onCategoryChange={handleCategoryChange}
-            allCategories={allItemCategories} // Pass all categories
-            // onReset={resetOverridesAndExclusions} // Pass reset function
-            onHardReset={handleResetUserData} // Pass hard reset function
+            allCategories={allItemCategories}
+            onHardReset={handleResetUserData}
           />
         </div>
       )}
+      {/* Threshold Helper Popup */}
+      <ThresholdHelperPopup
+        isOpen={isThresholdHelperOpen}
+        onClose={() => setIsThresholdHelperOpen(false)}
+        onSetThreshold={handleThresholdChange}
+      />
       {/* **12. Render the Toaster Component** */}
       <Toaster />
-    </div>
+    </>
   );
 }
