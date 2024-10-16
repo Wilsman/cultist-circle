@@ -6,15 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ChevronsUpDown } from "lucide-react";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import Cookies from 'js-cookie';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import Cookies from "js-cookie";
 
 interface ThresholdSelectorProps {
   value: number;
   onChange: (value: number) => void;
 }
 
-export default function ThresholdSelector({ value, onChange }: ThresholdSelectorProps) {
+export default function ThresholdSelector({
+  value,
+  onChange,
+}: ThresholdSelectorProps) {
   const [isCustom, setIsCustom] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -28,7 +36,7 @@ export default function ThresholdSelector({ value, onChange }: ThresholdSelector
   }, [value]);
 
   useEffect(() => {
-    const savedThreshold = Cookies.get('userThreshold');
+    const savedThreshold = Cookies.get("userThreshold");
     if (savedThreshold) {
       onChange(Number(savedThreshold));
     }
@@ -61,20 +69,20 @@ export default function ThresholdSelector({ value, onChange }: ThresholdSelector
   const handleSliderChange = (newValue: number[]) => {
     const newThreshold = newValue[0];
     onChange(newThreshold);
-    Cookies.set('userThreshold', newThreshold.toString(), { expires: 365 });
+    Cookies.set("userThreshold", newThreshold.toString(), { expires: 365 });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = Number(e.target.value);
     const newThreshold = isNaN(newValue) ? 0 : newValue;
     onChange(newThreshold);
-    Cookies.set('userThreshold', newThreshold.toString(), { expires: 365 });
+    Cookies.set("userThreshold", newThreshold.toString(), { expires: 365 });
   };
 
   const handlePresetClick = (preset: number) => {
     onChange(preset);
     setIsCustom(false);
-    Cookies.set('userThreshold', preset.toString(), { expires: 365 });
+    Cookies.set("userThreshold", preset.toString(), { expires: 365 });
   };
 
   return (
@@ -83,6 +91,7 @@ export default function ThresholdSelector({ value, onChange }: ThresholdSelector
       className="w-64 bg-gray-700 text-white rounded-lg shadow-md transition-colors duration-200"
     >
       <div
+        id="threshold"
         className="flex items-center justify-between p-3 cursor-pointer border-b border-border"
         onClick={handleToggle}
       >
@@ -97,7 +106,7 @@ export default function ThresholdSelector({ value, onChange }: ThresholdSelector
           <Slider
             value={[value]}
             onValueChange={handleSliderChange}
-            max={500000}
+            max={1000000}
             step={1000}
             className="mb-4"
           />
@@ -106,10 +115,10 @@ export default function ThresholdSelector({ value, onChange }: ThresholdSelector
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant={value === 350001 ? "default" : "outline"}
+                    variant={value === 350001 ? "outline" : "default"}
                     size="sm"
                     onClick={() => handlePresetClick(350001)}
-                    className="text-sm"
+                    className="text-sm bg-primary"
                   >
                     ₽350,001
                   </Button>
@@ -123,10 +132,10 @@ export default function ThresholdSelector({ value, onChange }: ThresholdSelector
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant={value === 400000 ? "default" : "outline"}
+                    variant={value === 400000 ? "outline" : "default"}
                     size="sm"
                     onClick={() => handlePresetClick(400000)}
-                    className="text-sm"
+                    className="text-sm bg-primary"
                   >
                     ₽400,000
                   </Button>
@@ -144,7 +153,7 @@ export default function ThresholdSelector({ value, onChange }: ThresholdSelector
               type="number"
               value={value}
               onChange={handleInputChange}
-              className="w-full mt-2 bg-background text-secondary"
+              className="w-full mt-2 bg-primary text-secondary"
             />
           )}
         </div>

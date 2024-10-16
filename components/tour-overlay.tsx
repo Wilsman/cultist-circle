@@ -24,9 +24,14 @@ const steps = [
   },
   {
     target: "#threshold",
-    title: "Threshold Setting",
+    title: "Threshold Setter",
+    content: "Set your threshold. See threshold helper for more info.",
+  },
+  {
+    target: "#threshold-helper",
+    title: "Threshold Helper",
     content:
-      "Set your threshold. ≥350,001 triggers a 14-hour timer for a high-value item, and ≥400,000 have a 25% chance of a 6-hour timer which can be a quest/hideout item.",
+      "The threshold helper will explain current known thresholds and what they will result in.",
   },
   {
     target: "#auto-select",
@@ -170,7 +175,7 @@ export default function TourOverlay() {
               {steps[currentStep].title}
             </h2>
             <Button variant="ghost" size="icon" onClick={handleSkip}>
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6 text-secondary hover:text-primary" />
             </Button>
           </div>
           <p className="mb-6 text-muted-foreground">
@@ -181,10 +186,17 @@ export default function TourOverlay() {
               Step {currentStep + 1} of {steps.length}
             </span>
             <div className="space-x-2">
-              <Button variant="outline" onClick={handleSkip}>
+              <Button
+                variant="outline"
+                onClick={handleSkip}
+                className="w-20 bg-gray-800 text-gray-200 hover:bg-gray-600 hover:text-gray-400"
+              >
                 Skip
               </Button>
-              <Button onClick={handleNext}>
+              <Button
+                onClick={handleNext}
+                className="w-20 bg-secondary text-secondary-foreground hover:bg-gray-200 hover:text-secondary-foreground"
+              >
                 {currentStep === steps.length - 1 ? "Finish" : "Next"}
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
