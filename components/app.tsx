@@ -264,7 +264,7 @@ function AppContent() {
       ? `/api/pve-items?v=${CURRENT_VERSION}`
       : `/api/pvp-items?v=${CURRENT_VERSION}`;
 
-    const localStorageKey = isPVE ? 'pveItemsData' : 'pvpItemsData';
+    const localStorageKey = isPVE ? "pveItemsData" : "pvpItemsData";
 
     try {
       setLoading(true);
@@ -296,7 +296,10 @@ function AppContent() {
       setItemsData(data);
       setLastFetchTimestamp(timestamp);
       // Store data in localStorage
-      localStorage.setItem(localStorageKey, JSON.stringify({ data, timestamp }));
+      localStorage.setItem(
+        localStorageKey,
+        JSON.stringify({ data, timestamp })
+      );
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
@@ -344,8 +347,8 @@ function AppContent() {
 
   // Rename clearCache to refreshData
   const refreshData = useCallback(() => {
-    localStorage.removeItem('pveItemsData');
-    localStorage.removeItem('pvpItemsData');
+    localStorage.removeItem("pveItemsData");
+    localStorage.removeItem("pvpItemsData");
     fetchData(); // Refetch data after clearing cache
     setIsRefreshAvailable(false); // Reset the refresh availability
   }, [fetchData]);
@@ -761,7 +764,7 @@ function AppContent() {
               <div>Current Version: {CURRENT_VERSION}</div>
               <div>Next Update: {nextFetchTime}</div>
               {isRefreshAvailable && (
-                <Button 
+                <Button
                   onClick={refreshData}
                   className="mt-2 bg-blue-500 hover:bg-blue-600 text-white"
                 >
@@ -885,7 +888,10 @@ function AppContent() {
                         onClick={clearItemFields}
                         disabled={isClearButtonDisabled}
                       >
-                        Clear Selected Items
+                        <span className="hidden sm:inline">
+                          Clear Selected Items
+                        </span>
+                        <span className="sm:hidden">Clear Selected</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Clears ALL item fields</TooltipContent>

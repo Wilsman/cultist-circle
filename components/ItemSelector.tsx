@@ -275,102 +275,105 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             }`}
           />
           {selectedItem && (
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1 bg-gray-700 bg-opacity rounded-md p-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={onPin}
-                className={`h-8 w-8 ${
-                  isPinned ? "text-yellow-500" : "text-gray-400"
-                } hover:bg-gray-200`}
-              >
-                <Pin className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={onCopy}
-                className="h-8 w-8 text-gray-400 hover:bg-gray-200"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={togglePriceOverride}
-                className={`h-8 w-8 ${
-                  isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
-                } hover:bg-gray-200`}
-              >
-                <BadgeDollarSign className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={toggleExclude}
-                className={`h-8 w-8 ${
-                  isExcluded ? "text-red-500" : "text-gray-400"
-                } hover:bg-gray-200`}
-              >
-                <CircleSlash className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleRemove}
-                className="h-8 w-8 text-red-500 hover:bg-gray-200"
-              >
-                <XIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          {selectedItem && (
-            <div className="sm:hidden absolute right-2 top-1/2 transform -translate-y-1/2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="h-8 w-8 bg-gray-500 hover:bg-gray-600 text-white"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                    <span className="sr-only">More</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="bg-primary text-secondary"
-                  align="end"
+            <>
+              {/* Inline buttons for larger screens */}
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 hidden sm:flex items-center space-x-1 bg-gray-700 bg-opacity rounded-md p-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={onPin}
+                  className={`h-8 w-8 ${
+                    isPinned ? "text-yellow-500" : "text-gray-400"
+                  } hover:bg-gray-200`}
                 >
-                  <DropdownMenuItem onSelect={onPin}>
-                    <Pin className="mr-2 h-4 w-4" />
-                    <span>{isPinned ? "Unpin Item" : "Pin Item"}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={onCopy}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    <span>Copy Item Name</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={togglePriceOverride}>
-                    <BadgeDollarSign className="mr-2 h-4 w-4" />
-                    <span>
-                      {isPriceOverrideActive
-                        ? "Disable Flea Override"
-                        : "Enable Flea Override"}
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={toggleExclude}>
-                    <CircleSlash className="mr-2 h-4 w-4" />
-                    <span>
-                      {isExcluded ? "Include Item" : "Exclude from Autopick"}
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={handleRemove}>
-                    <XIcon className="mr-2 h-4 w-4 text-red-500" />
-                    <span className="text-red-500">Remove Item</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                  <Pin className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={onCopy}
+                  className="h-8 w-8 text-gray-400 hover:bg-gray-200"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={togglePriceOverride}
+                  className={`h-8 w-8 ${
+                    isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
+                  } hover:bg-gray-200`}
+                >
+                  <BadgeDollarSign className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={toggleExclude}
+                  className={`h-8 w-8 ${
+                    isExcluded ? "text-red-500" : "text-gray-400"
+                  } hover:bg-gray-200`}
+                >
+                  <CircleSlash className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleRemove}
+                  className="h-8 w-8 text-red-500 hover:bg-gray-200"
+                >
+                  <XIcon className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Dropdown menu for small screens */}
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 sm:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-8 w-8 bg-gray-500 hover:bg-gray-600 text-white"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                      <span className="sr-only">More</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    className="bg-primary text-secondary"
+                    align="end"
+                  >
+                    <DropdownMenuItem onSelect={onPin}>
+                      <Pin className="mr-2 h-4 w-4" />
+                      <span>{isPinned ? "Unpin Item" : "Pin Item"}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={onCopy}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      <span>Copy Item Name</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={togglePriceOverride}>
+                      <BadgeDollarSign className="mr-2 h-4 w-4" />
+                      <span>
+                        {isPriceOverrideActive
+                          ? "Disable Flea Override"
+                          : "Enable Flea Override"}
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={toggleExclude}>
+                      <CircleSlash className="mr-2 h-4 w-4" />
+                      <span>
+                        {isExcluded ? "Include Item" : "Exclude from Autopick"}
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={handleRemove}>
+                      <XIcon className="mr-2 h-4 w-4 text-red-500" />
+                      <span className="text-red-500">Remove Item</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </>
           )}
         </div>
 
