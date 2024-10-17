@@ -35,25 +35,25 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithHelper";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { Suspense } from "react";
+import CookieConsent from "@/components/CookieConsent";
+// import { useCookieConsent } from "@/contexts/CookieConsentContext";
 
 const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
 });
 
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
-const PVE_CACHE_KEY = "pveItemsCache";
-const PVP_CACHE_KEY = "pvpItemsCache";
-const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Storage key for overridden prices
-
 const CURRENT_VERSION = "1.0.2"; // Increment this when you want to trigger a cache clear
+const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
 });
 
-export function App() {
+function AppContent() {
+  // const { cookiesAccepted } = useCookieConsent();
+
   // Mode state
-  const [isPVE, setIsPVE] = useState<boolean>(false); // Toggle between PVE and PVP
+  const [isPVE, setIsPVE] = useState<boolean>(false);
 
   // Selected items state
   const [selectedItems, setSelectedItems] = useState<
@@ -61,7 +61,7 @@ export function App() {
   >(Array(5).fill(null));
 
   // Settings and UI states
-  const [isCalculating, setIsCalculating] = useState<boolean>(false); // Calculating state
+  const [isCalculating, setIsCalculating] = useState<boolean>(false);
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
   const [pinnedItems, setPinnedItems] = useState<boolean[]>(
@@ -71,7 +71,7 @@ export function App() {
     useState<boolean>(false);
   const [sortOption, setSortOption] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("sortOption") || "az"; // Default sort option
+      return localStorage.getItem("sortOption") || "az";
     }
     return "az";
   });
@@ -161,8 +161,6 @@ export function App() {
   const [itemsData, setItemsData] = useState<SimplifiedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
-  const dataFetchedRef = useRef(false);
 
   // Excluded items state
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
@@ -262,17 +260,23 @@ export function App() {
 
   // Fetch data based on mode (PVE/PVP)
   const fetchData = useCallback(async () => {
-    if (dataFetchedRef.current) return;
-    dataFetchedRef.current = true;
-
-    const cacheKey = isPVE ? PVE_CACHE_KEY : PVP_CACHE_KEY;
-    const apiUrl = isPVE ? "/api/pve-items" : "/api/pvp-items";
+    const apiUrl = isPVE
+      ? `/api/pve-items?v=${CURRENT_VERSION}`
+      : `/api/pvp-items?v=${CURRENT_VERSION}`;
 
     try {
       setLoading(true);
-      const { data, timestamp } = await fetchCachedData(apiUrl, cacheKey);
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || `Failed to fetch data for ${apiUrl}`
+        );
+      }
+      const result = await response.json();
+      const { data, timestamp } = result;
       setItemsData(data);
-      setLastFetchTimestamp(timestamp); // Use the server's timestamp
+      setLastFetchTimestamp(timestamp);
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
@@ -284,18 +288,27 @@ export function App() {
     }
   }, [isPVE]);
 
+  // Fetch data on mount or when mode changes
+  useEffect(() => {
+    fetchData();
+  }, [fetchData, isPVE]);
+
   // Update next fetch time every second
   useEffect(() => {
     if (lastFetchTimestamp) {
       const interval = setInterval(() => {
-        const remainingTime = lastFetchTimestamp + CACHE_DURATION - Date.now();
-        if (remainingTime <= 0) {
+        const now = Date.now();
+        const timeSinceLastFetch = now - lastFetchTimestamp;
+
+        // Assume a 10-minute cache duration
+        const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+        if (timeSinceLastFetch >= CACHE_DURATION) {
           setNextFetchTime("Refresh Available");
           clearInterval(interval);
         } else {
-          const minutes = Math.floor(
-            (remainingTime % (1000 * 60 * 60)) / (1000 * 60)
-          );
+          const remainingTime = CACHE_DURATION - timeSinceLastFetch;
+          const minutes = Math.floor(remainingTime / (1000 * 60));
           const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
           setNextFetchTime(`${minutes}m ${seconds}s`);
         }
@@ -304,46 +317,6 @@ export function App() {
       return () => clearInterval(interval);
     }
   }, [lastFetchTimestamp]);
-
-  // Fetch data on mount or when mode changes
-  useEffect(() => {
-    fetchData();
-  }, [fetchData, isPVE]);
-
-  // Function to fetch cached data or retrieve from cache
-  const fetchCachedData = async (
-    url: string,
-    cacheKey: string
-  ): Promise<{ data: SimplifiedItem[]; timestamp: number }> => {
-    try {
-      const cachedData = localStorage.getItem(cacheKey);
-      if (cachedData) {
-        const { data, timestamp } = JSON.parse(cachedData);
-        const now = Date.now();
-        if (now - timestamp < CACHE_DURATION) {
-          console.log(`Using cached data for ${cacheKey}`);
-          return { data, timestamp };
-        }
-      }
-
-      console.log(`Fetching fresh data for ${cacheKey}`);
-      const response = await fetch(url);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || `Failed to fetch data for ${cacheKey}`
-        );
-      }
-      const result = await response.json();
-      const { data, timestamp } = result;
-
-      localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp }));
-      return { data, timestamp };
-    } catch (error) {
-      console.error(`Error in fetchCachedData for ${cacheKey}:`, error);
-      throw error;
-    }
-  };
 
   // Memoized computation of items based on categories and sort option
   const items: SimplifiedItem[] = useMemo(() => {
@@ -606,20 +579,12 @@ export function App() {
   // Handler for mode toggle (PVE/PVP)
   const handleModeToggle = (checked: boolean): void => {
     setIsPVE(checked);
-    setSelectedItems(Array(5).fill(null)); // Reset selected items
-    setPinnedItems(Array(5).fill(false)); // Reset pinned items
-    setOverriddenPrices({}); // Reset overridden prices
-    setExcludedItems(new Set()); // Reset excluded items
-    setHasAutoSelected(false); // Reset Auto Select button
-    dataFetchedRef.current = false; // Reset data fetch flag
-    toastShownRef.current = false; // Reset toast shown flag when mode changes
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
-      } catch (e) {
-        console.error("Error removing overriddenPrices from localStorage", e);
-      }
-    }
+    setSelectedItems(Array(5).fill(null));
+    setPinnedItems(Array(5).fill(false));
+    setOverriddenPrices({});
+    setExcludedItems(new Set());
+    setHasAutoSelected(false);
+    toastShownRef.current = false;
   };
 
   // Handler to copy item name to clipboard
@@ -738,6 +703,20 @@ export function App() {
     window.location.reload();
   };
 
+  // // Use cookiesAccepted to conditionally render or use features that require consent
+  // const setCookie = (name: string, value: string, options?: Cookies.CookieAttributes) => {
+  //   if (cookiesAccepted === true) {
+  //     Cookies.set(name, value, options)
+  //   }
+  // }
+
+  // const getCookie = (name: string) => {
+  //   if (cookiesAccepted === true) {
+  //     return Cookies.get(name)
+  //   }
+  //   return null
+  // }
+
   return (
     <>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 p-4 overflow-auto">
@@ -776,6 +755,7 @@ export function App() {
                   alt="Cultist calculator logo"
                   width={400}
                   height={128}
+                  priority
                 />
               </h1>
 
@@ -973,8 +953,9 @@ export function App() {
                     src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
                     alt="Buy Me A Coffee"
                     width={120}
-                    height={30}
+                    height={34}
                     priority={true}
+                    style={{ height: "auto" }}
                   />
                 </a>
                 <Button
@@ -1025,6 +1006,13 @@ export function App() {
       />
       {/* **12. Render the Toaster Component** */}
       <Toaster />
+
+      {/* Add the CookieConsent component */}
+      <CookieConsent variant="small" />
     </>
   );
+}
+
+export function App() {
+  return <AppContent />;
 }

@@ -70,23 +70,17 @@ export default function TourOverlay() {
 
   useEffect(() => {
     const handleLoad = () => {
-      const isDevelopment = process.env.NODE_ENV === "development";
-
-      if (isDevelopment) {
-        localStorage.setItem("tourCompleted", "false");
-      }
-
-      if (localStorage.getItem("tourCompleted") !== "true") {
+      if (!localStorage.getItem("tourCompleted") || localStorage.getItem("tourCompleted") === "false") {
         setIsVisible(true);
       }
     };
 
+    window.addEventListener("load", handleLoad);
     if (document.readyState === "complete") {
       handleLoad();
-    } else {
-      window.addEventListener("load", handleLoad);
-      return () => window.removeEventListener("load", handleLoad);
     }
+
+    return () => window.removeEventListener("load", handleLoad);
   }, []);
 
   useLayoutEffect(() => {
