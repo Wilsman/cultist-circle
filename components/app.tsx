@@ -264,8 +264,26 @@ function AppContent() {
       ? `/api/pve-items?v=${CURRENT_VERSION}`
       : `/api/pvp-items?v=${CURRENT_VERSION}`;
 
+    const localStorageKey = isPVE ? 'pveItemsData' : 'pvpItemsData';
+
     try {
       setLoading(true);
+      // Check localStorage for cached data
+      const cachedDataString = localStorage.getItem(localStorageKey);
+      if (cachedDataString) {
+        const cachedData = JSON.parse(cachedDataString);
+        const { data, timestamp } = cachedData;
+        const now = Date.now();
+        const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+        if (now - timestamp < CACHE_DURATION) {
+          // Data is fresh, use it
+          setItemsData(data);
+          setLastFetchTimestamp(timestamp);
+          setLoading(false);
+          return;
+        }
+      }
+      // Data not in cache or expired, fetch new data
       const response = await fetch(apiUrl);
       if (!response.ok) {
         const errorData = await response.json();
@@ -277,6 +295,8 @@ function AppContent() {
       const { data, timestamp } = result;
       setItemsData(data);
       setLastFetchTimestamp(timestamp);
+      // Store data in localStorage
+      localStorage.setItem(localStorageKey, JSON.stringify({ data, timestamp }));
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
@@ -293,6 +313,8 @@ function AppContent() {
     fetchData();
   }, [fetchData, isPVE]);
 
+  const [isRefreshAvailable, setIsRefreshAvailable] = useState(false);
+
   // Update next fetch time every second
   useEffect(() => {
     if (lastFetchTimestamp) {
@@ -305,18 +327,28 @@ function AppContent() {
 
         if (timeSinceLastFetch >= CACHE_DURATION) {
           setNextFetchTime("Refresh Available");
+          setIsRefreshAvailable(true);
           clearInterval(interval);
         } else {
           const remainingTime = CACHE_DURATION - timeSinceLastFetch;
           const minutes = Math.floor(remainingTime / (1000 * 60));
           const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
           setNextFetchTime(`${minutes}m ${seconds}s`);
+          setIsRefreshAvailable(false);
         }
       }, 1000);
 
       return () => clearInterval(interval);
     }
   }, [lastFetchTimestamp]);
+
+  // Rename clearCache to refreshData
+  const refreshData = useCallback(() => {
+    localStorage.removeItem('pveItemsData');
+    localStorage.removeItem('pvpItemsData');
+    fetchData(); // Refetch data after clearing cache
+    setIsRefreshAvailable(false); // Reset the refresh availability
+  }, [fetchData]);
 
   // Memoized computation of items based on categories and sort option
   const items: SimplifiedItem[] = useMemo(() => {
@@ -728,6 +760,14 @@ function AppContent() {
             <div className="mt-4 text-center text-gray-400 text-sm">
               <div>Current Version: {CURRENT_VERSION}</div>
               <div>Next Update: {nextFetchTime}</div>
+              {isRefreshAvailable && (
+                <Button 
+                  onClick={refreshData}
+                  className="mt-2 bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  Refresh Data
+                </Button>
+              )}
             </div>
 
             {/* Help icon */}

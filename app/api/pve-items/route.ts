@@ -14,6 +14,9 @@ const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === "true";
 
 // Specify the runtime to ensure it's a Serverless Function
+export const dynamic = 'force-dynamic';
+
+// Specify the runtime to ensure it's a Serverless Function
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {

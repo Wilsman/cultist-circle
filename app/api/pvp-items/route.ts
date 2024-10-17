@@ -14,6 +14,9 @@ const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === "true";
 
 // Specify the runtime to ensure it's a Serverless Function
+export const dynamic = "force-dynamic";
+
+// Specify the runtime to ensure it's a Serverless Function
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
@@ -115,8 +118,10 @@ export async function GET(request: NextRequest) {
           status: 200,
           headers: {
             "Cache-Control": "public, max-age=60",
-            "CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=59",
-            "Vercel-CDN-Cache-Control": "public, s-maxage=3600, stale-while-revalidate=59",
+            "CDN-Cache-Control":
+              "public, s-maxage=60, stale-while-revalidate=59",
+            "Vercel-CDN-Cache-Control":
+              "public, s-maxage=3600, stale-while-revalidate=59",
           },
         }
       );
@@ -133,7 +138,9 @@ export async function GET(request: NextRequest) {
         headers: {
           "Cache-Control": `public, max-age=${sMaxAge}`,
           "CDN-Cache-Control": `public, s-maxage=${sMaxAge}, stale-while-revalidate=59`,
-          "Vercel-CDN-Cache-Control": `public, s-maxage=${sMaxAge * 6}, stale-while-revalidate=59`,
+          "Vercel-CDN-Cache-Control": `public, s-maxage=${
+            sMaxAge * 6
+          }, stale-while-revalidate=59`,
         },
       }
     );
