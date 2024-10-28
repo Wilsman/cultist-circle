@@ -36,13 +36,14 @@ import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithH
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { Suspense } from "react";
 import CookieConsent from "@/components/CookieConsent";
+import { VersionInfo } from "@/components/version-info";
 // import { useCookieConsent } from "@/contexts/CookieConsentContext";
 
 const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
 });
 
-const CURRENT_VERSION = "1.0.3"; // Increment this when you want to trigger a cache clear
+const CURRENT_VERSION = "1.0.4"; // Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 
@@ -754,9 +755,11 @@ function AppContent() {
                 />
               </h1>
             </div>
+            <div className="text-center text-gray-400 text-sm mb-1">
+              <VersionInfo version={CURRENT_VERSION} />
+            </div>
 
-            <div className="text-center text-gray-400 text-sm mb-6">
-              <div>Current Version: {CURRENT_VERSION}</div>
+            <div className="text-center text-gray-400 text-sm mb-2">
               <Button
                 onClick={fetchData}
                 disabled={!isRefreshAvailable}
@@ -820,7 +823,8 @@ function AppContent() {
                     // Display message if item list is empty
                     <div className="text-center text-gray-400 mt-4">
                       No items available at this time. Please wait for the next
-                      update in {refreshCountdown}.
+                      update in {refreshCountdown}. If you think this may be an
+                      issue, please try restting the app in the settings.
                     </div>
                   ) : (
                     // Show actual item selectors when loaded and items are available
