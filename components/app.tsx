@@ -274,7 +274,7 @@ function AppContent() {
         const cachedData = JSON.parse(cachedDataString);
         const { data, timestamp } = cachedData;
         const now = Date.now();
-        const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+        const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
         if (now - timestamp < CACHE_DURATION) {
           // Data is fresh, use it
           setItemsData(data);
@@ -318,6 +318,7 @@ function AppContent() {
 
   const [isRefreshAvailable, setIsRefreshAvailable] = useState(false);
 
+  //TODO: Fix needed. This is not working as expected. Timer doesn't restart after resfresh button clicked
   // Update next fetch time every second
   useEffect(() => {
     if (lastFetchTimestamp) {
@@ -760,13 +761,24 @@ function AppContent() {
             {/* Render the TourOverlay component */}
             {!loading && <TourOverlay />}
 
-            <div className="mt-4 text-center text-gray-400 text-sm">
+            {/* Title and Version Info */}
+            <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
+              <Image
+                src="/images/Cultist-Calulator.webp"
+                alt="Cultist calculator logo"
+                width={400}
+                height={128}
+                priority
+              />
+            </h1>
+
+            <div className="text-center text-gray-400 text-sm mb-6">
               <div>Current Version: {CURRENT_VERSION}</div>
               <div>Next Update: {nextFetchTime}</div>
-              {isRefreshAvailable && (
+              {!isRefreshAvailable && (
                 <Button
                   onClick={refreshData}
-                  className="mt-2 bg-blue-500 hover:bg-blue-600 text-white"
+                  className="mt-2 px-3 py-1 text-sm bg-gray-800 hover:bg-blue-600 text-white animate-pulse-color"
                 >
                   Refresh Data
                 </Button>
@@ -791,17 +803,6 @@ function AppContent() {
             </div>
 
             <CardContent className="p-6">
-              {/* **5. Header with Title and Beta Badge** */}
-              <h1 className="sm:text-3xl text-xl font-bold mb-2 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
-                <Image
-                  src="/images/Cultist-Calulator.webp"
-                  alt="Cultist calculator logo"
-                  width={400}
-                  height={128}
-                  priority
-                />
-              </h1>
-
               {/* Replace the old Mode Toggle with the new ModeToggle component */}
               <ModeToggle isPVE={isPVE} onToggle={handleModeToggle} />
 

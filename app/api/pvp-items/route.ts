@@ -10,7 +10,7 @@ import { rateLimiter } from "@/app/lib/rateLimiter";
 
 const PVP_API_URL = "https://api.tarkov-market.app/api/v1/items/all";
 const CACHE_KEY = "pvp-items";
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === "true";
 
 // Specify the runtime to ensure it's a Serverless Function
@@ -127,8 +127,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Calculate s-maxage based on CACHE_DURATION
-    const sMaxAge = Math.floor(CACHE_DURATION / 1000);
+    // // Calculate s-maxage based on CACHE_DURATION
+    // const sMaxAge = Math.floor(CACHE_DURATION / 1000);
 
     // Include Cache-Control headers in the response
     return NextResponse.json(
@@ -136,11 +136,9 @@ export async function GET(request: NextRequest) {
       {
         status: 200,
         headers: {
-          "Cache-Control": `public, max-age=${sMaxAge}`,
-          "CDN-Cache-Control": `public, s-maxage=${sMaxAge}, stale-while-revalidate=59`,
-          "Vercel-CDN-Cache-Control": `public, s-maxage=${
-            sMaxAge * 6
-          }, stale-while-revalidate=59`,
+          "Cache-Control": "public, max-age=1800, s-maxage=1800",
+          "CDN-Cache-Control": "public, s-maxage=1800, stale-while-revalidate=59",
+          "Vercel-CDN-Cache-Control": "public, s-maxage=1800, stale-while-revalidate=59",
         },
       }
     );
