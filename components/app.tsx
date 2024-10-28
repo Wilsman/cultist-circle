@@ -44,6 +44,7 @@ const AdBanner = dynamic(() => import("@/components/AdBanner"), {
 
 const CURRENT_VERSION = "1.0.3"; // Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
@@ -201,9 +202,6 @@ function AppContent() {
     null
   );
 
-  // Next fetch time display
-  const [nextFetchTime, setNextFetchTime] = useState<string>("N/A");
-
   // Handler to toggle excluded items
   const toggleExcludedItem = (uid: string) => {
     setExcludedItems((prev) => {
@@ -268,44 +266,37 @@ function AppContent() {
 
     try {
       setLoading(true);
+      const now = Date.now();
+
       // Check localStorage for cached data
       const cachedDataString = localStorage.getItem(localStorageKey);
       if (cachedDataString) {
         const cachedData = JSON.parse(cachedDataString);
-        const { data, timestamp } = cachedData;
-        const now = Date.now();
-        const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
-        if (now - timestamp < CACHE_DURATION) {
-          // Data is fresh, use it
-          setItemsData(data);
-          setLastFetchTimestamp(timestamp);
+        if (now - cachedData.timestamp < CACHE_DURATION) {
+          setItemsData(cachedData.data);
+          setLastFetchTimestamp(cachedData.timestamp);
           setLoading(false);
           return;
         }
       }
-      // Data not in cache or expired, fetch new data
+
+      // Fetch new data
       const response = await fetch(apiUrl);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || `Failed to fetch data for ${apiUrl}`
-        );
-      }
+      if (!response.ok) throw new Error(`Failed to fetch data for ${apiUrl}`);
+
       const result = await response.json();
-      const { data, timestamp } = result;
-      setItemsData(data);
+      const timestamp = Date.now();
+
+      setItemsData(result.data);
       setLastFetchTimestamp(timestamp);
-      // Store data in localStorage
+
+      // Store in localStorage
       localStorage.setItem(
         localStorageKey,
-        JSON.stringify({ data, timestamp })
+        JSON.stringify({ data: result.data, timestamp })
       );
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? `Fetch Error: ${err.message}`
-          : "An error occurred";
-      setError(errorMessage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -317,42 +308,30 @@ function AppContent() {
   }, [fetchData, isPVE]);
 
   const [isRefreshAvailable, setIsRefreshAvailable] = useState(false);
+  const [refreshCountdown, setRefreshCountdown] = useState<string>("");
 
-  //TODO: Fix needed. This is not working as expected. Timer doesn't restart after resfresh button clicked
-  // Update next fetch time every second
+  // Update the useEffect for countdown
   useEffect(() => {
-    if (lastFetchTimestamp) {
-      const interval = setInterval(() => {
-        const now = Date.now();
-        const timeSinceLastFetch = now - lastFetchTimestamp;
+    if (!lastFetchTimestamp) return;
 
-        // Assume a 10-minute cache duration
-        const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastFetchTimestamp;
 
-        if (timeSinceLastFetch >= CACHE_DURATION) {
-          setNextFetchTime("Refresh Available");
-          setIsRefreshAvailable(true);
-          clearInterval(interval);
-        } else {
-          const remainingTime = CACHE_DURATION - timeSinceLastFetch;
-          const minutes = Math.floor(remainingTime / (1000 * 60));
-          const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
-          setNextFetchTime(`${minutes}m ${seconds}s`);
-          setIsRefreshAvailable(false);
-        }
-      }, 1000);
+      if (timeSinceLastFetch >= CACHE_DURATION) {
+        setRefreshCountdown("Refresh");
+        setIsRefreshAvailable(true);
+      } else {
+        const remainingTime = CACHE_DURATION - timeSinceLastFetch;
+        const minutes = Math.floor(remainingTime / (1000 * 60));
+        const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+        setRefreshCountdown(`${minutes}m ${seconds}s`);
+        setIsRefreshAvailable(false);
+      }
+    }, 1000);
 
-      return () => clearInterval(interval);
-    }
+    return () => clearInterval(interval);
   }, [lastFetchTimestamp]);
-
-  // Rename clearCache to refreshData
-  const refreshData = useCallback(() => {
-    localStorage.removeItem("pveItemsData");
-    localStorage.removeItem("pvpItemsData");
-    fetchData(); // Refetch data after clearing cache
-    setIsRefreshAvailable(false); // Reset the refresh availability
-  }, [fetchData]);
 
   // Memoized computation of items based on categories and sort option
   const items: SimplifiedItem[] = useMemo(() => {
@@ -762,39 +741,41 @@ function AppContent() {
             {!loading && <TourOverlay />}
 
             {/* Title and Version Info */}
-            <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
-              <Image
-                src="/images/Cultist-Calulator.webp"
-                alt="Cultist calculator logo"
-                width={400}
-                height={128}
-                priority
-              />
-            </h1>
+            <div className="pt-8 sm:pt-4">
+              {" "}
+              {/* Add padding-top on mobile */}
+              <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
+                <Image
+                  src="/images/Cultist-Calulator.webp"
+                  alt="Cultist calculator logo"
+                  width={400}
+                  height={128}
+                  priority
+                />
+              </h1>
+            </div>
 
             <div className="text-center text-gray-400 text-sm mb-6">
               <div>Current Version: {CURRENT_VERSION}</div>
-              <div>Next Update: {nextFetchTime}</div>
-              {!isRefreshAvailable && (
-                <Button
-                  onClick={refreshData}
-                  className="mt-2 px-3 py-1 text-sm bg-gray-800 hover:bg-blue-600 text-white animate-pulse-color"
-                >
-                  Refresh Data
-                </Button>
-              )}
+              <Button
+                onClick={fetchData}
+                disabled={!isRefreshAvailable}
+                className="mt-2 px-3 py-1 text-sm bg-gray-800 hover:bg-blue-600 text-white"
+              >
+                {refreshCountdown}
+              </Button>
             </div>
 
             {/* Help icon */}
-            <div className="absolute top-4 left-4 flex flex-col items-center justify-center">
+            <div className="absolute top-2 sm:top-4 left-2 sm:left-4 flex flex-col items-center justify-center">
               <InstructionsDialog />
             </div>
 
             {/* Settings icon */}
-            <div className="absolute top-4 right-4 flex flex-col items-center justify-center">
+            <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex flex-col items-center justify-center">
               <Settings
                 id="settings"
-                className="h-8 w-8 hover:text-green-300 text-yellow-500 cursor-pointer"
+                className="h-6 w-6 sm:h-8 sm:w-8 hover:text-green-300 text-yellow-500 cursor-pointer"
                 onClick={() => setIsSettingsPaneVisible(true)}
               />
               <div className="text-yellow-500 text-xs text-center mt-1">
@@ -839,7 +820,7 @@ function AppContent() {
                     // Display message if item list is empty
                     <div className="text-center text-gray-400 mt-4">
                       No items available at this time. Please wait for the next
-                      update in {nextFetchTime}.
+                      update in {refreshCountdown}.
                     </div>
                   ) : (
                     // Show actual item selectors when loaded and items are available
@@ -966,16 +947,19 @@ function AppContent() {
 
             {/* **11. Footer with Credits and Links** */}
             <footer className="mt-4 text-center text-gray-400 text-sm w-full">
-              <a
-                href="https://tarkov-market.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-gray-300 transition-colors"
-              >
-                Data provided by Tarkov Market
-              </a>
               <div className="text-center mt-1">
-                Credit to{" "}
+                Data provided by{" "}
+                <a
+                  href="https://tarkov-market.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700"
+                >
+                  Tarkov Market
+                </a>
+              </div>
+              <div className="text-center mt-1">
+                Research provided by{" "}
                 <a
                   href="https://bio.link/verybadscav"
                   target="_blank"
@@ -983,8 +967,7 @@ function AppContent() {
                   className="text-blue-500 hover:text-blue-700"
                 >
                   VeryBadSCAV
-                </a>{" "}
-                for helping with this tool.
+                </a>
               </div>
               <div className="text-center mt-1">
                 {/* maker with cool icons */}

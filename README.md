@@ -71,7 +71,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 ## 🔮 Future Plans
 
 - [ ] Switch to tarkov.dev API for data
-- [ ] More fun stuff
+- [ ] Upgrade to Next.js 15
 
 ## 🏆 Achievements
 

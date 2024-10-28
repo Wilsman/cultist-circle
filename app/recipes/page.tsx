@@ -107,6 +107,16 @@ export default function Page() {
   );
   const router = useRouter();
 
+  function handleBack() {
+    // Check if we came from another page
+    if (window.history.length > 2) {
+      router.back();
+    } else {
+      // If we came directly to /recipes, go to home
+      router.push("/");
+    }
+  }
+
   const filteredItems =
     selectedRecipe === "All Recipes"
       ? tarkovItems
@@ -118,7 +128,7 @@ export default function Page() {
         <CardHeader className="relative">
           <button
             className="absolute top-0 left-0 p-2 text-white"
-            onClick={() => router.back()}
+            onClick={handleBack}
           >
             <ArrowLeft className="h-6 w-6" />
           </button>
@@ -127,9 +137,9 @@ export default function Page() {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto">
-            <div className="bg-yellow-200 text-black p-4 rounded-md mb-6">
+          <div className="bg-yellow-200 text-black p-4 rounded-md mb-6">
             ⚠️ Note: Some recipes may only work on the first attempt.
-            </div>
+          </div>
           <Select value={selectedRecipe} onValueChange={setSelectedRecipe}>
             <SelectTrigger className="w-full justify-between bg-gray-800 text-white">
               {selectedRecipe || "Select a recipe..."}
