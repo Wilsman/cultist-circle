@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/react";
+// import { Analytics } from "@vercel/analytics/react";
 import localFont from "next/font/local";
 import "./globals.css";
 import Script from "next/script";
@@ -75,7 +75,7 @@ export default function RootLayout({
       >
         <CookieConsentProvider>
           {children}
-          <Analytics />
+          {/* <Analytics /> */}
         </CookieConsentProvider>
       </body>
     </html>

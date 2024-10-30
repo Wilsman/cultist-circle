@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useRef,
   useCallback,
+  Suspense,
 } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,10 +35,14 @@ import { InstructionsDialog } from "@/components/InstructionsDialog";
 import { ModeToggle } from "@/components/ModeToggle";
 import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithHelper";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
-import { Suspense } from "react";
 import CookieConsent from "@/components/CookieConsent";
 import { VersionInfo } from "@/components/version-info";
-// import { useCookieConsent } from "@/contexts/CookieConsentContext";
+import useSWR from "swr";
+import type { SWRConfiguration, RevalidatorOptions, Revalidator } from "swr";
+import {
+  ALL_ITEM_CATEGORIES,
+  DEFAULT_ITEM_CATEGORIES,
+} from "@/config/item-categories";
 
 const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
@@ -51,9 +56,40 @@ const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
 });
 
-function AppContent() {
-  // const { cookiesAccepted } = useCookieConsent();
+const fetcher = async (url: string) => {
+  const mode = url.includes("pve") ? "pve" : "pvp";
+  const res = await fetch(`/api/v2/items?mode=${mode}`);
+  if (!res.ok) throw new Error(`Failed to fetch data for ${url}`);
+  const result = await res.json();
+  return result.data;
+};
 
+// Update the SWR configuration object
+const SWR_CONFIG = {
+  revalidateOnFocus: false,
+  revalidateOnReconnect: false,
+  dedupingInterval: CACHE_DURATION,
+  onErrorRetry: (
+    error: unknown,
+    key: string,
+    config: Readonly<SWRConfiguration>,
+    revalidate: Revalidator,
+    revalidateOpts: Required<RevalidatorOptions>
+  ) => {
+    const { retryCount } = revalidateOpts;
+
+    function hasStatusCode(err: unknown): err is { status: number } {
+      return typeof err === "object" && err !== null && "status" in err;
+    }
+
+    if (retryCount >= 3 || (hasStatusCode(error) && error.status === 404))
+      return;
+
+    setTimeout(() => revalidate(), 5000);
+  },
+};
+
+function AppContent() {
   // Mode state
   const [isPVE, setIsPVE] = useState<boolean>(false);
 
@@ -77,36 +113,7 @@ function AppContent() {
     }
     return "az";
   });
-  const allItemCategories = [
-    // "Ammo",
-    // "Ammo_boxes",
-    "Barter",
-    "Containers",
-    "Crates",
-    "Currency",
-    "Gear",
-    "Keys",
-    "Magazines",
-    "Maps",
-    "Meds",
-    "Provisions",
-    "Quest_items",
-    "Repair",
-    "Sights",
-    "Special_equipment",
-    "Suppressors",
-    "Tactical_devices",
-    "Weapon",
-    "Weapon_parts",
-  ];
-  const defaultItemCategories = [
-    "Barter",
-    "Provisions",
-    "Containers",
-    "Maps",
-    "Suppressors",
-    // Add any other categories you want as defaults
-  ];
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -118,7 +125,7 @@ function AppContent() {
         console.error("Error parsing selectedCategories from localStorage", e);
       }
     }
-    return defaultItemCategories;
+    return DEFAULT_ITEM_CATEGORIES;
   });
 
   // Define the hasAutoSelected state variable
@@ -130,7 +137,6 @@ function AppContent() {
     if (typeof window !== "undefined") {
       localStorage.setItem("selectedCategories", JSON.stringify(categories));
     }
-    // setHasAutoSelected(false); // Reset Auto Select on category change
   }, []);
 
   // Sort option handler
@@ -155,14 +161,8 @@ function AppContent() {
   const handleThresholdChange = (newValue: number) => {
     setThreshold(newValue);
     Cookies.set("userThreshold", newValue.toString(), { expires: 365 });
-    // setHasAutoSelected(false); // Reset Auto Select on threshold change
     toastShownRef.current = false; // Reset toast shown flag when threshold changes
   };
-
-  // Data fetching states
-  const [itemsData, setItemsData] = useState<SimplifiedItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Excluded items state
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
@@ -197,11 +197,6 @@ function AppContent() {
       }
     }
   }, [overriddenPrices]);
-
-  // Timestamp for caching
-  const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number | null>(
-    null
-  );
 
   // Handler to toggle excluded items
   const toggleExcludedItem = (uid: string) => {
@@ -251,109 +246,44 @@ function AppContent() {
       setThreshold,
       setExcludedItems,
       setOverriddenPrices,
-      fetchData,
-      defaultItemCategories,
+      mutate,
+      DEFAULT_ITEM_CATEGORIES,
       toast
     );
+    // Remove the manual mutate call since we only want to invalidate when necessary
   };
 
   // Fetch data based on mode (PVE/PVP)
-  const fetchData = useCallback(async () => {
-    const apiUrl = isPVE
-      ? `/api/pve-items?v=${CURRENT_VERSION}`
-      : `/api/pvp-items?v=${CURRENT_VERSION}`;
+  const apiUrl = isPVE
+    ? `/api/v2/items?mode=pve&v=${CURRENT_VERSION}`
+    : `/api/v2/items?mode=pvp&v=${CURRENT_VERSION}`;
 
-    const localStorageKey = isPVE ? "pveItemsData" : "pvpItemsData";
+  const {
+    data: itemsData,
+    error,
+    mutate,
+  } = useSWR(apiUrl, fetcher, SWR_CONFIG as SWRConfiguration);
 
-    try {
-      setLoading(true);
-      const now = Date.now();
-
-      // Check localStorage for cached data
-      const cachedDataString = localStorage.getItem(localStorageKey);
-      if (cachedDataString) {
-        const cachedData = JSON.parse(cachedDataString);
-        if (now - cachedData.timestamp < CACHE_DURATION) {
-          setItemsData(cachedData.data);
-          setLastFetchTimestamp(cachedData.timestamp);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Fetch new data
-      const response = await fetch(apiUrl);
-      if (!response.ok) throw new Error(`Failed to fetch data for ${apiUrl}`);
-
-      const result = await response.json();
-      const timestamp = Date.now();
-
-      setItemsData(result.data);
-      setLastFetchTimestamp(timestamp);
-
-      // Store in localStorage
-      localStorage.setItem(
-        localStorageKey,
-        JSON.stringify({ data: result.data, timestamp })
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  }, [isPVE]);
-
-  // Fetch data on mount or when mode changes
-  useEffect(() => {
-    fetchData();
-  }, [fetchData, isPVE]);
-
-  const [isRefreshAvailable, setIsRefreshAvailable] = useState(false);
-  const [refreshCountdown, setRefreshCountdown] = useState<string>("");
-
-  // Update the useEffect for countdown
-  useEffect(() => {
-    if (!lastFetchTimestamp) return;
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastFetchTimestamp;
-
-      if (timeSinceLastFetch >= CACHE_DURATION) {
-        setRefreshCountdown("Refresh");
-        setIsRefreshAvailable(true);
-      } else {
-        const remainingTime = CACHE_DURATION - timeSinceLastFetch;
-        const minutes = Math.floor(remainingTime / (1000 * 60));
-        const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
-        setRefreshCountdown(`${minutes}m ${seconds}s`);
-        setIsRefreshAvailable(false);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [lastFetchTimestamp]);
+  const loading = !itemsData && !error;
 
   // Memoized computation of items based on categories and sort option
   const items: SimplifiedItem[] = useMemo(() => {
+    if (!itemsData) return [];
     const filteredItems = itemsData.filter(
-      (item) =>
+      (item: SimplifiedItem) =>
         selectedCategories.length === 0 ||
         (Array.isArray(item.tags)
-          ? item.tags.some((tag) => selectedCategories.includes(tag))
+          ? item.tags.some((tag: string) => selectedCategories.includes(tag))
           : selectedCategories.includes(item.tags || ""))
     );
 
-    // Sort the items based on the selected sort option
+    // Sorting logic...
     const sortedItems = [...filteredItems];
-    // Sort by name in ascending order
     if (sortOption === "az") {
       sortedItems.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortOption === "base-value") {
-      // Sort by base price in ascending order
       sortedItems.sort((a, b) => a.basePrice - b.price);
     } else if (sortOption === "ratio") {
-      // Sort by value-to-cost ratio in descending order
       sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / b.price);
     }
 
@@ -489,7 +419,6 @@ function AppContent() {
     const newPinnedItems = [...pinnedItems];
     newPinnedItems[index] = !newPinnedItems[index];
     setPinnedItems(newPinnedItems);
-    // setHasAutoSelected(false); // Reset Auto Select on pin change
   };
 
   // Function to handle auto-select and reroll
@@ -549,7 +478,6 @@ function AppContent() {
 
       if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
         alert("No combination of items meets the remaining threshold.");
-        // setHasAutoSelected(false); // Ensure it remains as "Auto Select"
         return;
       }
 
@@ -657,13 +585,13 @@ function AppContent() {
     }
   }, [isThresholdMet, threshold, toast]);
 
-  useEffect(() => {
-    const storedVersion = localStorage.getItem("appVersion");
-    if (storedVersion !== CURRENT_VERSION) {
-      clearUserData();
-      localStorage.setItem("appVersion", CURRENT_VERSION);
-    }
-  }, []);
+  // useEffect(() => {
+  //   const storedVersion = localStorage.getItem("appVersion");
+  //   if (storedVersion !== CURRENT_VERSION) {
+  //     clearUserData();
+  //     localStorage.setItem("appVersion", CURRENT_VERSION);
+  //   }
+  // }, []);
 
   const [isThresholdHelperOpen, setIsThresholdHelperOpen] = useState(false);
 
@@ -682,57 +610,19 @@ function AppContent() {
     );
   }, [overriddenPrices, excludedItems]);
 
-  if (error) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gray-900 text-red-500">
-        <p>Error: {error}</p>
-      </div>
-    );
-  }
-
-  function clearItemFields(): void {
+  const clearItemFields = useCallback(() => {
     setSelectedItems(Array(5).fill(null));
     setPinnedItems(Array(5).fill(false));
     setHasAutoSelected(false);
     toastShownRef.current = false;
-    setOverriddenPrices({}); // Reset overridden prices
-    setExcludedItems(new Set()); // Reset excluded items
-  }
 
-  const clearUserData = async () => {
-    // Clear local storage
-    localStorage.clear();
+    toast({
+      title: "Cleared Items",
+      description: "All item fields have been cleared.",
+    });
+  }, [toast]);
 
-    // Clear cookies via API route
-    try {
-      const response = await fetch("/api/expire-cookies");
-      if (response.ok) {
-        console.log("Cookies cleared successfully");
-      } else {
-        console.error("Failed to clear cookies");
-      }
-    } catch (error) {
-      console.error("Error clearing cookies:", error);
-    }
-
-    // Refresh the page to ensure all state is reset
-    window.location.reload();
-  };
-
-  // // Use cookiesAccepted to conditionally render or use features that require consent
-  // const setCookie = (name: string, value: string, options?: Cookies.CookieAttributes) => {
-  //   if (cookiesAccepted === true) {
-  //     Cookies.set(name, value, options)
-  //   }
-  // }
-
-  // const getCookie = (name: string) => {
-  //   if (cookiesAccepted === true) {
-  //     return Cookies.get(name)
-  //   }
-  //   return null
-  // }
-
+  // Update the refresh button UI
   return (
     <>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 p-4 overflow-auto">
@@ -752,6 +642,7 @@ function AppContent() {
                   width={400}
                   height={128}
                   priority
+                  className="hover:scale-105 transition-transform duration-300"
                 />
               </h1>
             </div>
@@ -759,18 +650,8 @@ function AppContent() {
               <VersionInfo version={CURRENT_VERSION} />
             </div>
 
-            <div className="text-center text-gray-400 text-sm mb-2">
-              <Button
-                onClick={fetchData}
-                disabled={!isRefreshAvailable}
-                className="mt-2 px-3 py-1 text-sm bg-gray-800 hover:bg-blue-600 text-white"
-              >
-                {refreshCountdown}
-              </Button>
-            </div>
-
             {/* Help icon */}
-            <div className="absolute top-2 sm:top-4 left-2 sm:left-4 flex flex-col items-center justify-center">
+            <div className="absolute top-2 sm:top-4 left-2 sm:left-4 flex flex-col items-center justify-center hover:scale-115 transition-transform duration-300">
               <InstructionsDialog />
             </div>
 
@@ -778,7 +659,7 @@ function AppContent() {
             <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex flex-col items-center justify-center">
               <Settings
                 id="settings"
-                className="h-6 w-6 sm:h-8 sm:w-8 hover:text-green-300 text-yellow-500 cursor-pointer"
+                className="h-6 w-6 sm:h-8 sm:w-8 hover:text-green-300 text-yellow-500 cursor-pointer hover:scale-105 transition-transform duration-300"
                 onClick={() => setIsSettingsPaneVisible(true)}
               />
               <div className="text-yellow-500 text-xs text-center mt-1">
@@ -822,44 +703,49 @@ function AppContent() {
                   ) : items.length === 0 ? (
                     // Display message if item list is empty
                     <div className="text-center text-gray-400 mt-4">
-                      No items available at this time. Please wait for the next
-                      update in {refreshCountdown}. If you think this may be an
-                      issue, please try restting the app in the settings.
+                      No items available at this time. If you think this may be
+                      an issue, please try resetting the app in the settings.
                     </div>
                   ) : (
                     // Show actual item selectors when loaded and items are available
                     selectedItems.map((item, index) => (
-                      <React.Fragment key={`selector-${index}`}>
-                        <Suspense fallback={<div>Loading...</div>}>
-                          <DynamicItemSelector
-                            items={items}
-                            selectedItem={item}
-                            onSelect={(selectedItem, overriddenPrice) =>
-                              updateSelectedItem(
-                                selectedItem,
-                                index,
-                                overriddenPrice
-                              )
-                            }
-                            onCopy={() => handleCopyToClipboard(index)}
-                            onPin={() => handlePinItem(index)}
-                            isPinned={pinnedItems[index]}
-                            overriddenPrice={
-                              item ? overriddenPrices[item.uid] : undefined
-                            }
-                            isAutoPickActive={hasAutoSelected} // Added prop
-                            overriddenPrices={overriddenPrices} // Added prop
-                            isExcluded={excludedItems.has(item?.uid || "")}
-                            onToggleExclude={() =>
-                              item && toggleExcludedItem(item.uid)
-                            }
-                            excludedItems={excludedItems} // Ensure this prop is passed
-                          />
-                        </Suspense>
-                        {index < selectedItems.length - 1 && (
-                          <Separator className="my-2" />
-                        )}
-                      </React.Fragment>
+                      <div
+                        key={`selector-${index}`}
+                        className="animate-fade-in"
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
+                        <React.Fragment>
+                          <Suspense fallback={<div>Loading...</div>}>
+                            <DynamicItemSelector
+                              items={items}
+                              selectedItem={item}
+                              onSelect={(selectedItem, overriddenPrice) =>
+                                updateSelectedItem(
+                                  selectedItem,
+                                  index,
+                                  overriddenPrice
+                                )
+                              }
+                              onCopy={() => handleCopyToClipboard(index)}
+                              onPin={() => handlePinItem(index)}
+                              isPinned={pinnedItems[index]}
+                              overriddenPrice={
+                                item ? overriddenPrices[item.uid] : undefined
+                              }
+                              isAutoPickActive={hasAutoSelected} // Added prop
+                              overriddenPrices={overriddenPrices} // Added prop
+                              isExcluded={excludedItems.has(item?.uid || "")}
+                              onToggleExclude={() =>
+                                item && toggleExcludedItem(item.uid)
+                              }
+                              excludedItems={excludedItems} // Ensure this prop is passed
+                            />
+                          </Suspense>
+                          {index < selectedItems.length - 1 && (
+                            <Separator className="my-2" />
+                          )}
+                        </React.Fragment>
+                      </div>
                     ))
                   )}
                 </div>
@@ -870,7 +756,8 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="clear-item-fields"
-                        className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary w-1/2"
+                        className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary w-1/2 
+                          transition-all duration-300 hover:scale-105 active:scale-95"
                         onClick={clearItemFields}
                         disabled={isClearButtonDisabled}
                       >
@@ -909,8 +796,14 @@ function AppContent() {
 
             {/* **10. Sacrifice Value Display** */}
             <div id="sacrifice-value" className="mt-6 text-center w-full">
-              <h2 className="text-3xl font-bold mb-2 text-gray-300">
-                Current Total
+              <h2
+                className="text-3xl font-bold mb-2 text-gray-300 
+                bg-gradient-to-r from-gray-300 via-white to-gray-300 
+                bg-clip-text text-transparent 
+                bg-[length:200%] 
+                animate-shine"
+              >
+                Sacrifice BaseValue Total
               </h2>
               {loading ? (
                 <Skeleton className="h-16 w-3/4 mx-auto" />
@@ -975,7 +868,7 @@ function AppContent() {
               </div>
               <div className="text-center mt-1">
                 {/* maker with cool icons */}
-                🔥 Made by Wilsman77 🔥
+                Made by Wilsman77 🔥
               </div>
               <div className="flex justify-center mt-4 space-x-4">
                 <a
@@ -1027,7 +920,7 @@ function AppContent() {
             currentSortOption={sortOption}
             selectedCategories={selectedCategories}
             onCategoryChange={handleCategoryChange}
-            allCategories={allItemCategories}
+            allCategories={ALL_ITEM_CATEGORIES}
             onHardReset={handleResetUserData}
           />
         </div>

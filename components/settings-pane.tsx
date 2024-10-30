@@ -6,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect, useRef } from "react";
+import { DEFAULT_ITEM_CATEGORIES } from "@/config/item-categories";
 
 interface SettingsPaneProps {
   onClose: () => void;
@@ -18,7 +19,11 @@ interface SettingsPaneProps {
   onHardReset: () => void;
 }
 
-const disabledCategories = new Set(["Repair", "Keys", "Weapon"]);
+const disabledCategories = new Set([
+  "Weapon",
+  "Key",
+  // Add any other categories that should be disabled
+]);
 
 export function SettingsPane({
   onClose,
@@ -74,13 +79,7 @@ export function SettingsPane({
 
   // Reset categories to default
   const handleResetCategories = () => {
-    onCategoryChange([
-      "Barter",
-      "Provisions",
-      "Containers",
-      "Maps",
-      "Suppressors",
-    ]);
+    onCategoryChange(DEFAULT_ITEM_CATEGORIES);
   };
 
   // Generate warning message based on disabled categories

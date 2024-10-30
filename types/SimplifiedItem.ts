@@ -3,7 +3,7 @@
 export interface SimplifiedItem {
   uid: string;
   name: string;
-  basePrice: number; // This represents basePrice
+  basePrice: number;
   price: number;
   updated: string;
   tags?: string[];
