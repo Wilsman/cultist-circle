@@ -31,21 +31,6 @@ async function fetchAndProcessItems(gameMode: "pve" | "regular") {
     new Date().toISOString(),
   );
 
-  const query = `
-    {
-      items(gameMode: ${gameMode}) {
-        id
-        name
-        basePrice
-        lastLowPrice
-        updated
-        categories {
-          name
-        }
-      }
-    }
-  `;
-
   console.log(`[${gameMode}] Fetching from the API...`);
   const response = await fetch(API_URL, {
     method: "GET",
