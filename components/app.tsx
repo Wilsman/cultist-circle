@@ -50,7 +50,7 @@ const AdBanner = dynamic(() => import("@/components/AdBanner"), {
 
 const CURRENT_VERSION = "1.0.4"; // Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
@@ -66,8 +66,8 @@ const fetcher = async (url: string) => {
 
 // Update the SWR configuration object
 const SWR_CONFIG = {
-  revalidateOnFocus: false,
-  revalidateOnReconnect: false,
+  revalidateOnFocus: true, // ? revalidateOnFocus on or off?
+  revalidateOnReconnect: true, // ? revalidateOnReconnect on or off?
   dedupingInterval: CACHE_DURATION,
   onErrorRetry: (
     error: unknown,

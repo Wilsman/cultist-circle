@@ -19,7 +19,7 @@ function processItems(rawData: SimplifiedItem[]) {
       name: item.name,
       basePrice: item.basePrice,
       price: item.price,
-      updated: item.updated,
+      // updated: item.updated, // workaround for missing updated field
       tags: item.tags,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -72,7 +72,7 @@ async function fetchAndProcessItems(gameMode: "pve" | "regular") {
       name: item.name,
       basePrice: item.basePrice,
       price: item.lastLowPrice!,
-      updated: new Date().toISOString(), // workaround for missing updated field
+      // updated: new Date().toISOString(), // workaround for missing updated field
       tags: item.types,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));

@@ -5,7 +5,7 @@ export interface SimplifiedItem {
   name: string;
   basePrice: number;
   price: number;
-  updated: string;
+  updated?: string; // ! made this field optional
   tags?: string[];
   bannedOnFlea?: boolean;
   isExcluded?: boolean; // Add this line

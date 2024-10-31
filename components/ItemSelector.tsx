@@ -19,7 +19,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { getRelativeDate } from "@/lib/utils";
+// import { getRelativeDate } from "@/lib/utils"; // TODO: Add updated field back in
 
 // Import Dropdown components
 import {
@@ -403,7 +403,8 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             <span className={overriddenPrice ? "text-blue-500" : ""}>
               Flea: ₱{(overriddenPrice || selectedItem.price).toLocaleString()}
             </span>
-            <span>Updated: {getRelativeDate(selectedItem.updated)}</span>
+            {/* TODO: Add updated field back in */}
+            {/* <span>Updated: {getRelativeDate(selectedItem.updated)}</span>  */}
             {isExcluded && (
               <span className="text-red-500">Excluded from Autopick</span>
             )}
