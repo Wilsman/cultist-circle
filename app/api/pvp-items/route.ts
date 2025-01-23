@@ -11,7 +11,7 @@ const PVP_API_URL = "https://api.tarkov-market.app/api/v1/items/all";
 const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === "true";
 
 // Remove force-dynamic to allow caching
-export const runtime = "nodejs";
+export const runtime = "edge";
 
 function processItems(rawData: SimplifiedItem[]) {
   return rawData

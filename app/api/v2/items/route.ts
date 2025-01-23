@@ -8,7 +8,7 @@ import { unstable_cache } from 'next/cache'
 const GRAPHQL_API_URL = "https://api.tarkov.dev/graphql";
 const isDevelopment = process.env.NODE_ENV === "development";
 
-export const runtime = "nodejs";
+export const runtime = 'edge'
 export const revalidate = 1800;
 
 function processItems(rawData: SimplifiedItem[]) {

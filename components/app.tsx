@@ -24,9 +24,8 @@ import { SimplifiedItem } from "@/types/SimplifiedItem";
 import Cookies from "js-cookie";
 import { SettingsPane } from "@/components/settings-pane";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Toaster } from "@/components/ui/toaster"; // Import Toaster and useToast
 import { useToast } from "@/hooks/use-toast";
-import TourOverlay from "@/components/tour-overlay";
+// import TourOverlay from "@/components/tour-overlay"; //! Removed the TourOverlay component
 import dynamic from "next/dynamic";
 import { resetUserData } from "@/utils/resetUserData";
 import ErrorBoundary from "./ErrorBoundary";
@@ -48,7 +47,7 @@ const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
 });
 
-const CURRENT_VERSION = "1.0.4"; // Increment this when you want to trigger a cache clear
+const CURRENT_VERSION = "1.0.5"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 
@@ -629,8 +628,8 @@ function AppContent() {
         <div className="min-h-screen flex items-center justify-center">
           <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50">
             {/* Render the TourOverlay component */}
-            {!loading && <TourOverlay />}
-
+            {/* {!loading && <TourOverlay />} */}{" "}
+            {/*! Removed the intro Tour */}
             {/* Title and Version Info */}
             <div className="pt-8 sm:pt-4">
               {" "}
@@ -649,12 +648,10 @@ function AppContent() {
             <div className="text-center text-gray-400 text-sm mb-1">
               <VersionInfo version={CURRENT_VERSION} />
             </div>
-
             {/* Help icon */}
             <div className="absolute top-2 sm:top-4 left-2 sm:left-4 flex flex-col items-center justify-center hover:scale-115 transition-transform duration-300">
               <InstructionsDialog />
             </div>
-
             {/* Settings icon */}
             <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex flex-col items-center justify-center">
               <Settings
@@ -666,7 +663,6 @@ function AppContent() {
                 Settings
               </div>
             </div>
-
             <CardContent className="p-6">
               {/* Replace the old Mode Toggle with the new ModeToggle component */}
               <ModeToggle isPVE={isPVE} onToggle={handleModeToggle} />
@@ -787,13 +783,11 @@ function AppContent() {
                 </div>
               </TooltipProvider>
             </CardContent>
-
             {/* // simple text saying number overrides & exclusions */}
             <div className="text-center text-sm text-gray-400">
               {Object.keys(overriddenPrices).length} overrides and{" "}
               {excludedItems.size} exclusions currently active
             </div>
-
             {/* **10. Sacrifice Value Display** */}
             <div id="sacrifice-value" className="mt-6 text-center w-full">
               <h2
@@ -839,20 +833,18 @@ function AppContent() {
                 </div>
               </div>
             </div>
-
             <Separator className="my-1" />
-
             {/* **11. Footer with Credits and Links** */}
             <footer className="mt-4 text-center text-gray-400 text-sm w-full">
               <div className="text-center mt-1">
-                Data provided by{" "}
+                Prices provided by{" "}
                 <a
-                  href="https://tarkov-market.com"
+                  href="https://tarkov.dev"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:text-blue-700"
                 >
-                  Tarkov Market
+                  Tarkov.dev
                 </a>
               </div>
               <div className="text-center mt-1">
@@ -932,7 +924,7 @@ function AppContent() {
         onSetThreshold={handleThresholdChange}
       />
       {/* **12. Render the Toaster Component** */}
-      <Toaster />
+      {/* <Toaster /> */}
 
       {/* Add the CookieConsent component */}
       <CookieConsent variant="small" />

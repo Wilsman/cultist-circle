@@ -17,7 +17,7 @@ const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === "true";
 export const dynamic = "force-dynamic";
 
 // Specify the runtime to ensure it's a Serverless Function
-export const runtime = "nodejs";
+export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
   const rateLimiterResponse = rateLimiter(request);

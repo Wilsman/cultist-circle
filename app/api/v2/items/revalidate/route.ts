@@ -1,6 +1,8 @@
 import { revalidateTag } from 'next/cache'
 import { NextResponse, NextRequest } from 'next/server'
 
+export const runtime = 'edge'
+
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const mode = searchParams.get('mode')
