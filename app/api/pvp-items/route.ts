@@ -3,8 +3,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { IGNORED_ITEMS } from "@/config/config";
-import fs from "fs";
-import path from "path";
 import { rateLimiter } from "@/app/lib/rateLimiter";
 
 const PVP_API_URL = "https://api.tarkov-market.app/api/v1/items/all";
@@ -33,8 +31,8 @@ export async function GET(request: NextRequest) {
 
   try {
     if (USE_LOCAL_DATA) {
-      const filePath = path.join(process.cwd(), "public", "all_items_PVP.json");
-      const fileContents = fs.readFileSync(filePath, "utf-8");
+      const filePath = new URL("./all_items_PVP.json", import.meta.url);
+      const fileContents = await fetch(filePath).then((res) => res.text());
       const rawData = JSON.parse(fileContents);
 
       return NextResponse.json(

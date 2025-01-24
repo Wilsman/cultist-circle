@@ -4,8 +4,6 @@ import { NextResponse, NextRequest } from "next/server";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { IGNORED_ITEMS } from "@/config/config";
 import { getCachedData } from "@/config/cache";
-import fs from "fs";
-import path from "path";
 import { rateLimiter } from "@/app/lib/rateLimiter";
 
 const PVE_API_URL = "https://api.tarkov-market.app/api/v1/pve/items/all";
@@ -16,7 +14,7 @@ const USE_LOCAL_DATA = process.env.USE_LOCAL_DATA === "true";
 // Specify the runtime to ensure it's a Serverless Function
 export const dynamic = "force-dynamic";
 
-// Specify the runtime to ensure it's a Serverless Function
+// Specify the runtime
 export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
@@ -36,13 +34,10 @@ export async function GET(request: NextRequest) {
             );
           }
 
-          const filePath = path.join(
-            process.cwd(),
-            "public",
-            "all_items_PVE.json"
+          const response = await fetch(
+            new URL("/all_items_PVE.json", request.url)
           );
-          const fileContents = fs.readFileSync(filePath, "utf-8");
-          const rawData = JSON.parse(fileContents);
+          const rawData = await response.json();
 
           return rawData
             .filter(
