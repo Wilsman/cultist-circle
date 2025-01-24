@@ -70,7 +70,7 @@ export default function ItemSocket() {
                 <div className="pt-1">
                   <p className="font-semibold mb-2">Bonuses:</p>
                   <ul className="space-y-1 list-disc pl-4">
-                    <li>Sacrificing a Sacred Amulet increases the Gift's value by 15%</li>
+                    <li>Sacrificing a Sacred Amulet increases the Gift&apos;s value by 15%</li>
                     <li>The Hideout Management skill increases the bonus of Sacred Amulet</li>
                   </ul>
                 </div>
