@@ -31,9 +31,16 @@ export async function GET(request: NextRequest) {
 
   try {
     if (USE_LOCAL_DATA) {
-      const filePath = new URL("./all_items_PVP.json", import.meta.url);
-      const fileContents = await fetch(filePath).then((res) => res.text());
-      const rawData = JSON.parse(fileContents);
+      // Construct URL based on the request origin
+      const baseUrl = new URL(request.url).origin;
+      const fileUrl = `${baseUrl}/all_items_PVP.json`;
+      const response = await fetch(fileUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load local data: ${response.statusText}`);
+      }
+      
+      const rawData = await response.json();
 
       return NextResponse.json(
         {

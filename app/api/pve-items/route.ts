@@ -28,33 +28,42 @@ export async function GET(request: NextRequest) {
       CACHE_KEY,
       async () => {
         if (USE_LOCAL_DATA) {
-          if (process.env.NODE_ENV !== "production") {
-            console.log(
-              `[${new Date().toISOString()}] Loading PVE items from local JSON file`
+          try {
+            const baseUrl = new URL(request.url).origin;
+            const fileUrl = `${baseUrl}/all_items_PVE.json`;
+            const response = await fetch(fileUrl);
+            
+            if (!response.ok) {
+              throw new Error(`Failed to load local data: ${response.statusText}`);
+            }
+            
+            const rawData = await response.json();
+
+            return rawData
+              .filter(
+                (item: SimplifiedItem) => !IGNORED_ITEMS.includes(item.name)
+              )
+              .map((item: SimplifiedItem) => ({
+                uid: item.uid,
+                name: item.name,
+                basePrice: item.basePrice,
+                price: item.price,
+                updated: item.updated,
+                tags: item.tags || [],
+                bannedOnFlea: item.bannedOnFlea,
+              }))
+              .sort((a: SimplifiedItem, b: SimplifiedItem) =>
+                a.name.localeCompare(b.name)
+              );
+          } catch (error: unknown) {
+            const errorMessage =
+              error instanceof Error ? error.message : "An unexpected error occurred";
+            console.error(
+              `[${new Date().toISOString()}] Error loading local data:`,
+              errorMessage
             );
+            throw new Error(errorMessage);
           }
-
-          const response = await fetch(
-            new URL("/all_items_PVE.json", request.url)
-          );
-          const rawData = await response.json();
-
-          return rawData
-            .filter(
-              (item: SimplifiedItem) => !IGNORED_ITEMS.includes(item.name)
-            )
-            .map((item: SimplifiedItem) => ({
-              uid: item.uid,
-              name: item.name,
-              basePrice: item.basePrice,
-              price: item.price,
-              updated: item.updated,
-              tags: item.tags || [],
-              bannedOnFlea: item.bannedOnFlea,
-            }))
-            .sort((a: SimplifiedItem, b: SimplifiedItem) =>
-              a.name.localeCompare(b.name)
-            );
         } else {
           if (process.env.NODE_ENV !== "production") {
             console.log(
