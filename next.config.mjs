@@ -6,6 +6,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'cdn.buymeacoffee.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'assets.tarkov.dev',
+      },
     ],
   },
 };

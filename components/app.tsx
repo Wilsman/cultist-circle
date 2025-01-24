@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Settings } from "lucide-react";
 import Image from "next/image";
+import ItemSocket from "@/components/item-socket";
 import {
   Tooltip,
   TooltipTrigger,
@@ -788,6 +789,10 @@ function AppContent() {
               {Object.keys(overriddenPrices).length} overrides and{" "}
               {excludedItems.size} exclusions currently active
             </div>
+            {/* Item Socket Component */}
+            <div className="mt-6">
+              <ItemSocket />
+            </div>
             {/* **10. Sacrifice Value Display** */}
             <div id="sacrifice-value" className="mt-6 text-center w-full">
               <h2
@@ -803,11 +808,10 @@ function AppContent() {
                 <Skeleton className="h-16 w-3/4 mx-auto" />
               ) : (
                 <div
-                  className={`text-6xl font-extrabold ${
-                    isThresholdMet
-                      ? "text-green-500 animate-pulse"
-                      : "text-red-500 animate-pulse"
-                  }`}
+                  className={`text-6xl font-extrabold ${isThresholdMet
+                    ? "text-green-500 animate-pulse"
+                    : "text-red-500 animate-pulse"
+                    }`}
                 >
                   ₽{total.toLocaleString()}
                 </div>
