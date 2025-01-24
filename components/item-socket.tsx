@@ -3,8 +3,14 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons"
+import { ChevronDownIcon, ChevronUpIcon, QuestionMarkCircledIcon } from "@radix-ui/react-icons"
 import Image from "next/image"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface Item {
   id: string
@@ -15,10 +21,10 @@ interface Item {
 
 const items: Item[] = [
   { id: "none", name: "NONE", bonus: 0, icon: "X" },
-  { 
-    id: "sacred-amulet", 
-    name: "Sacred Amulet", 
-    bonus: 15, 
+  {
+    id: "sacred-amulet",
+    name: "Sacred Amulet",
+    bonus: 15,
     icon: (
       <Image
         src="https://assets.tarkov.dev/64d0b40fbe2eed70e254e2d4-icon.webp"
@@ -55,6 +61,22 @@ export default function ItemSocket() {
         className="mb-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200"
       >
         <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <QuestionMarkCircledIcon className="w-4 h-4 text-gray-400 hover:text-gray-300 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[600px] w-[500px] p-4 text-left space-y-3 bg-gray-900/95 text-sm">
+                <div className="pt-1">
+                  <p className="font-semibold mb-2">Bonuses:</p>
+                  <ul className="space-y-1 list-disc pl-4">
+                    <li>Sacrificing a Sacred Amulet increases the Gift's value by 15%</li>
+                    <li>The Hideout Management skill increases the bonus of Sacred Amulet</li>
+                  </ul>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <span className="text-sm">Bonus Settings</span>
           {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
         </div>
@@ -66,7 +88,7 @@ export default function ItemSocket() {
       `}>
         <div className="flex items-center gap-2 mb-2">
           <span className="font-mono text-gray-300">
-            Total bonus to the Gift <span className="text-red-500 font-bold">{totalBonus}%</span>
+            Total bonus to the Gift <span className={`font-bold ${totalBonus > 0 ? 'text-blue-300' : 'text-red-500'}`}>{totalBonus}%</span>
           </span>
         </div>
 
@@ -104,13 +126,13 @@ export default function ItemSocket() {
 
           {selectedItem && selectedItem.id !== 'none' && (
             <div className="flex items-center gap-2 animate-fade-in">
-              <span className="font-mono text-gray-300">Level:</span>
+              <span className="font-mono text-gray-300">Hideout Level:</span>
               <select
                 value={hideoutLevel}
                 onChange={(e) => setHideoutLevel(Number(e.target.value))}
                 className="bg-gray-800 text-gray-200 border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-16 text-center"
               >
-                {Array.from({ length: 50 }, (_, i) => i + 1).map((level) => (
+                {Array.from({ length: 51 }, (_, i) => i + 1).map((level) => (
                   <option key={level} value={level}>
                     {level}
                   </option>
@@ -124,7 +146,7 @@ export default function ItemSocket() {
       {/* Show a small indicator of the bonus when collapsed */}
       {!isExpanded && totalBonus > 0 && (
         <div className="text-xs text-gray-400">
-          +{totalBonus}%
+          Total bonus to the Gift: <span className={`font-bold ${totalBonus > 0 ? 'text-blue-300' : 'text-red-500'}`}>+{totalBonus}%</span>
         </div>
       )}
     </div>

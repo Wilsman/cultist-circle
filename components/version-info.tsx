@@ -40,7 +40,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
         </span>
       </HoverCardTrigger>
       <HoverCardContent
-        className="w-80 bg-gray-800 border-gray-700 text-gray-200"
+        className="max-w-120 w-120 bg-gray-800 border-gray-700 text-gray-200"
         // Add touch-specific styles
         style={{
           touchAction: 'none',
@@ -54,6 +54,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
             </h4>
             <ul className="text-sm list-disc list-inside">
               <li>Switched to tarkov.dev API for faster price updates</li>
+              <li>Feature: Added Bonus Calculator (Sacred Amulet)</li>
               <li>Corrected recipes: Secure container Kappa (Desecrated)</li>
               <li>Improved server and local caching system</li>
             </ul>
@@ -64,7 +65,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
               🚀 Upcoming Features
             </h4>
             <ul className="text-sm list-disc list-inside">
-              <li>Ability to blacklist items - e.g. SHYSHKA</li>
+              <li>Ability to blacklist items - e.g. SHYSHKA, Olivier salad box etc.</li>
               <li>Enhanced filtering and sorting capabilities</li>
             </ul>
           </div>
@@ -76,9 +77,8 @@ export function VersionInfo({ version }: VersionInfoProps) {
             <ul className="text-sm list-disc list-inside">
               <li>
                 <span className="font-semibold">
-                  Items that cannot be used:
+                  Items that cannot be used: SHYSHKA, Olivier salad box and Jar of pickles.
                 </span>
-                SHYSHKA, Olivier salad box and Jar of pickles.
               </li>
               <li>Cache optimization in progress</li>
               <li>
