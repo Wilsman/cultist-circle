@@ -42,7 +42,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
       <HoverCardContent
         className="w-80 bg-gray-800 border-gray-700 text-gray-200"
         // Add touch-specific styles
-        style={{ 
+        style={{
           touchAction: 'none',
           WebkitTapHighlightColor: 'transparent'
         }}
@@ -53,9 +53,8 @@ export function VersionInfo({ version }: VersionInfoProps) {
               🔄 Recent Updates
             </h4>
             <ul className="text-sm list-disc list-inside">
-              <li>Added recent updates/upcoming features/known issues sections</li>
-              <li>Corrected recipe times and information</li>
-              <li>Fixed Recipes page navigation issues</li>
+              <li>Switched to tarkov.dev API for faster price updates</li>
+              <li>Corrected recipes: Secure container Kappa (Desecrated)</li>
               <li>Improved server and local caching system</li>
             </ul>
           </div>
@@ -65,9 +64,8 @@ export function VersionInfo({ version }: VersionInfoProps) {
               🚀 Upcoming Features
             </h4>
             <ul className="text-sm list-disc list-inside">
+              <li>Ability to blacklist items - e.g. SHYSHKA</li>
               <li>Enhanced filtering and sorting capabilities</li>
-              <li>New API integration for faster price updates</li>
-              <li>More frequent market data refreshes</li>
             </ul>
           </div>
 
@@ -76,9 +74,18 @@ export function VersionInfo({ version }: VersionInfoProps) {
               🚨 Known Issues
             </h4>
             <ul className="text-sm list-disc list-inside">
+              <li>
+                <span className="font-semibold">
+                  Items that cannot be used:
+                </span>
+                SHYSHKA, Olivier salad box and Jar of pickles.
+              </li>
               <li>Cache optimization in progress</li>
-              <li>Pinned item combinations may result in suboptimal pricing</li>
-              <li>Recipe attempt limitation needs adjustment</li>
+              <li>
+                <span className="font-semibold">
+                  Pinned item combinations may result in suboptimal pricing
+                </span>
+              </li>
             </ul>
           </div>
 
