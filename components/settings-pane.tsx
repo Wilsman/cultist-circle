@@ -86,9 +86,12 @@ export function SettingsPane({
     }
   };
 
-  // Reset categories to default
-  const handleResetCategories = () => {
+  // Handle reset all settings
+  const handleResetAll = () => {
     onCategoryChange(DEFAULT_ITEM_CATEGORIES);
+    onExcludedItemsChange(new Set(DEFAULT_EXCLUDED_ITEMS));
+    setSortOption("alphabetical");
+    onSortChange("alphabetical");
   };
 
   // Generate warning message based on disabled categories
@@ -193,8 +196,7 @@ export function SettingsPane({
             <div className="h-full relative text-primary-foreground">
               <h2 className="text-lg font-semibold mb-4">Item Filter</h2>
               <div className="text-sm text-yellow-500 mb-4 bg-yellow-100 bg-opacity-20 p-2 rounded">
-                Warning: {disabledCategoriesMessage} are disabled due to their
-                variable usage/durability impacting prices.
+                Warning: {disabledCategoriesMessage} are disabled due to their variable usage/durability impacting prices.
               </div>
 
               {allCategories.map((category) => (
@@ -214,7 +216,7 @@ export function SettingsPane({
             <div className="h-full">
               <h2 className="text-lg font-semibold mb-4">Excluded Items</h2>
               <div className="text-sm text-muted-foreground mb-4">
-                Items in this list will be hidden from the selection when "Hide incompatible items" is enabled. This helps you focus on compatible items for your build.
+                Items in this list will be hidden from the selection when &quot;Hide incompatible items&quot; is enabled. This helps you focus on compatible items for your build.
               </div>
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center space-x-2">
@@ -247,8 +249,7 @@ export function SettingsPane({
             <div className="h-full flex flex-col justify-center items-center">
               <h2 className="text-lg font-semibold mb-4">Hard Reset</h2>
               <p className="text-center mb-4">
-                Reset all settings to their default values. (including cookies
-                and local cache)
+                Reset all settings to their default values. (including cookies and local cache)
               </p>
               <Button
                 variant="destructive"
@@ -257,6 +258,22 @@ export function SettingsPane({
               >
                 Reset App
               </Button>
+              <div className="space-y-2">
+                <p>Are you sure you want to reset all settings to their defaults? This will:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Reset item categories</li>
+                  <li>Reset excluded items</li>
+                  <li>Reset sort options</li>
+                </ul>
+                <p>This action cannot be undone.</p>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={handleResetAll}
+                >
+                  Reset All
+                </Button>
+              </div>
             </div>
           )}
         </div>

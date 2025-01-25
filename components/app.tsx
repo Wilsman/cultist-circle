@@ -4,35 +4,25 @@ import React, {
   useState,
   useEffect,
   useMemo,
-  useRef,
   useCallback,
+  useRef,
   Suspense,
 } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Settings } from "lucide-react";
+import dynamic from "next/dynamic";
+import useSWR from "swr";
 import Image from "next/image";
-import ItemSocket from "@/components/item-socket";
+import { Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { FeedbackForm } from "./feedback-form";
-import { SimplifiedItem } from "@/types/SimplifiedItem";
-import Cookies from "js-cookie";
+import ItemSocket from "@/components/item-socket";
 import { SettingsPane } from "@/components/settings-pane";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
-// import TourOverlay from "@/components/tour-overlay"; //! Removed the TourOverlay component
-import dynamic from "next/dynamic";
-import { resetUserData } from "@/utils/resetUserData";
-import ErrorBoundary from "./ErrorBoundary";
 import { ThresholdHelperPopup } from "@/components/ThresholdHelperPopup";
 import { InstructionsDialog } from "@/components/InstructionsDialog";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -40,13 +30,16 @@ import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithH
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import CookieConsent from "@/components/CookieConsent";
 import { VersionInfo } from "@/components/version-info";
-import useSWR from "swr";
-import type { SWRConfiguration, RevalidatorOptions, Revalidator } from "swr";
-import {
-  ALL_ITEM_CATEGORIES,
-  DEFAULT_ITEM_CATEGORIES,
-} from "@/config/item-categories";
+import { ALL_ITEM_CATEGORIES, DEFAULT_ITEM_CATEGORIES } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
+import { SimplifiedItem } from "@/types/SimplifiedItem";
+import Cookies from "js-cookie";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { resetUserData } from "@/utils/resetUserData";
+import ErrorBoundary from "./ErrorBoundary";
+import { FeedbackForm } from "./feedback-form";
+import type { SWRConfiguration, RevalidatorOptions, Revalidator } from "swr";
 
 const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
@@ -362,6 +355,19 @@ function AppContent() {
   } as SWRConfiguration);
 
   const loading = !rawItemsData && !error;
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        mutate();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [mutate]);
 
   // Memoized computation of items based on categories, sort option, and excluded items
   const items: SimplifiedItem[] = useMemo(() => {
