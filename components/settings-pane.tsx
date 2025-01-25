@@ -1,12 +1,15 @@
 // components/settings-pane.tsx
 
-import { Filter, X, ArrowUpDown, RefreshCcw } from "lucide-react"; // Added RefreshCcw
+import { Filter, X, ArrowUpDown, RefreshCcw, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect, useRef } from "react";
 import { DEFAULT_ITEM_CATEGORIES } from "@/config/item-categories";
+import { Separator } from "./ui/separator";
+import { ExcludedItemsManager } from "@/components/excluded-items-manager";
+import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 
 interface SettingsPaneProps {
   onClose: () => void;
@@ -15,8 +18,11 @@ interface SettingsPaneProps {
   selectedCategories: string[];
   onCategoryChange: (categories: string[]) => void;
   allCategories: string[];
-  // onReset: () => void;
+  excludeIncompatible: boolean;
+  onExcludeIncompatibleChange: (exclude: boolean) => void;
   onHardReset: () => void;
+  excludedItems: Set<string>;
+  onExcludedItemsChange: (items: Set<string>) => void;
 }
 
 const disabledCategories = new Set([
@@ -32,11 +38,14 @@ export function SettingsPane({
   selectedCategories,
   onCategoryChange,
   allCategories,
-  // onReset,
+  excludeIncompatible,
+  onExcludeIncompatibleChange,
   onHardReset,
+  excludedItems,
+  onExcludedItemsChange,
 }: SettingsPaneProps) {
   const [sortOption, setSortOption] = useState(currentSortOption);
-  const [activeTab, setActiveTab] = useState("filter"); // New state for active tab
+  const [activeTab, setActiveTab] = useState("filter");
   const paneRef = useRef<HTMLDivElement>(null);
 
   // Update parent component when sortOption changes
@@ -106,11 +115,10 @@ export function SettingsPane({
               onClick={() => setActiveTab("filter")}
             >
               <Filter
-                className={`h-5 w-5 ${
-                  activeTab === "filter"
-                    ? "text-muted-foreground"
-                    : "text-primary"
-                }`}
+                className={`h-5 w-5 ${activeTab === "filter"
+                  ? "text-muted-foreground"
+                  : "text-primary"
+                  }`}
               />
             </button>
             <button
@@ -119,11 +127,22 @@ export function SettingsPane({
               onClick={() => setActiveTab("sort")}
             >
               <ArrowUpDown
-                className={`h-5 w-5 ${
-                  activeTab === "sort"
-                    ? "text-muted-foreground"
-                    : "text-primary"
-                }`}
+                className={`h-5 w-5 ${activeTab === "sort"
+                  ? "text-muted-foreground"
+                  : "text-primary"
+                  }`}
+              />
+            </button>
+            <button
+              className="w-full p-2 flex justify-center focus:outline-none"
+              title="Excluded Items"
+              onClick={() => setActiveTab("excluded")}
+            >
+              <List
+                className={`h-5 w-5 ${activeTab === "excluded"
+                  ? "text-muted-foreground"
+                  : "text-primary"
+                  }`}
               />
             </button>
           </div>
@@ -133,9 +152,8 @@ export function SettingsPane({
             onClick={() => setActiveTab("reset")}
           >
             <RefreshCcw
-              className={`h-5 w-5 ${
-                activeTab === "reset" ? "text-muted-foreground" : "text-primary"
-              }`}
+              className={`h-5 w-5 ${activeTab === "reset" ? "text-muted-foreground" : "text-primary"
+                }`}
             />
           </button>
         </div>
@@ -178,6 +196,7 @@ export function SettingsPane({
                 Warning: {disabledCategoriesMessage} are disabled due to their
                 variable usage/durability impacting prices.
               </div>
+
               {allCategories.map((category) => (
                 <div key={category} className="flex items-center space-x-2">
                   <Checkbox
@@ -189,13 +208,39 @@ export function SettingsPane({
                   <Label>{category}</Label>
                 </div>
               ))}
-              <Button
-                variant="destructive"
-                className="absolute bottom-4 right-4 px-4 py-2 rounded"
-                onClick={handleResetCategories}
-              >
-                Reset Filters
-              </Button>
+            </div>
+          )}
+          {activeTab === "excluded" && (
+            <div className="h-full">
+              <h2 className="text-lg font-semibold mb-4">Excluded Items</h2>
+              <div className="text-sm text-muted-foreground mb-4">
+                Items in this list will be hidden from the selection when "Hide incompatible items" is enabled. This helps you focus on compatible items for your build.
+              </div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="excludeIncompatible"
+                    checked={excludeIncompatible}
+                    onCheckedChange={(checked) =>
+                      onExcludeIncompatibleChange(checked as boolean)
+                    }
+                  />
+                  <Label htmlFor="excludeIncompatible">Hide incompatible items</Label>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onExcludedItemsChange(new Set(DEFAULT_EXCLUDED_ITEMS))}
+                  className="text-xs text-red-500"
+                >
+                  Reset to Defaults
+                </Button>
+              </div>
+              <Separator className="my-4" />
+              <ExcludedItemsManager
+                excludedItems={excludedItems}
+                onExcludedItemsChange={onExcludedItemsChange}
+              />
             </div>
           )}
           {activeTab === "reset" && (

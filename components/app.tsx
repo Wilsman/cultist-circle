@@ -10,6 +10,9 @@ import React, {
 } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Settings } from "lucide-react";
 import Image from "next/image";
@@ -43,6 +46,7 @@ import {
   ALL_ITEM_CATEGORIES,
   DEFAULT_ITEM_CATEGORIES,
 } from "@/config/item-categories";
+import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 
 const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
@@ -51,19 +55,18 @@ const AdBanner = dynamic(() => import("@/components/AdBanner"), {
 const CURRENT_VERSION = "1.0.5"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+const ITEMS_CACHE_KEY = "itemsCache";
 
+// Cache structure type
+type ItemsCache = {
+  timestamp: number;
+  version: string;
+  mode: string;
+  data: SimplifiedItem[];
+};
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
 });
-
-const fetcher = async (url: string) => {
-  const mode = url.includes("pve") ? "pve" : "pvp";
-  const res = await fetch(`/api/v2/items?mode=${mode}`);
-  if (!res.ok) throw new Error(`Failed to fetch data for ${url}`);
-  const result = await res.json();
-  return result.data;
-};
-
 // Update the SWR configuration object
 const SWR_CONFIG = {
   revalidateOnFocus: false,
@@ -94,39 +97,125 @@ function AppContent() {
   const [isPVE, setIsPVE] = useState<boolean>(false);
 
   // Selected items state
-  const [selectedItems, setSelectedItems] = useState<
-    Array<SimplifiedItem | null>
-  >(Array(5).fill(null));
+  const [selectedItems, setSelectedItems] = useState<Array<SimplifiedItem | null>>(
+    Array(5).fill(null)
+  );
 
   // Settings and UI states
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
-  const [pinnedItems, setPinnedItems] = useState<boolean[]>(
-    Array(5).fill(false)
-  );
+  const [pinnedItems, setPinnedItems] = useState<boolean[]>(Array(5).fill(false));
   const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
     useState<boolean>(false);
-  const [sortOption, setSortOption] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("sortOption") || "az";
-    }
-    return "az";
-  });
+  const [sortOption, setSortOption] = useState<string>("az");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(DEFAULT_ITEM_CATEGORIES);
+  const [threshold, setThreshold] = useState<number>(400000);
+  const [excludeIncompatible, setExcludeIncompatible] = useState<boolean>(true);
+  const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set(DEFAULT_EXCLUDED_ITEMS));
+  const [overriddenPrices, setOverriddenPrices] = useState<Record<string, number>>({});
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+  // Initialize client-side state
+  useEffect(() => {
+    // Load sort option
+    const savedSort = localStorage.getItem("sortOption");
+    if (savedSort) setSortOption(savedSort);
+
+    // Load selected categories
+    try {
+      const savedCategories = localStorage.getItem("selectedCategories");
+      if (savedCategories) {
+        setSelectedCategories(JSON.parse(savedCategories));
+      }
+    } catch (e) {
+      console.error("Error parsing selectedCategories from localStorage", e);
+    }
+
+    // Load threshold
+    const savedThreshold = Cookies.get("userThreshold");
+    if (savedThreshold) {
+      setThreshold(Number(savedThreshold));
+    }
+
+    // Load exclude incompatible setting
+    try {
+      const saved = localStorage.getItem("excludeIncompatible");
+      if (saved !== null) {
+        setExcludeIncompatible(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error("Error parsing excludeIncompatible from localStorage", e);
+    }
+
+    // Load excluded items, merging with defaults if none saved
+    try {
+      const saved = localStorage.getItem("excludedItems");
+      if (saved) {
+        const savedItems = new Set<string>(JSON.parse(saved) as string[]);
+        // Merge with defaults to ensure defaults are always included
+        Array.from(DEFAULT_EXCLUDED_ITEMS).forEach(item => savedItems.add(item));
+        setExcludedItems(savedItems);
+      }
+    } catch (e) {
+      console.error("Error loading excludedItems from localStorage", e);
+      // If there's an error, at least keep the defaults
+      setExcludedItems(new Set(Array.from(DEFAULT_EXCLUDED_ITEMS)));
+    }
+
+    // Load overridden prices
+    try {
+      const stored = localStorage.getItem(OVERRIDDEN_PRICES_KEY);
+      if (stored) {
+        setOverriddenPrices(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error("Error loading overriddenPrices from localStorage", e);
+    }
+  }, []);
+
+  // Save sort option to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sortOption", sortOption);
+    }
+  }, [sortOption]);
+
+  // Save selected categories to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("selectedCategories", JSON.stringify(selectedCategories));
+    }
+  }, [selectedCategories]);
+
+  // Save threshold to cookies
+  useEffect(() => {
+    Cookies.set("userThreshold", threshold.toString(), { expires: 365 });
+  }, [threshold]);
+
+  // Save excludeIncompatible to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("excludeIncompatible", JSON.stringify(excludeIncompatible));
+    }
+  }, [excludeIncompatible]);
+
+  // Save excludedItems to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("excludedItems", JSON.stringify(Array.from(excludedItems)));
+    }
+  }, [excludedItems]);
+
+  // Save overriddenPrices to localStorage
+  useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        const savedCategories = localStorage.getItem("selectedCategories");
-        if (savedCategories) {
-          return JSON.parse(savedCategories);
-        }
+        localStorage.setItem(OVERRIDDEN_PRICES_KEY, JSON.stringify(overriddenPrices));
       } catch (e) {
-        console.error("Error parsing selectedCategories from localStorage", e);
+        console.error("Error saving overriddenPrices to localStorage", e);
       }
     }
-    return DEFAULT_ITEM_CATEGORIES;
-  });
+  }, [overriddenPrices]);
 
   // Define the hasAutoSelected state variable
   const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
@@ -146,57 +235,6 @@ function AppContent() {
       localStorage.setItem("sortOption", newSortOption);
     }
   }, []);
-
-  // Threshold state with initialization from cookies
-  const [threshold, setThreshold] = useState<number>(400000); // Default value
-
-  useEffect(() => {
-    const savedThreshold = Cookies.get("userThreshold");
-    if (savedThreshold) {
-      setThreshold(Number(savedThreshold));
-    }
-  }, []);
-
-  // Handler for threshold changes
-  const handleThresholdChange = (newValue: number) => {
-    setThreshold(newValue);
-    Cookies.set("userThreshold", newValue.toString(), { expires: 365 });
-    toastShownRef.current = false; // Reset toast shown flag when threshold changes
-  };
-
-  // Excluded items state
-  const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
-
-  // Settings for overridden prices
-  const [overriddenPrices, setOverriddenPrices] = useState<
-    Record<string, number>
-  >(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(OVERRIDDEN_PRICES_KEY);
-        if (stored) {
-          return JSON.parse(stored);
-        }
-      } catch (e) {
-        console.error("Error loading overriddenPrices from localStorage", e);
-      }
-    }
-    return {};
-  });
-
-  // Save overriddenPrices to localStorage whenever it changes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(
-          OVERRIDDEN_PRICES_KEY,
-          JSON.stringify(overriddenPrices)
-        );
-      } catch (e) {
-        console.error("Error saving overriddenPrices to localStorage", e);
-      }
-    }
-  }, [overriddenPrices]);
 
   // Handler to toggle excluded items
   const toggleExcludedItem = (uid: string) => {
@@ -218,7 +256,7 @@ function AppContent() {
     const clearedExcludedItemsCount = excludedItems.size;
 
     setOverriddenPrices({});
-    setExcludedItems(new Set());
+    setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
     setHasAutoSelected(false); // Reset Auto Select button
     toastShownRef.current = false; // Reset toast shown flag when resetting
 
@@ -246,11 +284,66 @@ function AppContent() {
       setThreshold,
       setExcludedItems,
       setOverriddenPrices,
-      mutate,
+      async () => {
+        await mutate();
+        return;
+      },
       DEFAULT_ITEM_CATEGORIES,
       toast
     );
-    // Remove the manual mutate call since we only want to invalidate when necessary
+  };
+
+  // Handler for threshold changes
+  const handleThresholdChange = (newValue: number) => {
+    setThreshold(newValue);
+    Cookies.set("userThreshold", newValue.toString(), { expires: 365 });
+    toastShownRef.current = false; // Reset toast shown flag when threshold changes
+  };
+
+  const fetcher = async (url: string) => {
+    const mode = url.includes("pve") ? "pve" : "pvp";
+
+    // Try to get data from localStorage first
+    try {
+      const cached = localStorage.getItem(ITEMS_CACHE_KEY);
+      if (cached) {
+        const cacheData = JSON.parse(cached) as ItemsCache;
+        const now = Date.now();
+
+        // Check if cache is still valid (not expired, same version and mode)
+        if (
+          now - cacheData.timestamp < CACHE_DURATION &&
+          cacheData.version === CURRENT_VERSION &&
+          cacheData.mode === mode
+        ) {
+          console.log("Using cached items data");
+          return cacheData.data;
+        }
+      }
+    } catch (e) {
+      console.error("Error reading from cache:", e);
+    }
+
+    // If no valid cache, fetch from API
+    console.log("Fetching fresh items data");
+    const res = await fetch(`/api/v2/items?mode=${mode}`);
+    if (!res.ok) throw new Error(`Failed to fetch data for ${url}`);
+    const result = await res.json();
+
+    // Update cache
+    try {
+      const cacheData: ItemsCache = {
+        timestamp: Date.now(),
+        version: CURRENT_VERSION,
+        mode: mode,
+        data: result.data
+      };
+      localStorage.setItem(ITEMS_CACHE_KEY, JSON.stringify(cacheData));
+    } catch (e) {
+      console.error("Error updating cache:", e);
+    }
+
+    return result.data;
   };
 
   // Fetch data based on mode (PVE/PVP)
@@ -259,17 +352,28 @@ function AppContent() {
     : `/api/v2/items?mode=pvp&v=${CURRENT_VERSION}`;
 
   const {
-    data: itemsData,
+    data: rawItemsData,
     error,
     mutate,
-  } = useSWR(apiUrl, fetcher, SWR_CONFIG as SWRConfiguration);
+  } = useSWR<SimplifiedItem[]>(apiUrl, fetcher, {
+    ...SWR_CONFIG,
+    revalidateOnMount: false, // Don't revalidate on mount since we handle that in fetcher
+    dedupingInterval: CACHE_DURATION
+  } as SWRConfiguration);
 
-  const loading = !itemsData && !error;
+  const loading = !rawItemsData && !error;
 
-  // Memoized computation of items based on categories and sort option
+  // Memoized computation of items based on categories, sort option, and excluded items
   const items: SimplifiedItem[] = useMemo(() => {
-    if (!itemsData) return [];
-    const filteredItems = itemsData.filter(
+    if (!rawItemsData || !Array.isArray(rawItemsData)) return [];
+
+    // First filter by excluded items if enabled
+    const excludedFiltered = excludeIncompatible
+      ? rawItemsData.filter((item: SimplifiedItem) => !excludedItems.has(item.name))
+      : rawItemsData;
+
+    // Then filter by categories
+    const filteredItems = excludedFiltered.filter(
       (item: SimplifiedItem) =>
         selectedCategories.length === 0 ||
         (Array.isArray(item.tags)
@@ -288,7 +392,12 @@ function AppContent() {
     }
 
     return sortedItems;
-  }, [itemsData, sortOption, selectedCategories]);
+  }, [rawItemsData, sortOption, selectedCategories, excludeIncompatible, excludedItems]);
+
+  // Only update items when mode changes
+  useEffect(() => {
+    mutate();
+  }, [isPVE]);
 
   // Function to find the best combination of items
   const findBestCombination = useCallback(
@@ -526,7 +635,7 @@ function AppContent() {
     setSelectedItems(Array(5).fill(null));
     setPinnedItems(Array(5).fill(false));
     setOverriddenPrices({});
-    setExcludedItems(new Set());
+    setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
     setHasAutoSelected(false);
     toastShownRef.current = false;
   };
@@ -600,13 +709,13 @@ function AppContent() {
     return (
       selectedItems.every((item) => item === null) &&
       Object.keys(overriddenPrices).length === 0 &&
-      excludedItems.size === 0
+      excludedItems.size === Array.from(DEFAULT_EXCLUDED_ITEMS).length
     );
   }, [selectedItems, overriddenPrices, excludedItems]);
 
   const isResetOverridesButtonDisabled = useMemo(() => {
     return (
-      Object.keys(overriddenPrices).length === 0 && excludedItems.size === 0
+      Object.keys(overriddenPrices).length === 0 && excludedItems.size === Array.from(DEFAULT_EXCLUDED_ITEMS).length
     );
   }, [overriddenPrices, excludedItems]);
 
@@ -908,6 +1017,7 @@ function AppContent() {
           <FeedbackForm onClose={() => setIsFeedbackFormVisible(false)} />
         </div>
       )}
+
       {isSettingsPaneVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <SettingsPane
@@ -917,18 +1027,21 @@ function AppContent() {
             selectedCategories={selectedCategories}
             onCategoryChange={handleCategoryChange}
             allCategories={ALL_ITEM_CATEGORIES}
+            excludeIncompatible={excludeIncompatible}
+            onExcludeIncompatibleChange={setExcludeIncompatible}
             onHardReset={handleResetUserData}
+            excludedItems={excludedItems}
+            onExcludedItemsChange={setExcludedItems}
           />
         </div>
       )}
+
       {/* Threshold Helper Popup */}
       <ThresholdHelperPopup
         isOpen={isThresholdHelperOpen}
         onClose={() => setIsThresholdHelperOpen(false)}
         onSetThreshold={handleThresholdChange}
       />
-      {/* **12. Render the Toaster Component** */}
-      {/* <Toaster /> */}
 
       {/* Add the CookieConsent component */}
       <CookieConsent variant="small" />
