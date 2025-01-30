@@ -31,6 +31,7 @@ export const DEFAULT_EXCLUDED_CATEGORIES = new Set([
   "Ammo",
   "Ammo container",
   "Key",
+  "Armor",
 ]);
 
 export const ALL_ITEM_CATEGORIES = [
