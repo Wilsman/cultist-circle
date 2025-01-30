@@ -30,9 +30,6 @@ export const DEFAULT_EXCLUDED_CATEGORIES = new Set([
   "Weapon",
   "Ammo",
   "Ammo container",
-  "Grenade launcher",
-  "UBGL",
-  "Throwable weapon",
   "Key",
 ]);
 

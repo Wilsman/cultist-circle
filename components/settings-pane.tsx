@@ -1,16 +1,14 @@
 // components/settings-pane.tsx
 
-import { Filter, X, ArrowUpDown, RefreshCcw, List, Search } from "lucide-react";
+import { Filter, List, RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RotateCcw, HelpCircle, Download, Upload, Trash2, Settings as SettingsIcon } from "lucide-react";
+import { HelpCircle, Download, Upload, Trash2, Settings as SettingsIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { ALL_ITEM_CATEGORIES, DEFAULT_EXCLUDED_CATEGORIES } from "@/config/item-categories";
-import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ExcludedItemsManager } from "@/components/excluded-items-manager";
@@ -21,7 +19,7 @@ interface SettingsPaneProps {
   isOpen: boolean;
   onClose: () => void;
   onReset: () => void;
-  onClearLocalStorage: () => void;
+  onHardReset: () => void;
   onExportData: () => void;
   onImportData: (data: string) => void;
   onSortChange: (sortOption: string) => void;
@@ -31,14 +29,15 @@ interface SettingsPaneProps {
   allCategories: string[];
   excludeIncompatible: boolean;
   onExcludeIncompatibleChange: (exclude: boolean) => void;
-  onHardReset: () => void;
   excludedItems: Set<string>;
-  onExcludedItemsChange: (items: Set<string>) => void;
+  onExcludedItemsChange: React.Dispatch<React.SetStateAction<Set<string>>>;
+  onClearLocalStorage: () => void;
 }
 
 const disabledCategories = new Set([
   "Weapon",
-  // "Key",
+  "Key",
+  "Armor",
   // Add any other categories that should be disabled
 ]);
 
@@ -46,7 +45,6 @@ export default function SettingsPane({
   isOpen,
   onClose,
   onReset,
-  onClearLocalStorage,
   onExportData,
   onImportData,
   onSortChange,
@@ -56,39 +54,20 @@ export default function SettingsPane({
   allCategories,
   excludeIncompatible,
   onExcludeIncompatibleChange,
-  onHardReset,
   excludedItems,
   onExcludedItemsChange,
+  onHardReset,
 }: SettingsPaneProps) {
   const [sortOption, setSortOption] = useState(currentSortOption);
-  const [activeTab, setActiveTab] = useState("filter");
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const paneRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Update parent component when sortOption changes
   useEffect(() => {
     onSortChange(sortOption);
   }, [sortOption, onSortChange]);
-
-  // Handle click outside to close the pane
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (paneRef.current && !paneRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("pointerdown", handleClickOutside);
-    return () => {
-      document.body.style.overflow = "";
-      document.removeEventListener("pointerdown", handleClickOutside);
-    };
-  }, [onClose]);
 
   // Handle category selection
   const handleCategoryChange = (category: string) => {
@@ -102,9 +81,6 @@ export default function SettingsPane({
 
     onCategoryChange(updatedCategories);
   };
-
-  // Generate warning message based on disabled categories
-  const disabledCategoriesMessage = Array.from(disabledCategories).join(", ");
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -425,7 +401,7 @@ export default function SettingsPane({
               <Button
                 variant="destructive"
                 onClick={() => {
-                  onClearLocalStorage();
+                  onHardReset();
                   setShowConfirmClear(false);
                 }}
                 className="interactive-bounce"

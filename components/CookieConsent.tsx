@@ -32,11 +32,11 @@ export default function CookieConsent() {
       <div className="max-w-2xl mx-auto m-4">
         <div className="relative bg-gray-800/95 backdrop-blur-md border border-gray-700 p-6 rounded-lg shadow-xl">
           <div className="prose prose-invert prose-sm max-w-none">
-            <h3 className="text-xl font-semibold mb-4 text-white">🍪 Cookie Policy</h3>
+            <h3 className="text-xl font-semibold mb-4 text-white">&ldquo;Cookie Policy&rdquo;</h3>
             <p className="text-gray-300 mb-4">
               We use cookies to enhance your experience and analyze our traffic. By clicking
-              "Accept All", you consent to our use of cookies. For more information, please
-              read our{" "}
+              &ldquo;Accept All&rdquo;, you consent to our use of cookies. For more information,
+              please read our{" "}
               <a
                 href="/privacy-policy"
                 className="text-blue-400 hover:text-blue-300 underline transition-colors"

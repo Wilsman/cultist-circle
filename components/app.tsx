@@ -21,7 +21,6 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import ItemSocket from "@/components/item-socket";
 import SettingsPane from "@/components/settings-pane";
 import { ThresholdHelperPopup } from "@/components/ThresholdHelperPopup";
 import { InstructionsDialog } from "@/components/InstructionsDialog";
@@ -40,10 +39,6 @@ import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
 import type { SWRConfiguration, RevalidatorOptions, Revalidator } from "swr";
 import Link from "next/link";
-
-const AdBanner = dynamic(() => import("@/components/AdBanner"), {
-  ssr: false,
-});
 
 const CURRENT_VERSION = "1.0.6"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
@@ -245,36 +240,36 @@ function AppContent() {
   }, []);
 
   // Reset all settings to defaults
-  const handleReset = useCallback(() => {
-    setSelectedItems(Array(5).fill(null));
-    setPinnedItems(Array(5).fill(false));
-    setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
-    setSortOption("az");
-    setThreshold(400000);
-    setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
-    setOverriddenPrices({});
-    setHasAutoSelected(false);
+  // const handleResetUserData = useCallback(() => {
+  //   setSelectedItems(Array(5).fill(null));
+  //   setPinnedItems(Array(5).fill(false));
+  //   setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+  //   setSortOption("az");
+  //   setThreshold(400000);
+  //   setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
+  //   setOverriddenPrices({});
+  //   setHasAutoSelected(false);
 
-    // Clear localStorage
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("selectedCategories");
-      localStorage.removeItem("sortOption");
-      localStorage.removeItem("excludedItems");
-      localStorage.removeItem("excludedCategories");
-      localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
-    }
+  //   // Clear localStorage
+  //   if (typeof window !== "undefined") {
+  //     localStorage.removeItem("selectedCategories");
+  //     localStorage.removeItem("sortOption");
+  //     localStorage.removeItem("excludedItems");
+  //     localStorage.removeItem("excludedCategories");
+  //     localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
+  //   }
 
-    // Clear cookies
-    Cookies.remove("userThreshold");
+  //   // Clear cookies
+  //   Cookies.remove("userThreshold");
 
-    toast({
-      title: "Reset Complete",
-      description: "All settings have been reset to their default values.",
-    });
-  }, [toast]);
+  //   toast({
+  //     title: "Reset Complete",
+  //     description: "All settings have been reset to their default values.",
+  //   });
+  // }, [toast]);
 
   // Calls handleReset and also clears the users cookies and local storage
-  const handleResetUserData = async () => {
+  const handleReset = async () => {
     await resetUserData(
       setSelectedItems,
       setPinnedItems,
@@ -406,7 +401,7 @@ function AppContent() {
   // Update items when mode or excluded items change
   useEffect(() => {
     mutate();
-  }, [isPVE, excludedItems, excludeIncompatible]);
+  }, [isPVE, excludedItems, excludeIncompatible, mutate]);
 
   // Function to find the best combination of items
   const findBestCombination = useCallback(
@@ -494,42 +489,59 @@ function AppContent() {
   const isThresholdMet: boolean = total >= threshold;
 
   // Handler to update selected item
+  const handleItemSelect = useCallback((index: number, item: SimplifiedItem | null, overriddenPrice?: number | null) => {
+    setLoadingSlots(prev => {
+      const newState = [...prev];
+      newState[index] = true;
+      return newState;
+    });
+    
+    setTimeout(() => {
+      setSelectedItems(prev => {
+        const newItems = [...prev];
+        newItems[index] = item;
+        return newItems;
+      });
+      setLoadingSlots(prev => {
+        const newState = [...prev];
+        newState[index] = false;
+        return newState;
+      });
+
+      // Handle price overrides
+      if (item && overriddenPrice !== undefined) {
+        if (overriddenPrice !== null) {
+          setOverriddenPrices((prev) => ({
+            ...prev,
+            [item.uid]: overriddenPrice,
+          }));
+        } else {
+          setOverriddenPrices((prev) => {
+            const newOverriddenPrices = { ...prev };
+            delete newOverriddenPrices[item.uid];
+            return newOverriddenPrices;
+          });
+        }
+      } else if (!item) {
+        setOverriddenPrices((prev) => {
+          const newOverriddenPrices = { ...prev };
+          const uid = selectedItems[index]?.uid;
+          if (uid) {
+            delete newOverriddenPrices[uid];
+          }
+          return newOverriddenPrices;
+        });
+      }
+    }, 150);
+  }, [selectedItems]);
+
   const updateSelectedItem = (
     item: SimplifiedItem | null,
     index: number,
     overriddenPrice?: number | null
-  ): void => {
-    const newSelectedItems = [...selectedItems];
-    newSelectedItems[index] = item;
-    setSelectedItems(newSelectedItems);
-
+  ) => {
     setHasAutoSelected(false); // Reset Auto Select when user changes selection
-
-    if (item && overriddenPrice !== undefined) {
-      if (overriddenPrice !== null) {
-        // Update overridden price
-        setOverriddenPrices((prev) => ({
-          ...prev,
-          [item.uid]: overriddenPrice,
-        }));
-      } else {
-        // Remove overridden price for this item
-        setOverriddenPrices((prev) => {
-          const newOverriddenPrices = { ...prev };
-          delete newOverriddenPrices[item.uid];
-          return newOverriddenPrices;
-        });
-      }
-    } else if (!item) {
-      // Item is null, remove any overridden price for previous item at this index
-      const newOverriddenPrices = { ...overriddenPrices };
-      const uid = selectedItems[index]?.uid;
-      if (uid) {
-        delete newOverriddenPrices[uid];
-      }
-      setOverriddenPrices(newOverriddenPrices);
-    }
-    // Do not delete overridden price if overriddenPrice is undefined
+    handleItemSelect(index, item, overriddenPrice);
   };
 
   // Handler to pin/unpin items
@@ -738,27 +750,27 @@ function AppContent() {
   const [loadingSlots, setLoadingSlots] = useState<boolean[]>(Array(5).fill(false));
 
   // Modify the item selection logic to show loading state
-  const handleItemSelect = useCallback((index: number, item: SimplifiedItem | null) => {
-    setLoadingSlots(prev => {
-      const newState = [...prev];
-      newState[index] = true;
-      return newState;
-    });
+  // const handleItemSelect = useCallback((index: number, item: SimplifiedItem | null) => {
+  //   setLoadingSlots(prev => {
+  //     const newState = [...prev];
+  //     newState[index] = true;
+  //     return newState;
+  //   });
     
-    // Simulate a small delay for better UX
-    setTimeout(() => {
-      setSelectedItems(prev => {
-        const newItems = [...prev];
-        newItems[index] = item;
-        return newItems;
-      });
-      setLoadingSlots(prev => {
-        const newState = [...prev];
-        newState[index] = false;
-        return newState;
-      });
-    }, 150);
-  }, []);
+  //   // Simulate a small delay for better UX
+  //   setTimeout(() => {
+  //     setSelectedItems(prev => {
+  //       const newItems = [...prev];
+  //       newItems[index] = item;
+  //       return newItems;
+  //     });
+  //     setLoadingSlots(prev => {
+  //       const newState = [...prev];
+  //       newState[index] = false;
+  //       return newState;
+  //     });
+  //   }, 150);
+  // }, []);
 
   // Reset overrides and exclusions
   const resetOverridesAndExclusions = useCallback(() => {
@@ -1112,21 +1124,8 @@ function AppContent() {
                     Feedback
                   </Button>
                 </div>
-                {/* <div className="mt-4 w-full">
-                  <ErrorBoundary fallback={<div>Error loading ad.</div>}>
-                    <AdBanner
-                      dataAdFormat="auto"
-                      dataFullWidthResponsive={true}
-                      dataAdSlot="1022212363"
-                    />
-                  </ErrorBoundary>
-                </div> */}
               </footer>
             </CardContent>
-            {/* Item Socket Component */}
-            <div className="mt-6">
-              {/* Removed the duplicate ItemSocket component */}
-            </div>
           </Card>
         </div>
       </div>
@@ -1158,6 +1157,7 @@ function AppContent() {
                 description: "All settings have been reset to their default values.",
               });
             }}
+            onHardReset={handleReset}
             onClearLocalStorage={() => {
               // Clear localStorage
               localStorage.clear();
@@ -1174,7 +1174,7 @@ function AppContent() {
 
               toast({
                 title: "Data Cleared",
-                description: "All data has been cleared and reset to defaults.",
+                description: "All data has been cleared. The app has been reset to its initial state.",
               });
             }}
             onExportData={() => {
@@ -1216,7 +1216,6 @@ function AppContent() {
             allCategories={ALL_ITEM_CATEGORIES}
             excludeIncompatible={excludeIncompatible}
             onExcludeIncompatibleChange={setExcludeIncompatible}
-            onHardReset={handleResetUserData}
             excludedItems={excludedItems}
             onExcludedItemsChange={setExcludedItems}
           />
