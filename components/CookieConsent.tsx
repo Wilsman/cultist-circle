@@ -6,7 +6,7 @@ import { Cookie } from "lucide-react"
 import { useCookieConsent } from "@/context/cookie-consent-context"
 
 export default function CookieConsent() {
-  const { hasConsent, setHasConsent } = useCookieConsent()
+  const { setHasConsent } = useCookieConsent()
   const [isVisible, setIsVisible] = useState<boolean | null>(null)
 
   useEffect(() => {
