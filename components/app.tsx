@@ -27,7 +27,6 @@ import { InstructionsDialog } from "@/components/InstructionsDialog";
 import { ModeToggle } from "@/components/ModeToggle";
 import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithHelper";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
-import CookieConsent from "@/components/CookieConsent";
 import { VersionInfo } from "@/components/version-info";
 import { ALL_ITEM_CATEGORIES, DEFAULT_EXCLUDED_CATEGORIES } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
@@ -1232,8 +1231,6 @@ function AppContent() {
           onSetThreshold={handleThresholdChange}
         />
       )}
-
-      <CookieConsent />
     </>
   );
 }

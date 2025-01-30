@@ -4,6 +4,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import CookieConsent from "@/components/CookieConsent";
 import { Toaster } from "@/components/ui/toaster";
+import { CookieConsentProvider } from "@/context/cookie-consent-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -50,22 +51,24 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
-        <main className="relative min-h-screen">
-          {/* Background gradient effects */}
-          <div className="fixed inset-0 -z-10 bg-gradient-to-b from-gray-900 to-black" />
-          <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_500px_at_50%_200px,#3b82f6,transparent)]" />
-          
-          {/* Content */}
-          <div className="relative z-10">
-            {children}
-          </div>
+        <CookieConsentProvider>
+          <main className="relative min-h-screen">
+            {/* Background gradient effects */}
+            <div className="fixed inset-0 -z-10 bg-gradient-to-b from-gray-900 to-black" />
+            <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_500px_at_50%_200px,#3b82f6,transparent)]" />
+            
+            {/* Content */}
+            <div className="relative z-10">
+              {children}
+            </div>
 
-          {/* Cookie consent and notifications */}
-          <div className="relative z-50">
-            <CookieConsent />
-            <Toaster />
-          </div>
-        </main>
+            {/* Cookie consent and notifications */}
+            <div className="relative z-50">
+              <CookieConsent />
+              <Toaster />
+            </div>
+          </main>
+        </CookieConsentProvider>
 
         {/* Analytics */}
         <Analytics />
