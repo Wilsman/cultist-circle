@@ -153,6 +153,9 @@ function AppContent() {
         // Merge with defaults to ensure defaults are always included
         Array.from(DEFAULT_EXCLUDED_ITEMS).forEach(item => savedItems.add(item));
         setExcludedItems(savedItems);
+      } else {
+        // When no saved items exist, initialize with defaults
+        setExcludedItems(new Set(Array.from(DEFAULT_EXCLUDED_ITEMS)));
       }
     } catch (e) {
       console.error("Error loading excludedItems from localStorage", e);

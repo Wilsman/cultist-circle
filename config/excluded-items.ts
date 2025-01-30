@@ -69,7 +69,7 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
 
   // Food and holiday items
   "Jar of pickles",
-  "Oliver salad box",
+  "Olivier salad box",
   "SHYSHKA Christmas tree life extender",
   "Christmas gift",
   "Small Christmas gift",
