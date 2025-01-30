@@ -1,7 +1,6 @@
 import React from 'react'
 import { Button } from "@/components/ui/button"
 import { Dices } from "lucide-react"
-import Link from "next/link"
 import {
   Tooltip,
   TooltipTrigger,
@@ -39,43 +38,31 @@ export function AutoSelectButton({
   return (
     <TooltipProvider>
       <div className="flex flex-col justify-center items-center">
-        <div className="flex justify-center mb-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                id="auto-select"
-                onClick={handleAutoPick}
-                disabled={isCalculating}
-                className="bg-blue-500 hover:bg-blue-700 md:min-w-[300px] sm:min-w-[300px] mr-2"
-              >
-                {hasAutoSelected ? (
-                  <>
-                    <Dices className="mr-1 h-5 w-5" />
-                    Reroll
-                  </>
-                ) : (
-                  "AUTO SELECT"
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {hasAutoSelected
-                ? "Reroll to find a new combination"
-                : "Automatically select best items"}
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/recipes" prefetch={false}>
-                <Button className="bg-red-500 hover:bg-red-700">
-                  Recipes
-                </Button>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>View recipes</TooltipContent>
-          </Tooltip>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              id="auto-select"
+              onClick={handleAutoPick}
+              disabled={isCalculating}
+              className="w-full md:max-w-[300px] lg:max-w-[300px] text-primary bg-blue-500 hover:bg-blue-700"
+            >
+              {hasAutoSelected ? (
+                <>
+                  <Dices className="mr-2 h-4 w-4" />
+                  Re-roll Auto Select
+                </>
+              ) : (
+                <>
+                  <Dices className="mr-2 h-4 w-4" />
+                  Auto Select
+                </>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Automatically select items to meet the threshold
+          </TooltipContent>
+        </Tooltip>
       </div>
     </TooltipProvider>
   )

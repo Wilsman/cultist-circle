@@ -18,7 +18,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
     <HoverCard open={isOpen} onOpenChange={setIsOpen}>
       <HoverCardTrigger asChild>
         <span
-          className="cursor-pointer hover:text-gray-300 inline-flex items-center 
+          className="cursor-pointer hover:text-gray-300 inline-flex items-center
             px-2 py-1 rounded-md border border-gray-600 
             hover:border-gray-500 active:bg-gray-700 
             transition-colors duration-200 
@@ -40,7 +40,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
         </span>
       </HoverCardTrigger>
       <HoverCardContent
-        className="max-w-120 w-120 bg-gray-800 border-gray-700 text-gray-200"
+        className="lg:w-auto bg-gray-800 border-gray-700 text-gray-200"
         // Add touch-specific styles
         style={{
           touchAction: 'none',

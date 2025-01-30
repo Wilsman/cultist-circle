@@ -1,82 +1,74 @@
 import type { Metadata } from "next";
-// import { Analytics } from "@vercel/analytics/react";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import Script from "next/script";
-import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
+import { Analytics } from "@vercel/analytics/react";
+import CookieConsent from "@/components/CookieConsent";
+import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator",
-  description:
-    "A tool to calculate the total ritual value of items for cultist rewards in Tarkov.",
+  description: "Calculate the optimal items for your Cultist Circle runs in Escape from Tarkov",
+  keywords: [
+    "Escape from Tarkov",
+    "EFT",
+    "Cultist Circle",
+    "Calculator",
+    "Optimal Items",
+    "Tarkov Calculator",
+  ],
+  authors: [{ name: "Wilsman77" }],
+  creator: "Wilsman77",
+  publisher: "Wilsman77",
   openGraph: {
-    images: [
-      {
-        url: "https://www.cultistcircle.com/images/cultist-circle.jpeg",
-        width: 800,
-        height: 600,
-        alt: "Cultist Circle",
-      },
-    ],
+    title: "Cultist Circle Calculator",
+    description: "Calculate the optimal items for your Cultist Circle runs in Escape from Tarkov",
+    url: "https://cultist-circle.vercel.app",
+    siteName: "Cultist Circle Calculator",
+    locale: "en_US",
+    type: "website",
   },
   twitter: {
-    images: [
-      {
-        url: "https://www.cultistcircle.com/images/cultist-circle.jpeg",
-        width: 800,
-        height: 600,
-        alt: "Cultist Circle",
-      },
-    ],
+    card: "summary_large_image",
+    title: "Cultist Circle Calculator",
+    description: "Calculate the optimal items for your Cultist Circle runs in Escape from Tarkov",
+    creator: "@wilsman77",
   },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark antialiased">
       <head>
-        {/* <!-- Google tag (gtag.js) --> */}
-        <Script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-MDQ1Z37Y5M"
-        ></Script>
-        <Script id="google-analytics">
-          {`
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', 'G-MDQ1Z37Y5M');
-        `}
-        </Script>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065"
-          crossOrigin="anonymous"
-        ></script>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <CookieConsentProvider>
-          {children}
-          {/* <Analytics /> */}
-        </CookieConsentProvider>
+      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
+        <main className="relative min-h-screen">
+          {/* Background gradient effects */}
+          <div className="fixed inset-0 -z-10 bg-gradient-to-b from-gray-900 to-black" />
+          <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_500px_at_50%_200px,#3b82f6,transparent)]" />
+          
+          {/* Content */}
+          <div className="relative z-10">
+            {children}
+          </div>
+
+          {/* Cookie consent and notifications */}
+          <div className="relative z-50">
+            <CookieConsent />
+            <Toaster />
+          </div>
+        </main>
+
+        {/* Analytics */}
+        <Analytics />
       </body>
     </html>
   );

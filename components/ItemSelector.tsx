@@ -105,15 +105,21 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
   // Filtered items based on search term and focus state
   const filteredItems = useMemo(() => {
+    let results;
     if (isFocused && !debouncedSearchTerm) {
-      return items.filter((item) => item.price > 0);
+      results = items.filter((item) => item.price > 0);
+    } else if (!debouncedSearchTerm) {
+      return [];
+    } else {
+      results = fuse
+        .search(debouncedSearchTerm)
+        .map((result) => result.item)
+        .filter((item) => item.price > 0);
     }
-    if (!debouncedSearchTerm) return [];
-    return fuse
-      .search(debouncedSearchTerm)
-      .map((result) => result.item)
-      .filter((item) => item.price > 0);
-  }, [debouncedSearchTerm, fuse, isFocused, items]);
+
+    // Filter out excluded items from the results
+    return results.filter(item => !excludedItems.has(item.name));
+  }, [debouncedSearchTerm, fuse, isFocused, items, excludedItems]);
 
   const handleSelect = useCallback(
     (item: SimplifiedItem | null) => {

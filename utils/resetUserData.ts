@@ -3,13 +3,13 @@ import { SimplifiedItem } from "@/types/SimplifiedItem";
 export async function resetUserData(
   setSelectedItems: React.Dispatch<React.SetStateAction<Array<SimplifiedItem | null>>>,
   setPinnedItems: React.Dispatch<React.SetStateAction<boolean[]>>,
-  setSelectedCategories: React.Dispatch<React.SetStateAction<string[]>>,
+  setExcludedCategories: React.Dispatch<React.SetStateAction<Set<string>>>,
   setSortOption: React.Dispatch<React.SetStateAction<string>>,
   setThreshold: React.Dispatch<React.SetStateAction<number>>,
   setExcludedItems: React.Dispatch<React.SetStateAction<Set<string>>>,
   setOverriddenPrices: React.Dispatch<React.SetStateAction<Record<string, number>>>,
   fetchData: () => Promise<void>,
-  defaultItemCategories: string[],
+  defaultItemCategories: Set<string>,
   toast: (props: { title: string; description: string }) => void
 ) {
   // Clear local storage
@@ -30,7 +30,7 @@ export async function resetUserData(
   // Reset all state variables
   setSelectedItems(Array(5).fill(null));
   setPinnedItems(Array(5).fill(false));
-  setSelectedCategories(defaultItemCategories);
+  setExcludedCategories(defaultItemCategories);
   setSortOption("az");
   setThreshold(350001);
   setExcludedItems(new Set());

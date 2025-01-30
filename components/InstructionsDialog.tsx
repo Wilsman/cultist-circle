@@ -16,25 +16,26 @@ export function InstructionsDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <div className="flex flex-col items-center justify-center cursor-pointer">
+        <Button
+          variant="ghost"
+          className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tl-lg border-r"
+        >
           <HelpCircle
             id="help"
-            className="h-8 w-8 hover:text-green-300 text-yellow-500"
+            className="h-4 w-4 mr-2 text-yellow-500 hover:text-green-300"
           />
-          <div className="text-yellow-500 text-xs text-center mt-1">Help</div>
-        </div>
+          Help
+        </Button>
       </DialogTrigger>
-      <DialogContent className="text-primary-foreground bg-primary">
+      <DialogContent className="">
         <DialogHeader>
-          <DialogTitle className="text-primary-foreground">
+          <DialogTitle className="">
             Instructions
           </DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          <h3 className="text-lg font-semibold mb-2 text-primary-foreground">
-            How to use this calculator:
-          </h3>
-          <ol className="list-decimal list-inside space-y-2 text-primary-foreground">
+          <h3 className="text-lg font-semibold mb-2">How to use this calculator:</h3>
+          <ol className="list-decimal list-inside space-y-2">
             <li>Select PVE or PVP mode based on your preference.</li>
             <li>Set your desired threshold value (default is 400,000 ₽).</li>
             <li>Use the search fields to select up to 5 items.</li>
@@ -46,17 +47,17 @@ export function InstructionsDialog() {
             </li>
           </ol>
           <Separator className="my-4" />
-          <h3 className="text-lg font-semibold mb-2 text-primary-foreground">
+          <h3 className="text-lg font-semibold mb-2">
             Additional features:
           </h3>
-          <ul className="list-disc list-inside space-y-2 text-primary-foreground">
+          <ul className="list-disc list-inside space-y-2">
             <li>
               Use the thresholder helper to find the best threshold for your
               needs.
             </li>
             <li>Pin items to keep them during auto-selection.</li>
             <li>Override flea prices to help match current market prices.</li>
-            <li>Exclude items from auto-selection.</li>
+            <li>Exclude items from auto-selection. Or exclude items permanently from within the settings.</li>
             <li>Use the settings to customize item categories and sorting.</li>
           </ul>
         </DialogDescription>

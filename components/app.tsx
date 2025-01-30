@@ -22,7 +22,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import ItemSocket from "@/components/item-socket";
-import { SettingsPane } from "@/components/settings-pane";
+import SettingsPane from "@/components/settings-pane";
 import { ThresholdHelperPopup } from "@/components/ThresholdHelperPopup";
 import { InstructionsDialog } from "@/components/InstructionsDialog";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -30,22 +30,22 @@ import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithH
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import CookieConsent from "@/components/CookieConsent";
 import { VersionInfo } from "@/components/version-info";
-import { ALL_ITEM_CATEGORIES, DEFAULT_ITEM_CATEGORIES } from "@/config/item-categories";
+import { ALL_ITEM_CATEGORIES, DEFAULT_EXCLUDED_CATEGORIES } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import Cookies from "js-cookie";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { resetUserData } from "@/utils/resetUserData";
-import ErrorBoundary from "./ErrorBoundary";
 import { FeedbackForm } from "./feedback-form";
 import type { SWRConfiguration, RevalidatorOptions, Revalidator } from "swr";
+import Link from "next/link";
 
 const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
 });
 
-const CURRENT_VERSION = "1.0.5"; //* Increment this when you want to trigger a cache clear
+const CURRENT_VERSION = "1.0.6"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const ITEMS_CACHE_KEY = "itemsCache";
@@ -86,27 +86,26 @@ const SWR_CONFIG = {
 };
 
 function AppContent() {
-  // Mode state
+  // Define state variables and hooks
   const [isPVE, setIsPVE] = useState<boolean>(false);
-
-  // Selected items state
   const [selectedItems, setSelectedItems] = useState<Array<SimplifiedItem | null>>(
     Array(5).fill(null)
   );
-
-  // Settings and UI states
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
-  const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
-    useState<boolean>(false);
+  const [isFeedbackFormVisible, setIsFeedbackFormVisible] = useState<boolean>(false);
   const [pinnedItems, setPinnedItems] = useState<boolean[]>(Array(5).fill(false));
-  const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
-    useState<boolean>(false);
+  const [isSettingsPaneVisible, setIsSettingsPaneVisible] = useState<boolean>(false);
   const [sortOption, setSortOption] = useState<string>("az");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(DEFAULT_ITEM_CATEGORIES);
+  const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set());
   const [threshold, setThreshold] = useState<number>(400000);
   const [excludeIncompatible, setExcludeIncompatible] = useState<boolean>(true);
-  const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set(DEFAULT_EXCLUDED_ITEMS));
+  const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
   const [overriddenPrices, setOverriddenPrices] = useState<Record<string, number>>({});
+  const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
+  
+  // Import hooks
+  const { toast } = useToast();
+  const toastShownRef = useRef<boolean>(false);
 
   // Initialize client-side state
   useEffect(() => {
@@ -114,14 +113,25 @@ function AppContent() {
     const savedSort = localStorage.getItem("sortOption");
     if (savedSort) setSortOption(savedSort);
 
-    // Load selected categories
+    // Load excluded categories
     try {
-      const savedCategories = localStorage.getItem("selectedCategories");
-      if (savedCategories) {
-        setSelectedCategories(JSON.parse(savedCategories));
+      const saved = localStorage.getItem("excludedCategories");
+      if (saved) {
+        const parsedCategories = JSON.parse(saved);
+        if (Array.isArray(parsedCategories)) {
+          console.log("Loading saved categories:", parsedCategories);
+          setExcludedCategories(new Set(parsedCategories));
+        } else {
+          console.error("Saved excludedCategories is not an array:", parsedCategories);
+          setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+        }
+      } else {
+        console.log("No saved categories found, using defaults");
+        setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
       }
     } catch (e) {
-      console.error("Error parsing selectedCategories from localStorage", e);
+      console.error("Error parsing excludedCategories from localStorage", e);
+      setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
     }
 
     // Load threshold
@@ -173,12 +183,20 @@ function AppContent() {
     }
   }, [sortOption]);
 
-  // Save selected categories to localStorage
+  // Save excluded categories to localStorage whenever they change, but only if it's not the initial load
   useEffect(() => {
+    // Skip saving if it's an empty set (initial state)
+    if (excludedCategories.size === 0) return;
+
     if (typeof window !== "undefined") {
-      localStorage.setItem("selectedCategories", JSON.stringify(selectedCategories));
+      try {
+        localStorage.setItem("excludedCategories", JSON.stringify(Array.from(excludedCategories)));
+        console.log("Saved categories to localStorage via effect:", Array.from(excludedCategories));
+      } catch (e) {
+        console.error("Error saving excludedCategories to localStorage", e);
+      }
     }
-  }, [selectedCategories]);
+  }, [excludedCategories]);
 
   // Save threshold to cookies
   useEffect(() => {
@@ -210,15 +228,11 @@ function AppContent() {
     }
   }, [overriddenPrices]);
 
-  // Define the hasAutoSelected state variable
-  const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
-
   // Handler for category changes
   const handleCategoryChange = useCallback((categories: string[]) => {
-    setSelectedCategories(categories);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("selectedCategories", JSON.stringify(categories));
-    }
+    console.log("handleCategoryChange called with:", categories);
+    setExcludedCategories(new Set(categories));
+    setHasAutoSelected(false); // Reset Auto Select when categories change
   }, []);
 
   // Sort option handler
@@ -227,52 +241,44 @@ function AppContent() {
     if (typeof window !== "undefined") {
       localStorage.setItem("sortOption", newSortOption);
     }
+    setHasAutoSelected(false); // Reset Auto Select when sort changes
   }, []);
 
-  // Handler to toggle excluded items
-  const toggleExcludedItem = (uid: string) => {
-    setExcludedItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(uid)) {
-        newSet.delete(uid);
-      } else {
-        newSet.add(uid);
-      }
-      return newSet;
-    });
-    setHasAutoSelected(false); // Reset Auto Select on exclusion change
-  };
-
-  // Reset overrides and exclusions
-  const resetOverridesAndExclusions = () => {
-    const clearedOverridesCount = Object.keys(overriddenPrices).length;
-    const clearedExcludedItemsCount = excludedItems.size;
-
-    setOverriddenPrices({});
+  // Reset all settings to defaults
+  const handleReset = useCallback(() => {
+    setSelectedItems(Array(5).fill(null));
+    setPinnedItems(Array(5).fill(false));
+    setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+    setSortOption("az");
+    setThreshold(400000);
     setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
-    setHasAutoSelected(false); // Reset Auto Select button
-    toastShownRef.current = false; // Reset toast shown flag when resetting
+    setOverriddenPrices({});
+    setHasAutoSelected(false);
 
+    // Clear localStorage
     if (typeof window !== "undefined") {
-      try {
-        localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
-      } catch (e) {
-        console.error("Error removing overriddenPrices from localStorage", e);
-      }
+      localStorage.removeItem("selectedCategories");
+      localStorage.removeItem("sortOption");
+      localStorage.removeItem("excludedItems");
+      localStorage.removeItem("excludedCategories");
+      localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
     }
 
-    toast({
-      title: "Reset Successful",
-      description: `${clearedOverridesCount} overrides and ${clearedExcludedItemsCount} excluded items have been cleared.`,
-    });
-  };
+    // Clear cookies
+    Cookies.remove("userThreshold");
 
-  // Calls resetOverridesAndExclusions and also clears the users cookies and local storage
+    toast({
+      title: "Reset Complete",
+      description: "All settings have been reset to their default values.",
+    });
+  }, [toast]);
+
+  // Calls handleReset and also clears the users cookies and local storage
   const handleResetUserData = async () => {
     await resetUserData(
       setSelectedItems,
       setPinnedItems,
-      setSelectedCategories,
+      setExcludedCategories,
       setSortOption,
       setThreshold,
       setExcludedItems,
@@ -281,7 +287,7 @@ function AppContent() {
         await mutate();
         return;
       },
-      DEFAULT_ITEM_CATEGORIES,
+      DEFAULT_EXCLUDED_CATEGORIES,
       toast
     );
   };
@@ -373,22 +379,19 @@ function AppContent() {
   const items: SimplifiedItem[] = useMemo(() => {
     if (!rawItemsData || !Array.isArray(rawItemsData)) return [];
 
-    // First filter by excluded items if enabled
-    const excludedFiltered = excludeIncompatible
-      ? rawItemsData.filter((item: SimplifiedItem) => !excludedItems.has(item.name))
-      : rawItemsData;
-
-    // Then filter by categories
-    const filteredItems = excludedFiltered.filter(
+    // First filter by excluded categories
+    const categoryFiltered = rawItemsData.filter(
       (item: SimplifiedItem) =>
-        selectedCategories.length === 0 ||
-        (Array.isArray(item.tags)
-          ? item.tags.some((tag: string) => selectedCategories.includes(tag))
-          : selectedCategories.includes(item.tags || ""))
+        !item.tags?.some((tag: string) => excludedCategories.has(tag))
     );
 
+    // Then filter out individually excluded items
+    const excludedFiltered = excludeIncompatible 
+      ? categoryFiltered.filter((item: SimplifiedItem) => !excludedItems.has(item.name))
+      : categoryFiltered;
+
     // Sorting logic...
-    const sortedItems = [...filteredItems];
+    const sortedItems = [...excludedFiltered];
     if (sortOption === "az") {
       sortedItems.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortOption === "base-value") {
@@ -398,12 +401,12 @@ function AppContent() {
     }
 
     return sortedItems;
-  }, [rawItemsData, sortOption, selectedCategories, excludeIncompatible, excludedItems]);
+  }, [rawItemsData, sortOption, excludedCategories, excludeIncompatible, excludedItems]);
 
-  // Only update items when mode changes
+  // Update items when mode or excluded items change
   useEffect(() => {
     mutate();
-  }, [isPVE]);
+  }, [isPVE, excludedItems, excludeIncompatible]);
 
   // Function to find the best combination of items
   const findBestCombination = useCallback(
@@ -663,12 +666,6 @@ function AppContent() {
     }
   };
 
-  // Import the useToast hook
-  const { toast } = useToast();
-
-  // Ref to track if toast has been shown
-  const toastShownRef = useRef<boolean>(false);
-
   // useEffect to trigger toast when threshold is met
   useEffect(() => {
     if (isThresholdMet && !toastShownRef.current) {
@@ -737,19 +734,131 @@ function AppContent() {
     });
   }, [toast]);
 
+  // Add loading state
+  const [loadingSlots, setLoadingSlots] = useState<boolean[]>(Array(5).fill(false));
+
+  // Modify the item selection logic to show loading state
+  const handleItemSelect = useCallback((index: number, item: SimplifiedItem | null) => {
+    setLoadingSlots(prev => {
+      const newState = [...prev];
+      newState[index] = true;
+      return newState;
+    });
+    
+    // Simulate a small delay for better UX
+    setTimeout(() => {
+      setSelectedItems(prev => {
+        const newItems = [...prev];
+        newItems[index] = item;
+        return newItems;
+      });
+      setLoadingSlots(prev => {
+        const newState = [...prev];
+        newState[index] = false;
+        return newState;
+      });
+    }, 150);
+  }, []);
+
+  // Reset overrides and exclusions
+  const resetOverridesAndExclusions = useCallback(() => {
+    const clearedOverridesCount = Object.keys(overriddenPrices).length;
+    const clearedExcludedItemsCount = excludedItems.size;
+
+    setOverriddenPrices({});
+    setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
+    setHasAutoSelected(false); // Reset Auto Select button
+    toastShownRef.current = false; // Reset toast shown flag when resetting
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
+        localStorage.removeItem("excludedItems");
+      } catch (e) {
+        console.error("Error removing data from localStorage", e);
+      }
+    }
+
+    toast({
+      title: "Reset Successful",
+      description: `${clearedOverridesCount} overrides and ${clearedExcludedItemsCount} excluded items have been cleared.`,
+    });
+  }, [excludedItems, overriddenPrices, toast]);
+
+  // Handler to toggle excluded items
+  const toggleExcludedItem = useCallback((uid: string) => {
+    setExcludedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(uid)) {
+        newSet.delete(uid);
+      } else {
+        newSet.add(uid);
+      }
+      return newSet;
+    });
+    setHasAutoSelected(false); // Reset Auto Select on exclusion change
+  }, []);
+
   // Update the refresh button UI
   return (
     <>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 p-4 overflow-auto">
         <div className="min-h-screen flex items-center justify-center">
-          <Card className="bg-gray-800 border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50">
-            {/* Render the TourOverlay component */}
-            {/* {!loading && <TourOverlay />} */}{" "}
-            {/*! Removed the intro Tour */}
+          <Card className="bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto transition-all duration-300 hover:shadow-xl">
+            {/* Top Navigation Bar */}
+            <div className="absolute top-0 left-0 right-0 flex w-full bg-gray-900/80 rounded-t-lg">
+              <div className="flex w-full">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InstructionsDialog />
+                    </TooltipTrigger>
+                    <TooltipContent>Help & Instructions</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="flex-1 hover:bg-gray-700/50 rounded-none border-r border-gray-700"
+                        asChild
+                      >
+                        <Link href="/recipes">
+                          <span className="flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-4 w-4 mr-2">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            Recipes
+                          </span>
+                        </Link>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>View barter recipes</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tr-lg"
+                        onClick={() => setIsSettingsPaneVisible(true)}
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Settings
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Configure app settings</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+
             {/* Title and Version Info */}
-            <div className="pt-8 sm:pt-4">
-              {" "}
-              {/* Add padding-top on mobile */}
+            <div className="pt-14 sm:pt-14">
               <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
                 <Image
                   src="/images/Cultist-Calulator.webp"
@@ -764,94 +873,100 @@ function AppContent() {
             <div className="text-center text-gray-400 text-sm mb-1">
               <VersionInfo version={CURRENT_VERSION} />
             </div>
-            {/* Help icon */}
-            <div className="absolute top-2 sm:top-4 left-2 sm:left-4 flex flex-col items-center justify-center hover:scale-115 transition-transform duration-300">
-              <InstructionsDialog />
-            </div>
-            {/* Settings icon */}
-            <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex flex-col items-center justify-center">
-              <Settings
-                id="settings"
-                className="h-6 w-6 sm:h-8 sm:w-8 hover:text-green-300 text-yellow-500 cursor-pointer hover:scale-105 transition-transform duration-300"
-                onClick={() => setIsSettingsPaneVisible(true)}
-              />
-              <div className="text-yellow-500 text-xs text-center mt-1">
-                Settings
-              </div>
-            </div>
+            
             <CardContent className="p-6">
-              {/* Replace the old Mode Toggle with the new ModeToggle component */}
-              <ModeToggle isPVE={isPVE} onToggle={handleModeToggle} />
+              {/* Mode Toggle with improved animation */}
+              <div className="transition-all duration-300 transform hover:scale-[1.02]">
+                <ModeToggle isPVE={isPVE} onToggle={handleModeToggle} />
+              </div>
 
-              {/* Replace the old Threshold Selector with the new ThresholdSelectorWithHelper component */}
-              <ThresholdSelectorWithHelper
-                threshold={threshold}
-                onThresholdChange={handleThresholdChange}
-                onHelperOpen={() => setIsThresholdHelperOpen(true)}
-              />
+              {/* Threshold selector with improved visual feedback */}
+              <div className="mt-4 transition-all duration-300 transform hover:scale-[1.02]">
+                <ThresholdSelectorWithHelper
+                  threshold={threshold}
+                  onThresholdChange={handleThresholdChange}
+                  onHelperOpen={() => setIsThresholdHelperOpen(true)}
+                />
+              </div>
 
-              {/* Replace the old Auto Select / Reroll button with the new AutoSelectButton component */}
-              <AutoSelectButton
-                isCalculating={isCalculating}
-                hasAutoSelected={hasAutoSelected}
-                handleAutoPick={handleAutoPick}
-              />
+              {/* Auto select button with loading animation */}
+              <div className="mt-4 transition-all duration-300 transform hover:scale-[1.02]">
+                <AutoSelectButton
+                  isCalculating={isCalculating}
+                  hasAutoSelected={hasAutoSelected}
+                  handleAutoPick={handleAutoPick}
+                />
+              </div>
 
-              {/* **9. Item Selection Components** */}
-              <div className="space-y-2 w-full">
+              {/* Item Selection Components with improved loading states */}
+              <div className="space-y-2 w-full mt-4">
                 <div id="search-items">
-                  {" "}
-                  {/* Added ID for TourOverlay */}
                   {loading ? (
-                    // Show skeletons while loading
-                    Array(5)
-                      .fill(0)
-                      .map((_, index) => (
-                        <Skeleton
+                    <div className="space-y-2">
+                      {Array(5).fill(0).map((_, index) => (
+                        <div
                           key={`skeleton-${index}`}
-                          className="h-10 w-full mb-2 bg-slate-500"
-                        />
-                      ))
+                          className="animate-pulse"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                          <Skeleton className="h-10 w-full mb-2 bg-gray-700/50" />
+                        </div>
+                      ))}
+                    </div>
                   ) : items.length === 0 ? (
-                    // Display message if item list is empty
-                    <div className="text-center text-gray-400 mt-4">
-                      No items available at this time. If you think this may be
-                      an issue, please try resetting the app in the settings.
+                    <div className="text-center text-gray-400 mt-4 p-4 border-2 border-dashed border-gray-600 rounded-lg">
+                      <p className="mb-2">No items available at this time.</p>
+                      <p className="text-sm">If you think this may be an issue, please try resetting the app in the settings.</p>
                     </div>
                   ) : (
-                    // Show actual item selectors when loaded and items are available
                     selectedItems.map((item, index) => (
                       <div
                         key={`selector-${index}`}
-                        className="animate-fade-in"
+                        className={`animate-fade-in transition-all duration-200 ${loadingSlots[index] ? 'opacity-50' : ''}`}
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <React.Fragment>
                           <Suspense fallback={<div>Loading...</div>}>
-                            <DynamicItemSelector
-                              items={items}
-                              selectedItem={item}
-                              onSelect={(selectedItem, overriddenPrice) =>
-                                updateSelectedItem(
-                                  selectedItem,
-                                  index,
-                                  overriddenPrice
-                                )
-                              }
-                              onCopy={() => handleCopyToClipboard(index)}
-                              onPin={() => handlePinItem(index)}
-                              isPinned={pinnedItems[index]}
-                              overriddenPrice={
-                                item ? overriddenPrices[item.uid] : undefined
-                              }
-                              isAutoPickActive={hasAutoSelected} // Added prop
-                              overriddenPrices={overriddenPrices} // Added prop
-                              isExcluded={excludedItems.has(item?.uid || "")}
-                              onToggleExclude={() =>
-                                item && toggleExcludedItem(item.uid)
-                              }
-                              excludedItems={excludedItems} // Ensure this prop is passed
-                            />
+                            <div className={`relative ${pinnedItems[index] ? 'border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1' : ''}`}>
+                              {pinnedItems[index] && (
+                                <div className="absolute -top-2 -right-2 z-10">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <div className="w-4 h-4 bg-yellow-500 dark:bg-yellow-600 rounded-full" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>This item is pinned</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              )}
+                              <DynamicItemSelector
+                                items={items}
+                                selectedItem={item}
+                                onSelect={(selectedItem, overriddenPrice) =>
+                                  updateSelectedItem(
+                                    selectedItem,
+                                    index,
+                                    overriddenPrice
+                                  )
+                                }
+                                onCopy={() => handleCopyToClipboard(index)}
+                                onPin={() => handlePinItem(index)}
+                                isPinned={pinnedItems[index]}
+                                overriddenPrice={
+                                  item ? overriddenPrices[item.uid] : undefined
+                                }
+                                isAutoPickActive={hasAutoSelected}
+                                overriddenPrices={overriddenPrices}
+                                isExcluded={excludedItems.has(item?.uid || "")}
+                                onToggleExclude={() =>
+                                  item && toggleExcludedItem(item.uid)
+                                }
+                                excludedItems={excludedItems}
+                              />
+                            </div>
                           </Suspense>
                           {index < selectedItems.length - 1 && (
                             <Separator className="my-2" />
@@ -868,8 +983,9 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="clear-item-fields"
-                        className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary w-1/2 
-                          transition-all duration-300 hover:scale-105 active:scale-95"
+                        className={`bg-red-500 hover:bg-red-600 text-white w-1/2 
+                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95
+                          ${isClearButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={clearItemFields}
                         disabled={isClearButtonDisabled}
                       >
@@ -885,7 +1001,9 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="reset-overrides"
-                        className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary w-1/2"
+                        className={`bg-red-500 hover:bg-red-600 text-white w-1/2
+                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95
+                          ${isResetOverridesButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={resetOverridesAndExclusions}
                         disabled={isResetOverridesButtonDisabled}
                       >
@@ -898,121 +1016,117 @@ function AppContent() {
                   </Tooltip>
                 </div>
               </TooltipProvider>
+
+              {/* Status text with improved styling */}
+              <div className="text-center text-sm text-gray-400 mt-4 p-2 rounded-md bg-gray-700/30">
+                <span className="font-medium">{Object.keys(overriddenPrices).length}</span> overrides and{" "}
+                <span className="font-medium">{excludedItems.size}</span> exclusions currently active
+              </div>
+
+              {/* Sacrifice Value Display with improved animation */}
+              <div id="sacrifice-value" className="mt-6 text-center w-full">
+                <h2 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
+                  Sacrifice BaseValue Total
+                </h2>
+                {loading ? (
+                  <Skeleton className="h-16 w-3/4 mx-auto" />
+                ) : (
+                  <div
+                    className={`text-6xl font-extrabold ${isThresholdMet
+                      ? "text-green-500 animate-pulse"
+                      : "text-red-500 animate-pulse"
+                      }`}
+                  >
+                    ₽{total.toLocaleString()}
+                  </div>
+                )}
+                {!isThresholdMet && (
+                  <div className="text-red-500 mt-2">
+                    ₽{(threshold - total).toLocaleString()} Needed to meet
+                    threshold
+                  </div>
+                )}
+                <div className="mt-6">
+                  <div className="text-sm font-semibold text-gray-400">
+                    Total flea Cost ≈{" "}
+                    <span
+                      className={
+                        Object.keys(overriddenPrices).length > 0
+                          ? "font-bold"
+                          : ""
+                      }
+                    >
+                      ₽{totalFleaCost.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <Separator className="my-1" />
+              {/* **11. Footer with Credits and Links** */}
+              <footer className="mt-4 text-center text-gray-400 text-sm w-full">
+                <div className="text-center mt-1">
+                  Prices provided by{" "}
+                  <a
+                    href="https://tarkov.dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    Tarkov.dev
+                  </a>
+                </div>
+                <div className="text-center mt-1">
+                  Research provided by{" "}
+                  <a
+                    href="https://bio.link/verybadscav"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    VeryBadSCAV
+                  </a>
+                </div>
+                <div className="text-center mt-1">
+                  {/* maker with cool icons */}
+                  Made by Wilsman77 
+                </div>
+                <div className="flex justify-center mt-4 space-x-4">
+                  <a
+                    href="https://www.buymeacoffee.com/wilsman77"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Image
+                      src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+                      alt="Buy Me A Coffee"
+                      width={120}
+                      height={34}
+                      priority={true}
+                      style={{ height: "auto" }}
+                    />
+                  </a>
+                  <Button
+                    onClick={() => setIsFeedbackFormVisible(true)}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out"
+                  >
+                    Feedback
+                  </Button>
+                </div>
+                {/* <div className="mt-4 w-full">
+                  <ErrorBoundary fallback={<div>Error loading ad.</div>}>
+                    <AdBanner
+                      dataAdFormat="auto"
+                      dataFullWidthResponsive={true}
+                      dataAdSlot="1022212363"
+                    />
+                  </ErrorBoundary>
+                </div> */}
+              </footer>
             </CardContent>
-            {/* // simple text saying number overrides & exclusions */}
-            <div className="text-center text-sm text-gray-400">
-              {Object.keys(overriddenPrices).length} overrides and{" "}
-              {excludedItems.size} exclusions currently active
-            </div>
             {/* Item Socket Component */}
             <div className="mt-6">
-              <ItemSocket />
+              {/* Removed the duplicate ItemSocket component */}
             </div>
-            {/* **10. Sacrifice Value Display** */}
-            <div id="sacrifice-value" className="mt-6 text-center w-full">
-              <h2
-                className="text-3xl font-bold mb-2 text-gray-300 
-                bg-gradient-to-r from-gray-300 via-white to-gray-300 
-                bg-clip-text text-transparent 
-                bg-[length:200%] 
-                animate-shine"
-              >
-                Sacrifice BaseValue Total
-              </h2>
-              {loading ? (
-                <Skeleton className="h-16 w-3/4 mx-auto" />
-              ) : (
-                <div
-                  className={`text-6xl font-extrabold ${isThresholdMet
-                    ? "text-green-500 animate-pulse"
-                    : "text-red-500 animate-pulse"
-                    }`}
-                >
-                  ₽{total.toLocaleString()}
-                </div>
-              )}
-              {!isThresholdMet && (
-                <div className="text-red-500 mt-2">
-                  ₽{(threshold - total).toLocaleString()} Needed to meet
-                  threshold
-                </div>
-              )}
-              <div className="mt-6">
-                <div className="text-sm font-semibold text-gray-400">
-                  Total flea Cost ≈{" "}
-                  <span
-                    className={
-                      Object.keys(overriddenPrices).length > 0
-                        ? "font-bold"
-                        : ""
-                    }
-                  >
-                    ₽{totalFleaCost.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <Separator className="my-1" />
-            {/* **11. Footer with Credits and Links** */}
-            <footer className="mt-4 text-center text-gray-400 text-sm w-full">
-              <div className="text-center mt-1">
-                Prices provided by{" "}
-                <a
-                  href="https://tarkov.dev"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  Tarkov.dev
-                </a>
-              </div>
-              <div className="text-center mt-1">
-                Research provided by{" "}
-                <a
-                  href="https://bio.link/verybadscav"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  VeryBadSCAV
-                </a>
-              </div>
-              <div className="text-center mt-1">
-                {/* maker with cool icons */}
-                Made by Wilsman77 🔥
-              </div>
-              <div className="flex justify-center mt-4 space-x-4">
-                <a
-                  href="https://www.buymeacoffee.com/wilsman77"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Image
-                    src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-                    alt="Buy Me A Coffee"
-                    width={120}
-                    height={34}
-                    priority={true}
-                    style={{ height: "auto" }}
-                  />
-                </a>
-                <Button
-                  onClick={() => setIsFeedbackFormVisible(true)}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out"
-                >
-                  Feedback
-                </Button>
-              </div>
-              <div className="mt-4 w-full">
-                <ErrorBoundary fallback={<div>Error loading ad.</div>}>
-                  <AdBanner
-                    dataAdFormat="auto"
-                    dataFullWidthResponsive={true}
-                    dataAdSlot="1022212363"
-                  />
-                </ErrorBoundary>
-              </div>
-            </footer>
           </Card>
         </div>
       </div>
@@ -1025,12 +1139,79 @@ function AppContent() {
       )}
 
       {isSettingsPaneVisible && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <SettingsPane
+            isOpen={isSettingsPaneVisible}
             onClose={() => setIsSettingsPaneVisible(false)}
+            onReset={() => {
+              setSelectedItems(Array(5).fill(null));
+              setPinnedItems(Array(5).fill(false));
+              setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+              setSortOption("az");
+              setThreshold(400000);
+              setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
+              setOverriddenPrices({});
+              setHasAutoSelected(false);
+
+              toast({
+                title: "Reset Complete",
+                description: "All settings have been reset to their default values.",
+              });
+            }}
+            onClearLocalStorage={() => {
+              // Clear localStorage
+              localStorage.clear();
+              
+              // Reset all state to defaults
+              setSelectedItems(Array(5).fill(null));
+              setPinnedItems(Array(5).fill(false));
+              setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+              setSortOption("az");
+              setThreshold(400000);
+              setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
+              setOverriddenPrices({});
+              setHasAutoSelected(false);
+
+              toast({
+                title: "Data Cleared",
+                description: "All data has been cleared and reset to defaults.",
+              });
+            }}
+            onExportData={() => {
+              const data = {
+                selectedItems,
+                pinnedItems,
+                sortOption,
+                excludedCategories: Array.from(excludedCategories),
+                excludeIncompatible,
+                excludedItems: Array.from(excludedItems),
+              };
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'cultist-circle-settings.json';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }}
+            onImportData={(data) => {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.selectedItems) setSelectedItems(parsed.selectedItems);
+                if (parsed.pinnedItems) setPinnedItems(parsed.pinnedItems);
+                if (parsed.sortOption) setSortOption(parsed.sortOption);
+                if (parsed.excludedCategories) setExcludedCategories(new Set(parsed.excludedCategories));
+                if (parsed.excludeIncompatible !== undefined) setExcludeIncompatible(parsed.excludeIncompatible);
+                if (parsed.excludedItems) setExcludedItems(new Set(parsed.excludedItems));
+              } catch (e) {
+                console.error('Failed to parse imported data:', e);
+              }
+            }}
             onSortChange={handleSortChange}
             currentSortOption={sortOption}
-            selectedCategories={selectedCategories}
+            excludedCategories={Array.from(excludedCategories)}
             onCategoryChange={handleCategoryChange}
             allCategories={ALL_ITEM_CATEGORIES}
             excludeIncompatible={excludeIncompatible}
@@ -1042,15 +1223,15 @@ function AppContent() {
         </div>
       )}
 
-      {/* Threshold Helper Popup */}
-      <ThresholdHelperPopup
-        isOpen={isThresholdHelperOpen}
-        onClose={() => setIsThresholdHelperOpen(false)}
-        onSetThreshold={handleThresholdChange}
-      />
+      {isThresholdHelperOpen && (
+        <ThresholdHelperPopup
+          isOpen={isThresholdHelperOpen}
+          onClose={() => setIsThresholdHelperOpen(false)}
+          onSetThreshold={handleThresholdChange}
+        />
+      )}
 
-      {/* Add the CookieConsent component */}
-      <CookieConsent variant="small" />
+      <CookieConsent />
     </>
   );
 }

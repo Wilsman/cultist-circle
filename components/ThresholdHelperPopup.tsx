@@ -35,7 +35,7 @@ export function ThresholdHelperPopup({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-primary text-secondary">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Threshold Helper</DialogTitle>
           <DialogDescription className="text-muted-foreground">
@@ -45,7 +45,7 @@ export function ThresholdHelperPopup({
         <RadioGroup value={objective || ''} onValueChange={setObjective}>
           <div className="flex flex-col space-y-2">
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="quest" id="quest" className="text-primary bg-secondary" />
+              <RadioGroupItem value="quest" id="quest" className="text-primary bg-background" />
               <Label htmlFor="quest">Quest/Hideout Items (6h sacrifice timer)</Label>
             </div>
             <p className="text-sm text-muted-foreground ml-6">
@@ -54,7 +54,7 @@ export function ThresholdHelperPopup({
           </div>
           <div className="flex flex-col space-y-2 mt-4">
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="highValue" id="highValue" className="text-primary bg-secondary" />
+              <RadioGroupItem value="highValue" id="highValue" className="text-primary bg-background" />
               <Label htmlFor="highValue">High-Value Items (14h sacrifice timer)</Label>
             </div>
             <p className="text-sm text-muted-foreground ml-6">

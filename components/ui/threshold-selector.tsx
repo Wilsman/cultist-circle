@@ -118,7 +118,7 @@ export default function ThresholdSelector({
                     variant={value === 350001 ? "outline" : "default"}
                     size="sm"
                     onClick={() => handlePresetClick(350001)}
-                    className="text-sm bg-primary"
+                    className="text-sm text-primary bg-background hover:bg-background/80"
                   >
                     ₽350,001
                   </Button>
@@ -135,7 +135,7 @@ export default function ThresholdSelector({
                     variant={value === 400000 ? "outline" : "default"}
                     size="sm"
                     onClick={() => handlePresetClick(400000)}
-                    className="text-sm bg-primary"
+                    className="text-sm text-primary bg-background hover:bg-background/80"
                   >
                     ₽400,000
                   </Button>

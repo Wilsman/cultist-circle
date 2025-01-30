@@ -1,101 +1,75 @@
 "use client"
 
-import { CookieIcon } from "lucide-react"
-import { Button } from "./ui/button"
-import { useEffect, useState } from "react"
-import { cn } from "@/lib/utils"
-import { useCookieConsent } from "@/contexts/CookieConsentContext"
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { X } from "lucide-react"
 
-interface CookieConsentProps {
-  variant?: "default" | "small"
-}
-
-export default function CookieConsent({
-  variant = "default",
-}: CookieConsentProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const { cookiesAccepted, acceptCookies, declineCookies } = useCookieConsent()
-
-  const accept = () => {
-    acceptCookies()
-  }
-
-  const decline = () => {
-    declineCookies()
-  }
+export default function CookieConsent() {
+  const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    setIsOpen(cookiesAccepted === null)
-  }, [cookiesAccepted])
+    const consent = localStorage.getItem("cookieConsent")
+    if (!consent) {
+      const timer = setTimeout(() => setIsVisible(true), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [])
 
-  if (!isOpen) return null
+  const handleAccept = () => {
+    localStorage.setItem("cookieConsent", "true")
+    setIsVisible(false)
+  }
 
-  return variant !== "small" ? (
-    <div
-      className={cn(
-        "fixed z-[200] bottom-0 left-0 right-0 sm:left-4 sm:bottom-4 w-full sm:max-w-md duration-700",
-        isOpen
-          ? "transition-[opacity,transform] translate-y-0 opacity-100"
-          : "transition-[opacity,transform] translate-y-8 opacity-0"
-      )}
-    >
-      <div className="dark:bg-card bg-background rounded-md m-3 border border-border shadow-lg">
-        <div className="grid gap-2">
-          <div className="border-b border-border h-14 flex items-center justify-between p-4">
-            <h1 className="text-lg font-medium">We use cookies</h1>
-            <CookieIcon className="h-[1.2rem] w-[1.2rem]" />
-          </div>
-          <div className="p-4">
-            <p className="text-sm font-normal text-start">
-              We use cookies to ensure you get the best experience on our website. For more information on how we use cookies, please see our cookie policy.
-              <br />
-              <br />
-              <span className="text-xs">
-                By clicking &quot;<span className="font-medium opacity-80">Accept</span>&quot;, you agree to our use of cookies.
-              </span>
-              <br />
-              <a href="#" className="text-xs underline">
-                Learn more.
+  const handleDecline = () => {
+    localStorage.setItem("cookieConsent", "false")
+    setIsVisible(false)
+  }
+
+  if (!isVisible) return null
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up">
+      <div className="max-w-2xl mx-auto m-4">
+        <div className="relative bg-gray-800/95 backdrop-blur-md border border-gray-700 p-6 rounded-lg shadow-xl">
+          <div className="prose prose-invert prose-sm max-w-none">
+            <h3 className="text-xl font-semibold mb-4 text-white">🍪 Cookie Policy</h3>
+            <p className="text-gray-300 mb-4">
+              We use cookies to enhance your experience and analyze our traffic. By clicking
+              "Accept All", you consent to our use of cookies. For more information, please
+              read our{" "}
+              <a
+                href="/privacy-policy"
+                className="text-blue-400 hover:text-blue-300 underline transition-colors"
+              >
+                Privacy Policy
               </a>
+              .
             </p>
           </div>
-          <div className="flex gap-2 p-4 py-5 border-t border-border dark:bg-background/20">
-            <Button onClick={accept} className="w-full">
-              Accept
+          
+          <div className="flex flex-col sm:flex-row gap-4 mt-6">
+            <Button
+              onClick={handleAccept}
+              className="interactive-bounce bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            >
+              Accept All
             </Button>
-            <Button onClick={decline} className="w-full" variant="secondary">
-              Decline
+            <Button
+              onClick={handleDecline}
+              variant="outline"
+              className="interactive-bounce border-gray-600 hover:bg-gray-700 text-gray-300"
+            >
+              Decline Non-Essential
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
-  ) : (
-    <div
-      className={cn(
-        "fixed z-[200] bottom-0 left-0 right-0 sm:left-4 sm:bottom-4 w-full sm:max-w-md duration-700",
-        isOpen
-          ? "transition-[opacity,transform] translate-y-0 opacity-100"
-          : "transition-[opacity,transform] translate-y-8 opacity-0"
-      )}
-    >
-      <div className="m-3 dark:bg-card bg-background border border-border rounded-lg">
-        <div className="flex items-center justify-between p-3">
-          <h1 className="text-lg font-medium">We use cookies</h1>
-          <CookieIcon className="h-[1.2rem] w-[1.2rem]" />
-        </div>
-        <div className="p-3 -mt-2">
-          <p className="text-sm text-left text-muted-foreground">
-            We use cookies to ensure you get the best experience on our website. For more information on how we use cookies, please see our cookie policy.
-          </p>
-        </div>
-        <div className="p-3 flex items-center gap-2 mt-2 border-t">
-          <Button onClick={accept} className="w-full h-9 rounded-full">
-            accept
-          </Button>
-          <Button onClick={decline} className="w-full h-9 rounded-full" variant="outline">
-            decline
-          </Button>
+
+          <button
+            onClick={() => setIsVisible(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            aria-label="Close cookie consent"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
       </div>
     </div>

@@ -4,13 +4,13 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "26x75 mm flares cartridges",
   "40x46mm grenade",
   "40mm VOG-25 grenade",
-  
+
   // Currency and valuables
   "Roubles",
   "Dollars",
   "Euros",
   "GP coin",
-  
+
   // Tools and equipment
   "MS2000 Marker",
   "Leatherman Multitool",
@@ -26,7 +26,7 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Signal Jammer",
   "EYE MK2 professional hand-held compass",
   "KOSA UAV electronic jamming device",
-  
+
   // Backpacks
   "Takedown sling backpack (MultiCam)",
   "Takedown sling backpack (Black)",
@@ -39,12 +39,12 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Gunslinger II",
   "RUSH 100",
   "Santa's Bag",
-  
+
   // Signal cartridges
   "RSP-30 reactive signal cartirdge (Blue)",
   "RSP-30 reactive signal cartridge (Special Yellow)",
   "RSP-30 reactive signal cartridge (Firework)",
-  
+
   // Weapons
   "M60E6 (FDE)",
   "M60E6",
@@ -59,18 +59,18 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "UZI PRO SMG 9x19 submachine gun",
   "UZI PRO Pistol 9x19 submachine gun",
   "Saiko TRG M10",
-  
+
   // Containers and special items
   "Sealed box",
   "Contraband box",
   "Locked case",
   "Case key",
   "Special 40-degree fuel",
-  
+
   // Food and holiday items
   "Jar of pickles",
   "Oliver salad box",
   "SHYSHKA Christmas tree life extender",
   "Christmas gift",
-  "Small Christmas gift"
+  "Small Christmas gift",
 ]);

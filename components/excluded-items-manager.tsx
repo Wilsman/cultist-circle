@@ -54,7 +54,7 @@ export function ExcludedItemsManager({
       
       <ScrollArea className="h-[200px] rounded-md border p-2">
         <div className="space-y-2">
-          {Array.from(excludedItems).map((item) => (
+          {Array.from(excludedItems).sort().map((item) => (
             <div
               key={item}
               className="flex items-center justify-between bg-secondary/50 rounded-md p-2"
