@@ -4,13 +4,18 @@ import { NextResponse, NextRequest } from "next/server";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { IGNORED_ITEMS } from "@/config/config";
 import { rateLimiter } from "@/app/lib/rateLimiter";
+import { gzip, gunzip } from "zlib";
+import { promisify } from "util";
+
+const gzipAsync = promisify(gzip);
+const gunzipAsync = promisify(gunzip);
 
 const PVE_API_URL = "https://api.tarkov-market.app/api/v1/items/all";
 const CACHE_DURATION = 30 * 60; // 30 minutes in seconds
 
 // In-memory cache
 let cache = {
-  data: null as SimplifiedItem[] | null,
+  compressedData: null as Buffer | null,
   timestamp: 0,
 };
 
@@ -29,9 +34,12 @@ export async function GET(request: NextRequest) {
     const now = Math.floor(Date.now() / 1000); // Current time in seconds
 
     // Return cached data if it's still valid
-    if (cache.data && now - cache.timestamp < CACHE_DURATION) {
+    if (cache.compressedData && now - cache.timestamp < CACHE_DURATION) {
+      const decompressedData = JSON.parse(
+        (await gunzipAsync(cache.compressedData)).toString()
+      );
       return NextResponse.json(
-        { data: cache.data, timestamp: cache.timestamp * 1000 },
+        { data: decompressedData, timestamp: cache.timestamp * 1000 },
         {
           status: 200,
           headers: {
@@ -54,7 +62,7 @@ export async function GET(request: NextRequest) {
     }
 
     const rawData = await response.json();
-    
+
     // Process and cache the data
     const processedData = rawData
       .filter((item: SimplifiedItem) => !IGNORED_ITEMS.includes(item.name))
@@ -67,11 +75,14 @@ export async function GET(request: NextRequest) {
         tags: item.tags || [],
         bannedOnFlea: item.bannedOnFlea,
       }))
-      .sort((a: SimplifiedItem, b: SimplifiedItem) => a.name.localeCompare(b.name));
+      .sort((a: SimplifiedItem, b: SimplifiedItem) =>
+        a.name.localeCompare(b.name)
+      );
 
-    // Update cache
+    // Compress and update cache
+    const compressedData = await gzipAsync(JSON.stringify(processedData));
     cache = {
-      data: processedData,
+      compressedData,
       timestamp: now,
     };
 
@@ -88,7 +99,7 @@ export async function GET(request: NextRequest) {
     console.error(`[${new Date().toISOString()}] Error:`, error);
     return NextResponse.json(
       { error: "Failed to fetch PVE data. Please try again later." },
-      { 
+      {
         status: 500,
         headers: {
           "Cache-Control": "no-store",

@@ -81,6 +81,7 @@ function AppContent() {
     // "Ammo",
     // "Ammo_boxes",
     "Barter",
+    "Cosmetics",
     "Containers",
     "Crates",
     "Currency",
@@ -101,6 +102,7 @@ function AppContent() {
   ];
   const defaultItemCategories = [
     "Barter",
+    "Cosmetics",
     "Provisions",
     "Containers",
     "Maps",
