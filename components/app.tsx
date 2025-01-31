@@ -52,7 +52,7 @@ const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
 });
 
 function AppContent() {
-  // const { cookiesAccepted } = useCookieConsent();
+  const { toast } = useToast(); // Move useToast to the top
 
   // Mode state
   const [isPVE, setIsPVE] = useState<boolean>(false);
@@ -267,23 +267,24 @@ function AppContent() {
 
     try {
       setLoading(true);
-      const now = Date.now();
+      setError(null); // Clear any previous errors
+      // const now = Date.now();
 
-      // Check localStorage for cached data
+      // Always try to get cached data first
       const cachedDataString = localStorage.getItem(localStorageKey);
+      let cachedData = null;
       if (cachedDataString) {
-        const cachedData = JSON.parse(cachedDataString);
-        if (now - cachedData.timestamp < CACHE_DURATION) {
-          setItemsData(cachedData.data);
-          setLastFetchTimestamp(cachedData.timestamp);
-          setLoading(false);
-          return;
-        }
+        cachedData = JSON.parse(cachedDataString);
+        // Use cached data immediately if available
+        setItemsData(cachedData.data);
+        setLastFetchTimestamp(cachedData.timestamp);
       }
 
-      // Fetch new data
+      // Attempt to fetch new data
       const response = await fetch(apiUrl);
-      if (!response.ok) throw new Error(`Failed to fetch data for ${apiUrl}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data for ${apiUrl}`);
+      }
 
       const result = await response.json();
       const timestamp = Date.now();
@@ -297,11 +298,29 @@ function AppContent() {
         JSON.stringify({ data: result.data, timestamp })
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      // If we have cached data, keep using it and just show a warning
+      const cachedDataString = localStorage.getItem(localStorageKey);
+      if (cachedDataString) {
+        const cachedData = JSON.parse(cachedDataString);
+        setItemsData(cachedData.data);
+        setLastFetchTimestamp(cachedData.timestamp);
+        toast({
+          title: "Using cached data",
+          description: "Could not fetch latest data. Using previously cached data instead.",
+        });
+      } else {
+        // Only set error if we have no cached data
+        setError(err instanceof Error ? err.message : "An error occurred");
+        toast({
+          title: "Error",
+          description: "Failed to fetch data. Please try again later.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
-  }, [isPVE]);
+  }, [isPVE, toast]);
 
   // Fetch data on mount or when mode changes
   useEffect(() => {
@@ -619,9 +638,6 @@ function AppContent() {
       );
     }
   };
-
-  // Import the useToast hook
-  const { toast } = useToast();
 
   // Ref to track if toast has been shown
   const toastShownRef = useRef<boolean>(false);
