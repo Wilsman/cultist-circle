@@ -42,7 +42,8 @@ import Link from "next/link";
 const CURRENT_VERSION = "1.0.6"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
-const ITEMS_CACHE_KEY = "itemsCache";
+const PVE_ITEMS_CACHE_KEY = "pveItemsCache";
+const PVP_ITEMS_CACHE_KEY = "pvpItemsCache";
 
 // Cache structure type
 type ItemsCache = {
@@ -296,14 +297,15 @@ function AppContent() {
     toastShownRef.current = false; // Reset toast shown flag when threshold changes
   };
 
-  const fetcher = async (url: string) => {
+  const fetcher = useCallback(async (url: string) => {
     const mode = url.includes("pve") ? "pve" : "pvp";
+    const cacheKey = mode === "pve" ? PVE_ITEMS_CACHE_KEY : PVP_ITEMS_CACHE_KEY;
 
-    // Try to get data from localStorage first
     try {
-      const cached = localStorage.getItem(ITEMS_CACHE_KEY);
-      if (cached) {
-        const cacheData = JSON.parse(cached) as ItemsCache;
+      // Try to get data from localStorage first
+      const cachedDataString = localStorage.getItem(cacheKey);
+      if (cachedDataString) {
+        const cacheData = JSON.parse(cachedDataString) as ItemsCache;
         const now = Date.now();
 
         // Check if cache is still valid (not expired, same version and mode)
@@ -334,18 +336,18 @@ function AppContent() {
         mode: mode,
         data: result.data
       };
-      localStorage.setItem(ITEMS_CACHE_KEY, JSON.stringify(cacheData));
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
     } catch (e) {
       console.error("Error updating cache:", e);
     }
 
     return result.data;
-  };
+  }, []);
 
   // Fetch data based on mode (PVE/PVP)
   const apiUrl = isPVE
-    ? `/api/v2/items?mode=pve&v=${CURRENT_VERSION}`
-    : `/api/v2/items?mode=pvp&v=${CURRENT_VERSION}`;
+    ? `/api/v2/pve-items?v=${CURRENT_VERSION}`
+    : `/api/v2/pvp-items?v=${CURRENT_VERSION}`;
 
   const {
     data: rawItemsData,

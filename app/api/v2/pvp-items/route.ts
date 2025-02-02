@@ -1,4 +1,4 @@
-// app/api/pvp-items/route.ts
+// app/api/v2/pvp-items/route.ts
 
 import { NextResponse, NextRequest } from "next/server";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
