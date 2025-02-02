@@ -81,6 +81,10 @@ const SWR_CONFIG = {
 };
 
 function AppContent() {
+  useEffect(() => {
+    console.log('Build from commit:', process.env.NEXT_PUBLIC_GIT_COMMIT);
+  }, []);
+
   // Define state variables and hooks
   const [isPVE, setIsPVE] = useState<boolean>(false);
   const [selectedItems, setSelectedItems] = useState<Array<SimplifiedItem | null>>(
