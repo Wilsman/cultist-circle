@@ -1,12 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: {
-    NEXT_PUBLIC_GIT_COMMIT: process.env.NEXT_PUBLIC_GIT_COMMIT || 
-      require('child_process')
-        .execSync('git log -1 --pretty=%B')
-        .toString()
-        .trim(),
-  },
   images: {
     remotePatterns: [
       {
