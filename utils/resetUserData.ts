@@ -1,13 +1,18 @@
+import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 
 export async function resetUserData(
-  setSelectedItems: React.Dispatch<React.SetStateAction<Array<SimplifiedItem | null>>>,
+  setSelectedItems: React.Dispatch<
+    React.SetStateAction<Array<SimplifiedItem | null>>
+  >,
   setPinnedItems: React.Dispatch<React.SetStateAction<boolean[]>>,
   setExcludedCategories: React.Dispatch<React.SetStateAction<Set<string>>>,
   setSortOption: React.Dispatch<React.SetStateAction<string>>,
   setThreshold: React.Dispatch<React.SetStateAction<number>>,
   setExcludedItems: React.Dispatch<React.SetStateAction<Set<string>>>,
-  setOverriddenPrices: React.Dispatch<React.SetStateAction<Record<string, number>>>,
+  setOverriddenPrices: React.Dispatch<
+    React.SetStateAction<Record<string, number>>
+  >,
   fetchData: () => Promise<void>,
   defaultItemCategories: Set<string>,
   toast: (props: { title: string; description: string }) => void
@@ -17,23 +22,23 @@ export async function resetUserData(
 
   // Clear cookies via API route
   try {
-    const response = await fetch('/api/expire-cookies');
+    const response = await fetch("/api/expire-cookies");
     if (response.ok) {
-      console.log('Cookies cleared successfully');
+      console.log("Cookies cleared successfully");
     } else {
-      console.error('Failed to clear cookies');
+      console.error("Failed to clear cookies");
     }
   } catch (error) {
-    console.error('Error clearing cookies:', error);
+    console.error("Error clearing cookies:", error);
   }
 
   // Reset all state variables
   setSelectedItems(Array(5).fill(null));
   setPinnedItems(Array(5).fill(false));
   setExcludedCategories(defaultItemCategories);
+  setExcludedItems(DEFAULT_EXCLUDED_ITEMS);
   setSortOption("az");
   setThreshold(400000);
-  setExcludedItems(new Set());
   setOverriddenPrices({});
 
   // Fetch fresh data

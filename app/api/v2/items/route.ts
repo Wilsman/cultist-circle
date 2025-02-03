@@ -1,14 +1,20 @@
 import { NextResponse, NextRequest } from "next/server";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { IGNORED_ITEMS } from "@/config/config";
-import { rateLimiter } from "@/app/lib/rateLimiter";
+import { createRateLimiter } from "@/app/lib/rateLimiter";
 import { GraphQLResponse } from "@/types/GraphQLResponse";
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from "next/cache";
 
 const GRAPHQL_API_URL = "https://api.tarkov.dev/graphql";
-const isDevelopment = process.env.NODE_ENV === "development";
 
-export const runtime = 'edge'
+const rateLimiter = createRateLimiter({
+  uniqueTokenPerInterval: 500,
+  interval: 60000, // 1 minute
+  tokensPerInterval: 30, // Allow 30 requests per minute
+  timeout: 30000, // Rate limit expires after 30 seconds
+});
+
+export const runtime = "edge";
 export const revalidate = 1800;
 
 function processItems(rawData: SimplifiedItem[]) {
@@ -98,17 +104,23 @@ async function fetchAndProcessItems(gameMode: "pve" | "regular") {
 
 const getCachedItems = unstable_cache(
   async (gameMode: "pve" | "regular") => {
-    console.log(`🔄 [${gameMode.toUpperCase()}] Cache function called at:`, new Date().toISOString())
-    const items = await fetchAndProcessItems(gameMode)
-    console.log(`✅ [${gameMode.toUpperCase()}] Cache populated with items count:`, items.length)
-    return items
+    console.log(
+      `🔄 [${gameMode.toUpperCase()}] Cache function called at:`,
+      new Date().toISOString()
+    );
+    const items = await fetchAndProcessItems(gameMode);
+    console.log(
+      `✅ [${gameMode.toUpperCase()}] Cache populated with items count:`,
+      items.length
+    );
+    return items;
   },
-  ['items-cache'],
+  ["items-cache"],
   {
     revalidate: 1800,
-    tags: ['items-cache']
+    tags: ["items-cache"],
   }
-)
+);
 
 export async function GET(request: NextRequest) {
   console.log("\n📥 New request received at:", new Date().toISOString());
@@ -119,78 +131,37 @@ export async function GET(request: NextRequest) {
     return rateLimiterResponse;
   }
 
-  const startTime = Date.now();
-  const searchParams = request.nextUrl.searchParams;
-  const mode = searchParams.get("mode");
-
-  console.log("🔍 Request mode:", mode);
-
-  if (!mode || (mode !== "pve" && mode !== "pvp")) {
-    console.log("❌ Invalid mode parameter received");
-    return NextResponse.json(
-      { error: "Invalid mode parameter. Use 'pve' or 'pvp'" },
-      { status: 400 }
-    );
-  }
-
   try {
-    console.log(
-      `⚡ Attempting to fetch ${mode.toUpperCase()} items from cache`
-    );
-    const items = await getCachedItems(mode === 'pve' ? 'pve' : 'regular')
+    const searchParams = new URL(request.url).searchParams;
+    const mode = searchParams.get("mode") || "regular";
 
-    if (items.length === 0) {
-      console.log(`⚠️ No ${mode.toUpperCase()} items found`);
+    if (mode !== "pvp" && mode !== "pve" && mode !== "regular") {
       return NextResponse.json(
-        {
-          data: [],
-          message: `No ${mode.toUpperCase()} items available at the moment.`,
-          timestamp: Date.now(),
-        },
-        {
-          headers: {
-            "Cache-Control": isDevelopment
-              ? "no-store"
-              : "public, s-maxage=1800, stale-while-revalidate=60",
-          },
-        }
+        { error: "Invalid mode parameter" },
+        { status: 400 }
       );
     }
 
-    const endTime = Date.now();
-    console.log(`✅ Request completed successfully:`);
-    console.log(`   - Items returned: ${items.length}`);
-    console.log(`   - Response time: ${endTime - startTime}ms`);
-    console.log(
-      `   - Cache headers: ${
-        isDevelopment
-          ? "no-store"
-          : "public, s-maxage=1800, stale-while-revalidate=60"
-      }`
-    );
+    const gameMode = mode === "pvp" ? "regular" : mode;
+    const items = await getCachedItems(gameMode);
 
-    return NextResponse.json(
-      {
-        data: items,
-        timestamp: Date.now(),
+    console.log("✅ Request completed successfully:", {
+      itemCount: items.length,
+      firstItem: items[0]?.name,
+    });
+
+    // Return items array directly
+    return NextResponse.json(items, {
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
       },
-      {
-        headers: {
-          "Cache-Control": isDevelopment
-            ? "no-store"
-            : "public, s-maxage=1800, stale-while-revalidate=60",
-        },
-      }
-    );
+    });
   } catch (error) {
-    console.error(`❌ Error in ${mode.toUpperCase()} items route:`);
-    console.error(error);
+    console.error("❌ Error in items route:", error);
     return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      {
-        status: 500,
-        headers: { "Cache-Control": "no-store" },
-      }
+      { error: "Failed to fetch items" },
+      { status: 500 }
     );
   }
 }

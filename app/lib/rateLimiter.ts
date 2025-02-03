@@ -2,48 +2,50 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-const WINDOW_SIZE = 60 * 1000; // 1 minute in milliseconds
-const MAX_REQUESTS = 5; // Maximum number of requests per window
+interface RateLimiterOptions {
+  uniqueTokenPerInterval: number;
+  interval: number;
+  tokensPerInterval: number;
+  timeout: number;
+}
 
 interface RequestLog {
   timestamp: number;
   count: number;
 }
 
-const ipRequestMap = new Map<string, RequestLog>();
+export function createRateLimiter(options: RateLimiterOptions) {
+  const ipRequestMap = new Map<string, RequestLog>();
 
-export function rateLimiter(request: NextRequest) {
-  const ip = request.ip ?? "127.0.0.1";
-  const now = Date.now();
-  const windowStart = now - WINDOW_SIZE;
+  return function rateLimiter(request: NextRequest) {
+    const ip = request.ip ?? "127.0.0.1";
+    const now = Date.now();
+    const windowStart = now - options.interval;
 
-  const requestLog = ipRequestMap.get(ip) ?? { timestamp: now, count: 0 };
+    const requestLog = ipRequestMap.get(ip) ?? { timestamp: now, count: 0 };
 
-  if (requestLog.timestamp < windowStart) {
-    // Reset the counter if the window has passed
-    requestLog.timestamp = now;
-    requestLog.count = 1;
-  } else {
-    // Increment the counter
-    requestLog.count++;
-  }
+    if (requestLog.timestamp < windowStart) {
+      // Reset the counter if the window has passed
+      requestLog.timestamp = now;
+      requestLog.count = 1;
+    } else {
+      // Increment the counter
+      requestLog.count++;
+    }
 
-  ipRequestMap.set(ip, requestLog);
+    ipRequestMap.set(ip, requestLog);
 
-  if (requestLog.count > MAX_REQUESTS) {
-    return NextResponse.json(
-      { error: "Too many requests" },
-      {
+    // If the request count exceeds the limit, return 429
+    if (requestLog.count > options.tokensPerInterval) {
+      return new NextResponse(null, {
         status: 429,
+        statusText: "Too Many Requests",
         headers: {
-          "X-RateLimit-Limit": MAX_REQUESTS.toString(),
-          "X-RateLimit-Remaining": "0",
-          "X-RateLimit-Reset": (requestLog.timestamp + WINDOW_SIZE).toString(),
+          "Retry-After": Math.ceil(options.timeout / 1000).toString(),
         },
-      }
-    );
-  }
+      });
+    }
 
-  // If the request is allowed, return null
-  return null;
+    return null;
+  };
 }

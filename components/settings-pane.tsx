@@ -18,7 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface SettingsPaneProps {
   isOpen: boolean;
   onClose: () => void;
-  onReset: () => void;
+  onSettingsReset: () => void;
   onHardReset: () => void;
   onExportData: () => void;
   onImportData: (data: string) => void;
@@ -44,7 +44,7 @@ const disabledCategories = new Set([
 export default function SettingsPane({
   isOpen,
   onClose,
-  onReset,
+  onSettingsReset,
   onExportData,
   onImportData,
   onSortChange,
@@ -370,7 +370,7 @@ export default function SettingsPane({
               <Button
                 variant="destructive"
                 onClick={() => {
-                  onReset();
+                  onSettingsReset();
                   setShowConfirmReset(false);
                 }}
                 className="interactive-bounce"

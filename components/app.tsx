@@ -9,7 +9,6 @@ import React, {
   Suspense,
 } from "react";
 import dynamic from "next/dynamic";
-import useSWR from "swr";
 import Image from "next/image";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,10 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithHelper";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { VersionInfo } from "@/components/version-info";
-import { ALL_ITEM_CATEGORIES, DEFAULT_EXCLUDED_CATEGORIES } from "@/config/item-categories";
+import {
+  ALL_ITEM_CATEGORIES,
+  DEFAULT_EXCLUDED_CATEGORIES,
+} from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import Cookies from "js-cookie";
@@ -36,71 +38,50 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
-import type { SWRConfiguration, RevalidatorOptions, Revalidator } from "swr";
 import Link from "next/link";
+import { useItemsData } from "@/hooks/use-items-data";
 
-const CURRENT_VERSION = "1.0.6"; //* Increment this when you want to trigger a cache clear
-const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
-const PVE_ITEMS_CACHE_KEY = "pveItemsCache";
-const PVP_ITEMS_CACHE_KEY = "pvpItemsCache";
+const CURRENT_VERSION = "1.0.6.1"; //* Increment this when you want to trigger a cache clear
+const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 
-// Cache structure type
-type ItemsCache = {
-  timestamp: number;
-  version: string;
-  mode: string;
-  data: SimplifiedItem[];
-};
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
 });
-// Update the SWR configuration object
-const SWR_CONFIG = {
-  revalidateOnFocus: false,
-  revalidateOnReconnect: false,
-  dedupingInterval: CACHE_DURATION,
-  onErrorRetry: (
-    error: unknown,
-    key: string,
-    config: Readonly<SWRConfiguration>,
-    revalidate: Revalidator,
-    revalidateOpts: Required<RevalidatorOptions>
-  ) => {
-    const { retryCount } = revalidateOpts;
-
-    function hasStatusCode(err: unknown): err is { status: number } {
-      return typeof err === "object" && err !== null && "status" in err;
-    }
-
-    if (retryCount >= 3 || (hasStatusCode(error) && error.status === 404))
-      return;
-
-    setTimeout(() => revalidate(), 5000);
-  },
-};
 
 function AppContent() {
   // Define state variables and hooks
   const [isPVE, setIsPVE] = useState<boolean>(false);
-  const [selectedItems, setSelectedItems] = useState<Array<SimplifiedItem | null>>(
-    Array(5).fill(null)
-  );
+  const [selectedItems, setSelectedItems] = useState<
+    Array<SimplifiedItem | null>
+  >(Array(5).fill(null));
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
-  const [isFeedbackFormVisible, setIsFeedbackFormVisible] = useState<boolean>(false);
-  const [pinnedItems, setPinnedItems] = useState<boolean[]>(Array(5).fill(false));
-  const [isSettingsPaneVisible, setIsSettingsPaneVisible] = useState<boolean>(false);
+  const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
+    useState<boolean>(false);
+  const [pinnedItems, setPinnedItems] = useState<boolean[]>(
+    Array(5).fill(false)
+  );
+  const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
+    useState<boolean>(false);
   const [sortOption, setSortOption] = useState<string>("az");
-  const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set());
+  const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
+    new Set()
+  );
   const [threshold, setThreshold] = useState<number>(400000);
   const [excludeIncompatible, setExcludeIncompatible] = useState<boolean>(true);
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
-  const [overriddenPrices, setOverriddenPrices] = useState<Record<string, number>>({});
+  const [overriddenPrices, setOverriddenPrices] = useState<
+    Record<string, number>
+  >({});
   const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
-  
+
   // Import hooks
   const { toast } = useToast();
   const toastShownRef = useRef<boolean>(false);
+
+  // Use the items data hook
+  const { data: rawItemsData, error, mutate } = useItemsData(isPVE);
+
+  const loading = !rawItemsData && !error;
 
   // Initialize client-side state
   useEffect(() => {
@@ -117,7 +98,10 @@ function AppContent() {
           console.log("Loading saved categories:", parsedCategories);
           setExcludedCategories(new Set(parsedCategories));
         } else {
-          console.error("Saved excludedCategories is not an array:", parsedCategories);
+          console.error(
+            "Saved excludedCategories is not an array:",
+            parsedCategories
+          );
           setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
         }
       } else {
@@ -151,7 +135,9 @@ function AppContent() {
       if (saved) {
         const savedItems = new Set<string>(JSON.parse(saved) as string[]);
         // Merge with defaults to ensure defaults are always included
-        Array.from(DEFAULT_EXCLUDED_ITEMS).forEach(item => savedItems.add(item));
+        Array.from(DEFAULT_EXCLUDED_ITEMS).forEach((item) =>
+          savedItems.add(item)
+        );
         setExcludedItems(savedItems);
       } else {
         // When no saved items exist, initialize with defaults
@@ -188,8 +174,14 @@ function AppContent() {
 
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem("excludedCategories", JSON.stringify(Array.from(excludedCategories)));
-        console.log("Saved categories to localStorage via effect:", Array.from(excludedCategories));
+        localStorage.setItem(
+          "excludedCategories",
+          JSON.stringify(Array.from(excludedCategories))
+        );
+        console.log(
+          "Saved categories to localStorage via effect:",
+          Array.from(excludedCategories)
+        );
       } catch (e) {
         console.error("Error saving excludedCategories to localStorage", e);
       }
@@ -204,14 +196,20 @@ function AppContent() {
   // Save excludeIncompatible to localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("excludeIncompatible", JSON.stringify(excludeIncompatible));
+      localStorage.setItem(
+        "excludeIncompatible",
+        JSON.stringify(excludeIncompatible)
+      );
     }
   }, [excludeIncompatible]);
 
   // Save excludedItems to localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("excludedItems", JSON.stringify(Array.from(excludedItems)));
+      localStorage.setItem(
+        "excludedItems",
+        JSON.stringify(Array.from(excludedItems))
+      );
     }
   }, [excludedItems]);
 
@@ -219,7 +217,10 @@ function AppContent() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem(OVERRIDDEN_PRICES_KEY, JSON.stringify(overriddenPrices));
+        localStorage.setItem(
+          OVERRIDDEN_PRICES_KEY,
+          JSON.stringify(overriddenPrices)
+        );
       } catch (e) {
         console.error("Error saving overriddenPrices to localStorage", e);
       }
@@ -241,29 +242,6 @@ function AppContent() {
     }
     setHasAutoSelected(false); // Reset Auto Select when sort changes
   }, []);
-
-  // // Reset all settings to defaults
-  // const handleResetUserData = useCallback(() => {
-  //   setSelectedItems(Array(5).fill(null));
-  //   setPinnedItems(Array(5).fill(false));
-  //   setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
-  //   setSortOption("az");
-  //   setThreshold(400000);
-  //   setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
-  //   setOverriddenPrices({});
-  //   setHasAutoSelected(false);
-
-  //   // Clear localStorage
-  //   localStorage.clear();
-
-  //   // Clear cookies
-  //   Cookies.remove("userThreshold");
-
-  //   toast({
-  //     title: "Reset Complete",
-  //     description: "All settings have been reset to their default values.",
-  //   });
-  // }, [toast]);
 
   // Calls handleReset and also clears the users cookies and local storage
   const handleReset = async () => {
@@ -291,83 +269,6 @@ function AppContent() {
     toastShownRef.current = false; // Reset toast shown flag when threshold changes
   };
 
-  const fetcher = useCallback(async (url: string) => {
-    const mode = url.includes("pve") ? "pve" : "pvp";
-    const cacheKey = mode === "pve" ? PVE_ITEMS_CACHE_KEY : PVP_ITEMS_CACHE_KEY;
-
-    try {
-      // Try to get data from localStorage first
-      const cachedDataString = localStorage.getItem(cacheKey);
-      if (cachedDataString) {
-        const cacheData = JSON.parse(cachedDataString) as ItemsCache;
-        const now = Date.now();
-
-        // Check if cache is still valid (not expired, same version and mode)
-        if (
-          now - cacheData.timestamp < CACHE_DURATION &&
-          cacheData.version === CURRENT_VERSION &&
-          cacheData.mode === mode
-        ) {
-          console.log("Using cached items data");
-          return cacheData.data;
-        }
-      }
-    } catch (e) {
-      console.error("Error reading from cache:", e);
-    }
-
-    // If no valid cache, fetch from API
-    console.log("Fetching fresh items data");
-    const res = await fetch(`/api/v2/items?mode=${mode}`);
-    if (!res.ok) throw new Error(`Failed to fetch data for ${url}`);
-    const result = await res.json();
-
-    // Update cache
-    try {
-      const cacheData: ItemsCache = {
-        timestamp: Date.now(),
-        version: CURRENT_VERSION,
-        mode: mode,
-        data: result.data
-      };
-      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    } catch (e) {
-      console.error("Error updating cache:", e);
-    }
-
-    return result.data;
-  }, []);
-
-  // Fetch data based on mode (PVE/PVP)
-  const apiUrl = isPVE
-    ? `/api/v2/pve-items?v=${CURRENT_VERSION}`
-    : `/api/v2/pvp-items?v=${CURRENT_VERSION}`;
-
-  const {
-    data: rawItemsData,
-    error,
-    mutate,
-  } = useSWR<SimplifiedItem[]>(apiUrl, fetcher, {
-    ...SWR_CONFIG,
-    revalidateOnMount: false, // Don't revalidate on mount since we handle that in fetcher
-    dedupingInterval: CACHE_DURATION
-  } as SWRConfiguration);
-
-  const loading = !rawItemsData && !error;
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        mutate();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [mutate]);
-
   // Memoized computation of items based on categories, sort option, and excluded items
   const items: SimplifiedItem[] = useMemo(() => {
     if (!rawItemsData || !Array.isArray(rawItemsData)) return [];
@@ -379,8 +280,10 @@ function AppContent() {
     );
 
     // Then filter out individually excluded items
-    const excludedFiltered = excludeIncompatible 
-      ? categoryFiltered.filter((item: SimplifiedItem) => !excludedItems.has(item.name))
+    const excludedFiltered = excludeIncompatible
+      ? categoryFiltered.filter(
+          (item: SimplifiedItem) => !excludedItems.has(item.name)
+        )
       : categoryFiltered;
 
     // Sorting logic...
@@ -394,7 +297,13 @@ function AppContent() {
     }
 
     return sortedItems;
-  }, [rawItemsData, sortOption, excludedCategories, excludeIncompatible, excludedItems]);
+  }, [
+    rawItemsData,
+    sortOption,
+    excludedCategories,
+    excludeIncompatible,
+    excludedItems,
+  ]);
 
   // Update items when mode or excluded items change
   useEffect(() => {
@@ -487,51 +396,58 @@ function AppContent() {
   const isThresholdMet: boolean = total >= threshold;
 
   // Handler to update selected item
-  const handleItemSelect = useCallback((index: number, item: SimplifiedItem | null, overriddenPrice?: number | null) => {
-    setLoadingSlots(prev => {
-      const newState = [...prev];
-      newState[index] = true;
-      return newState;
-    });
-    
-    setTimeout(() => {
-      setSelectedItems(prev => {
-        const newItems = [...prev];
-        newItems[index] = item;
-        return newItems;
-      });
-      setLoadingSlots(prev => {
+  const handleItemSelect = useCallback(
+    (
+      index: number,
+      item: SimplifiedItem | null,
+      overriddenPrice?: number | null
+    ) => {
+      setLoadingSlots((prev) => {
         const newState = [...prev];
-        newState[index] = false;
+        newState[index] = true;
         return newState;
       });
 
-      // Handle price overrides
-      if (item && overriddenPrice !== undefined) {
-        if (overriddenPrice !== null) {
-          setOverriddenPrices((prev) => ({
-            ...prev,
-            [item.uid]: overriddenPrice,
-          }));
-        } else {
+      setTimeout(() => {
+        setSelectedItems((prev) => {
+          const newItems = [...prev];
+          newItems[index] = item;
+          return newItems;
+        });
+        setLoadingSlots((prev) => {
+          const newState = [...prev];
+          newState[index] = false;
+          return newState;
+        });
+
+        // Handle price overrides
+        if (item && overriddenPrice !== undefined) {
+          if (overriddenPrice !== null) {
+            setOverriddenPrices((prev) => ({
+              ...prev,
+              [item.uid]: overriddenPrice,
+            }));
+          } else {
+            setOverriddenPrices((prev) => {
+              const newOverriddenPrices = { ...prev };
+              delete newOverriddenPrices[item.uid];
+              return newOverriddenPrices;
+            });
+          }
+        } else if (!item) {
           setOverriddenPrices((prev) => {
             const newOverriddenPrices = { ...prev };
-            delete newOverriddenPrices[item.uid];
+            const uid = selectedItems[index]?.uid;
+            if (uid) {
+              delete newOverriddenPrices[uid];
+            }
             return newOverriddenPrices;
           });
         }
-      } else if (!item) {
-        setOverriddenPrices((prev) => {
-          const newOverriddenPrices = { ...prev };
-          const uid = selectedItems[index]?.uid;
-          if (uid) {
-            delete newOverriddenPrices[uid];
-          }
-          return newOverriddenPrices;
-        });
-      }
-    }, 150);
-  }, [selectedItems]);
+      }, 150);
+    },
+    [selectedItems]
+  );
 
   const updateSelectedItem = (
     item: SimplifiedItem | null,
@@ -728,7 +644,8 @@ function AppContent() {
 
   const isResetOverridesButtonDisabled = useMemo(() => {
     return (
-      Object.keys(overriddenPrices).length === 0 && excludedItems.size === Array.from(DEFAULT_EXCLUDED_ITEMS).length
+      Object.keys(overriddenPrices).length === 0 &&
+      excludedItems.size === Array.from(DEFAULT_EXCLUDED_ITEMS).length
     );
   }, [overriddenPrices, excludedItems]);
 
@@ -745,7 +662,9 @@ function AppContent() {
   }, [toast]);
 
   // Add loading state
-  const [loadingSlots, setLoadingSlots] = useState<boolean[]>(Array(5).fill(false));
+  const [loadingSlots, setLoadingSlots] = useState<boolean[]>(
+    Array(5).fill(false)
+  );
 
   // Reset overrides and exclusions
   const resetOverridesAndExclusions = useCallback(() => {
@@ -814,8 +733,19 @@ function AppContent() {
                       >
                         <Link href="/recipes">
                           <span className="flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-4 w-4 mr-2">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              className="h-4 w-4 mr-2"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                              />
                             </svg>
                             Recipes
                           </span>
@@ -860,7 +790,7 @@ function AppContent() {
             <div className="text-center text-gray-400 text-sm mb-1">
               <VersionInfo version={CURRENT_VERSION} />
             </div>
-            
+
             <CardContent className="p-6">
               {/* Mode Toggle with improved animation */}
               <div className="transition-all duration-300 transform hover:scale-[1.02]">
@@ -890,31 +820,44 @@ function AppContent() {
                 <div id="search-items">
                   {loading ? (
                     <div className="space-y-2">
-                      {Array(5).fill(0).map((_, index) => (
-                        <div
-                          key={`skeleton-${index}`}
-                          className="animate-pulse"
-                          style={{ animationDelay: `${index * 100}ms` }}
-                        >
-                          <Skeleton className="h-10 w-full mb-2 bg-gray-700/50" />
-                        </div>
-                      ))}
+                      {Array(5)
+                        .fill(0)
+                        .map((_, index) => (
+                          <div
+                            key={`skeleton-${index}`}
+                            className="animate-pulse"
+                            style={{ animationDelay: `${index * 100}ms` }}
+                          >
+                            <Skeleton className="h-10 w-full mb-2 bg-gray-700/50" />
+                          </div>
+                        ))}
                     </div>
                   ) : items.length === 0 ? (
                     <div className="text-center text-gray-400 mt-4 p-4 border-2 border-dashed border-gray-600 rounded-lg">
                       <p className="mb-2">No items available at this time.</p>
-                      <p className="text-sm">If you think this may be an issue, please try resetting the app in the settings.</p>
+                      <p className="text-sm">
+                        If you think this may be an issue, please try resetting
+                        the app in the settings.
+                      </p>
                     </div>
                   ) : (
                     selectedItems.map((item, index) => (
                       <div
                         key={`selector-${index}`}
-                        className={`animate-fade-in transition-all duration-200 ${loadingSlots[index] ? 'opacity-50' : ''}`}
+                        className={`animate-fade-in transition-all duration-200 ${
+                          loadingSlots[index] ? "opacity-50" : ""
+                        }`}
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <React.Fragment>
                           <Suspense fallback={<div>Loading...</div>}>
-                            <div className={`relative ${pinnedItems[index] ? 'border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1' : ''}`}>
+                            <div
+                              className={`relative ${
+                                pinnedItems[index]
+                                  ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
+                                  : ""
+                              }`}
+                            >
                               {pinnedItems[index] && (
                                 <div className="absolute -top-2 -right-2 z-10">
                                   <TooltipProvider>
@@ -972,7 +915,11 @@ function AppContent() {
                         id="clear-item-fields"
                         className={`bg-red-500 hover:bg-red-600 text-white w-1/2 
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
-                          ${isClearButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          ${
+                            isClearButtonDisabled
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
                         onClick={clearItemFields}
                         disabled={isClearButtonDisabled}
                       >
@@ -990,7 +937,11 @@ function AppContent() {
                         id="reset-overrides"
                         className={`bg-red-500 hover:bg-red-600 text-white w-1/2
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
-                          ${isResetOverridesButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          ${
+                            isResetOverridesButtonDisabled
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
                         onClick={resetOverridesAndExclusions}
                         disabled={isResetOverridesButtonDisabled}
                       >
@@ -1006,8 +957,12 @@ function AppContent() {
 
               {/* Status text with improved styling */}
               <div className="text-center text-sm text-gray-400 mt-4 p-2 rounded-md bg-gray-700/30">
-                <span className="font-medium">{Object.keys(overriddenPrices).length}</span> overrides and{" "}
-                <span className="font-medium">{excludedItems.size}</span> exclusions currently active
+                <span className="font-medium">
+                  {Object.keys(overriddenPrices).length}
+                </span>{" "}
+                overrides and{" "}
+                <span className="font-medium">{excludedItems.size}</span>{" "}
+                exclusions currently active
               </div>
 
               {/* Sacrifice Value Display with improved animation */}
@@ -1019,10 +974,11 @@ function AppContent() {
                   <Skeleton className="h-16 w-3/4 mx-auto" />
                 ) : (
                   <div
-                    className={`text-6xl font-extrabold ${isThresholdMet
-                      ? "text-green-500 animate-pulse"
-                      : "text-red-500 animate-pulse"
-                      }`}
+                    className={`text-6xl font-extrabold ${
+                      isThresholdMet
+                        ? "text-green-500 animate-pulse"
+                        : "text-red-500 animate-pulse"
+                    }`}
                   >
                     ₽{total.toLocaleString()}
                   </div>
@@ -1075,7 +1031,7 @@ function AppContent() {
                 </div>
                 <div className="text-center mt-1">
                   {/* maker with cool icons */}
-                  Made by Wilsman77 
+                  Made by Wilsman77
                 </div>
                 <div className="flex justify-center mt-4 space-x-4">
                   <a
@@ -1117,7 +1073,7 @@ function AppContent() {
           <SettingsPane
             isOpen={isSettingsPaneVisible}
             onClose={() => setIsSettingsPaneVisible(false)}
-            onReset={() => {
+            onSettingsReset={() => {
               setSelectedItems(Array(5).fill(null));
               setPinnedItems(Array(5).fill(false));
               setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
@@ -1129,14 +1085,15 @@ function AppContent() {
 
               toast({
                 title: "Reset Complete",
-                description: "All settings have been reset to their default values.",
+                description:
+                  "All settings have been reset to their default values.",
               });
             }}
             onHardReset={handleReset}
             onClearLocalStorage={() => {
               // Clear localStorage
               localStorage.clear();
-              
+
               // Reset all state to defaults
               setSelectedItems(Array(5).fill(null));
               setPinnedItems(Array(5).fill(false));
@@ -1149,7 +1106,8 @@ function AppContent() {
 
               toast({
                 title: "Data Cleared",
-                description: "All data has been cleared. The app has been reset to its initial state.",
+                description:
+                  "All data has been cleared. The app has been reset to its initial state.",
               });
             }}
             onExportData={() => {
@@ -1161,11 +1119,13 @@ function AppContent() {
                 excludeIncompatible,
                 excludedItems: Array.from(excludedItems),
               };
-              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: "application/json",
+              });
               const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
+              const a = document.createElement("a");
               a.href = url;
-              a.download = 'cultist-circle-settings.json';
+              a.download = "cultist-circle-settings.json";
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
@@ -1174,14 +1134,18 @@ function AppContent() {
             onImportData={(data) => {
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.selectedItems) setSelectedItems(parsed.selectedItems);
+                if (parsed.selectedItems)
+                  setSelectedItems(parsed.selectedItems);
                 if (parsed.pinnedItems) setPinnedItems(parsed.pinnedItems);
                 if (parsed.sortOption) setSortOption(parsed.sortOption);
-                if (parsed.excludedCategories) setExcludedCategories(new Set(parsed.excludedCategories));
-                if (parsed.excludeIncompatible !== undefined) setExcludeIncompatible(parsed.excludeIncompatible);
-                if (parsed.excludedItems) setExcludedItems(new Set(parsed.excludedItems));
+                if (parsed.excludedCategories)
+                  setExcludedCategories(new Set(parsed.excludedCategories));
+                if (parsed.excludeIncompatible !== undefined)
+                  setExcludeIncompatible(parsed.excludeIncompatible);
+                if (parsed.excludedItems)
+                  setExcludedItems(new Set(parsed.excludedItems));
               } catch (e) {
-                console.error('Failed to parse imported data:', e);
+                console.error("Failed to parse imported data:", e);
               }
             }}
             onSortChange={handleSortChange}
