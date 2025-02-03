@@ -41,7 +41,7 @@ import Link from "next/link";
 
 const CURRENT_VERSION = "1.0.6"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 const PVE_ITEMS_CACHE_KEY = "pveItemsCache";
 const PVP_ITEMS_CACHE_KEY = "pvpItemsCache";
 
@@ -242,7 +242,7 @@ function AppContent() {
     setHasAutoSelected(false); // Reset Auto Select when sort changes
   }, []);
 
-  // Reset all settings to defaults
+  // // Reset all settings to defaults
   // const handleResetUserData = useCallback(() => {
   //   setSelectedItems(Array(5).fill(null));
   //   setPinnedItems(Array(5).fill(false));
@@ -254,13 +254,7 @@ function AppContent() {
   //   setHasAutoSelected(false);
 
   //   // Clear localStorage
-  //   if (typeof window !== "undefined") {
-  //     localStorage.removeItem("selectedCategories");
-  //     localStorage.removeItem("sortOption");
-  //     localStorage.removeItem("excludedItems");
-  //     localStorage.removeItem("excludedCategories");
-  //     localStorage.removeItem(OVERRIDDEN_PRICES_KEY);
-  //   }
+  //   localStorage.clear();
 
   //   // Clear cookies
   //   Cookies.remove("userThreshold");
@@ -752,29 +746,6 @@ function AppContent() {
 
   // Add loading state
   const [loadingSlots, setLoadingSlots] = useState<boolean[]>(Array(5).fill(false));
-
-  // Modify the item selection logic to show loading state
-  // const handleItemSelect = useCallback((index: number, item: SimplifiedItem | null) => {
-  //   setLoadingSlots(prev => {
-  //     const newState = [...prev];
-  //     newState[index] = true;
-  //     return newState;
-  //   });
-    
-  //   // Simulate a small delay for better UX
-  //   setTimeout(() => {
-  //     setSelectedItems(prev => {
-  //       const newItems = [...prev];
-  //       newItems[index] = item;
-  //       return newItems;
-  //     });
-  //     setLoadingSlots(prev => {
-  //       const newState = [...prev];
-  //       newState[index] = false;
-  //       return newState;
-  //     });
-  //   }, 150);
-  // }, []);
 
   // Reset overrides and exclusions
   const resetOverridesAndExclusions = useCallback(() => {

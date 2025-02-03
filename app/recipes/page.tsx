@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Check, ArrowLeft } from "lucide-react";
 import {
   Select,
@@ -236,6 +236,18 @@ export default function Page() {
             ))}
           </div>
         </CardContent>
+        <CardFooter className="text-center text-sm text-gray-400 mt-4">
+          Data sourced from the&nbsp;{" "}
+          <a
+            href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline"
+          >
+            Escape from Tarkov Wiki
+          </a>
+          . Thank you to all contributors!
+        </CardFooter>
       </Card>
     </div>
   );

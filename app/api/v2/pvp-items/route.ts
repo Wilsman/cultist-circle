@@ -6,9 +6,9 @@ import { IGNORED_ITEMS } from "@/config/config";
 import { rateLimiter } from "@/app/lib/rateLimiter";
 import { GraphQLResponse } from "@/types/GraphQLResponse";
 import { unstable_cache } from "next/cache";
+import { compressSync } from "fflate";
 
 const GRAPHQL_API_URL = "https://api.tarkov.dev/graphql";
-const isDevelopment = process.env.NODE_ENV === "development";
 
 export const runtime = "nodejs";
 
@@ -26,7 +26,6 @@ function processItems(rawData: SimplifiedItem[]) {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// Move the fetch and process logic into a cached function
 async function fetchAndProcessItems() {
   const query = `
     {
@@ -82,10 +81,8 @@ async function fetchAndProcessItems() {
   return processItems(simplifiedData);
 }
 
-// Create a cached version of the function
 const getCachedItems = unstable_cache(
   async () => {
-    console.log("Cache test - Function executed:", Date.now());
     return await fetchAndProcessItems();
   },
   ["pvp-items"],
@@ -99,51 +96,25 @@ export async function GET(request: NextRequest) {
   const rateLimiterResponse = rateLimiter(request);
   if (rateLimiterResponse) return rateLimiterResponse;
 
-  const startTime = Date.now();
-
   try {
-    console.log("Cache test - Request timestamp:", Date.now());
     const items = await getCachedItems();
-
-    if (items.length === 0) {
-      return NextResponse.json(
-        {
-          data: [],
-          message: "No PVP items available at the moment.",
-          timestamp: Date.now(),
-        },
-        {
-          headers: {
-            "Cache-Control": isDevelopment
-              ? "no-store"
-              : "public, max-age=1800",
-          },
-        }
-      );
-    }
-
-    const endTime = Date.now();
-    console.log(`Response time: ${endTime - startTime}ms`);
-
-    return NextResponse.json(
-      {
-        data: items,
-        timestamp: Date.now(),
-      },
-      {
-        headers: {
-          "Cache-Control": isDevelopment ? "no-store" : "public, max-age=1800",
-        },
-      }
+    const responseData = JSON.stringify(items);
+    const compressedData = compressSync(
+      new TextEncoder().encode(responseData)
     );
+
+    return new NextResponse(compressedData, {
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Encoding": "gzip",
+        "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
+      },
+    });
   } catch (error) {
     console.error("Error in PVP items route:", error);
     return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      {
-        status: 500,
-        headers: { "Cache-Control": "no-store" },
-      }
+      { error: "Failed to fetch PVP items" },
+      { status: 500 }
     );
   }
 }

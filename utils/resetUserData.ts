@@ -32,7 +32,7 @@ export async function resetUserData(
   setPinnedItems(Array(5).fill(false));
   setExcludedCategories(defaultItemCategories);
   setSortOption("az");
-  setThreshold(350001);
+  setThreshold(400000);
   setExcludedItems(new Set());
   setOverriddenPrices({});
 

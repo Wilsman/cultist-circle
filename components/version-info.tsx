@@ -54,7 +54,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
             </h4>
             <ul className="text-sm list-disc list-inside">
               <li>Switched to tarkov.dev API for faster price updates</li>
-              <li>Feature: Added Bonus Calculator (Sacred Amulet)</li>
+              <li>New Excluded Categories & Items settings | Allows more control</li>
               <li>Corrected recipes: Secure container Kappa (Desecrated)</li>
               <li>Improved server and local caching system</li>
             </ul>
@@ -65,7 +65,6 @@ export function VersionInfo({ version }: VersionInfoProps) {
               🚀 Upcoming Features
             </h4>
             <ul className="text-sm list-disc list-inside">
-              <li>Ability to blacklist items - e.g. SHYSHKA, Olivier salad box etc.</li>
               <li>Enhanced filtering and sorting capabilities</li>
             </ul>
           </div>
@@ -75,11 +74,6 @@ export function VersionInfo({ version }: VersionInfoProps) {
               🚨 Known Issues
             </h4>
             <ul className="text-sm list-disc list-inside">
-              <li>
-                <span className="font-semibold">
-                  Items that cannot be used: SHYSHKA, Olivier salad box and Jar of pickles.
-                </span>
-              </li>
               <li>Cache optimization in progress</li>
               <li>
                 <span className="font-semibold">

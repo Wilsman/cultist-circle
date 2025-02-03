@@ -6,26 +6,24 @@ import { IGNORED_ITEMS } from "@/config/config";
 import { rateLimiter } from "@/app/lib/rateLimiter";
 import { GraphQLResponse } from "@/types/GraphQLResponse";
 import { unstable_cache } from "next/cache";
+import { compressSync } from "fflate";
 
 const GRAPHQL_API_URL = "https://api.tarkov.dev/graphql";
-const isDevelopment = process.env.NODE_ENV === "development";
 
 export const runtime = "nodejs";
 
 function processItems(rawData: SimplifiedItem[]) {
-  return (
-    rawData
-      .filter((item) => !IGNORED_ITEMS.includes(item.name))
-      .map((item) => ({
-        uid: item.uid,
-        name: item.name,
-        basePrice: item.basePrice,
-        price: item.price,
-        updated: item.updated,
-        tags: item.tags,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  );
+  return rawData
+    .filter((item) => !IGNORED_ITEMS.includes(item.name))
+    .map((item) => ({
+      uid: item.uid,
+      name: item.name,
+      basePrice: item.basePrice,
+      price: item.price,
+      updated: item.updated,
+      tags: item.tags,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function fetchAndProcessItems() {
@@ -68,8 +66,7 @@ async function fetchAndProcessItems() {
 
   const simplifiedData: SimplifiedItem[] = jsonData.data.items
     .filter(
-      (item) =>
-        !IGNORED_ITEMS.includes(item.name) && item.lastLowPrice !== null
+      (item) => !IGNORED_ITEMS.includes(item.name) && item.lastLowPrice !== null
     )
     .map((item) => ({
       uid: item.id,
@@ -86,7 +83,6 @@ async function fetchAndProcessItems() {
 
 const getCachedItems = unstable_cache(
   async () => {
-    console.log("Cache test - Function executed:", Date.now());
     return await fetchAndProcessItems();
   },
   ["pve-items"],
@@ -100,51 +96,23 @@ export async function GET(request: NextRequest) {
   const rateLimiterResponse = rateLimiter(request);
   if (rateLimiterResponse) return rateLimiterResponse;
 
-  const startTime = Date.now();
-
   try {
-    console.log("Cache test - Request timestamp:", Date.now());
     const items = await getCachedItems();
+    const responseData = JSON.stringify(items);
+    const compressedData = compressSync(new TextEncoder().encode(responseData));
 
-    if (items.length === 0) {
-      return NextResponse.json(
-        {
-          data: [],
-          message: "No PVE items available at the moment.",
-          timestamp: Date.now(),
-        },
-        {
-          headers: {
-            "Cache-Control": isDevelopment
-              ? "no-store"
-              : "public, max-age=1800",
-          },
-        }
-      );
-    }
-
-    const endTime = Date.now();
-    console.log(`Response time: ${endTime - startTime}ms`);
-
-    return NextResponse.json(
-      {
-        data: items,
-        timestamp: Date.now(),
+    return new NextResponse(compressedData, {
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Encoding": "gzip",
+        "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
       },
-      {
-        headers: {
-          "Cache-Control": isDevelopment ? "no-store" : "public, max-age=1800",
-        },
-      }
-    );
+    });
   } catch (error) {
     console.error("Error in PVE items route:", error);
     return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      {
-        status: 500,
-        headers: { "Cache-Control": "no-store" },
-      }
+      { error: "Failed to fetch PVE items" },
+      { status: 500 }
     );
   }
 }
