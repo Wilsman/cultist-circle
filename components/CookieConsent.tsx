@@ -104,6 +104,9 @@ export default function CookieConsent() {
       window.gtag?.('consent', 'update', {
         analytics_storage: 'granted',
       })
+      window.dataLayer?.push({
+        event: 'consent_accepted_analytics',
+      })
     } else {
       window.gtag?.('consent', 'update', {
         analytics_storage: 'denied',
@@ -116,6 +119,9 @@ export default function CookieConsent() {
         ad_storage: 'granted',
         ad_user_data: 'granted',
         ad_personalization: 'granted',
+      })
+      window.dataLayer?.push({
+        event: 'consent_accepted_advertising',
       })
     } else {
       window.gtag?.('consent', 'update', {
@@ -264,7 +270,7 @@ export default function CookieConsent() {
             <section>
               <h3 className="text-lg font-semibold mb-2">Your Choices</h3>
               <p className="mb-4">
-                You can choose to accept or decline different types of cookies. Necessary cookies cannot be declined as they are essential for the website to work properly. You can modify your cookie preferences at any time by clicking the "Customize" button in the cookie banner.
+                You can choose to accept or decline different types of cookies. Necessary cookies cannot be declined as they are essential for the website to work properly. You can modify your cookie preferences at any time by clicking the &ldquo;Customize&rdquo; button in the cookie banner.
               </p>
             </section>
 
