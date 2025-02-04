@@ -43,9 +43,9 @@ const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
 });
 
-const CURRENT_VERSION = "1.0.5"; // Increment this when you want to trigger a cache clear
+const CURRENT_VERSION = "1.0.5.a"; // Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,

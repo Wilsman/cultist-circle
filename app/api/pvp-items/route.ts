@@ -11,7 +11,7 @@ const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
 
 const PVP_API_URL = "https://api.tarkov-market.app/api/v1/items/all";
-const CACHE_DURATION = 30 * 60; // 30 minutes in seconds
+const CACHE_DURATION = 15 * 60; // 15 minutes in seconds
 
 // In-memory cache
 let cache = {
