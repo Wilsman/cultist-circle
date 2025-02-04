@@ -114,7 +114,6 @@ async function fetchAndProcessItems() {
 
 const getCachedItems = unstable_cache(
   async () => {
-    console.log("[PVE] Fetching fresh items from tarkov.dev API");
     const startTime = Date.now();
     const items = await fetchAndProcessItems();
     const duration = Date.now() - startTime;
@@ -125,13 +124,13 @@ const getCachedItems = unstable_cache(
   },
   ["pve-items"],
   {
-    revalidate: 900, // 15 minutes to match client-side cache
+    revalidate: 1800, // 30 minutes
     tags: ["pve-items"],
   }
 );
 
 export async function GET(request: NextRequest) {
-  console.log("\n📥 New request received at:", new Date().toISOString());
+  console.log("\n📥 [PVE] New request received at:", new Date().toISOString());
   console.log("🔍 Request mode: pve");
   console.log("⚡ Attempting to fetch PVE items from cache");
 
@@ -144,13 +143,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log(
-      "[REGULAR] Cache function called at:",
-      new Date().toISOString()
-    );
     const items = await getCachedItems();
 
-    console.log("✅ Request completed successfully:", {
+    console.log("✅ [PVE] Request completed successfully:", {
       itemCount: items.length,
       firstItem: items[0]?.name,
     });

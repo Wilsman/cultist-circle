@@ -32,7 +32,7 @@ const MAX_RETRIES = 3; // Maximum number of revalidation attempts
 
 const PVE_ITEMS_CACHE_KEY = "pveItemsCache";
 const PVP_ITEMS_CACHE_KEY = "pvpItemsCache";
-const CURRENT_VERSION = "1.0.6";
+const CURRENT_VERSION = "1.0.6.1";
 
 export function useItemsData(isPVE: boolean) {
   const cacheCheckResults = useRef<Record<string, {
@@ -101,7 +101,7 @@ export function useItemsData(isPVE: boolean) {
         
         // Always return valid cache data while rate limited
         if (cacheData.data?.length && !cacheStatus.versionMismatch && !cacheStatus.modeMismatch) {
-          console.log(`[${mode.toUpperCase()}] Using cache while rate limited:`, {
+          console.log(`[${mode.toUpperCase()}] Using cache while rate limited:`, { // ! FIXME: age and items are not accurate
             age: cacheStatus.cacheAge,
             items: cacheStatus.itemCount
           });

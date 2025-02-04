@@ -623,13 +623,13 @@ function AppContent() {
     }
   }, [isThresholdMet, threshold, toast]);
 
-  // useEffect(() => {
-  //   const storedVersion = localStorage.getItem("appVersion");
-  //   if (storedVersion !== CURRENT_VERSION) {
-  //     clearUserData();
-  //     localStorage.setItem("appVersion", CURRENT_VERSION);
-  //   }
-  // }, []);
+  useEffect(() => {
+    const storedVersion = localStorage.getItem("appVersion");
+    if (storedVersion !== CURRENT_VERSION) {
+      handleReset(); // TODO: CHECK THIS WORKS
+      localStorage.setItem("appVersion", CURRENT_VERSION);
+    }
+  }, []);
 
   const [isThresholdHelperOpen, setIsThresholdHelperOpen] = useState(false);
 
