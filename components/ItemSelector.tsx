@@ -107,14 +107,14 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   const filteredItems = useMemo(() => {
     let results;
     if (isFocused && !debouncedSearchTerm) {
-      results = items.filter((item) => item.price > 0);
+      results = items.filter((item) => item.basePrice > 0);
     } else if (!debouncedSearchTerm) {
       return [];
     } else {
       results = fuse
         .search(debouncedSearchTerm)
         .map((result) => result.item)
-        .filter((item) => item.price > 0);
+        .filter((item) => item.basePrice > 0);
     }
 
     // Filter out excluded items from the results
@@ -199,14 +199,14 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   const Row = useCallback(
     ({ index, style }: ListChildComponentProps) => {
       const item = filteredItems[index];
-      const itemOverriddenPrice = overriddenPrices[item.uid];
+      const itemOverriddenPrice = overriddenPrices[item.id];
       const displayedPrice =
-        itemOverriddenPrice !== undefined ? itemOverriddenPrice : item.price;
+        itemOverriddenPrice !== undefined ? itemOverriddenPrice : (item.lastLowPrice || item.basePrice);
       const isOverridden = itemOverriddenPrice !== undefined;
-      const isItemExcluded = excludedItems.has(item.uid); // Check if the item is excluded
+      const isItemExcluded = excludedItems.has(item.name); // We use item.name for exclusions as per the code above
 
       return (
-        <Tooltip key={item.uid}>
+        <Tooltip key={item.id}>
           <TooltipTrigger asChild>
             <li
               style={style}
@@ -221,13 +221,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 )}
               </div>
               <div className="text-gray-400 text-sm mt-1">
-                <p>Base Value: ₱{item.basePrice.toLocaleString()}</p>
+                <p>Base Value: ₽{item.basePrice.toLocaleString()}</p>
                 <p>
-                  Estimated Flea Price:{" "}
+                  {item.lastLowPrice ? 'Last Low Price:' : 'Base Price:'}{" "}
                   <span
                     className={isOverridden ? "text-yellow-300 font-bold" : ""}
                   >
-                    ₱{displayedPrice.toLocaleString()}
+                    ₽{displayedPrice.toLocaleString()}
                   </span>
                   {isOverridden && (
                     <span className="text-gray-400 ml-1">(Overridden)</span>
@@ -238,13 +238,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           </TooltipTrigger>
           <TooltipContent>
             <div>
-              <p>Base Value: ₱{item.basePrice.toLocaleString()}</p>
+              <p>Base Value: ₽{item.basePrice.toLocaleString()}</p>
               <p>
-                Estimated Flea Price:{" "}
+                {item.lastLowPrice ? 'Last Low Price:' : 'Base Price:'}{" "}
                 <span
                   className={isOverridden ? "text-yellow-300 font-bold" : ""}
                 >
-                  ₱{displayedPrice.toLocaleString()}
+                  ₽{displayedPrice.toLocaleString()}
                 </span>
                 {isOverridden && (
                   <span className="text-gray-400 ml-1">(Overridden)</span>
@@ -252,6 +252,11 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               </p>
               {isItemExcluded && (
                 <p className="text-red-500">This item is excluded.</p>
+              )}
+              {item.lastLowPrice && item.updated && (
+                <p className="text-gray-400">
+                  Last updated: {getRelativeDate(item.updated.toString())}
+                </p>
               )}
             </div>
           </TooltipContent>
@@ -405,11 +410,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         {selectedItem && (
           <div className="text-sm text-gray-400 mt-1 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             {" "}
-            <span>Base: ₱{selectedItem.basePrice.toLocaleString()}</span>
+            <span>Base: ₽{selectedItem.basePrice.toLocaleString()}</span>
             <span className={overriddenPrice ? "text-blue-500" : ""}>
-              Flea: ₱{(overriddenPrice || selectedItem.price).toLocaleString()}
+              Flea: ₽{(overriddenPrice || selectedItem.lastLowPrice || selectedItem.basePrice).toLocaleString()}
             </span>
-            <span>Updated: {getRelativeDate(selectedItem.updated)}</span>
+            {selectedItem.updated && (
+              <span>Updated: {getRelativeDate(selectedItem.updated.toString())}</span>
+            )}
             {isExcluded && (
               <span className="text-red-500">Excluded from Autopick</span>
             )}

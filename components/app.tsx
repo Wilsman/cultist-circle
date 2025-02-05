@@ -41,7 +41,7 @@ import { FeedbackForm } from "./feedback-form";
 import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
 
-const CURRENT_VERSION = "1.0.6.1"; //* Increment this when you want to trigger a cache clear
+const CURRENT_VERSION = "1.1.0.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
@@ -244,7 +244,7 @@ function AppContent() {
   }, []);
 
   // Calls handleReset and also clears the users cookies and local storage
-  const handleReset = async () => {
+  const handleReset = useCallback(async () => {
     await resetUserData(
       setSelectedItems,
       setPinnedItems,
@@ -260,7 +260,17 @@ function AppContent() {
       DEFAULT_EXCLUDED_CATEGORIES,
       toast
     );
-  };
+  }, [
+    setSelectedItems,
+    setPinnedItems,
+    setExcludedCategories,
+    setSortOption,
+    setThreshold,
+    setExcludedItems,
+    setOverriddenPrices,
+    mutate,
+    toast,
+  ]);
 
   // Handler for threshold changes
   const handleThresholdChange = (newValue: number) => {
@@ -276,7 +286,9 @@ function AppContent() {
     // First filter by excluded categories
     const categoryFiltered = rawItemsData.filter(
       (item: SimplifiedItem) =>
-        !item.tags?.some((tag: string) => excludedCategories.has(tag))
+        !item.categories_display?.some((category) =>
+          excludedCategories.has(category.name)
+        )
     );
 
     // Then filter out individually excluded items
@@ -291,9 +303,15 @@ function AppContent() {
     if (sortOption === "az") {
       sortedItems.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortOption === "base-value") {
-      sortedItems.sort((a, b) => a.basePrice - b.price);
+      sortedItems.sort((a, b) => a.basePrice - b.basePrice);
     } else if (sortOption === "ratio") {
-      sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / b.price);
+      sortedItems.sort((a, b) => {
+        // Skip items without lastLowPrice in sorting (push them to the end)
+        if (!b.lastLowPrice) return -1;
+        if (!a.lastLowPrice) return 1;
+        // Sort by highest base value to lowest market price ratio
+        return b.basePrice / b.lastLowPrice - a.basePrice / a.lastLowPrice;
+      });
     }
 
     return sortedItems;
@@ -333,10 +351,13 @@ function AppContent() {
 
       for (let c = 1; c <= maxItems; c++) {
         for (let i = 0; i < validItems.length; i++) {
-          const { basePrice, price } = validItems[i];
+          const item = validItems[i];
+          const basePrice = item.basePrice;
+          const fleaPrice = item.lastLowPrice || item.basePrice;
+
           for (let v = basePrice; v <= maxThreshold; v++) {
-            if (dp[c - 1][v - basePrice] + price < dp[c][v]) {
-              dp[c][v] = dp[c - 1][v - basePrice] + price;
+            if (dp[c - 1][v - basePrice] + fleaPrice < dp[c][v]) {
+              dp[c][v] = dp[c - 1][v - basePrice] + fleaPrice;
               itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
             }
           }
@@ -384,7 +405,9 @@ function AppContent() {
 
   const fleaCosts = useMemo(() => {
     return selectedItems.map((item) =>
-      item ? overriddenPrices[item.uid] || item.price : 0
+      item
+        ? overriddenPrices[item.id] || item.lastLowPrice || item.basePrice
+        : 0
     );
   }, [selectedItems, overriddenPrices]);
 
@@ -425,21 +448,21 @@ function AppContent() {
           if (overriddenPrice !== null) {
             setOverriddenPrices((prev) => ({
               ...prev,
-              [item.uid]: overriddenPrice,
+              [item.id]: overriddenPrice,
             }));
           } else {
             setOverriddenPrices((prev) => {
               const newOverriddenPrices = { ...prev };
-              delete newOverriddenPrices[item.uid];
+              delete newOverriddenPrices[item.id];
               return newOverriddenPrices;
             });
           }
         } else if (!item) {
           setOverriddenPrices((prev) => {
             const newOverriddenPrices = { ...prev };
-            const uid = selectedItems[index]?.uid;
-            if (uid) {
-              delete newOverriddenPrices[uid];
+            const id = selectedItems[index]?.id;
+            if (id) {
+              delete newOverriddenPrices[id];
             }
             return newOverriddenPrices;
           });
@@ -472,14 +495,20 @@ function AppContent() {
 
     try {
       // Filter validItems based on heuristics
-      let validItems: SimplifiedItem[] = items.filter((item) => item.price > 0);
+      let validItems: SimplifiedItem[] = items.filter((item) => {
+        const currentPrice = item.lastLowPrice || item.basePrice;
+        return currentPrice > 0;
+      });
 
       // Apply filtering heuristics
       validItems = validItems
         .filter((item) => item.basePrice >= threshold * 0.1) // Only items contributing at least 10% to the threshold
-        .filter((item) => !item.bannedOnFlea) // Filter out items that are banned on the flea market
-        .filter((item) => !excludedItems.has(item.uid)) // Exclude user-excluded items
-        .sort((a, b) => b.basePrice / b.price - a.basePrice / b.price) // Sort by value-to-cost ratio
+        .filter((item) => !excludedItems.has(item.name)) // Exclude user-excluded items
+        .sort((a, b) => {
+          const aPrice = a.lastLowPrice || a.basePrice;
+          const bPrice = b.lastLowPrice || b.basePrice;
+          return b.basePrice / bPrice - a.basePrice / aPrice; // Sort by value-to-cost ratio
+        })
         .slice(0, 100); // Limit to top 100 items
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -495,16 +524,18 @@ function AppContent() {
       const filteredItems = validItems.filter(
         (item) =>
           !selectedItems.some(
-            (selected, index) =>
-              pinnedItems[index] && selected?.uid === item.uid
+            (selected, index) => pinnedItems[index] && selected?.id === item.id
           )
       );
 
       // Adjust prices in filteredItems to use overridden prices where applicable
       const adjustedItems = filteredItems.map((item) => {
-        const overriddenPrice = overriddenPrices[item.uid];
+        const overriddenPrice = overriddenPrices[item.id];
         if (overriddenPrice !== undefined) {
-          return { ...item, price: overriddenPrice };
+          return {
+            ...item,
+            lastLowPrice: overriddenPrice,
+          };
         }
         return item;
       });
@@ -539,8 +570,8 @@ function AppContent() {
       const newOverriddenPrices = { ...overriddenPrices };
       for (let i = 0; i < 5; i++) {
         const item = newSelectedItems[i];
-        if (item && overriddenPrices[item.uid]) {
-          newOverriddenPrices[item.uid] = overriddenPrices[item.uid];
+        if (item && overriddenPrices[item.id]) {
+          newOverriddenPrices[item.id] = overriddenPrices[item.id];
         }
         // Do not delete overridden prices for other items
       }
@@ -629,7 +660,7 @@ function AppContent() {
       handleReset(); // TODO: CHECK THIS WORKS
       localStorage.setItem("appVersion", CURRENT_VERSION);
     }
-  }, []);
+  }, [handleReset]);
 
   const [isThresholdHelperOpen, setIsThresholdHelperOpen] = useState(false);
 
@@ -886,13 +917,15 @@ function AppContent() {
                                 onPin={() => handlePinItem(index)}
                                 isPinned={pinnedItems[index]}
                                 overriddenPrice={
-                                  item ? overriddenPrices[item.uid] : undefined
+                                  item ? overriddenPrices[item.id] : undefined
                                 }
                                 isAutoPickActive={hasAutoSelected}
                                 overriddenPrices={overriddenPrices}
-                                isExcluded={excludedItems.has(item?.uid || "")}
+                                isExcluded={
+                                  item ? excludedItems.has(item.name) : false
+                                }
                                 onToggleExclude={() =>
-                                  item && toggleExcludedItem(item.uid)
+                                  item && toggleExcludedItem(item.name)
                                 }
                                 excludedItems={excludedItems}
                               />

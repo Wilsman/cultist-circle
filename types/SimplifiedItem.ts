@@ -1,13 +1,16 @@
 // types/SimplifiedItem.ts
 
 export interface SimplifiedItem {
-  uid: string;
+  // Database fields
+  id: string;
   name: string;
   basePrice: number;
-  price: number;
-  updated: string;
+  lastLowPrice?: number;
+  updated?: number;
+  categories: string[];
+
+  // UI-specific fields
   tags?: string[];
-  bannedOnFlea?: boolean;
   isExcluded?: boolean;
-  categories?: Array<{ name: string }>;
+  categories_display?: Array<{ name: string }>;  // For UI display of categories
 }

@@ -66,6 +66,7 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Locked case",
   "Case key",
   "Special 40-degree fuel",
+  "Mr Kerman's cat hologram",
 
   // Food and holiday items
   "Jar of pickles",

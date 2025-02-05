@@ -1,248 +1,191 @@
-'use client';
+import { createClient } from "@/utils/supabase/client";
+import { useCallback, useEffect } from "react";
+import useSWR from "swr";
+import type { SimplifiedItem } from "@/types/SimplifiedItem";
 
-import { useCallback, useRef } from 'react';
-import useSWR from 'swr';
-import type { SimplifiedItem } from '@/types/SimplifiedItem';
-
-interface ItemsCache {
-  timestamp: number;
-  version: string;
-  mode: string;
-  data: SimplifiedItem[];
-}
-
-interface CacheStatus {
-  cacheAge: string;
-  cacheExpiry: string;
-  version: string;
-  currentVersion: string;
-  itemCount: number;
-  isExpired: boolean;
-  versionMismatch: boolean;
-  modeMismatch: boolean;
-  shouldCheckStaleness: boolean;
-}
-
-type GameMode = 'pve' | 'pvp';
-
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
-const PRICE_STALENESS_THRESHOLD = 3 * 60 * 1000; // 3 minutes
-const DEBOUNCE_DELAY = 1000; // 1 second
-const MAX_RETRIES = 3; // Maximum number of revalidation attempts
-
-const PVE_ITEMS_CACHE_KEY = "pveItemsCache";
-const PVP_ITEMS_CACHE_KEY = "pvpItemsCache";
-const CURRENT_VERSION = "1.0.6.1";
+const CURRENT_VERSION = "1.1.0.1"; //* Increment this when you want to trigger a cache clear
 
 export function useItemsData(isPVE: boolean) {
-  const cacheCheckResults = useRef<Record<string, {
-    timestamp: number;
-    result: SimplifiedItem[];
-  }>>({});
-  
-  const lastCheckTime = useRef<Record<string, number>>({});
-  const retryCount = useRef<Record<string, number>>({});
-  
-  const checkPriceStaleness = async (items: SimplifiedItem[], mode: GameMode): Promise<boolean> => {
-    const sampleSize = 3;
-    const sampledItems = items
-      .sort(() => 0.5 - Math.random())
-      .slice(0, sampleSize);
-    
-    console.log(`[${mode.toUpperCase()}] Checking prices for:`, sampledItems.map(i => i.name));
-    
-    try {
-      const res = await fetch('/api/v2/check-prices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ items: sampledItems }),
-      });
+  const supabase = createClient();
+  const tableName = isPVE ? "tarkov_items_pve" : "tarkov_items_pvp";
 
-      if (!res.ok) {
-        console.error(`[${mode.toUpperCase()}] Price check failed:`, await res.text());
-        return true;
-      }
-      
-      const data = await res.json();
-      
-      if (data.isStale) {
-        console.log(`[${mode.toUpperCase()}] Price differences:`, data.details);
-      }
-      
-      return data.isStale;
-    } catch (e) {
-      console.error(`[${mode.toUpperCase()}] Price check error:`, e);
-      return true;
+  const fetcher = useCallback(async () => {
+    console.log(`🔍 Fetching item count from ${tableName}...`);
+
+    // First, get the count of all items
+    const { count } = await supabase
+      .from(tableName)
+      .select("*", { count: "exact", head: true });
+
+    if (!count) {
+      console.warn(`⚠️ No items found in ${tableName}`);
+      return [];
     }
-  };
 
-  const fetcher = useCallback(async (url: string) => {
-    const mode = url.includes("pve") ? 'pve' : 'pvp' as GameMode;
-    const cacheKey = mode === 'pve' ? PVE_ITEMS_CACHE_KEY : PVP_ITEMS_CACHE_KEY;
-    const now = Date.now();
+    console.log(`📊 Found ${count} total items in ${tableName}`);
 
-    // Debounce check
-    if (lastCheckTime.current[mode] && (now - lastCheckTime.current[mode] < DEBOUNCE_DELAY)) {
-      const cached = cacheCheckResults.current[mode]?.result;
-      if (cached?.length) {
-        return cached;
+    // Fetch all items using range pagination
+    const pageSize = 1000;
+    const pages = Math.ceil(count / pageSize);
+    const allData: any[] = [];
+
+    for (let page = 0; page < pages; page++) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
+      console.log(
+        `📥 Fetching batch ${page + 1}/${pages} (items ${from + 1}-${Math.min(
+          to + 1,
+          count
+        )})`
+      );
+
+      const { data: pageData, error } = await supabase
+        .from(tableName)
+        .select("*")
+        .range(from, to)
+        .order("name");
+
+      if (error) {
+        console.error(`❌ Error fetching from ${tableName}:`, error);
+        throw error;
       }
+
+      if (!pageData) {
+        console.warn(
+          `[Supabase] No data returned from ${tableName} for range ${from}-${to}`
+        );
+        continue;
+      }
+
+      allData.push(...pageData);
     }
-    lastCheckTime.current[mode] = now;
 
+    console.log(`[Supabase] Raw data from ${tableName}:`, {
+      count: allData.length,
+      sample: allData.slice(0, 2),
+      firstItem: allData[0],
+      lastItem: allData[allData.length - 1],
+    });
+
+    // Transform the data to match SimplifiedItem interface
     try {
-      // Try to use cache first
-      const cachedDataString = localStorage.getItem(cacheKey);
-      if (cachedDataString) {
-        const cacheData = JSON.parse(cachedDataString) as ItemsCache;
-        const cacheStatus = getCacheStatus(cacheData);
-        
-        // Always return valid cache data while rate limited
-        if (cacheData.data?.length && !cacheStatus.versionMismatch && !cacheStatus.modeMismatch) {
-          console.log(`[${mode.toUpperCase()}] Using cache while rate limited:`, { // ! FIXME: age and items are not accurate
-            age: cacheStatus.cacheAge,
-            items: cacheStatus.itemCount
-          });
-          return cacheData.data;
-        }
-      }
-
-      console.log(`[${mode.toUpperCase()}] Fetching fresh data`);
-      const res = await fetch(`/api/v2/items?mode=${mode}`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-
-      if (!res.ok) {
-        if (res.status === 429) {
-          console.warn(`[${mode.toUpperCase()}] Rate limited, using cache if available`);
-          // Return cached data if we have it
-          if (cachedDataString) {
-            const cacheData = JSON.parse(cachedDataString) as ItemsCache;
-            if (cacheData.data?.length) {
-              return cacheData.data;
-            }
-          }
-          throw new Error('Rate limited');
+      const items: SimplifiedItem[] = allData.map((item) => {
+        if (!item.id || !item.name || !item.base_price) {
+          console.warn(`[Supabase] Item missing required fields:`, item);
         }
 
-        console.error(`[${mode.toUpperCase()}] API error:`, {
-          status: res.status,
-          statusText: res.statusText
-        });
-        throw new Error(`Failed to fetch data for ${url}`);
-      }
-
-      const items = await res.json() as SimplifiedItem[];
-      if (!Array.isArray(items)) {
-        console.error(`[${mode.toUpperCase()}] Invalid response format:`, items);
-        throw new Error('Invalid response format');
-      }
-
-      if (!items.length) {
-        console.error(`[${mode.toUpperCase()}] Received empty data from API`);
-        throw new Error(`No items received from ${mode} API`);
-      }
-
-      try {
-        const cacheData: ItemsCache = {
-          timestamp: now,
-          version: CURRENT_VERSION,
-          mode,
-          data: items
+        const transformedItem = {
+          id: item.id,
+          name: item.name,
+          basePrice: Number(item.base_price),
+          lastLowPrice: item.last_low_price
+            ? Number(item.last_low_price)
+            : undefined,
+          updated: item.updated ? new Date(item.updated).getTime() : undefined,
+          categories: item.categories || [],
+          categories_display: (item.categories || []).map((cat: string) => ({
+            name: cat,
+          })),
+          tags: [],
+          isExcluded: false,
         };
-        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-        console.log(`[${mode.toUpperCase()}] Updated cache with ${items.length} items`);
-        cacheCheckResults.current[mode] = { timestamp: now, result: items };
-      } catch (e) {
-        console.error(`[${mode.toUpperCase()}] Cache update error:`, e);
-      }
+
+        return transformedItem;
+      });
+
+      console.log(
+        `[Supabase] Transformed ${items.length} items from ${tableName}`,
+        {
+          sample: items.slice(0, 2),
+          firstItem: items[0],
+          lastItem: items[items.length - 1],
+          hasCategories: items.some(
+            (item) => item.categories && item.categories.length > 0
+          ),
+          categoriesExample: items.find(
+            (item) => item.categories && item.categories.length > 0
+          )?.categories,
+        }
+      );
 
       return items;
-    } catch (error) {
-      // If we have cached data, return it on error
-      const cachedDataString = localStorage.getItem(cacheKey);
-      if (cachedDataString) {
-        const cacheData = JSON.parse(cachedDataString) as ItemsCache;
-        if (cacheData.data?.length) {
-          console.warn(`[${mode.toUpperCase()}] Using cached data after error`);
-          return cacheData.data;
+    } catch (e) {
+      console.error(`[Supabase] Error transforming data from ${tableName}:`, e);
+      throw e;
+    }
+  }, [supabase, tableName]);
+
+  const { data, error, mutate } = useSWR(
+    `items-${tableName}-${CURRENT_VERSION}`,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 60000, // Refresh every minute
+      onSuccess: (data) => {
+        console.log(`[Supabase] SWR success for ${tableName}:`, {
+          itemCount: data?.length || 0,
+          hasData: !!data,
+          firstItem: data?.[0],
+          lastItem: data?.[data?.length - 1],
+        });
+      },
+      onError: (err) => {
+        console.error(`[Supabase] SWR error for ${tableName}:`, err);
+      },
+    }
+  );
+
+  // Subscribe to real-time changes
+  useEffect(() => {
+    console.log(
+      `[Supabase] Setting up real-time subscription for ${tableName}`
+    );
+
+    const channel = supabase
+      .channel(`public:${tableName}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: tableName,
+        },
+        (payload) => {
+          console.log(
+            `[Supabase] Real-time update received for ${tableName}:`,
+            payload
+          );
+          mutate();
         }
-      }
-      throw error;
-    }
-  }, []);
+      )
+      .subscribe((status) => {
+        console.log(`[Supabase] Subscription status for ${tableName}:`, status);
+      });
 
-  const apiUrl = isPVE
-    ? `/api/v2/pve-items?v=${CURRENT_VERSION}`
-    : `/api/v2/pvp-items?v=${CURRENT_VERSION}`;
-
-  const {
-    data,
-    error,
-    mutate: revalidateData
-  } = useSWR<SimplifiedItem[]>(apiUrl, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
-    shouldRetryOnError: true,
-    dedupingInterval: CACHE_DURATION,
-    fallbackData: [], // Provide empty array as fallback
-    keepPreviousData: true, // Keep previous data while fetching
-    errorRetryInterval: 5000, // Start with 5 second delay
-    onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
-      const currentMode = key.includes('pve') ? 'PVE' : 'PVP';
-      // Don't retry on 429
-      if (error?.message === 'Rate limited') {
-        const retryDelay = Math.min(1000 * Math.pow(2, retryCount ?? 0), 30000);
-        console.log(`[${currentMode}] Rate limited, retry in ${retryDelay/1000}s`);
-        setTimeout(() => revalidate({ retryCount: (retryCount ?? 0) + 1 }), retryDelay);
-        return;
-      }
-      
-      // For other errors, retry with exponential backoff
-      const retryDelay = Math.min(1000 * Math.pow(2, retryCount ?? 0), 30000);
-      setTimeout(() => revalidate({ retryCount: (retryCount ?? 0) + 1 }), retryDelay);
-    },
-    onSuccess: (data, key) => {
-      const currentMode = key.includes('pve') ? 'PVE' : 'PVP';
-      if (data?.length) {
-        console.log(`[${currentMode}] Data loaded:`, { itemCount: data.length });
-      }
-    },
-    onError: (err, key) => {
-      const currentMode = key.includes('pve') ? 'PVE' : 'PVP';
-      console.error(`[${currentMode}] Error:`, err);
-      // Only clear cache for non-rate-limit errors
-      if (err?.message !== 'Rate limited') {
-        const cacheKey = key.includes('pve') ? PVE_ITEMS_CACHE_KEY : PVP_ITEMS_CACHE_KEY;
-        localStorage.removeItem(cacheKey);
-      }
-    }
-  });
-
-  const getCacheStatus = (cacheData: ItemsCache): CacheStatus => {
-    const cacheAge = Date.now() - cacheData.timestamp;
-    return {
-      cacheAge: `${Math.round(cacheAge / 1000)}s`,
-      cacheExpiry: `${Math.round(CACHE_DURATION / 1000)}s`,
-      version: cacheData.version,
-      currentVersion: CURRENT_VERSION,
-      itemCount: cacheData.data?.length || 0,
-      isExpired: cacheAge >= CACHE_DURATION,
-      versionMismatch: cacheData.version !== CURRENT_VERSION,
-      modeMismatch: cacheData.mode !== (isPVE ? 'pve' : 'pvp'),
-      shouldCheckStaleness: cacheAge >= PRICE_STALENESS_THRESHOLD
+    return () => {
+      console.log(`[Supabase] Cleaning up subscription for ${tableName}`);
+      supabase.removeChannel(channel);
     };
-  };
+  }, [supabase, tableName, mutate]);
+
+  // Log current data state
+  useEffect(() => {
+    console.log(`[Supabase] Current state for ${tableName}:`, {
+      hasData: !!data,
+      itemCount: data?.length || 0,
+      hasError: !!error,
+      error: error,
+      firstItem: data?.[0],
+      lastItem: data?.[data?.length - 1],
+    });
+  }, [data, error, tableName]);
 
   return {
-    data: data || [],
+    data: data || [], // Ensure we always return an array
     error,
-    mutate: revalidateData
+    mutate,
+    isLoading: !error && !data,
   };
 }
