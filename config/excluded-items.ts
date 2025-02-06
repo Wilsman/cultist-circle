@@ -17,7 +17,7 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Tripwire installation kit",
   "Vortes Ranger 1500 rangefinder",
   "Digital secure DSP radio transmitter",
-  "The Eye mortar strike signaling device",
+  "\"The Eye\" mortar strike signaling device",
   "Mark of the unheard",
   "Radar station spare parts",
   "GARY ZONT portable electronic warfare device",

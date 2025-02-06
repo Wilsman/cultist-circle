@@ -9,6 +9,29 @@ export function useItemsData(isPVE: boolean) {
   const supabase = createClient();
   const tableName = isPVE ? "tarkov_items_pve" : "tarkov_items_pvp";
 
+  const transformItem = (item: any): SimplifiedItem | null => {
+    if (!item?.id || !item?.name || typeof item?.base_price !== "number") {
+      console.debug(`⚠️ Skipping item due to missing required fields:`, item);
+      return null;
+    }
+
+    // Parse the updated timestamp directly - it comes as an ISO string from Supabase
+    const updated = item.updated ? item.updated : undefined;
+
+    return {
+      id: item.id,
+      name: item.name,
+      basePrice: item.base_price,
+      lastLowPrice: item.last_low_price || undefined,
+      updated, // Pass the ISO string directly
+      categories: item.categories || [],
+      tags: item.tags || [],
+      isExcluded: false,
+      categories_display:
+        item.categories?.map((cat: string) => ({ name: cat })) || [],
+    };
+  };
+
   const fetcher = useCallback(async () => {
     console.log(`🔍 Fetching item count from ${tableName}...`);
 
@@ -27,7 +50,7 @@ export function useItemsData(isPVE: boolean) {
     // Fetch all items using range pagination
     const pageSize = 1000;
     const pages = Math.ceil(count / pageSize);
-    const allData: any[] = [];
+    const allData: SimplifiedItem[] = [];
 
     for (let page = 0; page < pages; page++) {
       const from = page * pageSize;
@@ -52,88 +75,28 @@ export function useItemsData(isPVE: boolean) {
       }
 
       if (!pageData) {
-        console.warn(
-          `[Supabase] No data returned from ${tableName} for range ${from}-${to}`
-        );
         continue;
       }
 
-      allData.push(...pageData);
+      // Transform and filter out invalid items
+      const validItems = pageData
+        .map(transformItem)
+        .filter((item): item is SimplifiedItem => item !== null);
+
+      allData.push(...validItems);
     }
 
-    console.log(`[Supabase] Raw data from ${tableName}:`, {
-      count: allData.length,
-      sample: allData.slice(0, 2),
-      firstItem: allData[0],
-      lastItem: allData[allData.length - 1],
-    });
-
-    // Transform the data to match SimplifiedItem interface
-    try {
-      const items: SimplifiedItem[] = allData.map((item) => {
-        if (!item.id || !item.name || !item.base_price) {
-          console.warn(`[Supabase] Item missing required fields:`, item);
-        }
-
-        const transformedItem = {
-          id: item.id,
-          name: item.name,
-          basePrice: Number(item.base_price),
-          lastLowPrice: item.last_low_price
-            ? Number(item.last_low_price)
-            : undefined,
-          updated: item.updated ? new Date(item.updated).getTime() : undefined,
-          categories: item.categories || [],
-          categories_display: (item.categories || []).map((cat: string) => ({
-            name: cat,
-          })),
-          tags: [],
-          isExcluded: false,
-        };
-
-        return transformedItem;
-      });
-
-      console.log(
-        `[Supabase] Transformed ${items.length} items from ${tableName}`,
-        {
-          sample: items.slice(0, 2),
-          firstItem: items[0],
-          lastItem: items[items.length - 1],
-          hasCategories: items.some(
-            (item) => item.categories && item.categories.length > 0
-          ),
-          categoriesExample: items.find(
-            (item) => item.categories && item.categories.length > 0
-          )?.categories,
-        }
-      );
-
-      return items;
-    } catch (e) {
-      console.error(`[Supabase] Error transforming data from ${tableName}:`, e);
-      throw e;
-    }
+    console.log(`✅ Successfully fetched ${allData.length} valid items`);
+    return allData;
   }, [supabase, tableName]);
 
   const { data, error, mutate } = useSWR(
-    `items-${tableName}-${CURRENT_VERSION}`,
+    `items-${CURRENT_VERSION}-${isPVE ? "pve" : "pvp"}`,
     fetcher,
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      refreshInterval: 60000, // Refresh every minute
-      onSuccess: (data) => {
-        console.log(`[Supabase] SWR success for ${tableName}:`, {
-          itemCount: data?.length || 0,
-          hasData: !!data,
-          firstItem: data?.[0],
-          lastItem: data?.[data?.length - 1],
-        });
-      },
-      onError: (err) => {
-        console.error(`[Supabase] SWR error for ${tableName}:`, err);
-      },
+      refreshInterval: 10 * 60 * 1000, // 10 minutes in milliseconds
+      revalidateOnFocus: false, // No need to revalidate on focus since data won't change
+      dedupingInterval: 10 * 60 * 1000, // Dedupe requests for 10 minutes
     }
   );
 

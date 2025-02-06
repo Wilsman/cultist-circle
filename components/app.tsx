@@ -864,13 +864,7 @@ function AppContent() {
                         ))}
                     </div>
                   ) : items.length === 0 ? (
-                    <div className="text-center text-gray-400 mt-4 p-4 border-2 border-dashed border-gray-600 rounded-lg">
-                      <p className="mb-2">No items available at this time.</p>
-                      <p className="text-sm">
-                        If you think this may be an issue, please try resetting
-                        the app in the settings.
-                      </p>
-                    </div>
+                    <LoadingSkeleton />
                   ) : (
                     selectedItems.map((item, index) => (
                       <div
@@ -1202,6 +1196,18 @@ function AppContent() {
         />
       )}
     </>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-4 p-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex items-center space-x-4">
+          <Skeleton className="h-8 w-full rounded" />
+        </div>
+      ))}
+    </div>
   );
 }
 
