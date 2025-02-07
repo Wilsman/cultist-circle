@@ -95,53 +95,20 @@ export function useItemsData(isPVE: boolean) {
     fetcher,
     {
       refreshInterval: 10 * 60 * 1000, // 10 minutes in milliseconds
-      revalidateOnFocus: false, // No need to revalidate on focus since data won't change
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
       dedupingInterval: 10 * 60 * 1000, // Dedupe requests for 10 minutes
+      keepPreviousData: true, // Keep showing old data while fetching new data
     }
   );
 
-  // Subscribe to real-time changes
+  // Log current data state for debugging
   useEffect(() => {
-    console.log(
-      `[Supabase] Setting up real-time subscription for ${tableName}`
-    );
-
-    const channel = supabase
-      .channel(`public:${tableName}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: tableName,
-        },
-        (payload) => {
-          console.log(
-            `[Supabase] Real-time update received for ${tableName}:`,
-            payload
-          );
-          mutate();
-        }
-      )
-      .subscribe((status) => {
-        console.log(`[Supabase] Subscription status for ${tableName}:`, status);
-      });
-
-    return () => {
-      console.log(`[Supabase] Cleaning up subscription for ${tableName}`);
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, tableName, mutate]);
-
-  // Log current data state
-  useEffect(() => {
-    console.log(`[Supabase] Current state for ${tableName}:`, {
+    if (!data && !error) return; // Don't log initial loading state
+    console.log(`[Data State] ${tableName}:`, {
       hasData: !!data,
       itemCount: data?.length || 0,
       hasError: !!error,
-      error: error,
-      firstItem: data?.[0],
-      lastItem: data?.[data?.length - 1],
     });
   }, [data, error, tableName]);
 

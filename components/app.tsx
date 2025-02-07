@@ -1202,9 +1202,9 @@ function AppContent() {
 function LoadingSkeleton() {
   return (
     <div className="space-y-4 p-4">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex items-center space-x-4">
-          <Skeleton className="h-8 w-full rounded" />
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="flex items-center space-x-1">
+          <Skeleton className="h-10 w-full mb-2 bg-slate-500" />
         </div>
       ))}
     </div>
