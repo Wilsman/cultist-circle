@@ -2,7 +2,13 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import {
   Copy,
   X as XIcon,
@@ -70,6 +76,59 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const [priceOverride, setPriceOverride] = useState<string>("");
   const [isPriceOverrideActive, setIsPriceOverrideActive] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<List>(null);
+
+  // Handle showing/hiding dropdown
+  const showDropdown = !selectedItem && (isFocused || searchTerm.length > 0);
+
+  // Scroll to highlighted item when using keyboard navigation
+  useEffect(() => {
+    if (listRef.current && showDropdown) {
+      listRef.current.scrollToItem(highlightedIndex, "smart");
+    }
+  }, [highlightedIndex, showDropdown]);
+
+  // Initialize Fuse.js
+  const fuse = useMemo(() => {
+    return new Fuse(items, {
+      keys: ["name"],
+      threshold: 0.2, // More strict matching for better performance
+      includeScore: false,
+      minMatchCharLength: 2, // Only match if at least 2 characters
+      distance: 100 // Increase search distance for better matches
+    });
+  }, [items]);
+
+  // Debounced search term with minimal delay
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 50); // Reduced from 150ms for faster response
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  // Filtered items based on search term and focus state
+  const filteredItems = useMemo(() => {
+    if (!debouncedSearchTerm) {
+      return items.filter((item) => item.price > 0);
+    }
+    return fuse
+      .search(debouncedSearchTerm)
+      .map((result) => result.item)
+      .filter((item) => item.price > 0);
+  }, [debouncedSearchTerm, fuse, items]);
+
+  // Reset highlighted index when filtered items change
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [filteredItems]);
 
   useEffect(() => {
     if (selectedItem && overriddenPrice !== undefined) {
@@ -80,40 +139,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
       setIsPriceOverrideActive(false);
     }
   }, [selectedItem, overriddenPrice]);
-
-  // Initialize Fuse.js
-  const fuse = useMemo(() => {
-    return new Fuse(items, {
-      keys: ["name"],
-      threshold: 0.3,
-      includeScore: false,
-    });
-  }, [items]);
-
-  // Debounced search term
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300); // 300ms debounce
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchTerm]);
-
-  // Filtered items based on search term and focus state
-  const filteredItems = useMemo(() => {
-    if (isFocused && !debouncedSearchTerm) {
-      return items.filter((item) => item.price > 0);
-    }
-    if (!debouncedSearchTerm) return [];
-    return fuse
-      .search(debouncedSearchTerm)
-      .map((result) => result.item)
-      .filter((item) => item.price > 0);
-  }, [debouncedSearchTerm, fuse, isFocused, items]);
 
   const handleSelect = useCallback(
     (item: SimplifiedItem | null) => {
@@ -189,6 +214,67 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     onToggleExclude();
   }, [onToggleExclude]);
 
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + K to focus search or first item
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        if (isFocused && filteredItems.length > 0) {
+          handleSelect(filteredItems[0]);
+        } else {
+          searchInputRef.current?.focus();
+        }
+      }
+      // Escape to clear selection/search
+      if (
+        e.key === "Escape" &&
+        searchInputRef.current === document.activeElement
+      ) {
+        e.preventDefault();
+        handleSelect(null);
+        setSearchTerm("");
+        searchInputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSelect, isFocused, filteredItems]);
+
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (filteredItems.length > 0) {
+        switch (e.key) {
+          case "ArrowDown":
+            e.preventDefault();
+            setHighlightedIndex((prev) =>
+              prev < filteredItems.length - 1 ? prev + 1 : prev
+            );
+            break;
+          case "ArrowUp":
+            e.preventDefault();
+            setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+            break;
+          case "Enter":
+          case "Tab":
+            if (!selectedItem) {
+              if (e.key === "Tab") {
+                // Don't prevent default for Tab so it still moves to next field
+                handleSelect(filteredItems[highlightedIndex]);
+              } else {
+                e.preventDefault();
+                handleSelect(filteredItems[highlightedIndex]);
+              }
+            }
+            break;
+        }
+      }
+    },
+    [filteredItems, handleSelect, highlightedIndex, selectedItem]
+  );
+
   // Row component for react-window
   const Row = useCallback(
     ({ index, style }: ListChildComponentProps) => {
@@ -197,7 +283,8 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
       const displayedPrice =
         itemOverriddenPrice !== undefined ? itemOverriddenPrice : item.price;
       const isOverridden = itemOverriddenPrice !== undefined;
-      const isItemExcluded = excludedItems.has(item.uid); // Check if the item is excluded
+      const isItemExcluded = excludedItems.has(item.uid);
+      const isHighlighted = index === highlightedIndex;
 
       return (
         <Tooltip key={item.uid}>
@@ -206,7 +293,10 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               style={style}
               onMouseDown={(e) => e.preventDefault()}
               onMouseUp={() => handleSelect(item)}
-              className="p-2 hover:bg-gray-600 cursor-pointer text-white flex flex-col"
+              onMouseEnter={() => setHighlightedIndex(index)}
+              className={`p-2 hover:bg-gray-600 cursor-pointer text-white flex flex-col ${
+                isHighlighted ? "bg-gray-600" : ""
+              }`}
             >
               <div className="flex justify-between items-center">
                 <span className="truncate">{item.name}</span>{" "}
@@ -252,7 +342,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         </Tooltip>
       );
     },
-    [filteredItems, handleSelect, overriddenPrices, excludedItems]
+    [filteredItems, handleSelect, overriddenPrices, excludedItems, highlightedIndex]
   );
 
   return (
@@ -260,19 +350,35 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
       <div className="relative w-full mb-2">
         <div className="relative">
           <input
-            onClick={() => setIsFocused(true)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setTimeout(() => setIsFocused(false), 100)}
+            ref={searchInputRef}
+            onClick={() => {
+              setIsFocused(true);
+              if (selectedItem) {
+                searchInputRef.current?.select();
+              }
+            }}
+            onFocus={() => {
+              setIsFocused(true);
+              if (selectedItem) {
+                searchInputRef.current?.select();
+              }
+            }}
+            onBlur={() => {
+              // Small delay to allow item selection to complete
+              setTimeout(() => setIsFocused(false), 100);
+            }}
+            onKeyDown={handleKeyDown}
             type="text"
             value={selectedItem ? selectedItem.name : searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               if (selectedItem) handleSelect(null);
             }}
-            placeholder="Search items..."
+            placeholder="Search items... (CTRL+K)"
             className={`w-full p-2 pr-24 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               isPinned ? "border-2 border-yellow-500" : ""
             }`}
+            tabIndex={1}
           />
           {selectedItem && (
             <>
@@ -285,6 +391,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   className={`h-8 w-8 ${
                     isPinned ? "text-yellow-500" : "text-gray-400"
                   } hover:bg-gray-200`}
+                  tabIndex={-1}
                 >
                   <Pin className="h-4 w-4" />
                 </Button>
@@ -293,6 +400,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   variant="ghost"
                   onClick={onCopy}
                   className="h-8 w-8 text-gray-400 hover:bg-gray-200"
+                  tabIndex={-1}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -303,6 +411,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   className={`h-8 w-8 ${
                     isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
                   } hover:bg-gray-200`}
+                  tabIndex={-1}
                 >
                   <BadgeDollarSign className="h-4 w-4" />
                 </Button>
@@ -313,6 +422,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   className={`h-8 w-8 ${
                     isExcluded ? "text-red-500" : "text-gray-400"
                   } hover:bg-gray-200`}
+                  tabIndex={-1}
                 >
                   <CircleSlash className="h-4 w-4" />
                 </Button>
@@ -321,6 +431,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   variant="ghost"
                   onClick={handleRemove}
                   className="h-8 w-8 text-red-500 hover:bg-gray-200"
+                  tabIndex={-1}
                 >
                   <XIcon className="h-4 w-4" />
                 </Button>
@@ -377,11 +488,12 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           )}
         </div>
 
-        {!selectedItem && isFocused && (
-          <div className="absolute z-10 w-full mt-1 bg-gray-700 rounded-md shadow-lg max-h-60 overflow-hidden">
+        {showDropdown && (
+          <div className="absolute z-10 w-full mt-1 bg-gray-700 rounded-md shadow-lg max-h-60 overflow-hidden dropdown-container">
             <AutoSizer disableHeight>
               {({ width }) => (
                 <List
+                  ref={listRef}
                   height={240} // Adjust based on desired height
                   itemCount={filteredItems.length}
                   itemSize={80} // Adjust based on item height

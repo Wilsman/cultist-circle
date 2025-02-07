@@ -27,14 +27,16 @@ export function VersionInfo({ version }: VersionInfoProps) {
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === "Enter" || e.key === " ") {
               setIsOpen(!isOpen);
             }
           }}
         >
           Current Version:{" "}
-          <span className="font-semibold text-blue-400 ml-1 
-            underline decoration-dotted sm:no-underline">
+          <span
+            className="font-semibold text-blue-400 ml-1 
+            underline decoration-dotted sm:no-underline"
+          >
             {version}
           </span>
         </span>
@@ -42,9 +44,9 @@ export function VersionInfo({ version }: VersionInfoProps) {
       <HoverCardContent
         className="w-80 bg-gray-800 border-gray-700 text-gray-200"
         // Add touch-specific styles
-        style={{ 
-          touchAction: 'none',
-          WebkitTapHighlightColor: 'transparent'
+        style={{
+          touchAction: "none",
+          WebkitTapHighlightColor: "transparent",
         }}
       >
         <div className="space-y-4">
@@ -53,10 +55,9 @@ export function VersionInfo({ version }: VersionInfoProps) {
               🔄 Recent Updates
             </h4>
             <ul className="text-sm list-disc list-inside">
-              <li>Added recent updates/upcoming features/known issues sections</li>
-              <li>Corrected recipe times and information</li>
-              <li>Fixed Recipes page navigation issues</li>
-              <li>Improved server and local caching system</li>
+              <li>Added convenient keyboard shortcuts:</li>
+              <li>(TAB / ENTER) to confirm and/or move between fields</li>
+              <li>(UP/DOWN arrow keys) to navigate the search results</li>
             </ul>
           </div>
 

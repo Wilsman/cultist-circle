@@ -43,7 +43,7 @@ const AdBanner = dynamic(() => import("@/components/AdBanner"), {
   ssr: false,
 });
 
-const CURRENT_VERSION = "1.0.5.a"; // Increment this when you want to trigger a cache clear
+const CURRENT_VERSION = "1.0.5.b"; // Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
@@ -308,7 +308,8 @@ function AppContent() {
         setLastFetchTimestamp(cachedData.timestamp);
         toast({
           title: "Using cached data",
-          description: "Could not fetch latest data. Using previously cached data instead.",
+          description:
+            "Could not fetch latest data. Using previously cached data instead.",
         });
       } else {
         // Only set error if we have no cached data
