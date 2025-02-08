@@ -57,9 +57,7 @@ function AppContent() {
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
-  const [pinnedItems, setPinnedItems] = useState<boolean[]>(
-    Array(5).fill(false)
-  );
+  const [pinnedItems, setPinnedItems] = useState<boolean[]>(Array(5).fill(false));
   const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
     useState<boolean>(false);
   const [sortOption, setSortOption] = useState<string>("az");
@@ -281,7 +279,22 @@ function AppContent() {
 
   // Memoized computation of items based on categories, sort option, and excluded items
   const items: SimplifiedItem[] = useMemo(() => {
-    if (!rawItemsData || !Array.isArray(rawItemsData)) return [];
+    if (loading) {
+      console.log('Still loading items data...');
+      return [];
+    }
+
+    if (!Array.isArray(rawItemsData)) {
+      console.error('rawItemsData is not an array:', rawItemsData);
+      return [];
+    }
+
+    if (rawItemsData.length === 0) {
+      console.log('No items data available');
+      return [];
+    }
+
+    console.log(`Processing ${rawItemsData.length} items...`);
 
     // First filter by excluded categories
     const categoryFiltered = rawItemsData.filter(
@@ -294,8 +307,8 @@ function AppContent() {
     // Then filter out individually excluded items
     const excludedFiltered = excludeIncompatible
       ? categoryFiltered.filter(
-          (item: SimplifiedItem) => !excludedItems.has(item.name)
-        )
+        (item: SimplifiedItem) => !excludedItems.has(item.name)
+      )
       : categoryFiltered;
 
     // Sorting logic...
@@ -321,12 +334,16 @@ function AppContent() {
     excludedCategories,
     excludeIncompatible,
     excludedItems,
+    loading,
   ]);
 
-  // Update items when mode or excluded items change
+  // Update items when mode changes
   useEffect(() => {
-    mutate();
-  }, [isPVE, excludedItems, excludeIncompatible, mutate]);
+    console.log('Mode/loading changed:', { isPVE, loading });
+    if (!loading) {
+      mutate();
+    }
+  }, [isPVE, mutate, loading]);
 
   // Function to find the best combination of items
   const findBestCombination = useCallback(
@@ -693,9 +710,7 @@ function AppContent() {
   }, [toast]);
 
   // Add loading state
-  const [loadingSlots, setLoadingSlots] = useState<boolean[]>(
-    Array(5).fill(false)
-  );
+  const [loadingSlots, setLoadingSlots] = useState<boolean[]>(Array(5).fill(false));
 
   // Reset overrides and exclusions
   const resetOverridesAndExclusions = useCallback(() => {
@@ -869,19 +884,17 @@ function AppContent() {
                     selectedItems.map((item, index) => (
                       <div
                         key={`selector-${index}`}
-                        className={`animate-fade-in transition-all duration-200 ${
-                          loadingSlots[index] ? "opacity-50" : ""
-                        }`}
+                        className={`animate-fade-in transition-all duration-200 ${loadingSlots[index] ? "opacity-50" : ""
+                          }`}
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <React.Fragment>
                           <Suspense fallback={<div>Loading...</div>}>
                             <div
-                              className={`relative ${
-                                pinnedItems[index]
-                                  ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
-                                  : ""
-                              }`}
+                              className={`relative ${pinnedItems[index]
+                                ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
+                                : ""
+                                }`}
                             >
                               {pinnedItems[index] && (
                                 <div className="absolute -top-2 -right-2 z-10">
@@ -942,10 +955,9 @@ function AppContent() {
                         id="clear-item-fields"
                         className={`bg-red-500 hover:bg-red-600 text-white w-1/2 
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
-                          ${
-                            isClearButtonDisabled
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
+                          ${isClearButtonDisabled
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
                           }`}
                         onClick={clearItemFields}
                         disabled={isClearButtonDisabled}
@@ -964,10 +976,9 @@ function AppContent() {
                         id="reset-overrides"
                         className={`bg-red-500 hover:bg-red-600 text-white w-1/2
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
-                          ${
-                            isResetOverridesButtonDisabled
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
+                          ${isResetOverridesButtonDisabled
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
                           }`}
                         onClick={resetOverridesAndExclusions}
                         disabled={isResetOverridesButtonDisabled}
@@ -1001,11 +1012,10 @@ function AppContent() {
                   <Skeleton className="h-16 w-3/4 mx-auto" />
                 ) : (
                   <div
-                    className={`text-6xl font-extrabold ${
-                      isThresholdMet
-                        ? "text-green-500 animate-pulse"
-                        : "text-red-500 animate-pulse"
-                    }`}
+                    className={`text-6xl font-extrabold ${isThresholdMet
+                      ? "text-green-500 animate-pulse"
+                      : "text-red-500 animate-pulse"
+                      }`}
                   >
                     ₽{total.toLocaleString()}
                   </div>
@@ -1161,8 +1171,7 @@ function AppContent() {
             onImportData={(data) => {
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.selectedItems)
-                  setSelectedItems(parsed.selectedItems);
+                if (parsed.selectedItems) setSelectedItems(parsed.selectedItems);
                 if (parsed.pinnedItems) setPinnedItems(parsed.pinnedItems);
                 if (parsed.sortOption) setSortOption(parsed.sortOption);
                 if (parsed.excludedCategories)

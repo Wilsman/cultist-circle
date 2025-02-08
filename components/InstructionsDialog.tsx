@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,13 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { HelpCircle } from "lucide-react";
 
-export function InstructionsDialog() {
+export const InstructionsDialog = forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>((props, ref) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button
+          ref={ref}
           variant="ghost"
           className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tl-lg border-r"
+          {...props}
         >
           <HelpCircle
             id="help"
@@ -69,4 +74,6 @@ export function InstructionsDialog() {
       </DialogContent>
     </Dialog>
   );
-}
+});
+
+InstructionsDialog.displayName = 'InstructionsDialog';

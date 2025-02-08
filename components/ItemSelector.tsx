@@ -66,6 +66,19 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   onToggleExclude,
   excludedItems, // Destructure the new prop
 }) => {
+  // Add validation check at the start
+  useEffect(() => {
+    if (!Array.isArray(items)) {
+      console.error('Items prop is not an array:', items);
+      return;
+    }
+    if (items.length === 0) {
+      console.log('No items provided to ItemSelector');
+      return;
+    }
+    console.log(`ItemSelector received ${items.length} items`);
+  }, [items]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [priceOverride, setPriceOverride] = useState<string>("");
@@ -83,6 +96,10 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
   // Initialize Fuse.js
   const fuse = useMemo(() => {
+    if (!Array.isArray(items) || items.length === 0) {
+      console.log('Cannot create Fuse instance - no valid items');
+      return null;
+    }
     return new Fuse(items, {
       keys: ["name"],
       threshold: 0.3,
@@ -105,10 +122,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
   // Filtered items based on search term and focus state
   const filteredItems = useMemo(() => {
+    if (!Array.isArray(items) || items.length === 0) {
+      return [];
+    }
+
     let results;
     if (isFocused && !debouncedSearchTerm) {
       results = items.filter((item) => item.basePrice > 0);
     } else if (!debouncedSearchTerm) {
+      return [];
+    } else if (!fuse) {
       return [];
     } else {
       results = fuse
@@ -281,9 +304,8 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               if (selectedItem) handleSelect(null);
             }}
             placeholder="Search items..."
-            className={`w-full p-2 pr-24 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              isPinned ? "border-2 border-yellow-500" : ""
-            }`}
+            className={`w-full p-2 pr-24 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isPinned ? "border-2 border-yellow-500" : ""
+              }`}
           />
           {selectedItem && (
             <>
@@ -293,9 +315,8 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   size="icon"
                   variant="ghost"
                   onClick={onPin}
-                  className={`h-8 w-8 ${
-                    isPinned ? "text-yellow-500" : "text-gray-400"
-                  } hover:bg-gray-200`}
+                  className={`h-8 w-8 ${isPinned ? "text-yellow-500" : "text-gray-400"
+                    } hover:bg-gray-200`}
                 >
                   <Pin className="h-4 w-4" />
                 </Button>
@@ -311,9 +332,8 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   size="icon"
                   variant="ghost"
                   onClick={togglePriceOverride}
-                  className={`h-8 w-8 ${
-                    isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
-                  } hover:bg-gray-200`}
+                  className={`h-8 w-8 ${isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
+                    } hover:bg-gray-200`}
                 >
                   <BadgeDollarSign className="h-4 w-4" />
                 </Button>
@@ -321,9 +341,8 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   size="icon"
                   variant="ghost"
                   onClick={toggleExclude}
-                  className={`h-8 w-8 ${
-                    isExcluded ? "text-red-500" : "text-gray-400"
-                  } hover:bg-gray-200`}
+                  className={`h-8 w-8 ${isExcluded ? "text-red-500" : "text-gray-400"
+                    } hover:bg-gray-200`}
                 >
                   <CircleSlash className="h-4 w-4" />
                 </Button>

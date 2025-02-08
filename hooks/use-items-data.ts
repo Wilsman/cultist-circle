@@ -1,13 +1,18 @@
 import { createClient } from "@/utils/supabase/client";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import useSWR from "swr";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 
 const CURRENT_VERSION = "1.1.0.1"; //* Increment this when you want to trigger a cache clear
+const BATCH_SIZE = 1000;
+
+// Cache for ongoing requests
+const ongoingRequests = new Map<string, Promise<any>>();
 
 export function useItemsData(isPVE: boolean) {
   const supabase = createClient();
   const tableName = isPVE ? "tarkov_items_pve" : "tarkov_items_pvp";
+  const activeRequestRef = useRef<{ [key: string]: Promise<any> }>({});
 
   const transformItem = (item: any): SimplifiedItem | null => {
     if (!item?.id || !item?.name || typeof item?.base_price !== "number") {
@@ -32,73 +37,108 @@ export function useItemsData(isPVE: boolean) {
     };
   };
 
-  const fetcher = useCallback(async () => {
-    console.log(`🔍 Fetching item count from ${tableName}...`);
-
-    // First, get the count of all items
-    const { count } = await supabase
-      .from(tableName)
-      .select("*", { count: "exact", head: true });
-
-    if (!count) {
-      console.warn(`⚠️ No items found in ${tableName}`);
-      return [];
+  const fetchItemCount = useCallback(async () => {
+    const cacheKey = `count-${tableName}`;
+    if (ongoingRequests.has(cacheKey)) {
+      return ongoingRequests.get(cacheKey);
     }
 
-    console.log(`📊 Found ${count} total items in ${tableName}`);
+    const countPromise = (async () => {
+      console.log(`🔍 Fetching item count from ${tableName}...`);
+      const { count, error } = await supabase
+        .from(tableName)
+        .select("*", { count: "exact", head: true });
 
-    // Fetch all items using range pagination
-    const pageSize = 1000;
-    const pages = Math.ceil(count / pageSize);
-    const allData: SimplifiedItem[] = [];
+      if (error) throw error;
+      return count;
+    })();
 
-    for (let page = 0; page < pages; page++) {
-      const from = page * pageSize;
-      const to = from + pageSize - 1;
+    ongoingRequests.set(cacheKey, countPromise);
+    try {
+      const result = await countPromise;
+      return result;
+    } finally {
+      ongoingRequests.delete(cacheKey);
+    }
+  }, [tableName]);
 
-      console.log(
-        `📥 Fetching batch ${page + 1}/${pages} (items ${from + 1}-${Math.min(
-          to + 1,
-          count
-        )})`
-      );
+  const fetchBatch = useCallback(async (start: number, end: number) => {
+    const batchKey = `${tableName}-${start}-${end}`;
+    if (ongoingRequests.has(batchKey)) {
+      return ongoingRequests.get(batchKey);
+    }
 
-      const { data: pageData, error } = await supabase
+    const batchPromise = (async () => {
+      console.log(`📥 Fetching batch ${Math.floor(start / BATCH_SIZE) + 1}/5 (items ${start + 1}-${end})`);
+      const { data, error } = await supabase
         .from(tableName)
         .select("*")
-        .range(from, to)
-        .order("name");
+        .range(start, end - 1);
 
-      if (error) {
-        console.error(`❌ Error fetching from ${tableName}:`, error);
-        throw error;
+      if (error) throw error;
+      return data;
+    })();
+
+    ongoingRequests.set(batchKey, batchPromise);
+    try {
+      const result = await batchPromise;
+      return result;
+    } finally {
+      ongoingRequests.delete(batchKey);
+    }
+  }, [tableName]);
+
+  // Fetch function with deduplication
+  const fetcher = useCallback(async () => {
+    try {
+      const count = await fetchItemCount();
+      if (!count) {
+        console.error('No items found in database');
+        return [];
       }
 
-      if (!pageData) {
-        continue;
+      console.log(`📊 Found ${count} total items in ${tableName}`);
+
+      const batches = [];
+      for (let i = 0; i < count; i += BATCH_SIZE) {
+        const end = Math.min(i + BATCH_SIZE, count);
+        batches.push(fetchBatch(i, end));
       }
 
-      // Transform and filter out invalid items
-      const validItems = pageData
+      const results = await Promise.all(batches);
+      const rawItems = results.flat();
+
+      // Transform items and filter out nulls
+      const transformedItems = rawItems
         .map(transformItem)
         .filter((item): item is SimplifiedItem => item !== null);
 
-      allData.push(...validItems);
-    }
+      console.log(`✅ Transformed ${transformedItems.length} valid items out of ${rawItems.length} total`);
 
-    console.log(`✅ Successfully fetched ${allData.length} valid items`);
-    return allData;
-  }, [supabase, tableName]);
+      if (transformedItems.length === 0) {
+        console.error('No valid items after transformation');
+        return [];
+      }
+
+      return transformedItems;
+    } catch (error) {
+      console.error('Error fetching items:', error);
+      throw error;
+    }
+  }, [fetchItemCount, fetchBatch, tableName, transformItem]);
 
   const { data, error, mutate } = useSWR(
     `items-${CURRENT_VERSION}-${isPVE ? "pve" : "pvp"}`,
     fetcher,
     {
-      refreshInterval: 10 * 60 * 1000, // 10 minutes in milliseconds
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      dedupingInterval: 10 * 60 * 1000, // Dedupe requests for 10 minutes
-      keepPreviousData: true, // Keep showing old data while fetching new data
+      dedupingInterval: 10 * 60 * 1000,
+      keepPreviousData: true,
+      retry: 3,
+      errorRetryInterval: 5000,
+      suspense: false,
+      onError: (err) => console.error('SWR Error:', err)
     }
   );
 
