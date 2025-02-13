@@ -179,6 +179,20 @@ export function SettingsPane({
                 Warning: {disabledCategoriesMessage} are disabled due to their
                 variable usage/durability impacting prices.
               </div>
+              <div className="flex items-center space-x-2 mb-2 pb-2 border-b">
+                <Checkbox
+                  checked={selectedCategories.length === allCategories.filter(cat => !disabledCategories.has(cat)).length}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      onCategoryChange(allCategories.filter(cat => !disabledCategories.has(cat)));
+                    } else {
+                      onCategoryChange(["Barter"]);
+                    }
+                  }}
+                  className="border-gray-500"
+                />
+                <Label>Select All</Label>
+              </div>
               {allCategories.map((category) => (
                 <div key={category} className="flex items-center space-x-2">
                   <Checkbox

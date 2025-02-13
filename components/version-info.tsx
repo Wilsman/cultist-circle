@@ -42,44 +42,46 @@ export function VersionInfo({ version }: VersionInfoProps) {
         </span>
       </HoverCardTrigger>
       <HoverCardContent
-        className="w-80 bg-gray-800 border-gray-700 text-gray-200"
-        // Add touch-specific styles
+        className="w-96 bg-gray-800 border-gray-700 text-gray-200"
         style={{
           touchAction: "none",
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        <div className="space-y-4">
-          <div>
-            <h4 className="text-sm font-semibold text-yellow-500">
-              🔄 Recent Updates
+        <div className="space-y-3">
+          <div className="border-b border-gray-700 pb-2">
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <span className="text-emerald-500">v{version}</span>
+              <span className="text-xs text-gray-400">Latest Release [13/02/2025]</span>
             </h4>
-            <ul className="text-sm list-disc list-inside">
-              <li>Added convenient keyboard shortcuts:</li>
-              <li>(TAB / ENTER) to confirm and/or move between fields</li>
-              <li>(UP/DOWN arrow keys) to navigate the search results</li>
+            <div className="space-y-2">
+              <div>
+                <h5 className="text-xs font-medium text-blue-400 mb-1">New Features</h5>
+                <ul className="text-xs space-y-1 text-gray-300">
+                  <li>• Select ALL option for item filters in settings</li>
+                  <li>• Keyboard navigation support:</li>
+                  <li className="ml-4">- TAB/ENTER: Confirm and navigate fields</li>
+                  <li className="ml-4">- UP/DOWN: Browse search results</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-b border-gray-700 pb-2">
+            <h5 className="text-xs font-medium text-yellow-500 mb-1">In Progress</h5>
+            <ul className="text-xs space-y-1 text-gray-300">
+              <li>• Enhanced filtering system</li>
+              <li>• Faster price update integration</li>
+              <li>• Market data refresh improvements</li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-blue-500">
-              🚀 Upcoming Features
-            </h4>
-            <ul className="text-sm list-disc list-inside">
-              <li>Enhanced filtering and sorting capabilities</li>
-              <li>New API integration for faster price updates</li>
-              <li>More frequent market data refreshes</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-red-500">
-              🚨 Known Issues
-            </h4>
-            <ul className="text-sm list-disc list-inside">
-              <li>Cache optimization in progress</li>
-              <li>Pinned item combinations may result in suboptimal pricing</li>
-              <li>Recipe attempt limitation needs adjustment</li>
+            <h5 className="text-xs font-medium text-red-400 mb-1">Known Issues</h5>
+            <ul className="text-xs space-y-1 text-gray-300">
+              <li>• Cache optimization in progress</li>
+              <li>• Pinned item pricing refinements needed</li>
+              <li>• Recipe attempt system adjustments pending</li>
             </ul>
           </div>
 
