@@ -28,7 +28,6 @@ import { useToast } from "@/hooks/use-toast";
 import TourOverlay from "@/components/tour-overlay";
 import dynamic from "next/dynamic";
 import { resetUserData } from "@/utils/resetUserData";
-import ErrorBoundary from "./ErrorBoundary";
 import { ThresholdHelperPopup } from "@/components/ThresholdHelperPopup";
 import { InstructionsDialog } from "@/components/InstructionsDialog";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -38,10 +37,6 @@ import { Suspense } from "react";
 import CookieConsent from "@/components/CookieConsent";
 import { VersionInfo } from "@/components/version-info";
 // import { useCookieConsent } from "@/contexts/CookieConsentContext";
-
-const AdBanner = dynamic(() => import("@/components/AdBanner"), {
-  ssr: false,
-});
 
 const CURRENT_VERSION = "1.0.5.b"; // Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
@@ -1038,15 +1033,6 @@ function AppContent() {
                   Feedback
                 </Button>
               </div>
-              <div className="mt-4 w-full">
-                <ErrorBoundary fallback={<div>Error loading ad.</div>}>
-                  <AdBanner
-                    dataAdFormat="auto"
-                    dataFullWidthResponsive={true}
-                    dataAdSlot="1022212363"
-                  />
-                </ErrorBoundary>
-              </div>
             </footer>
           </Card>
         </div>
@@ -1082,10 +1068,6 @@ function AppContent() {
 
       {/* Add the CookieConsent component */}
       <CookieConsent variant="small" />
-      {/* **13. Active Overrides Text** */}
-      <div className="text-center text-sm text-gray-400">
-        {activeOverridesText}
-      </div>
     </>
   );
 }
