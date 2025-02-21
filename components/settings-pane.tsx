@@ -169,6 +169,14 @@ export function SettingsPane({
                   />
                   <Label htmlFor="ratio">Value-to-Cost Ratio</Label>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem
+                    value="updated"
+                    id="updated"
+                    className={sortOption === "updated" ? "bg-purple-500" : ""}
+                  />
+                  <Label htmlFor="updated">Recently Updated</Label>
+                </div>
               </RadioGroup>
             </div>
           )}

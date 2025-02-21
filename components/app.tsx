@@ -49,6 +49,7 @@ const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
+  loading: () => <Skeleton className="h-full w-full" />,
 });
 
 function AppContent() {
@@ -373,7 +374,10 @@ function AppContent() {
       sortedItems.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortOption === "base-value") {
       // Sort by base price in ascending order
-      sortedItems.sort((a, b) => a.basePrice - b.price);
+      sortedItems.sort((a, b) => a.basePrice - b.basePrice);
+    } else if (sortOption === "updated") {
+      // Sort by updated time in descending order (updated is a timestamp so calc timestamp - updated) use datetime.strptime
+      sortedItems.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
     } else if (sortOption === "ratio") {
       // Sort by value-to-cost ratio in descending order
       sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / b.price);
@@ -686,19 +690,27 @@ function AppContent() {
 
   const [isThresholdHelperOpen, setIsThresholdHelperOpen] = useState(false);
 
-  // Move these useMemo hooks here, right after the state declarations
-  const isClearButtonDisabled = useMemo(() => {
-    return (
-      selectedItems.every((item) => item === null) &&
-      Object.keys(overriddenPrices).length === 0 &&
-      excludedItems.size === 0
-    );
+  // Initialize state with explicit values to prevent hydration mismatches
+  const [isClearButtonDisabled, setIsClearButtonDisabled] = useState<boolean>(true);
+  const [isResetOverridesButtonDisabled, setIsResetOverridesButtonDisabled] = useState<boolean>(true);
+
+  // Update button disabled states based on actual conditions
+  useEffect(() => {
+    const hasSelectedItems = selectedItems.some(item => item !== null);
+    setIsClearButtonDisabled(!hasSelectedItems);
+
+    const hasOverridesOrExclusions = Object.keys(overriddenPrices).length > 0 || excludedItems.size > 0;
+    setIsResetOverridesButtonDisabled(!hasOverridesOrExclusions);
   }, [selectedItems, overriddenPrices, excludedItems]);
 
-  const isResetOverridesButtonDisabled = useMemo(() => {
-    return (
-      Object.keys(overriddenPrices).length === 0 && excludedItems.size === 0
-    );
+  // Initialize state with "0 overrides" text to prevent hydration mismatch
+  const [activeOverridesText, setActiveOverridesText] = useState('0 overrides and 0 exclusions currently active');
+
+  // Update text whenever overrides or exclusions change
+  useEffect(() => {
+    const overridesCount = Object.keys(overriddenPrices).length;
+    const exclusionsCount = excludedItems.size;
+    setActiveOverridesText(`${overridesCount} overrides and ${exclusionsCount} exclusions currently active`);
   }, [overriddenPrices, excludedItems]);
 
   if (error) {
@@ -889,7 +901,7 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="clear-item-fields"
-                        className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary w-1/2"
+                        className="bg-red-500 hover:bg-red-600 text-secondary hover:text-primary w-1/2"
                         onClick={clearItemFields}
                         disabled={isClearButtonDisabled}
                       >
@@ -905,7 +917,7 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="reset-overrides"
-                        className="bg-red-500 hover:bg-red-700 text-secondary hover:text-primary w-1/2"
+                        className="bg-red-500 hover:bg-red-600 text-secondary hover:text-primary w-1/2"
                         onClick={resetOverridesAndExclusions}
                         disabled={isResetOverridesButtonDisabled}
                       >
@@ -922,8 +934,7 @@ function AppContent() {
 
             {/* // simple text saying number overrides & exclusions */}
             <div className="text-center text-sm text-gray-400">
-              {Object.keys(overriddenPrices).length} overrides and{" "}
-              {excludedItems.size} exclusions currently active
+              {activeOverridesText}
             </div>
 
             {/* **10. Sacrifice Value Display** */}
@@ -1062,6 +1073,10 @@ function AppContent() {
 
       {/* Add the CookieConsent component */}
       <CookieConsent variant="small" />
+      {/* **13. Active Overrides Text** */}
+      <div className="text-center text-sm text-gray-400">
+        {activeOverridesText}
+      </div>
     </>
   );
 }

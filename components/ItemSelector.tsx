@@ -13,9 +13,12 @@ import {
   Copy,
   X as XIcon,
   Pin,
-  BadgeDollarSign,
+  PinOff,
   MoreVertical,
-  CircleSlash,
+  Clock,
+  Pencil,
+  Ban,
+  Trash2,
 } from "lucide-react";
 import Fuse from "fuse.js";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
@@ -26,6 +29,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { getRelativeDate } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 // Import Dropdown components
 import {
@@ -33,7 +37,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
@@ -63,7 +66,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   items,
   selectedItem,
   onSelect,
-  onCopy,
   onPin,
   isPinned,
   overriddenPrice,
@@ -79,6 +81,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<List>(null);
+  const { toast } = useToast();
 
   // Handle showing/hiding dropdown
   const showDropdown = !selectedItem && (isFocused || searchTerm.length > 0);
@@ -97,7 +100,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
       threshold: 0.2, // More strict matching for better performance
       includeScore: false,
       minMatchCharLength: 2, // Only match if at least 2 characters
-      distance: 100 // Increase search distance for better matches
+      distance: 100, // Increase search distance for better matches
     });
   }, [items]);
 
@@ -213,6 +216,17 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   const toggleExclude = useCallback(() => {
     onToggleExclude();
   }, [onToggleExclude]);
+
+  const onCopy = useCallback(() => {
+    if (selectedItem) {
+      navigator.clipboard.writeText(selectedItem.name);
+      toast({
+        title: "Copied to clipboard",
+        description: `"${selectedItem.name}" has been copied to your clipboard.`,
+        duration: 2000,
+      });
+    }
+  }, [selectedItem, toast]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -342,13 +356,37 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         </Tooltip>
       );
     },
-    [filteredItems, handleSelect, overriddenPrices, excludedItems, highlightedIndex]
+    [
+      filteredItems,
+      handleSelect,
+      overriddenPrices,
+      excludedItems,
+      highlightedIndex,
+    ]
   );
 
   return (
     <TooltipProvider>
-      <div className="relative w-full mb-2">
-        <div className="relative">
+      <div className="relative w-full mb-2 bg-gray-800/50 rounded-lg p-3">
+        <div className="relative flex gap-2 items-center">
+          {selectedItem && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onPin}
+              className={`flex-shrink-0 h-10 w-10 transition-all duration-200 hover:bg-gray-700/50 ${
+                isPinned
+                  ? "text-yellow-400 hover:text-yellow-300"
+                  : "text-gray-400 hover:text-gray-300"
+              }`}
+            >
+              {isPinned ? (
+                <PinOff className="h-5 w-5" />
+              ) : (
+                <Pin className="h-5 w-5" />
+              )}
+            </Button>
+          )}
           <input
             ref={searchInputRef}
             onClick={() => {
@@ -375,9 +413,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               if (selectedItem) handleSelect(null);
             }}
             placeholder="Search items... (CTRL+K)"
-            className={`w-full p-2 pr-24 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              isPinned ? "border-2 border-yellow-500" : ""
-            }`}
+            className="w-full p-2 pr-24 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             tabIndex={1}
           />
           {selectedItem && (
@@ -387,19 +423,8 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={onPin}
-                  className={`h-8 w-8 ${
-                    isPinned ? "text-yellow-500" : "text-gray-400"
-                  } hover:bg-gray-200`}
-                  tabIndex={-1}
-                >
-                  <Pin className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
                   onClick={onCopy}
-                  className="h-8 w-8 text-gray-400 hover:bg-gray-200"
+                  className="h-8 w-8 text-gray-400 hover:bg-gray-700/50 hover:text-gray-300"
                   tabIndex={-1}
                 >
                   <Copy className="h-4 w-4" />
@@ -407,33 +432,11 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={togglePriceOverride}
-                  className={`h-8 w-8 ${
-                    isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
-                  } hover:bg-gray-200`}
-                  tabIndex={-1}
-                >
-                  <BadgeDollarSign className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={toggleExclude}
-                  className={`h-8 w-8 ${
-                    isExcluded ? "text-red-500" : "text-gray-400"
-                  } hover:bg-gray-200`}
-                  tabIndex={-1}
-                >
-                  <CircleSlash className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
                   onClick={handleRemove}
-                  className="h-8 w-8 text-red-500 hover:bg-gray-200"
+                  className="h-8 w-8 text-red-400 hover:bg-gray-700/50 hover:text-red-300"
                   tabIndex={-1}
                 >
-                  <XIcon className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
 
@@ -443,43 +446,42 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   <DropdownMenuTrigger asChild>
                     <Button
                       size="icon"
-                      variant="outline"
-                      className="h-8 w-8 bg-gray-500 hover:bg-gray-600 text-white"
+                      variant="ghost"
+                      className="h-8 w-8 text-gray-400 hover:bg-gray-700/50 hover:text-gray-300"
                     >
                       <MoreVertical className="h-4 w-4" />
-                      <span className="sr-only">More</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
-                    className="bg-primary text-secondary"
+                    className="bg-primary text-secondary w-[200px]"
                     align="end"
                   >
-                    <DropdownMenuItem onSelect={onPin}>
-                      <Pin className="mr-2 h-4 w-4" />
-                      <span>{isPinned ? "Unpin Item" : "Pin Item"}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={onCopy}>
+                    <DropdownMenuItem
+                      onClick={onCopy}
+                      className="text-gray-400 hover:text-gray-300"
+                    >
                       <Copy className="mr-2 h-4 w-4" />
-                      <span>Copy Item Name</span>
+                      <span>Copy Name</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={togglePriceOverride}>
-                      <BadgeDollarSign className="mr-2 h-4 w-4" />
-                      <span>
-                        {isPriceOverrideActive
-                          ? "Disable Flea Override"
-                          : "Enable Flea Override"}
-                      </span>
+                    <DropdownMenuItem
+                      onClick={toggleExclude}
+                      className={`md:hidden ${
+                        isExcluded
+                          ? "text-red-400 hover:text-red-300"
+                          : "text-gray-400 hover:text-gray-300"
+                      }`}
+                    >
+                      <Ban className="mr-2 h-4 w-4" />
+                      {!isExcluded
+                        ? "Exclude (Auto-Pick)"
+                        : "Include (Auto-Pick)"}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={toggleExclude}>
-                      <CircleSlash className="mr-2 h-4 w-4" />
-                      <span>
-                        {isExcluded ? "Include Item" : "Exclude from Autopick"}
-                      </span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={handleRemove}>
-                      <XIcon className="mr-2 h-4 w-4 text-red-500" />
-                      <span className="text-red-500">Remove Item</span>
+                    <DropdownMenuItem
+                      onClick={handleRemove}
+                      className="text-red-400 hover:text-red-300"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Clear</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -487,6 +489,87 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             </>
           )}
         </div>
+
+        {/* Action Buttons and Item Info */}
+        {selectedItem && (
+          <>
+            <div className="flex items-center gap-2 mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleExclude}
+                className={`hidden md:flex items-center gap-2 hover:bg-gray-700/50 transition-colors duration-200 ${
+                  isExcluded
+                    ? "text-red-400 hover:text-red-300"
+                    : "text-gray-400 hover:text-gray-300"
+                }`}
+              >
+                <Ban className="h-4 w-4" />
+                {!isExcluded ? "Exclude (Auto-Pick)" : "Include (Auto-Pick)"}
+              </Button>
+
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-0 text-sm md:text-base text-gray-400 ml-4">
+                <span className="hover:text-gray-300 transition-colors duration-200">
+                  Base Value: ₱{selectedItem.basePrice.toLocaleString()}
+                </span>
+                <span className="hidden md:block mx-4 opacity-20">•</span>
+                <span
+                  className={`flex items-center gap-2 transition-colors duration-200 ${
+                    overriddenPrice ? "text-blue-500" : "hover:text-gray-300"
+                  }`}
+                >
+                  Flea: ₱
+                  {(overriddenPrice || selectedItem.price).toLocaleString()}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={togglePriceOverride}
+                    className={`p-0 h-6 w-6 hover:bg-gray-700/50 transition-colors duration-200 ${
+                      isPriceOverrideActive
+                        ? "text-blue-400 hover:text-blue-300"
+                        : "text-red-400 hover:text-red-300"
+                    }`}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                </span>
+                <span className="hidden md:block mx-4 opacity-20">•</span>
+                <span className="flex items-center gap-1 whitespace-nowrap hover:text-gray-300 transition-colors duration-200">
+                  <Clock className="h-3.5 w-3.5" />
+                  {getRelativeDate(selectedItem.updated)
+                    .replace(" ago", "")
+                    .replace("hours", "h")
+                    .replace("minutes", "m")
+                    .replace("days", "d")}
+                </span>
+              </div>
+            </div>
+
+            {isPriceOverrideActive && (
+              <div className="mt-1 flex items-center">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={priceOverride}
+                  onChange={handlePriceOverride}
+                  placeholder="Override flea price"
+                  className="w-1/2 p-1 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {(Number(priceOverride) > 0 ||
+                  overriddenPrice !== undefined) && (
+                  <button
+                    onClick={clearPriceOverride}
+                    className="ml-2 p-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    title="Clear Price Override Input"
+                  >
+                    <XIcon size={16} />
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        )}
 
         {showDropdown && (
           <div className="absolute z-10 w-full mt-1 bg-gray-700 rounded-md shadow-lg max-h-60 overflow-hidden dropdown-container">
@@ -505,41 +588,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             </AutoSizer>
             {filteredItems.length === 0 && (
               <div className="p-2 text-gray-400">No items found.</div>
-            )}
-          </div>
-        )}
-        {selectedItem && (
-          <div className="text-sm text-gray-400 mt-1 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-            {" "}
-            <span>Base: ₱{selectedItem.basePrice.toLocaleString()}</span>
-            <span className={overriddenPrice ? "text-blue-500" : ""}>
-              Flea: ₱{(overriddenPrice || selectedItem.price).toLocaleString()}
-            </span>
-            <span>Updated: {getRelativeDate(selectedItem.updated)}</span>
-            {isExcluded && (
-              <span className="text-red-500">Excluded from Autopick</span>
-            )}
-          </div>
-        )}
-        {selectedItem && isPriceOverrideActive && (
-          <div className="mt-1 flex items-center">
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={priceOverride}
-              onChange={handlePriceOverride}
-              placeholder="Override flea price"
-              className="w-1/2 p-1 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {(Number(priceOverride) > 0 || overriddenPrice !== undefined) && (
-              <button
-                onClick={clearPriceOverride}
-                className="ml-2 p-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                title="Clear Price Override Input"
-              >
-                <XIcon size={16} />
-              </button>
             )}
           </div>
         )}
