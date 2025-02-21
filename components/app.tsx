@@ -377,10 +377,12 @@ function AppContent() {
       sortedItems.sort((a, b) => a.basePrice - b.basePrice);
     } else if (sortOption === "updated") {
       // Sort by updated time in descending order (updated is a timestamp so calc timestamp - updated) use datetime.strptime
-      sortedItems.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+      sortedItems.sort(
+        (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()
+      );
     } else if (sortOption === "ratio") {
-      // Sort by value-to-cost ratio in descending order
-      sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / b.price);
+      // Sort by best basePrice to price value, so best basePrice / best price ratio
+      sortedItems.sort((a, b) => b.basePrice / b.price - a.basePrice / a.price);
     }
 
     return sortedItems;
@@ -691,26 +693,33 @@ function AppContent() {
   const [isThresholdHelperOpen, setIsThresholdHelperOpen] = useState(false);
 
   // Initialize state with explicit values to prevent hydration mismatches
-  const [isClearButtonDisabled, setIsClearButtonDisabled] = useState<boolean>(true);
-  const [isResetOverridesButtonDisabled, setIsResetOverridesButtonDisabled] = useState<boolean>(true);
+  const [isClearButtonDisabled, setIsClearButtonDisabled] =
+    useState<boolean>(true);
+  const [isResetOverridesButtonDisabled, setIsResetOverridesButtonDisabled] =
+    useState<boolean>(true);
 
   // Update button disabled states based on actual conditions
   useEffect(() => {
-    const hasSelectedItems = selectedItems.some(item => item !== null);
+    const hasSelectedItems = selectedItems.some((item) => item !== null);
     setIsClearButtonDisabled(!hasSelectedItems);
 
-    const hasOverridesOrExclusions = Object.keys(overriddenPrices).length > 0 || excludedItems.size > 0;
+    const hasOverridesOrExclusions =
+      Object.keys(overriddenPrices).length > 0 || excludedItems.size > 0;
     setIsResetOverridesButtonDisabled(!hasOverridesOrExclusions);
   }, [selectedItems, overriddenPrices, excludedItems]);
 
   // Initialize state with "0 overrides" text to prevent hydration mismatch
-  const [activeOverridesText, setActiveOverridesText] = useState('0 overrides and 0 exclusions currently active');
+  const [activeOverridesText, setActiveOverridesText] = useState(
+    "0 overrides and 0 exclusions currently active"
+  );
 
   // Update text whenever overrides or exclusions change
   useEffect(() => {
     const overridesCount = Object.keys(overriddenPrices).length;
     const exclusionsCount = excludedItems.size;
-    setActiveOverridesText(`${overridesCount} overrides and ${exclusionsCount} exclusions currently active`);
+    setActiveOverridesText(
+      `${overridesCount} overrides and ${exclusionsCount} exclusions currently active`
+    );
   }, [overriddenPrices, excludedItems]);
 
   if (error) {

@@ -151,7 +151,15 @@ export function SettingsPane({
                     id="az"
                     className={sortOption === "az" ? "bg-white" : ""}
                   />
-                  <Label htmlFor="az">A-Z</Label>
+                  <Label htmlFor="az">Item name: A-Z</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem
+                    value="ratio"
+                    id="ratio"
+                    className={sortOption === "ratio" ? "bg-green-500" : ""}
+                  />
+                  <Label htmlFor="ratio">Best Value for Money</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem
@@ -163,19 +171,11 @@ export function SettingsPane({
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem
-                    value="ratio"
-                    id="ratio"
-                    className={sortOption === "ratio" ? "bg-green-500" : ""}
-                  />
-                  <Label htmlFor="ratio">Value-to-Cost Ratio</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem
                     value="updated"
                     id="updated"
-                    className={sortOption === "updated" ? "bg-purple-500" : ""}
+                    className={sortOption === "updated" ? "bg-pink-500" : ""}
                   />
-                  <Label htmlFor="updated">Recently Updated</Label>
+                  <Label htmlFor="updated">Most Recently Updated First</Label>
                 </div>
               </RadioGroup>
             </div>

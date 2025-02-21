@@ -493,7 +493,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         {/* Action Buttons and Item Info */}
         {selectedItem && (
           <>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex flex-wrap gap-1 mt-2 justify-center w-full">
               <Button
                 variant="ghost"
                 size="sm"
@@ -508,11 +508,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 {!isExcluded ? "Exclude (Auto-Pick)" : "Include (Auto-Pick)"}
               </Button>
 
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-0 text-sm md:text-base text-gray-400 ml-4">
+              <div className="flex flex-col md:flex-row md:items-center whitespace-nowrap gap-2 md:gap-0 text-sm md:text-base text-gray-400 ml-4">
                 <span className="hover:text-gray-300 transition-colors duration-200">
-                  Base Value: ₱{selectedItem.basePrice.toLocaleString()}
+                  Base: ₱{selectedItem.basePrice.toLocaleString()}
                 </span>
-                <span className="hidden md:block mx-4 opacity-20">•</span>
+                <span className="hidden md:block mx-4 opacity-20 whitespace-nowrap">
+                  •
+                </span>
                 <span
                   className={`flex items-center gap-2 transition-colors duration-200 ${
                     overriddenPrice ? "text-blue-500" : "hover:text-gray-300"

@@ -52,15 +52,23 @@ export function VersionInfo({ version }: VersionInfoProps) {
           <div className="border-b border-gray-700 pb-2">
             <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
               <span className="text-emerald-500">v{version}</span>
-              <span className="text-xs text-gray-400">Latest Release [13/02/2025]</span>
+              <span className="text-xs text-gray-400">
+                Latest Release [13/02/2025]
+              </span>
             </h4>
             <div className="space-y-2">
               <div>
-                <h5 className="text-xs font-medium text-blue-400 mb-1">New Features</h5>
+                <h5 className="text-xs font-medium text-blue-400 mb-1">
+                  New Features
+                </h5>
                 <ul className="text-xs space-y-1 text-gray-300">
+                  <li>• Added sort by recent updated items</li>
+                  <li>• Improved UI/UX for item selector</li>
                   <li>• Select ALL option for item filters in settings</li>
                   <li>• Keyboard navigation support:</li>
-                  <li className="ml-4">- TAB/ENTER: Confirm and navigate fields</li>
+                  <li className="ml-4">
+                    - TAB/ENTER: Confirm and navigate fields
+                  </li>
                   <li className="ml-4">- UP/DOWN: Browse search results</li>
                 </ul>
               </div>
@@ -68,7 +76,9 @@ export function VersionInfo({ version }: VersionInfoProps) {
           </div>
 
           <div className="border-b border-gray-700 pb-2">
-            <h5 className="text-xs font-medium text-yellow-500 mb-1">In Progress</h5>
+            <h5 className="text-xs font-medium text-yellow-500 mb-1">
+              In Progress
+            </h5>
             <ul className="text-xs space-y-1 text-gray-300">
               <li>• Enhanced filtering system</li>
               <li>• Faster price update integration</li>
@@ -77,7 +87,9 @@ export function VersionInfo({ version }: VersionInfoProps) {
           </div>
 
           <div>
-            <h5 className="text-xs font-medium text-red-400 mb-1">Known Issues</h5>
+            <h5 className="text-xs font-medium text-red-400 mb-1">
+              Known Issues
+            </h5>
             <ul className="text-xs space-y-1 text-gray-300">
               <li>• Cache optimization in progress</li>
               <li>• Pinned item pricing refinements needed</li>
