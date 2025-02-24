@@ -101,16 +101,18 @@ export async function GET(
   // Set proper cache headers for edge caching
   response.headers.set(
     "Cache-Control",
-    "public, s-maxage=3600, stale-while-revalidate=600" // 1 hour max, 10 minutes revalidation
+    "public, s-maxage=900, stale-while-revalidate=60" // 15 minutes with 1 minute stale
   );
   // Add Vary header to properly handle different modes
   response.headers.set("Vary", "accept-encoding, x-mode");
   // Set mode header for cache key differentiation
   response.headers.set("x-mode", mode);
-  // Add timing header
-  response.headers.set("Server-Timing", `total;dur=${Date.now() - startTime}`);
+  // Add timing header with more detailed metrics
+  const duration = Date.now() - startTime;
+  response.headers.set("Server-Timing", `total;dur=${duration}`);
+  response.headers.set("Timing-Allow-Origin", "*"); // Allow timing information for CORS requests
 
-  console.log(`🏁 [${mode.toUpperCase()}] Request completed in ${Date.now() - startTime}ms`);
+  console.log(`🏁 [${mode.toUpperCase()}] Request completed in ${duration}ms`);
   
   return response;
 }
