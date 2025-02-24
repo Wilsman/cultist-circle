@@ -18,7 +18,10 @@ export function createRateLimiter(options: RateLimiterOptions) {
   const ipRequestMap = new Map<string, RequestLog>();
 
   return function rateLimiter(request: NextRequest) {
-    const ip = request.ip ?? "127.0.0.1";
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded
+      ? forwarded.split(",")[0].trim()
+      : request.headers.get("x-real-ip") ?? "127.0.0.1";
     const now = Date.now();
     const windowStart = now - options.interval;
 

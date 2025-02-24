@@ -2,8 +2,20 @@
 
 import { Filter, List, RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { HelpCircle, Download, Upload, Trash2, Settings as SettingsIcon } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  HelpCircle,
+  Download,
+  Upload,
+  Trash2,
+  Settings as SettingsIcon,
+} from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -143,15 +155,31 @@ export default function SettingsPane({
                         id="az"
                         className={sortOption === "az" ? "bg-white" : ""}
                       />
-                      <Label htmlFor="az">A-Z</Label>
+                      <Label htmlFor="az">Item name: A-Z</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value="most-recent"
+                        id="most-recent"
+                        className={
+                          sortOption === "most-recent" ? "bg-pink-500" : ""
+                        }
+                      />
+                      <Label htmlFor="most-recent">
+                        Most recently updated first
+                      </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem
                         value="base-value"
                         id="base-value"
-                        className={sortOption === "base-value" ? "bg-blue-500" : ""}
+                        className={
+                          sortOption === "base-value" ? "bg-blue-500" : ""
+                        }
                       />
-                      <Label htmlFor="base-value">Base Value: Low to High</Label>
+                      <Label htmlFor="base-value">
+                        Base Value: Low to High
+                      </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem
@@ -159,7 +187,7 @@ export default function SettingsPane({
                         id="ratio"
                         className={sortOption === "ratio" ? "bg-green-500" : ""}
                       />
-                      <Label htmlFor="ratio">Value-to-Cost Ratio</Label>
+                      <Label htmlFor="ratio">Best value for money</Label>
                     </div>
                   </RadioGroup>
                 </div>
@@ -167,7 +195,9 @@ export default function SettingsPane({
 
               <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
                 <div className="w-full">
-                  <Label className="text-sm font-medium">Excluded Categories</Label>
+                  <Label className="text-sm font-medium">
+                    Excluded Categories
+                  </Label>
                   <p className="text-sm text-gray-400 mb-4">
                     Select which item categories to exclude from display
                   </p>
@@ -185,15 +215,22 @@ export default function SettingsPane({
                     <div className="">
                       {allCategories
                         .filter((category) =>
-                          category.toLowerCase().includes(searchTerm.toLowerCase())
+                          category
+                            .toLowerCase()
+                            .includes(searchTerm.toLowerCase())
                         )
                         .sort()
                         .map((category) => (
-                          <div key={category} className="flex items-center space-x-2 py-1">
+                          <div
+                            key={category}
+                            className="flex items-center space-x-2 py-1"
+                          >
                             <Checkbox
                               checked={excludedCategories.includes(category)}
                               disabled={disabledCategories.has(category)}
-                              onCheckedChange={() => handleCategoryChange(category)}
+                              onCheckedChange={() =>
+                                handleCategoryChange(category)
+                              }
                               className="border-gray-500"
                             />
                             <Label className="text-sm">{category}</Label>
@@ -217,7 +254,9 @@ export default function SettingsPane({
             <div className="grid gap-4">
               <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
                 <div>
-                  <Label className="text-sm font-medium">Hide Incompatible Items</Label>
+                  <Label className="text-sm font-medium">
+                    Hide Incompatible Items
+                  </Label>
                   <p className="text-sm text-gray-400">
                     Hide items that are incompatible with your current build
                   </p>
@@ -232,7 +271,9 @@ export default function SettingsPane({
 
               <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
                 <div>
-                  <Label className="text-sm font-medium">Excluded Items List</Label>
+                  <Label className="text-sm font-medium">
+                    Excluded Items List
+                  </Label>
                   <p className="text-sm text-gray-400">
                     Manage the list of excluded items
                   </p>
@@ -355,8 +396,8 @@ export default function SettingsPane({
             <DialogHeader>
               <DialogTitle>Confirm Reset</DialogTitle>
               <DialogDescription className="text-gray-400">
-                This will reset all selected items and settings to their default values.
-                This action cannot be undone.
+                This will reset all selected items and settings to their default
+                values. This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end gap-3 mt-4">
@@ -386,8 +427,8 @@ export default function SettingsPane({
             <DialogHeader>
               <DialogTitle>Confirm Clear Data</DialogTitle>
               <DialogDescription className="text-gray-400">
-                This will permanently remove all your stored data, including settings
-                and preferences. This action cannot be undone.
+                This will permanently remove all your stored data, including
+                settings and preferences. This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end gap-3 mt-4">

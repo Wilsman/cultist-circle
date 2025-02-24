@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export const runtime = 'edge'
+export const runtime = "edge";
 
 export async function GET() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   // Get all cookie names
   const cookieNames = cookieStore.getAll().map((cookie) => cookie.name);
