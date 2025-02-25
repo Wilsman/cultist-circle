@@ -87,9 +87,24 @@ function AppContent() {
   const { data: rawItemsData, error, mutate } = useItemsData(isPVE);
 
   const loading = !rawItemsData && !error;
+  const hasError = !!error;
+
+  // Handle error state
+  useEffect(() => {
+    if (hasError) {
+      toast({
+        title: "Error Loading Items",
+        description: "Failed to load items. Please refresh the page.",
+        variant: "destructive",
+      });
+    }
+  }, [hasError, toast]);
 
   // Initialize client-side state
   useEffect(() => {
+    // Only initialize if we have data
+    if (!rawItemsData || rawItemsData.length === 0) return;
+
     // Load sort option
     const savedSort = localStorage.getItem("sortOption");
     if (savedSort) setSortOption(savedSort);
@@ -163,7 +178,7 @@ function AppContent() {
     } catch (e) {
       console.error("Error loading overriddenPrices from localStorage", e);
     }
-  }, []);
+  }, [rawItemsData]);
 
   // Save sort option to localStorage
   useEffect(() => {
@@ -286,8 +301,7 @@ function AppContent() {
 
   // Memoized computation of items based on categories, sort option, and excluded items
   const items: SimplifiedItem[] = useMemo(() => {
-    if (loading) {
-      console.log("Still loading items data...");
+    if (loading || hasError) {
       return [];
     }
 
@@ -349,6 +363,7 @@ function AppContent() {
     excludeIncompatible,
     excludedItems,
     loading,
+    hasError,
   ]);
 
   // Update items when mode changes
@@ -904,18 +919,16 @@ function AppContent() {
                     selectedItems.map((item, index) => (
                       <div
                         key={`selector-${index}`}
-                        className={`animate-fade-in transition-all duration-200 ${
-                          loadingSlots[index] ? "opacity-50" : ""
+                        className={`animate-fade-in transition-all duration-200 ${loadingSlots[index] ? "opacity-50" : ""
                           }`}
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <React.Fragment>
                           <Suspense fallback={<div>Loading...</div>}>
                             <div
-                              className={`relative ${
-                                pinnedItems[index]
-                                ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
-                                : ""
+                              className={`relative ${pinnedItems[index]
+                                  ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
+                                  : ""
                                 }`}
                             >
                               {pinnedItems[index] && (
@@ -977,8 +990,7 @@ function AppContent() {
                         id="clear-item-fields"
                         className={`bg-red-500 hover:bg-red-600 text-white w-1/2 
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
-                          ${
-                            isClearButtonDisabled
+                          ${isClearButtonDisabled
                             ? "opacity-50 cursor-not-allowed"
                             : ""
                           }`}
@@ -999,8 +1011,7 @@ function AppContent() {
                         id="reset-overrides"
                         className={`bg-red-500 hover:bg-red-600 text-white w-1/2
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
-                          ${
-                            isResetOverridesButtonDisabled
+                          ${isResetOverridesButtonDisabled
                             ? "opacity-50 cursor-not-allowed"
                             : ""
                           }`}
@@ -1036,10 +1047,9 @@ function AppContent() {
                   <Skeleton className="h-16 w-3/4 mx-auto" />
                 ) : (
                   <div
-                    className={`text-6xl font-extrabold ${
-                      isThresholdMet
-                      ? "text-green-500 animate-pulse"
-                      : "text-red-500 animate-pulse"
+                    className={`text-6xl font-extrabold ${isThresholdMet
+                        ? "text-green-500 animate-pulse"
+                        : "text-red-500 animate-pulse"
                       }`}
                   >
                     ₽{total.toLocaleString()}

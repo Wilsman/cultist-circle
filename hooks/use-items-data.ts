@@ -26,7 +26,7 @@ export function useItemsData(isPVE: boolean) {
     // Try the fetch with automatic retry for 401 errors
     let retryCount = 0;
     const maxRetries = 2;
-    
+
     while (retryCount <= maxRetries) {
       try {
         const res = await fetch(url);
@@ -41,7 +41,7 @@ export function useItemsData(isPVE: boolean) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             continue;
           }
-          
+
           console.error(`❌ [${mode.toUpperCase()}] Failed to fetch items:`, {
             status: res.status,
             statusText: res.statusText,
@@ -77,7 +77,7 @@ export function useItemsData(isPVE: boolean) {
         }
       }
     }
-    
+
     // This should never be reached due to the throw in the loop, but TypeScript needs it
     throw new Error("Failed to fetch items after all retries");
   };
@@ -88,6 +88,18 @@ export function useItemsData(isPVE: boolean) {
     dedupingInterval: 600000, // 10 minutes
     keepPreviousData: true,
     fallbackData: [],
+    errorRetryCount: 3,  // Changed from retryCount
+    shouldRetryOnError: true,
+    onErrorRetry: (error: any, key, config, revalidate, { retryCount }) => {
+      // Don't retry on 404s
+      if (error?.status === 404) return;
+
+      // Only retry up to 3 times
+      if (retryCount >= 3) return;
+
+      // Retry after 1 second
+      setTimeout(() => revalidate(), 1000);
+    },
   });
 
   useEffect(() => {
