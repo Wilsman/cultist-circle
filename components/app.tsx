@@ -703,14 +703,17 @@ function AppContent() {
   useEffect(() => {
     const storedVersion = localStorage.getItem("appVersion");
     if (storedVersion !== CURRENT_VERSION) {
-      // console log the version change and before and after versions
-      console.log(
-        `App version changed from ${storedVersion} to ${CURRENT_VERSION}`
-      );
-      handleReset(); // TODO: CHECK THIS WORKS
+      console.log(`App version changed from ${storedVersion || 'none'} to ${CURRENT_VERSION}`);
+      // Just update the version without triggering a reset
       localStorage.setItem("appVersion", CURRENT_VERSION);
+      
+      // Optional: Show a toast to inform users of the update
+      toast({
+        title: "App Updated",
+        description: "The app has been updated to the latest version.",
+      });
     }
-  }, [handleReset]);
+  }, [toast]);
 
   const [isThresholdHelperOpen, setIsThresholdHelperOpen] = useState(false);
 
