@@ -62,7 +62,12 @@ function AppContent() {
   );
   const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
     useState<boolean>(false);
-  const [sortOption, setSortOption] = useState<string>("az");
+  const [sortOption, setSortOption] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("sortOption") || "az";
+    }
+    return "az";
+  });
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
     new Set()
   );
@@ -258,7 +263,7 @@ function AppContent() {
         return;
       },
       DEFAULT_EXCLUDED_CATEGORIES,
-      toast
+      toast,
     );
   }, [
     setSelectedItems,
@@ -309,8 +314,8 @@ function AppContent() {
     // Then filter out individually excluded items
     const excludedFiltered = excludeIncompatible
       ? categoryFiltered.filter(
-          (item: SimplifiedItem) => !excludedItems.has(item.name)
-        )
+        (item: SimplifiedItem) => !excludedItems.has(item.name)
+      )
       : categoryFiltered;
 
     // Sorting logic...
@@ -683,6 +688,10 @@ function AppContent() {
   useEffect(() => {
     const storedVersion = localStorage.getItem("appVersion");
     if (storedVersion !== CURRENT_VERSION) {
+      // console log the version change and before and after versions
+      console.log(
+        `App version changed from ${storedVersion} to ${CURRENT_VERSION}`
+      );
       handleReset(); // TODO: CHECK THIS WORKS
       localStorage.setItem("appVersion", CURRENT_VERSION);
     }
@@ -897,7 +906,7 @@ function AppContent() {
                         key={`selector-${index}`}
                         className={`animate-fade-in transition-all duration-200 ${
                           loadingSlots[index] ? "opacity-50" : ""
-                        }`}
+                          }`}
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <React.Fragment>
@@ -905,9 +914,9 @@ function AppContent() {
                             <div
                               className={`relative ${
                                 pinnedItems[index]
-                                  ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
-                                  : ""
-                              }`}
+                                ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
+                                : ""
+                                }`}
                             >
                               {pinnedItems[index] && (
                                 <div className="absolute -top-2 -right-2 z-10">
@@ -970,8 +979,8 @@ function AppContent() {
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
                           ${
                             isClearButtonDisabled
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
                           }`}
                         onClick={clearItemFields}
                         disabled={isClearButtonDisabled}
@@ -992,8 +1001,8 @@ function AppContent() {
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
                           ${
                             isResetOverridesButtonDisabled
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
                           }`}
                         onClick={resetOverridesAndExclusions}
                         disabled={isResetOverridesButtonDisabled}
@@ -1029,9 +1038,9 @@ function AppContent() {
                   <div
                     className={`text-6xl font-extrabold ${
                       isThresholdMet
-                        ? "text-green-500 animate-pulse"
-                        : "text-red-500 animate-pulse"
-                    }`}
+                      ? "text-green-500 animate-pulse"
+                      : "text-red-500 animate-pulse"
+                      }`}
                   >
                     ₽{total.toLocaleString()}
                   </div>

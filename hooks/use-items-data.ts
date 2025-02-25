@@ -23,33 +23,63 @@ export function useItemsData(isPVE: boolean) {
     const startTime = Date.now();
     console.log(`🔍 [${mode.toUpperCase()}] Fetching items from ${url}...`);
 
-    const res = await fetch(url);
-    const isCached = res.headers.get('x-vercel-cache') || 'MISS';
-    const serverTiming = res.headers.get('server-timing');
+    // Try the fetch with automatic retry for 401 errors
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (retryCount <= maxRetries) {
+      try {
+        const res = await fetch(url);
+        const isCached = res.headers.get('x-vercel-cache') || 'MISS';
+        const serverTiming = res.headers.get('server-timing');
 
-    if (!res.ok) {
-      console.error(`❌ [${mode.toUpperCase()}] Failed to fetch items:`, {
-        status: res.status,
-        statusText: res.statusText,
-        cache: isCached,
-      });
-      throw new Error("Failed to fetch items");
+        if (!res.ok) {
+          // If we get a 401 Unauthorized and have retries left, wait and try again
+          if (res.status === 401 && retryCount < maxRetries) {
+            console.warn(`⚠️ [${mode.toUpperCase()}] Authentication error (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in 1 second...`);
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          
+          console.error(`❌ [${mode.toUpperCase()}] Failed to fetch items:`, {
+            status: res.status,
+            statusText: res.statusText,
+            cache: isCached,
+            attempt: retryCount + 1,
+          });
+          throw new Error("Failed to fetch items");
+        }
+
+        const data = (await res.json()) as ItemsResponse;
+        const clientTime = Date.now() - startTime;
+
+        console.log(`📊 [${mode.toUpperCase()}] Request stats:`, {
+          cache: isCached,
+          clientTime,
+          serverTime: serverTiming,
+          totalItems: data.meta.totalItems,
+          validItems: data.meta.validItems,
+          categories: data.meta.categories,
+          processTime: data.meta.processTime,
+          retryCount
+        });
+
+        return data.items;
+      } catch (error) {
+        if (retryCount < maxRetries) {
+          console.warn(`⚠️ [${mode.toUpperCase()}] Fetch error (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in 1 second...`, error);
+          retryCount++;
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          console.error(`❌ [${mode.toUpperCase()}] All fetch attempts failed:`, error);
+          throw error;
+        }
+      }
     }
-
-    const data = (await res.json()) as ItemsResponse;
-    const clientTime = Date.now() - startTime;
-
-    console.log(`📊 [${mode.toUpperCase()}] Request stats:`, {
-      cache: isCached,
-      clientTime,
-      serverTime: serverTiming,
-      totalItems: data.meta.totalItems,
-      validItems: data.meta.validItems,
-      categories: data.meta.categories,
-      processTime: data.meta.processTime
-    });
-
-    return data.items;
+    
+    // This should never be reached due to the throw in the loop, but TypeScript needs it
+    throw new Error("Failed to fetch items after all retries");
   };
 
   const { data, error, mutate } = useSWR<SimplifiedItem[]>(swrKey, fetcher, {

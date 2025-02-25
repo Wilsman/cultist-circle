@@ -20,11 +20,11 @@ export async function resetUserData(
   // Clear local storage
   localStorage.clear();
 
-  // Clear cookies via API route
+  // Clear non-authentication cookies via API route
   try {
     const response = await fetch("/api/expire-cookies");
     if (response.ok) {
-      console.log("Cookies cleared successfully");
+      console.log("Cookies cleared successfully (preserving authentication cookies)");
     } else {
       console.error("Failed to clear cookies");
     }
