@@ -22,11 +22,11 @@ export function useItemsData(isPVE: boolean) {
   const fetcher = async (url: string) => {
     const startTime = Date.now();
     console.log(`🔍 [${mode.toUpperCase()}] Fetching items from ${url}...`);
-    
+
     const res = await fetch(url);
     const isCached = res.headers.get('x-vercel-cache') || 'MISS';
     const serverTiming = res.headers.get('server-timing');
-    
+
     if (!res.ok) {
       console.error(`❌ [${mode.toUpperCase()}] Failed to fetch items:`, {
         status: res.status,
@@ -69,6 +69,16 @@ export function useItemsData(isPVE: boolean) {
       itemCount: data?.length || 0,
       hasError: !!error,
     });
+
+    // Log more detailed information about the data
+    if (data && data.length > 0) {
+      console.log(`📊 [${mode.toUpperCase()}] Item count breakdown:`, {
+        total: data.length,
+        firstItem: data[0]?.name,
+        lastItem: data[data.length - 1]?.name,
+        categoriesCount: new Set(data.flatMap(item => item.categories || [])).size,
+      });
+    }
   }, [data, error, mode]);
 
   return {

@@ -29,7 +29,7 @@ function transformItem(item: any): SimplifiedItem | null {
 }
 
 export async function GET(
-  request: Request, 
+  request: Request,
   context: { params: Promise<{ mode: string }> }
 ) {
   const startTime = Date.now();
@@ -59,23 +59,66 @@ export async function GET(
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
 
-  const { data, error } = await supabase.from(tableName).select("*");
-  if (error) {
-    console.error(`❌ [${mode.toUpperCase()}] Database error:`, error);
-    return NextResponse.json({ error: "Failed to fetch items" }, { status: 500 });
+  // First, get the count of all items to determine how many batches we need
+  const { count, error: countError } = await supabase
+    .from(tableName)
+    .select('*', { count: 'exact', head: true });
+
+  if (countError) {
+    console.error(`❌ [${mode.toUpperCase()}] Count error:`, countError);
+    return NextResponse.json({ error: "Failed to count items" }, { status: 500 });
+  }
+
+  console.log(`📊 [${mode.toUpperCase()}] Total items count: ${count}`);
+
+  // Supabase has a default limit of 1,000 rows per request
+  // Use pagination to fetch all items in batches
+  const batchSize = 1000;
+  const batches = Math.ceil((count || 0) / batchSize);
+  let allItems: any[] = [];
+
+  console.log(`🔄 [${mode.toUpperCase()}] Fetching ${batches} batches of ${batchSize} items each`);
+
+  // Fetch all batches in parallel
+  const batchPromises = Array.from({ length: batches }, (_, i) => {
+    const from = i * batchSize;
+    const to = from + batchSize - 1;
+    console.log(`📦 [${mode.toUpperCase()}] Fetching batch ${i + 1}/${batches} (range ${from}-${to})`);
+
+    return supabase
+      .from(tableName)
+      .select("*")
+      .range(from, to);
+  });
+
+  const batchResults = await Promise.all(batchPromises);
+
+  // Check for errors and combine all items
+  for (let i = 0; i < batchResults.length; i++) {
+    const { data, error } = batchResults[i];
+
+    if (error) {
+      console.error(`❌ [${mode.toUpperCase()}] Batch ${i + 1} error:`, error);
+      return NextResponse.json({ error: `Failed to fetch batch ${i + 1}` }, { status: 500 });
+    }
+
+    if (data) {
+      console.log(`✅ [${mode.toUpperCase()}] Batch ${i + 1} received ${data.length} items`);
+      allItems = [...allItems, ...data];
+    }
   }
 
   // Log database fetch timing
   console.log(`⏱️ [${mode.toUpperCase()}] Database fetch completed in ${Date.now() - startTime}ms`);
-  console.log(`📊 [${mode.toUpperCase()}] Raw items count: ${data.length}`);
+  console.log(`📊 [${mode.toUpperCase()}] Raw items count: ${allItems.length}`);
 
   // Transform the items server-side
-  const transformedItems = data
+  const transformedItems = allItems
     .map(transformItem)
     .filter((item): item is SimplifiedItem => item !== null);
 
   // Log transformation results
-  console.log(`✅ [${mode.toUpperCase()}] Transformed ${transformedItems.length} valid items out of ${data.length} total`);
+  console.log(`✅ [${mode.toUpperCase()}] Transformed ${transformedItems.length} valid items out of ${allItems.length} total`);
 
   // Group items by category for monitoring
   const categoryCount = transformedItems.reduce((acc, item) => {
@@ -87,10 +130,10 @@ export async function GET(
 
   console.log(`📑 [${mode.toUpperCase()}] Items by category:`, categoryCount);
 
-  const response = NextResponse.json({ 
+  const response = NextResponse.json({
     items: transformedItems,
     meta: {
-      totalItems: data.length,
+      totalItems: allItems.length,
       validItems: transformedItems.length,
       processTime: Date.now() - startTime,
       categories: Object.keys(categoryCount).length,
@@ -113,6 +156,6 @@ export async function GET(
   response.headers.set("Timing-Allow-Origin", "*"); // Allow timing information for CORS requests
 
   console.log(`🏁 [${mode.toUpperCase()}] Request completed in ${duration}ms`);
-  
+
   return response;
 }
