@@ -5,8 +5,17 @@ import type { SimplifiedItem } from "@/types/SimplifiedItem";
 
 export const runtime = "edge";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function transformItem(item: any): SimplifiedItem | null {
+interface RawTarkovItem {
+  id: string;
+  name: string;
+  base_price: number;
+  last_low_price?: number;
+  updated?: string;
+  categories?: string[];
+  tags?: string[];
+}
+
+function transformItem(item: RawTarkovItem): SimplifiedItem | null {
   if (!item?.id || !item?.name || typeof item?.base_price !== "number") {
     console.debug(`⚠️ Skipping item due to missing required fields:`, item);
     return null;
@@ -75,7 +84,7 @@ export async function GET(
   // Use pagination to fetch all items in batches
   const batchSize = 1000;
   const batches = Math.ceil((count || 0) / batchSize);
-  let allItems: any[] = [];
+  let allItems: RawTarkovItem[] = [];
 
   console.log(`🔄 [${mode.toUpperCase()}] Fetching ${batches} batches of ${batchSize} items each`);
 
