@@ -11,8 +11,9 @@ const config: Config = {
     extend: {
       backgroundImage: {
         my_bg_image: "url('../public/images/bg.webp')",
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic":
+          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
       backgroundSize: {
         cover: "cover",
@@ -108,9 +109,17 @@ const config: Config = {
           },
         },
         marquee: {
-          '0%': { transform: 'translateX(0)' },
-          '100%': { transform: 'translateX(-50%)' }
-        }
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        "spin-slower": {
+          from: {
+            transform: "rotate(0deg)",
+          },
+          to: {
+            transform: "rotate(360deg)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -118,21 +127,19 @@ const config: Config = {
         shimmer: "shimmer 2s infinite",
         overlayShow: "overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1)",
         contentShow: "contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        marquee: 'marquee 10s linear infinite'
+        marquee: "marquee 10s linear infinite",
+        "spin-slower": "spin-slower 3s linear infinite",
       },
       transitionProperty: {
-        'height': 'height',
-        'spacing': 'margin, padding',
+        height: "height",
+        spacing: "margin, padding",
       },
       transitionTimingFunction: {
-        'bounce-in': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        "bounce-in": "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
       },
     },
   },
-  plugins: [
-    require("tailwindcss-animate"),
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 };
 
 export default config;

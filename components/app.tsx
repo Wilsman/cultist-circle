@@ -37,9 +37,11 @@ import Cookies from "js-cookie";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { resetUserData } from "@/utils/resetUserData";
+import { refreshData, canRevalidate } from "@/utils/revalidate-data";
 import { FeedbackForm } from "./feedback-form";
 import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
+import { RefreshCw } from "lucide-react";
 
 const CURRENT_VERSION = "1.1.0.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
@@ -78,6 +80,10 @@ function AppContent() {
     Record<string, number>
   >({});
   const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
+  const [refreshCooldown, setRefreshCooldown] = useState<{
+    isAllowed: boolean;
+    timeRemaining: number;
+  }>({ isAllowed: true, timeRemaining: 0 });
 
   // Import hooks
   const { toast } = useToast();
@@ -246,6 +252,27 @@ function AppContent() {
       }
     }
   }, [overriddenPrices]);
+
+  // Check refresh cooldown status
+  useEffect(() => {
+    // Initial check
+    setRefreshCooldown(canRevalidate());
+
+    // Set up interval to check every second
+    const interval = setInterval(() => {
+      setRefreshCooldown(canRevalidate());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Format the remaining cooldown time as MM:SS
+  const formatCooldownTime = (ms: number): string => {
+    const totalSeconds = Math.ceil(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   // Handler for category changes
   const handleCategoryChange = useCallback((categories: string[]) => {
@@ -783,6 +810,21 @@ function AppContent() {
     setHasAutoSelected(false); // Reset Auto Select on exclusion change
   }, []);
 
+  // Handle refresh button click with cooldown check
+  const handleRefreshClick = () => {
+    const { isAllowed, timeRemaining } = canRevalidate();
+    
+    if (isAllowed) {
+      refreshData(mutate);
+    } else {
+      toast({
+        title: "Refresh on cooldown",
+        description: `Please wait ${formatCooldownTime(timeRemaining)} before refreshing again.`,
+        variant: "default",
+      });
+    }
+  };
+
   // Update the refresh button UI
   return (
     <>
@@ -831,6 +873,29 @@ function AppContent() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>View barter recipes</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="flex-1 hover:bg-gray-700/50 rounded-none"
+                        onClick={handleRefreshClick}
+                        disabled={!refreshCooldown.isAllowed}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2 text-yellow-500 hover:text-green-300 animate-spin-slower" />
+                        {refreshCooldown.isAllowed 
+                          ? "Refresh" 
+                          : `Wait (${formatCooldownTime(refreshCooldown.timeRemaining)})`}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {refreshCooldown.isAllowed 
+                        ? "Refresh data" 
+                        : `Refresh available in ${formatCooldownTime(refreshCooldown.timeRemaining)}`}
+                    </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
 
