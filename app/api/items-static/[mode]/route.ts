@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
+import { revalidatePath } from "next/cache";
 
 export const runtime = "edge";
+export const revalidate = 900; // Revalidate every 15 minutes (900 seconds)
 
 interface RawTarkovItem {
   id: string;
@@ -42,6 +44,15 @@ export async function GET(
   const startTime = Date.now();
   const params = await context.params;
   const mode = params.mode;
+
+  // Handle URL search params
+  const url = new URL(request.url);
+  const forceRevalidate = url.searchParams.get("revalidate") === "true";
+  
+  if (forceRevalidate) {
+    // Force revalidation of this path
+    revalidatePath(`/api/items-static/${mode}`);
+  }
 
   if (!mode || !["pve", "pvp"].includes(mode)) {
     return NextResponse.json(
@@ -112,6 +123,7 @@ export async function GET(
     }
   });
 
+  // Set cache control headers for ISR
   response.headers.set(
     "Cache-Control",
     "public, s-maxage=900, stale-while-revalidate=60"
@@ -122,6 +134,7 @@ export async function GET(
   response.headers.set("Server-Timing", `total;dur=${duration}`);
   response.headers.set("Timing-Allow-Origin", "*");
   
+  // Enable compression
   response.headers.set("Accept-Encoding", "gzip, deflate, br");
 
   return response;

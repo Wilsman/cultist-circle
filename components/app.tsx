@@ -301,17 +301,12 @@ function AppContent() {
 
   // Memoized computation of items based on categories, sort option, and excluded items
   const items: SimplifiedItem[] = useMemo(() => {
-    if (loading || hasError) {
+    if (loading || hasError || !rawItemsData) {
       return [];
     }
 
     if (!Array.isArray(rawItemsData)) {
       console.error("rawItemsData is not an array:", rawItemsData);
-      return [];
-    }
-
-    if (rawItemsData.length === 0) {
-      console.log("No items data available");
       return [];
     }
 
@@ -368,11 +363,10 @@ function AppContent() {
 
   // Update items when mode changes
   useEffect(() => {
-    console.log("Mode/loading changed:", { isPVE, loading });
-    if (!loading) {
+    if (!loading && rawItemsData) {  // Only mutate if we have data and aren't loading
       mutate();
     }
-  }, [isPVE, mutate, loading]);
+  }, [isPVE, mutate, loading, rawItemsData]);
 
   // Function to find the best combination of items
   const findBestCombination = useCallback(
@@ -706,7 +700,7 @@ function AppContent() {
       console.log(`App version changed from ${storedVersion || 'none'} to ${CURRENT_VERSION}`);
       // Just update the version without triggering a reset
       localStorage.setItem("appVersion", CURRENT_VERSION);
-      
+
       // Optional: Show a toast to inform users of the update
       toast({
         title: "App Updated",
@@ -902,7 +896,7 @@ function AppContent() {
               {/* Item Selection Components with improved loading states */}
               <div className="space-y-2 w-full mt-4">
                 <div id="search-items">
-                  {loading ? (
+                  {loading || !rawItemsData ? (
                     <div className="space-y-2">
                       {Array(5)
                         .fill(0)
@@ -916,8 +910,10 @@ function AppContent() {
                           </div>
                         ))}
                     </div>
-                  ) : items.length === 0 ? (
-                    <LoadingSkeleton />
+                  ) : hasError ? (
+                    <div className="text-red-500 text-center p-4">
+                      Failed to load items. Please refresh the page.
+                    </div>
                   ) : (
                     selectedItems.map((item, index) => (
                       <div
@@ -930,8 +926,8 @@ function AppContent() {
                           <Suspense fallback={<div>Loading...</div>}>
                             <div
                               className={`relative ${pinnedItems[index]
-                                  ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
-                                  : ""
+                                ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
+                                : ""
                                 }`}
                             >
                               {pinnedItems[index] && (
@@ -1051,8 +1047,8 @@ function AppContent() {
                 ) : (
                   <div
                     className={`text-6xl font-extrabold ${isThresholdMet
-                        ? "text-green-500 animate-pulse"
-                        : "text-red-500 animate-pulse"
+                      ? "text-green-500 animate-pulse"
+                      : "text-red-500 animate-pulse"
                       }`}
                   >
                     ₽{total.toLocaleString()}
@@ -1244,18 +1240,6 @@ function AppContent() {
         />
       )}
     </>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-4 p-4">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center space-x-1">
-          <Skeleton className="h-10 w-full mb-2 bg-slate-500" />
-        </div>
-      ))}
-    </div>
   );
 }
 

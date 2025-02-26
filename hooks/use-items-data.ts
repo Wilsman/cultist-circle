@@ -1,6 +1,7 @@
 import useSWR from "swr";
 import { useEffect } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
+import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
 
 const CURRENT_VERSION = "1.1.0.1"; // Increment this when you want to trigger a cache clear
 
@@ -15,71 +16,50 @@ interface ItemsResponse {
   };
 }
 
+// Create the persistence middleware
+const swrPersistMiddleware = createSWRPersistMiddleware(CURRENT_VERSION);
+
 export function useItemsData(isPVE: boolean) {
   const mode = isPVE ? "pve" : "pvp";
-  const swrKey = `/api/items/${mode}?v=${CURRENT_VERSION}`;
+  // Use the static API endpoint with ISR
+  const swrKey = `/api/items-static/${mode}?v=${CURRENT_VERSION}`;
 
   const fetcher = async (url: string) => {
     const startTime = Date.now();
     console.log(`🔍 [${mode.toUpperCase()}] Fetching items from ${url}...`);
 
-    // Try the fetch with automatic retry for 401 errors
-    let retryCount = 0;
-    const maxRetries = 2;
+    try {
+      const res = await fetch(url);
+      const isCached = res.headers.get('x-vercel-cache') || 'MISS';
+      const serverTiming = res.headers.get('server-timing');
 
-    while (retryCount <= maxRetries) {
-      try {
-        const res = await fetch(url);
-        const isCached = res.headers.get('x-vercel-cache') || 'MISS';
-        const serverTiming = res.headers.get('server-timing');
-
-        if (!res.ok) {
-          // If we get a 401 Unauthorized and have retries left, wait and try again
-          if (res.status === 401 && retryCount < maxRetries) {
-            console.warn(`⚠️ [${mode.toUpperCase()}] Authentication error (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in 1 second...`);
-            retryCount++;
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            continue;
-          }
-
-          console.error(`❌ [${mode.toUpperCase()}] Failed to fetch items:`, {
-            status: res.status,
-            statusText: res.statusText,
-            cache: isCached,
-            attempt: retryCount + 1,
-          });
-          throw new Error("Failed to fetch items");
-        }
-
-        const data = (await res.json()) as ItemsResponse;
-        const clientTime = Date.now() - startTime;
-
-        console.log(`📊 [${mode.toUpperCase()}] Request stats:`, {
+      if (!res.ok) {
+        console.error(`❌ [${mode.toUpperCase()}] Failed to fetch items:`, {
+          status: res.status,
+          statusText: res.statusText,
           cache: isCached,
-          clientTime,
-          serverTime: serverTiming,
-          totalItems: data.meta.totalItems,
-          validItems: data.meta.validItems,
-          categories: data.meta.categories,
-          processTime: data.meta.processTime,
-          retryCount
         });
-
-        return data.items;
-      } catch (error) {
-        if (retryCount < maxRetries) {
-          console.warn(`⚠️ [${mode.toUpperCase()}] Fetch error (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in 1 second...`, error);
-          retryCount++;
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-          console.error(`❌ [${mode.toUpperCase()}] All fetch attempts failed:`, error);
-          throw error;
-        }
+        throw new Error("Failed to fetch items");
       }
-    }
 
-    // This should never be reached due to the throw in the loop, but TypeScript needs it
-    throw new Error("Failed to fetch items after all retries");
+      const data = (await res.json()) as ItemsResponse;
+      const clientTime = Date.now() - startTime;
+
+      console.log(`📊 [${mode.toUpperCase()}] Request stats:`, {
+        cache: isCached,
+        clientTime,
+        serverTime: serverTiming,
+        totalItems: data.meta.totalItems,
+        validItems: data.meta.validItems,
+        categories: data.meta.categories,
+        processTime: data.meta.processTime,
+      });
+
+      return data.items;
+    } catch (error) {
+      console.error(`❌ [${mode.toUpperCase()}] Fetch error:`, error);
+      throw error;
+    }
   };
 
   const { data, error, mutate } = useSWR<SimplifiedItem[]>(swrKey, fetcher, {
@@ -88,9 +68,9 @@ export function useItemsData(isPVE: boolean) {
     dedupingInterval: 600000, // 10 minutes
     keepPreviousData: true,
     fallbackData: [],
-    errorRetryCount: 3,  // Changed from retryCount
+    errorRetryCount: 3,
     shouldRetryOnError: true,
-    onErrorRetry: (error: any, key, config, revalidate, { retryCount }) => {
+    onErrorRetry: (error: Error & { status?: number }, key, config, revalidate, { retryCount }) => {
       // Don't retry on 404s
       if (error?.status === 404) return;
 
@@ -100,6 +80,8 @@ export function useItemsData(isPVE: boolean) {
       // Retry after 1 second
       setTimeout(() => revalidate(), 1000);
     },
+    // Use our persistence middleware
+    use: [swrPersistMiddleware],
   });
 
   useEffect(() => {
