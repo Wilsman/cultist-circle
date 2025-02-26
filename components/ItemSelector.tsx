@@ -20,6 +20,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { getRelativeDate } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 // Import Dropdown components
 import {
@@ -43,6 +44,7 @@ interface ItemSelectorProps {
     overriddenPrice: number | null | undefined
   ) => void;
   onCopy: () => void;
+  onCopyWithToast?: () => void;
   onPin: () => void;
   isPinned: boolean;
   overriddenPrice?: number;
@@ -58,6 +60,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   selectedItem,
   onSelect,
   onCopy,
+  onCopyWithToast,
   onPin,
   isPinned,
   overriddenPrice,
@@ -183,40 +186,80 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     }
   }, [onSelect, selectedItem]);
 
+  const togglePriceOverride = useCallback(() => {
+    // If turning on price override
+    if (!isPriceOverrideActive) {
+      setIsPriceOverrideActive(true);
+      // If we have a selected item and an override price, set it
+      if (selectedItem) {
+        if (overriddenPrice !== undefined) {
+          setPriceOverride(overriddenPrice.toString());
+        }
+        // We don't call onSelect here - we'll let the user enter a price first
+      }
+    }
+    // If turning off price override
+    else {
+      setIsPriceOverrideActive(false);
+      if (selectedItem) {
+        // Clear the override when turning off
+        onSelect(selectedItem, null);
+        setPriceOverride("");
+      }
+    }
+  }, [isPriceOverrideActive, selectedItem, overriddenPrice, onSelect]);
+
+  // Add a debounced version of the price override
+  const [debouncedPriceValue, setDebouncedPriceValue] = useState("");
+
+  // Debounce price updates to parent
+  useEffect(() => {
+    if (priceOverride === debouncedPriceValue) return;
+
+    const handler = setTimeout(() => {
+      setDebouncedPriceValue(priceOverride);
+      // Only update the parent if we have a value, a selected item, and price override is active
+      if (selectedItem && priceOverride && isPriceOverrideActive) {
+        onSelect(selectedItem, Number(priceOverride) || 0);
+      }
+    }, 300); // 300ms debounce delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [priceOverride, selectedItem, isPriceOverrideActive, onSelect, debouncedPriceValue]);
+
+  // Handle price input changes - only update local state, not parent
   const handlePriceOverride = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       if (/^\d*$/.test(value)) {
-        // Allow only numbers
+        // Allow only numbers and update local state
         setPriceOverride(value);
-        if (selectedItem && value && isPriceOverrideActive) {
-          onSelect(selectedItem, Number(value) || 0);
-        }
+        // The useEffect above will handle debounced updates to the parent
       }
     },
-    [onSelect, selectedItem, isPriceOverrideActive]
+    []
   );
-
-  const togglePriceOverride = useCallback(() => {
-    setIsPriceOverrideActive((prev) => {
-      const newState = !prev;
-      if (newState && selectedItem) {
-        if (priceOverride) {
-          onSelect(selectedItem, Number(priceOverride));
-        } else if (overriddenPrice !== undefined) {
-          setPriceOverride(overriddenPrice.toString());
-        }
-      } else if (!newState && selectedItem) {
-        onSelect(selectedItem, null);
-        setPriceOverride("");
-      }
-      return newState;
-    });
-  }, [selectedItem, priceOverride, overriddenPrice, onSelect]);
 
   const toggleExclude = useCallback(() => {
     onToggleExclude();
   }, [onToggleExclude]);
+
+  const { toast } = useToast();
+
+  const handleCopy = useCallback(() => {
+    onCopy();
+    if (onCopyWithToast) {
+      onCopyWithToast();
+    } else {
+      toast({
+        title: "Name Copied",
+        description: selectedItem ? `"${selectedItem.name}" copied to clipboard` : "Item copied to clipboard",
+        variant: "default",
+      });
+    }
+  }, [onCopy, onCopyWithToast, toast, selectedItem]);
 
   // Row component for react-window
   const Row = useCallback(
@@ -316,15 +359,15 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   variant="ghost"
                   onClick={onPin}
                   className={`h-8 w-8 ${isPinned ? "text-yellow-500" : "text-gray-400"
-                    } hover:bg-gray-200`}
+                    } hover:bg-gray-800`}
                 >
                   <Pin className="h-4 w-4" />
                 </Button>
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={onCopy}
-                  className="h-8 w-8 text-gray-400 hover:bg-gray-200"
+                  onClick={handleCopy}
+                  className="h-8 w-8 text-gray-400 hover:bg-gray-800"
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -333,7 +376,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   variant="ghost"
                   onClick={togglePriceOverride}
                   className={`h-8 w-8 ${isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
-                    } hover:bg-gray-200`}
+                    } hover:bg-gray-800`}
                 >
                   <BadgeDollarSign className="h-4 w-4" />
                 </Button>
@@ -342,7 +385,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   variant="ghost"
                   onClick={toggleExclude}
                   className={`h-8 w-8 ${isExcluded ? "text-red-500" : "text-gray-400"
-                    } hover:bg-gray-200`}
+                    } hover:bg-gray-800`}
                 >
                   <CircleSlash className="h-4 w-4" />
                 </Button>
@@ -350,7 +393,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   size="icon"
                   variant="ghost"
                   onClick={handleRemove}
-                  className="h-8 w-8 text-red-500 hover:bg-gray-200"
+                  className="h-8 w-8 text-red-500 hover:bg-gray-800"
                 >
                   <XIcon className="h-4 w-4" />
                 </Button>
@@ -377,7 +420,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                       <Pin className="mr-2 h-4 w-4" />
                       <span>{isPinned ? "Unpin Item" : "Pin Item"}</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={onCopy}>
+                    <DropdownMenuItem onSelect={handleCopy}>
                       <Copy className="mr-2 h-4 w-4" />
                       <span>Copy Item Name</span>
                     </DropdownMenuItem>

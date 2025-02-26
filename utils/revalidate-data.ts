@@ -2,6 +2,42 @@ import { KeyedMutator } from "swr";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { clearSWRCache } from "./swr-persistence";
 
+// Key for storing the last revalidation timestamp in localStorage
+const LAST_REVALIDATION_KEY = 'last-revalidation-timestamp';
+// Revalidation cooldown period in milliseconds (15 minutes)
+const REVALIDATION_COOLDOWN = 15 * 60 * 1000;
+
+/**
+ * Checks if revalidation is allowed based on the cooldown period
+ * @returns Object with isAllowed flag and timeRemaining in milliseconds
+ */
+export function canRevalidate(): { isAllowed: boolean; timeRemaining: number } {
+  if (typeof window === 'undefined') {
+    return { isAllowed: false, timeRemaining: REVALIDATION_COOLDOWN };
+  }
+  
+  try {
+    const lastRevalidation = localStorage.getItem(LAST_REVALIDATION_KEY);
+    
+    if (!lastRevalidation) {
+      return { isAllowed: true, timeRemaining: 0 };
+    }
+    
+    const lastTimestamp = parseInt(lastRevalidation, 10);
+    const now = Date.now();
+    const elapsed = now - lastTimestamp;
+    const timeRemaining = Math.max(0, REVALIDATION_COOLDOWN - elapsed);
+    
+    return {
+      isAllowed: timeRemaining === 0,
+      timeRemaining
+    };
+  } catch (error) {
+    console.error('Error checking revalidation status:', error);
+    return { isAllowed: true, timeRemaining: 0 };
+  }
+}
+
 /**
  * Utility to manually trigger revalidation of the static data
  * @param mode The mode to revalidate ('pve' or 'pvp')
@@ -39,6 +75,11 @@ export async function refreshData(
   clearCache: boolean = false
 ): Promise<void> {
   try {
+    // Store the current timestamp as the last revalidation time
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LAST_REVALIDATION_KEY, Date.now().toString());
+    }
+    
     // If requested, clear the local cache
     if (clearCache) {
       clearSWRCache();
