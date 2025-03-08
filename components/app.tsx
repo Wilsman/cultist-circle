@@ -10,7 +10,7 @@ import React, {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Settings } from "lucide-react";
+import { AlertTriangle, Settings } from "lucide-react";
 import Image from "next/image";
 import {
   Tooltip,
@@ -105,12 +105,23 @@ function AppContent() {
     "Suppressors",
     // Add any other categories you want as defaults
   ];
+  // Define disabled categories that should not be selectable
+  const disabledCategories = new Set(["Repair", "Keys", "Weapon", "Cosmetics"]);
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       try {
         const savedCategories = localStorage.getItem("selectedCategories");
         if (savedCategories) {
-          return JSON.parse(savedCategories);
+          // Filter out any disabled categories from the saved selection and delete from the local storage
+          const parsedCategories = JSON.parse(savedCategories);
+          const filteredCategories = parsedCategories.filter(
+            (category: string) => !disabledCategories.has(category)
+          );
+          console.log("Filtered Categories:", filteredCategories);
+          
+          // If filtering removed all categories, return default categories
+          return filteredCategories.length > 0 ? filteredCategories : defaultItemCategories;
         }
       } catch (e) {
         console.error("Error parsing selectedCategories from localStorage", e);
@@ -838,6 +849,14 @@ function AppContent() {
                 hasAutoSelected={hasAutoSelected}
                 handleAutoPick={handleAutoPick}
               />
+
+              <div className="rounded p-2 flex items-center justify-center mb-2">
+                <AlertTriangle className="text-yellow-600 mr-1" size={16} />  
+                <span className="text-yellow-600 text-xs font-semibold text-center">
+                  Posters have been disabled due to duplicate item names and radical flea prices.
+                </span>
+                <AlertTriangle className="text-yellow-600 ml-1" size={16} />
+              </div>
 
               {/* **9. Item Selection Components** */}
               <div className="space-y-2 w-full">

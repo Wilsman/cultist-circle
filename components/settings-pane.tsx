@@ -18,7 +18,7 @@ interface SettingsPaneProps {
   onHardReset: () => void;
 }
 
-const disabledCategories = new Set(["Repair", "Keys", "Weapon"]);
+const disabledCategories = new Set(["Repair", "Keys", "Weapon", "Cosmetics"]);
 
 export function SettingsPane({
   onClose,
@@ -80,7 +80,7 @@ export function SettingsPane({
       "Containers",
       "Maps",
       "Suppressors",
-    ]);
+    ].filter(cat => !disabledCategories.has(cat)));
   };
 
   // Generate warning message based on disabled categories
