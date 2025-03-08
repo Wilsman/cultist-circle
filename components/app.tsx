@@ -98,7 +98,6 @@ function AppContent() {
   ];
   const defaultItemCategories = [
     "Barter",
-    "Cosmetics",
     "Provisions",
     "Containers",
     "Maps",
@@ -853,7 +852,7 @@ function AppContent() {
               <div className="rounded p-2 flex items-center justify-center mb-2">
                 <AlertTriangle className="text-yellow-600 mr-1" size={16} />  
                 <span className="text-yellow-600 text-xs font-semibold text-center">
-                  Posters have been disabled due to duplicate item names and radical flea prices.
+                Posters disabled due to duplicate names and extreme prices. Reset in settings if issues occur.
                 </span>
                 <AlertTriangle className="text-yellow-600 ml-1" size={16} />
               </div>
