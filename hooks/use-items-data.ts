@@ -1,24 +1,20 @@
 import useSWR from "swr";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
 import { fetchTarkovData } from "./use-tarkov-api";
 
 const CURRENT_VERSION = "1.1.0.1"; // Increment this when you want to trigger a cache clear
 
-interface ItemsResponse {
-  items: SimplifiedItem[];
-  meta: {
-    totalItems: number;
-    validItems: number;
-    processTime: number;
-    categories: number;
-    mode: string;
-  };
-}
-
 // Create the persistence middleware
 const swrPersistMiddleware = createSWRPersistMiddleware(CURRENT_VERSION);
+
+// Add request tracking outside component
+const requestTracker = {
+  lastFetchTime: 0,
+  inProgress: false,
+  lastData: [] as SimplifiedItem[]
+};
 
 export function useItemsData(isPVE: boolean) {
   const mode = isPVE ? "pve" : "pvp";
@@ -26,26 +22,26 @@ export function useItemsData(isPVE: boolean) {
   // Use a unique key for the SWR cache
   const swrKey = `tarkov-dev-api/${mode}?v=${CURRENT_VERSION}`;
 
-  const fetcher = async () => {
-    const startTime = Date.now();
-    console.log(`🔍 [${mode.toUpperCase()}] Fetching items from tarkov.dev API...`);
+  const fetcher = async (): Promise<SimplifiedItem[]> => {
+    // Prevent duplicate fetches within 2 seconds
+    const now = Date.now();
+    if (now - requestTracker.lastFetchTime < 2000 || requestTracker.inProgress) {
+      return requestTracker.lastData;
+    }
+
+    requestTracker.inProgress = true;
+    requestTracker.lastFetchTime = now;
 
     try {
+      console.debug(`🔍 [${mode.toUpperCase()}] Fetching items at ${new Date().toLocaleTimeString()}`);
       const response = await fetchTarkovData(gameMode as 'pve' | 'regular');
-      const clientTime = Date.now() - startTime;
-
-      console.log(`📊 [${mode.toUpperCase()}] Request stats:`, {
-        clientTime,
-        totalItems: response.meta.totalItems,
-        validItems: response.meta.validItems,
-        categories: response.meta.categories,
-        processTime: response.meta.processTime,
-      });
-
+      requestTracker.lastData = response.items;
       return response.items;
     } catch (error) {
       console.error(`❌ [${mode.toUpperCase()}] Fetch error:`, error);
       throw error;
+    } finally {
+      requestTracker.inProgress = false;
     }
   };
 
@@ -54,7 +50,8 @@ export function useItemsData(isPVE: boolean) {
     revalidateOnReconnect: false,
     dedupingInterval: 600000, // 10 minutes
     keepPreviousData: true,
-    fallbackData: [],
+    fallbackData: requestTracker.lastData || [], // Use last data as fallback
+    suspense: false, // Disable suspense to prevent flashing
     errorRetryCount: 3,
     shouldRetryOnError: true,
     onErrorRetry: (error: Error & { status?: number }, key, config, revalidate, { retryCount }) => {
@@ -71,26 +68,12 @@ export function useItemsData(isPVE: boolean) {
     use: [swrPersistMiddleware],
   });
 
+  // Simplify effect to prevent extra renders
   useEffect(() => {
     if (error) {
       console.error(`❌ [${mode.toUpperCase()}] Error state:`, error);
     }
-    console.log(`ℹ️ [${mode.toUpperCase()}] Data state:`, {
-      hasData: !!data,
-      itemCount: data?.length || 0,
-      hasError: !!error,
-    });
-
-    // Log more detailed information about the data
-    if (data && data.length > 0) {
-      console.log(`📊 [${mode.toUpperCase()}] Item count breakdown:`, {
-        total: data.length,
-        firstItem: data[0]?.name,
-        lastItem: data[data.length - 1]?.name,
-        categoriesCount: new Set(data.flatMap(item => item.categories || [])).size,
-      });
-    }
-  }, [data, error, mode]);
+  }, [error, mode]);
 
   return {
     data: data || [],

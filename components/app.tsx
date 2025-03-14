@@ -121,7 +121,6 @@ function AppContent() {
       if (saved) {
         const parsedCategories = JSON.parse(saved);
         if (Array.isArray(parsedCategories)) {
-          console.log("Loading saved categories:", parsedCategories);
           setExcludedCategories(new Set(parsedCategories));
         } else {
           console.error(
@@ -203,10 +202,6 @@ function AppContent() {
         localStorage.setItem(
           "excludedCategories",
           JSON.stringify(Array.from(excludedCategories))
-        );
-        console.log(
-          "Saved categories to localStorage via effect:",
-          Array.from(excludedCategories)
         );
       } catch (e) {
         console.error("Error saving excludedCategories to localStorage", e);
@@ -337,8 +332,6 @@ function AppContent() {
       return [];
     }
 
-    console.log(`Processing ${rawItemsData.length} items...`);
-
     // First filter by excluded categories
     const categoryFiltered = rawItemsData.filter(
       (item: SimplifiedItem) =>
@@ -387,13 +380,6 @@ function AppContent() {
     loading,
     hasError,
   ]);
-
-  // Update items when mode changes
-  useEffect(() => {
-    if (!loading && rawItemsData) {  // Only mutate if we have data and aren't loading
-      mutate();
-    }
-  }, [isPVE, mutate, loading, rawItemsData]);
 
   // Function to find the best combination of items
   const findBestCombination = useCallback(
@@ -662,16 +648,17 @@ function AppContent() {
     findBestCombination,
   ]);
 
-  // Handler for mode toggle (PVE/PVP)
-  const handleModeToggle = (checked: boolean): void => {
+  // Modify the mode toggle to prevent unnecessary data fetches
+  const handleModeToggle = useCallback((checked: boolean): void => {
     setIsPVE(checked);
+    // Reset UI state
     setSelectedItems(Array(5).fill(null));
     setPinnedItems(Array(5).fill(false));
     setOverriddenPrices({});
     setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
     setHasAutoSelected(false);
     toastShownRef.current = false;
-  };
+  }, []);
 
   // Handler to copy item name to clipboard
   const handleCopyToClipboard = (index: number): void => {

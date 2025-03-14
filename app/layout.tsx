@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+// import { Inter } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/react";
 import CookieConsent from "@/components/CookieConsent";
 import { Toaster } from "@/components/ui/toaster";
 import { CookieConsentProvider } from "@/context/cookie-consent-context";
 
-const inter = Inter({ subsets: ["latin"] });
+// const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator",
@@ -70,9 +69,6 @@ export default function RootLayout({
             </div>
           </main>
         </CookieConsentProvider>
-
-        {/* Analytics */}
-        <Analytics />
       </body>
     </html>
   );

@@ -69,17 +69,11 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   onToggleExclude,
   excludedItems, // Destructure the new prop
 }) => {
-  // Add validation check at the start
+  // Add validation check at the start with a default empty array
   useEffect(() => {
     if (!Array.isArray(items)) {
-      console.error('Items prop is not an array:', items);
-      return;
+      console.debug('Items prop is not an array, defaulting to empty array');
     }
-    if (items.length === 0) {
-      console.log('No items provided to ItemSelector');
-      return;
-    }
-    console.log(`ItemSelector received ${items.length} items`);
   }, [items]);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,17 +91,19 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     }
   }, [selectedItem, overriddenPrice]);
 
-  // Initialize Fuse.js
+  // Initialize Fuse.js with better error handling
   const fuse = useMemo(() => {
-    if (!Array.isArray(items) || items.length === 0) {
-      console.log('Cannot create Fuse instance - no valid items');
+    const validItems = Array.isArray(items) ? items : [];
+    try {
+      return new Fuse(validItems, {
+        keys: ["name"],
+        threshold: 0.3,
+        includeScore: false,
+      });
+    } catch (e) {
+      console.debug('Fuse initialization skipped - waiting for items');
       return null;
     }
-    return new Fuse(items, {
-      keys: ["name"],
-      threshold: 0.3,
-      includeScore: false,
-    });
   }, [items]);
 
   // Debounced search term
@@ -125,17 +121,19 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
   // Filtered items based on search term and focus state
   const filteredItems = useMemo(() => {
-    if (!Array.isArray(items) || items.length === 0) {
+    const validItems = Array.isArray(items) ? items : [];
+    
+    if (validItems.length === 0) {
       return [];
     }
 
     let results;
     if (isFocused && !debouncedSearchTerm) {
-      results = items.filter((item) => item.basePrice > 0);
+      results = validItems.filter((item) => item.basePrice > 0);
     } else if (!debouncedSearchTerm) {
       return [];
     } else if (!fuse) {
-      return [];
+      return validItems;
     } else {
       results = fuse
         .search(debouncedSearchTerm)
