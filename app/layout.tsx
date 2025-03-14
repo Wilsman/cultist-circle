@@ -50,12 +50,13 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
+      <body className={`min-h-screen bg-background text-foreground antialiased crt-screen`}>
         <CookieConsentProvider>
           <main className="relative min-h-screen">
             {/* Background gradient effects */}
             <div className="fixed inset-0 -z-10 bg-gradient-to-b from-gray-900 to-black" />
             <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_500px_at_50%_200px,#3b82f6,transparent)]" />
+            <div className="fixed inset-0 -z-10 scanlines" />
             
             {/* Content */}
             <div className="relative z-10">

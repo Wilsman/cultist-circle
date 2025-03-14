@@ -2,6 +2,7 @@ import useSWR from "swr";
 import { useEffect } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
+import { fetchTarkovData } from "./use-tarkov-api";
 
 const CURRENT_VERSION = "1.1.0.1"; // Increment this when you want to trigger a cache clear
 
@@ -21,41 +22,27 @@ const swrPersistMiddleware = createSWRPersistMiddleware(CURRENT_VERSION);
 
 export function useItemsData(isPVE: boolean) {
   const mode = isPVE ? "pve" : "pvp";
-  // Use the static API endpoint with ISR
-  const swrKey = `/api/items-static/${mode}?v=${CURRENT_VERSION}`;
+  const gameMode = isPVE ? "pve" : "regular";
+  // Use a unique key for the SWR cache
+  const swrKey = `tarkov-dev-api/${mode}?v=${CURRENT_VERSION}`;
 
-  const fetcher = async (url: string) => {
+  const fetcher = async () => {
     const startTime = Date.now();
-    console.log(`🔍 [${mode.toUpperCase()}] Fetching items from ${url}...`);
+    console.log(`🔍 [${mode.toUpperCase()}] Fetching items from tarkov.dev API...`);
 
     try {
-      const res = await fetch(url);
-      const isCached = res.headers.get('x-vercel-cache') || 'MISS';
-      const serverTiming = res.headers.get('server-timing');
-
-      if (!res.ok) {
-        console.error(`❌ [${mode.toUpperCase()}] Failed to fetch items:`, {
-          status: res.status,
-          statusText: res.statusText,
-          cache: isCached,
-        });
-        throw new Error("Failed to fetch items");
-      }
-
-      const data = (await res.json()) as ItemsResponse;
+      const response = await fetchTarkovData(gameMode as 'pve' | 'regular');
       const clientTime = Date.now() - startTime;
 
       console.log(`📊 [${mode.toUpperCase()}] Request stats:`, {
-        cache: isCached,
         clientTime,
-        serverTime: serverTiming,
-        totalItems: data.meta.totalItems,
-        validItems: data.meta.validItems,
-        categories: data.meta.categories,
-        processTime: data.meta.processTime,
+        totalItems: response.meta.totalItems,
+        validItems: response.meta.validItems,
+        categories: response.meta.categories,
+        processTime: response.meta.processTime,
       });
 
-      return data.items;
+      return response.items;
     } catch (error) {
       console.error(`❌ [${mode.toUpperCase()}] Fetch error:`, error);
       throw error;

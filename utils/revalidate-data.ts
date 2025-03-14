@@ -39,7 +39,8 @@ export function canRevalidate(): { isAllowed: boolean; timeRemaining: number } {
 }
 
 /**
- * Utility to manually trigger revalidation of the static data
+ * Utility to manually trigger revalidation of the data
+ * This now simply clears the SWR cache and forces a refetch
  * @param mode The mode to revalidate ('pve' or 'pvp')
  * @returns Promise that resolves when revalidation is complete
  */
@@ -47,18 +48,13 @@ export async function revalidateItemsData(
   mode: "pve" | "pvp"
 ): Promise<boolean> {
   try {
-    const response = await fetch(`/api/items-static/${mode}?revalidate=true`, {
-      method: "GET",
-      headers: {
-        "Cache-Control": "no-cache",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`Failed to revalidate ${mode} data:`, response.statusText);
-      return false;
+    // With client-side fetching, we just need to clear the cache
+    // The next request will fetch fresh data from the tarkov.dev API
+    if (typeof window !== "undefined") {
+      const cacheKey = `swr-cache-tarkov-dev-api/${mode}`;
+      localStorage.removeItem(cacheKey);
     }
-
+    
     console.log(`Successfully triggered revalidation for ${mode} data`);
     return true;
   } catch (error) {
@@ -94,12 +90,14 @@ export async function refreshData(
       clearSWRCache();
     }
 
-    // Trigger a revalidation of the data on the server
+    // Trigger a revalidation of the data
     await revalidateItemsData("pve");
     await revalidateItemsData("pvp");
-    await mutate();
-
-    console.log("Data refreshed successfully");
+    
+    // Force SWR to refetch the data
+    await mutate(undefined, { revalidate: true });
+    
+    console.log("Data refresh complete");
   } catch (error) {
     console.error("Error refreshing data:", error);
   }

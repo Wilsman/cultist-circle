@@ -2,9 +2,103 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'PressStart2P';
+  src: url('/fonts/PressStart2P-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Retro game effects */
+  .retro-text {
+    font-family: 'PressStart2P', monospace;
+    letter-spacing: 1px;
+    line-height: 1.5;
+  }
+
+  .pixel-borders {
+    border-style: solid;
+    border-width: 4px;
+    border-image: linear-gradient(to right, #000 25%, transparent 25%) 5 / 4px;
+    image-rendering: pixelated;
+  }
+
+  .crt-screen {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .crt-screen::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 4px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .crt-screen::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0.4) 100%);
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .scanlines {
+    position: relative;
+  }
+
+  .scanlines::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(to bottom, transparent 0px, transparent 1px, rgba(0, 0, 0, 0.3) 1px, rgba(0, 0, 0, 0.3) 2px);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .pixel-shadow {
+    box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.8);
+  }
+
+  .retro-btn {
+    font-family: 'PressStart2P', monospace;
+    padding: 0.5rem 1rem;
+    background-color: #333;
+    color: #fff;
+    border: 4px solid #fff;
+    box-shadow: 4px 4px 0px #000;
+    transition: all 0.1s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .retro-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+  }
+
+  .retro-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px #000;
   }
 
   /* Enhanced animations */
@@ -46,6 +140,15 @@
 
   .interactive-bounce {
     @apply transition-transform active:scale-95 hover:scale-[1.02];
+  }
+
+  /* Retro game animations */
+  .animate-blink {
+    animation: blink 1s step-end infinite;
+  }
+
+  .animate-glitch {
+    animation: glitch 0.5s infinite;
   }
 }
 
@@ -116,43 +219,58 @@
   }
 }
 
+/* Retro game specific animations */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 142 70.6% 45.3%;
+    --primary-foreground: 144 80% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 12 60% 50%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --radius: 0.5rem;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 142 70.6% 45.3%;
+    --radius: 0;
 
-    /* Enhanced color palette */
+    /* Enhanced color palette with retro game colors */
     --success: 142 72% 29%;
-    --success-foreground: 210 40% 98%;
+    --success-foreground: 0 0% 98%;
     --warning: 38 92% 50%;
-    --warning-foreground: 210 40% 98%;
+    --warning-foreground: 0 0% 98%;
     --info: 198 93% 60%;
-    --info-foreground: 210 40% 98%;
+    --info-foreground: 0 0% 98%;
 
-    /* Chart colors with better contrast */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Chart colors with retro game palette */
+    --chart-1: 142 70% 45%;
+    --chart-2: 194 80% 56%;
+    --chart-3: 43 96% 58%;
+    --chart-4: 0 91% 71%;
+    --chart-5: 262 83% 58%;
   }
 }
 
@@ -163,6 +281,7 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    image-rendering: pixelated;
   }
 
   /* Enhanced focus styles */
@@ -170,7 +289,7 @@
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Improved scrollbar styling */
+  /* Improved scrollbar styling with retro look */
   ::-webkit-scrollbar {
     @apply w-2 h-2;
   }
@@ -180,12 +299,12 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-600 rounded-full hover:bg-gray-500 transition-colors;
+    @apply bg-primary rounded-none hover:bg-primary/80 transition-colors;
   }
 
   /* Better text selection */
   ::selection {
-    @apply bg-blue-500/30 text-white;
+    @apply bg-primary/30 text-white;
   }
 }
 
