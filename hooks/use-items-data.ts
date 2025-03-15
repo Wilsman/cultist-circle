@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
 import { fetchTarkovData } from "./use-tarkov-api";
+import { useToast } from "@/hooks/use-toast";
 
 const CURRENT_VERSION = "1.1.0.1"; // Increment this when you want to trigger a cache clear
 
@@ -21,6 +22,7 @@ export function useItemsData(isPVE: boolean) {
   const gameMode = isPVE ? "pve" : "regular";
   // Use a unique key for the SWR cache
   const swrKey = `tarkov-dev-api/${mode}?v=${CURRENT_VERSION}`;
+  const { toast } = useToast();
 
   const fetcher = async (): Promise<SimplifiedItem[]> => {
     // Prevent duplicate fetches within 2 seconds
@@ -39,6 +41,17 @@ export function useItemsData(isPVE: boolean) {
       return response.items;
     } catch (error) {
       console.error(`❌ [${mode.toUpperCase()}] Fetch error:`, error);
+      
+      // Check if this is a rate limit error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.startsWith('RATE_LIMIT:')) {
+        toast({
+          title: "Rate Limit Hit",
+          description: "You've reached the API rate limit. Please wait a moment before refreshing the data again.",
+          variant: "warning",
+        });
+      }
+      
       throw error;
     } finally {
       requestTracker.inProgress = false;

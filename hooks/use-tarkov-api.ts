@@ -47,6 +47,10 @@ export async function fetchTarkovData(gameMode: 'pve' | 'regular'): Promise<{
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        // Rate limit hit
+        throw new Error(`RATE_LIMIT:${response.status}`);
+      }
       throw new Error(`API request failed with status ${response.status}`);
     }
 
