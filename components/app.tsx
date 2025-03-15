@@ -863,6 +863,26 @@ function AppContent() {
                   </Tooltip>
                 </TooltipProvider>
 
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tr-lg"
+                        onClick={() => setIsSettingsPaneVisible(true)}
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Settings
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Configure app settings</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center mt-4 w-full">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -885,27 +905,10 @@ function AppContent() {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tr-lg"
-                        onClick={() => setIsSettingsPaneVisible(true)}
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        Settings
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Configure app settings</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
               </div>
-            </div>
 
             {/* Title and Version Info */}
-            <div className="pt-14 sm:pt-14">
+            <div className="pt-4 sm:pt-14">
               <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
                 <Image
                   src="/images/Cultist-Calulator.webp"
