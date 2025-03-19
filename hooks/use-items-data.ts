@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
 import { fetchTarkovData } from "./use-tarkov-api";

@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 // Import react-window for virtualization
 import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
+import Image from "next/image";
 
 interface ItemSelectorProps {
   items: SimplifiedItem[];
@@ -268,6 +269,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         itemOverriddenPrice !== undefined ? itemOverriddenPrice : (item.lastLowPrice || item.basePrice);
       const isOverridden = itemOverriddenPrice !== undefined;
       const isItemExcluded = excludedItems.has(item.name); // We use item.name for exclusions as per the code above
+      const itemIcon = item.iconLink;
 
       return (
         <Tooltip key={item.id}>
@@ -276,28 +278,37 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               style={style}
               onMouseDown={(e) => e.preventDefault()}
               onMouseUp={() => handleSelect(item)}
-              className="p-2 hover:bg-gray-600 cursor-pointer text-white flex flex-col"
+              className="p-2 hover:bg-gray-600 cursor-pointer text-white flex items-center" // Modified for flex
             >
-              <div className="flex justify-between items-center">
-                <span className="truncate">{item.name}</span>{" "}
-                {isItemExcluded && (
-                  <span className="text-red-500 ml-2">Excluded</span>
-                )}
+              {itemIcon && (
+                <Image
+                  src={itemIcon}
+                  alt={item.name}
+                  width={64}
+                  height={64}
+                  className="mr-2 rounded" // Add some margin for spacing
+                />
+              )}
+              <div className="flex-1 flex flex-col"> {/* Use flex-1 to allow text to take up remaining space */}
+                <span className="truncate">{item.name}</span>
+                <div className="text-gray-400 text-sm">
+                  <p>Base Value: ₽{item.basePrice.toLocaleString()}</p>
+                  <p>
+                    {item.lastLowPrice ? 'Last Low Price:' : 'Base Price:'}{" "}
+                    <span
+                      className={isOverridden ? "text-yellow-300 font-bold" : ""}
+                    >
+                      ₽{displayedPrice.toLocaleString()}
+                    </span>
+                    {isOverridden && (
+                      <span className="text-gray-400 ml-1">(Overridden)</span>
+                    )}
+                  </p>
+                </div>
               </div>
-              <div className="text-gray-400 text-sm mt-1">
-                <p>Base Value: ₽{item.basePrice.toLocaleString()}</p>
-                <p>
-                  {item.lastLowPrice ? 'Last Low Price:' : 'Base Price:'}{" "}
-                  <span
-                    className={isOverridden ? "text-yellow-300 font-bold" : ""}
-                  >
-                    ₽{displayedPrice.toLocaleString()}
-                  </span>
-                  {isOverridden && (
-                    <span className="text-gray-400 ml-1">(Overridden)</span>
-                  )}
-                </p>
-              </div>
+              {isItemExcluded && (
+                <span className="text-red-500 ml-2">Excluded</span>
+              )}
             </li>
           </TooltipTrigger>
           <TooltipContent>
@@ -346,7 +357,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             }}
             placeholder="Search items..."
             className={`w-full p-2 pr-24 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isPinned ? "border-2 border-yellow-500" : ""
-              }`}
+            }`}
           />
           {selectedItem && (
             <>
@@ -357,7 +368,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   variant="ghost"
                   onClick={onPin}
                   className={`h-8 w-8 ${isPinned ? "text-yellow-500" : "text-gray-400"
-                    } hover:bg-gray-800`}
+                  } hover:bg-gray-800`}
                 >
                   <Pin className="h-4 w-4" />
                 </Button>
@@ -374,7 +385,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   variant="ghost"
                   onClick={togglePriceOverride}
                   className={`h-8 w-8 ${isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
-                    } hover:bg-gray-800`}
+                  } hover:bg-gray-800`}
                 >
                   <BadgeDollarSign className="h-4 w-4" />
                 </Button>
@@ -383,7 +394,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   variant="ghost"
                   onClick={toggleExclude}
                   className={`h-8 w-8 ${isExcluded ? "text-red-500" : "text-gray-400"
-                    } hover:bg-gray-800`}
+                  } hover:bg-gray-800`}
                 >
                   <CircleSlash className="h-4 w-4" />
                 </Button>
@@ -470,7 +481,18 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         {selectedItem && (
           <div className="text-sm text-gray-400 mt-1 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             {" "}
-            <span>Base: ₽{selectedItem.basePrice.toLocaleString()}</span>
+            <div className="flex items-center">
+              {selectedItem.iconLink && (
+                <Image
+                  src={selectedItem.iconLink}
+                  alt={selectedItem.name}
+                  className="w-12 h-12 mr-2 rounded"
+                  width={32}
+                  height={32}
+                />
+              )}
+              <span>Base: ₽{selectedItem.basePrice.toLocaleString()}</span>
+            </div>
             <span className={overriddenPrice ? "text-blue-500" : ""}>
               Flea: ₽{(overriddenPrice || selectedItem.lastLowPrice || selectedItem.basePrice).toLocaleString()}
             </span>

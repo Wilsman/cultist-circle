@@ -6,6 +6,7 @@ export interface GraphQLResponse {
       basePrice: number;
       lastLowPrice: number | null;
       updated: string;
+      iconLink: string;
       categories: Array<{
         name: string;
       }>;

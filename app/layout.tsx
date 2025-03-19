@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import CookieConsent from "@/components/CookieConsent";
 import { Toaster } from "@/components/ui/toaster";
 import { CookieConsentProvider } from "@/context/cookie-consent-context";
 
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator",
@@ -49,7 +47,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <CookieConsentProvider>
           <main className="relative min-h-screen">
             {/* Background gradient effects */}

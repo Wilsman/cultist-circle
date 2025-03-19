@@ -2,7 +2,6 @@ import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { GraphQLResponse } from "@/types/GraphQLResponse";
 
 const GRAPHQL_API_URL = "https://api.tarkov.dev/graphql";
-const INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 /**
  * Fetches Tarkov item data from the tarkov.dev GraphQL API
@@ -20,7 +19,6 @@ export async function fetchTarkovData(gameMode: 'pve' | 'regular'): Promise<{
   };
 }> {
   const startTime = Date.now();
-  const mode = gameMode === 'pve' ? 'pve' : 'pvp';
   
   const query = `
     {
@@ -30,6 +28,7 @@ export async function fetchTarkovData(gameMode: 'pve' | 'regular'): Promise<{
         basePrice
         lastLowPrice
         updated
+        iconLink
         categories {
           name
         }
@@ -72,6 +71,7 @@ export async function fetchTarkovData(gameMode: 'pve' | 'regular'): Promise<{
       basePrice: item.basePrice,
       lastLowPrice: item.lastLowPrice || undefined,
       updated: item.updated,
+      iconLink: item.iconLink,
       categories: item.categories.map(cat => cat.name),
       tags: [],
       isExcluded: false,
