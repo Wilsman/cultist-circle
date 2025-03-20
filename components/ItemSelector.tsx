@@ -35,7 +35,6 @@ import { Button } from "@/components/ui/button";
 // Import react-window for virtualization
 import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
-import Image from "next/image";
 
 interface ItemSelectorProps {
   items: SimplifiedItem[];
@@ -281,12 +280,10 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               className="p-2 hover:bg-gray-600 cursor-pointer text-white flex items-center" // Modified for flex
             >
               {itemIcon && (
-                <Image
+                <img
                   src={itemIcon}
                   alt={item.name}
-                  width={64}
-                  height={64}
-                  className="mr-2 rounded" // Add some margin for spacing
+                  className="w-16 h-16 mr-2 rounded"
                 />
               )}
               <div className="flex-1 flex flex-col"> {/* Use flex-1 to allow text to take up remaining space */}
@@ -483,12 +480,10 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             {" "}
             <div className="flex items-center">
               {selectedItem.iconLink && (
-                <Image
+                <img
                   src={selectedItem.iconLink}
                   alt={selectedItem.name}
-                  className="w-12 h-12 mr-2 rounded"
-                  width={32}
-                  height={32}
+                  className="w-14 h-14 mr-2 rounded"
                 />
               )}
               <span>Base: ₽{selectedItem.basePrice.toLocaleString()}</span>
