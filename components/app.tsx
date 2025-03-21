@@ -979,31 +979,11 @@ function AppContent() {
                       >
                         <React.Fragment>
                           <Suspense fallback={<div>Loading...</div>}>
-                            <div
-                              className={`relative ${pinnedItems[index]
-                                ? "border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-1"
-                                : ""
-                                }`}
-                            >
-                              {pinnedItems[index] && (
-                                <div className="absolute -top-2 -right-2 z-10">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger>
-                                        <div className="w-4 h-4 bg-yellow-500 dark:bg-yellow-600 rounded-full" />
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>This item is pinned</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
-                              )}
-                              <DynamicItemSelector
-                                items={items}
-                                selectedItem={item}
-                                onSelect={(selectedItem, overriddenPrice) =>
-                                  updateSelectedItem(
+                            <DynamicItemSelector
+                              items={items}
+                              selectedItem={item}
+                              onSelect={(selectedItem, overriddenPrice) =>
+                                updateSelectedItem(
                                     selectedItem,
                                     index,
                                     overriddenPrice
@@ -1025,7 +1005,6 @@ function AppContent() {
                                 }
                                 excludedItems={excludedItems}
                               />
-                            </div>
                           </Suspense>
                           {index < selectedItems.length - 1 && (
                             <Separator className="my-2" />

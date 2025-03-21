@@ -28,6 +28,7 @@ export async function fetchTarkovData(gameMode: 'pve' | 'regular'): Promise<{
         basePrice
         lastLowPrice
         updated
+        lastOfferCount
         iconLink
         categories {
           name
@@ -71,6 +72,7 @@ export async function fetchTarkovData(gameMode: 'pve' | 'regular'): Promise<{
       basePrice: item.basePrice,
       lastLowPrice: item.lastLowPrice || undefined,
       updated: item.updated,
+      lastOfferCount: item.lastOfferCount || undefined,
       iconLink: item.iconLink,
       categories: item.categories.map(cat => cat.name),
       tags: [],

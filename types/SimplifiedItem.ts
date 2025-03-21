@@ -7,6 +7,7 @@ export interface SimplifiedItem {
   basePrice: number;
   lastLowPrice?: number;
   updated?: string;  // Changed from number to string to match Supabase timestamptz
+  lastOfferCount?: number;
   categories?: string[];  // Made optional to match DB schema
   iconLink?: string;
 

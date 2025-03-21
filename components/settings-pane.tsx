@@ -47,9 +47,9 @@ interface SettingsPaneProps {
 }
 
 const disabledCategories = new Set([
-  "Weapon",
-  "Key",
-  "Armor",
+  // "Weapon",
+  // "Key",
+  // "Armor",
   // Add any other categories that should be disabled
 ]);
 
@@ -83,7 +83,7 @@ export default function SettingsPane({
 
   // Handle category selection
   const handleCategoryChange = (category: string) => {
-    if (disabledCategories.has(category)) {
+    if (disabledCategories.has(category as never)) {
       return; // Cannot change disabled categories
     }
 
@@ -227,7 +227,7 @@ export default function SettingsPane({
                           >
                             <Checkbox
                               checked={excludedCategories.includes(category)}
-                              disabled={disabledCategories.has(category)}
+                              disabled={disabledCategories.has(category as never)}
                               onCheckedChange={() =>
                                 handleCategoryChange(category)
                               }
