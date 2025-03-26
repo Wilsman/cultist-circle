@@ -24,7 +24,7 @@ const tarkovItems: { input: string; time: string; output: string }[] = [
     time: "6 min",
     output: "Secure container Gamma (Edge of Darkness Edition)",
   },
-  { input: "Secure container Kappa", time: "66 mins", output: "Waist pouch" },
+  { input: "Secure container Kappa", time: "66 mins", output: "Secure container Kappa (Desecrated)" },
   {
     input: "Cultist figurine ×1",
     time: "66 mins",
