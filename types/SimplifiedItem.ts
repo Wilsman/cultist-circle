@@ -10,6 +10,7 @@ export interface SimplifiedItem {
   lastOfferCount?: number;
   categories?: string[];  // Made optional to match DB schema
   iconLink?: string;
+  avg24hPrice?: number;
 
   // UI-specific fields
   tags?: string[];

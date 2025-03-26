@@ -5,6 +5,7 @@ export interface GraphQLResponse {
       name: string;
       basePrice: number;
       lastLowPrice: number | null;
+      avg24hPrice: number | null;
       updated: string;
       lastOfferCount: number | null;
       iconLink: string;

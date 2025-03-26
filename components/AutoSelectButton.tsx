@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button } from "@/components/ui/button"
-import { Dices } from "lucide-react"
+import { Dices, RefreshCw } from "lucide-react"
 import {
   Tooltip,
   TooltipTrigger,
@@ -22,7 +22,7 @@ export function AutoSelectButton({
   if (isCalculating) {
     return (
       <div className="text-center">
-        <p className="text-gray-300 mb-2">
+        <p className="text-gray-800 mb-2">
           Calculating best combination...
         </p>
         <div className="lds-ellipsis">
@@ -44,12 +44,12 @@ export function AutoSelectButton({
               id="auto-select"
               onClick={handleAutoPick}
               disabled={isCalculating}
-              className="w-full md:max-w-[300px] lg:max-w-[300px] text-primary bg-blue-500 hover:bg-blue-700"
+              className="w-full md:max-w-[300px] lg:max-w-[300px] text-white bg-blue-500 hover:bg-blue-700"
             >
               {hasAutoSelected ? (
                 <>
-                  <Dices className="mr-2 h-4 w-4" />
-                  Re-roll Auto Select
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Re-roll
                 </>
               ) : (
                 <>

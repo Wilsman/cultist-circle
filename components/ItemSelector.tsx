@@ -447,7 +447,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 <img
                   src={selectedItem.iconLink}
                   alt={selectedItem.name}
-                  className="w-12 h-12 md:w-28 md:h-28 object-contain rounded mr-4"
+                  className="w-12 h-12 md:w-24 md:h-24 object-contain rounded mr-4"
                 />
               )}
               <div className="flex flex-col flex-grow">
@@ -473,7 +473,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   </Tooltip>
                 </div>
                 {/* Price information */}
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-400">
                     Base:{" "}
                     <span className="text-teal-400 font-semibold">
@@ -505,6 +505,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     <TooltipContent>Toggle Price Override</TooltipContent>
                   </Tooltip>
                 </div>
+                {/* 24h
+                <span className="text-sm text-gray-400">
+                  24h avg:{" "}
+                  <span className="text-teal-400">
+                    ₽{selectedItem.avg24hPrice?.toLocaleString()}
+                  </span>
+                </span> */}
                 {/* Updated time */}
                 {selectedItem.updated && (
                   <span className="text-xs text-gray-500">
