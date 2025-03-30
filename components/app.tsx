@@ -10,7 +10,7 @@ import React, {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import Image from "next/image";
 import {
   Tooltip,
@@ -36,7 +36,9 @@ import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { Suspense } from "react";
 import CookieConsent from "@/components/CookieConsent";
 import { VersionInfo } from "@/components/version-info";
-// import { useCookieConsent } from "@/contexts/CookieConsentContext";
+import { Alert, AlertDescription } from "@/components/ui/alert"; // Import Alert components
+
+// Static content and Types remain unchanged
 
 const CURRENT_VERSION = "1.0.5.b"; // Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices"; // Add this line
@@ -849,13 +851,11 @@ function AppContent() {
                 handleAutoPick={handleAutoPick}
               />
 
-              <div className="rounded p-2 flex items-center justify-center mb-2">
-                <AlertTriangle className="text-yellow-600 mr-1" size={16} />  
-                <span className="text-yellow-600 text-xs font-semibold text-center">
-                Posters disabled due to duplicate names and extreme prices. Reset in settings if issues occur.
-                </span>
-                <AlertTriangle className="text-yellow-600 ml-1" size={16} />
-              </div>
+              <Alert variant="default" className="mb-2 border-yellow-500/50">
+                <AlertDescription className="text-xs font-semibold text-center">
+                  6h outcome has only 25% chance when using 400k; 14h is more common.
+                </AlertDescription>
+              </Alert>
 
               {/* **9. Item Selection Components** */}
               <div className="space-y-2 w-full">
