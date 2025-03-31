@@ -815,8 +815,14 @@ function AppContent() {
               <AlertDescription className="text-xs font-semibold text-center">
                 We are testing new recipes with The Labyrinth figures. If
                 you&apos;ve sacrificed 5x of one type or 1x of all 5 types,
-                please share your input and results via the feedback form to
-                help our research.
+                please share your input and results via the{" "}
+                <span
+                  className="text-blue-400 cursor-pointer hover:underline"
+                  onClick={() => setIsFeedbackFormVisible(true)}
+                >
+                  Feedback Form
+                </span>{" "}
+                to help our research.
               </AlertDescription>
             </Alert>
 
