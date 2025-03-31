@@ -50,7 +50,7 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto bg-primary text-secondary">
       <CardHeader>
         <CardTitle>Submit Feedback or Report Issue</CardTitle>
       </CardHeader>
@@ -67,6 +67,8 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
               <SelectContent>
                 <SelectItem value="Issue">Issue</SelectItem>
                 <SelectItem value="Feature">Feature</SelectItem>
+                <SelectItem value="Suggestion">Suggestion</SelectItem>
+                <SelectItem value="Recipe">Recipe</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -82,14 +84,26 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
               required
               className="min-h-[100px]"
             />
+            <p className="text-xs text-muted-foreground pt-2">
+              Alternatively, you can{" "}
+              <a
+                href="https://discord.com/users/248207695943827456"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground"
+              >
+                contact the developer directly on Discord
+              </a>
+              .
+            </p>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" className="bg-red-500 text-primary hover:bg-red-500/90" onClick={onClose}>
             Close
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit"}
+          <Button type="submit" className="bg-green-500 text-primary hover:bg-green-500/90" disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit"} 
           </Button>
         </CardFooter>
       </form>

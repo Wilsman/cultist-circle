@@ -120,9 +120,11 @@ function AppContent() {
             (category: string) => !disabledCategories.has(category)
           );
           console.log("Filtered Categories:", filteredCategories);
-          
+
           // If filtering removed all categories, return default categories
-          return filteredCategories.length > 0 ? filteredCategories : defaultItemCategories;
+          return filteredCategories.length > 0
+            ? filteredCategories
+            : defaultItemCategories;
         }
       } catch (e) {
         console.error("Error parsing selectedCategories from localStorage", e);
@@ -806,6 +808,18 @@ function AppContent() {
               <VersionInfo version={CURRENT_VERSION} />
             </div>
 
+            <Alert
+              variant="default"
+              className="mb-2 border-yellow-500/50 animate-pulse"
+            >
+              <AlertDescription className="text-xs font-semibold text-center">
+                We are testing new recipes with The Labyrinth figures. If
+                you&apos;ve sacrificed 5x of one type or 1x of all 5 types,
+                please share your input and results via the feedback form to
+                help our research.
+              </AlertDescription>
+            </Alert>
+
             <div className="text-center text-gray-400 text-sm mb-2">
               <Button
                 onClick={fetchData}
@@ -851,9 +865,13 @@ function AppContent() {
                 handleAutoPick={handleAutoPick}
               />
 
-              <Alert variant="default" className="mb-2 border-yellow-500/50">
+              <Alert
+                variant="default"
+                className="mb-2 border-yellow-500/50 bg-gray-800 text-gray-400"
+              >
                 <AlertDescription className="text-xs font-semibold text-center">
-                  6h outcome has only 25% chance when using 400k; 14h is more common.
+                  6h outcome has only 25% chance when using 400k; 14h is more
+                  common.
                 </AlertDescription>
               </Alert>
 
@@ -1027,7 +1045,16 @@ function AppContent() {
               </div>
               <div className="text-center mt-1">
                 {/* maker with cool icons */}
-                🔥 Made by Wilsman77 🔥
+                🔥 Made by{" "}
+                <a
+                  href="https://discord.com/users/248207695943827456"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700"
+                >
+                  Wilsman77
+                </a>{" "}
+                🔥
               </div>
               <div className="flex justify-center mt-4 space-x-4">
                 <a
