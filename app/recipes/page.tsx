@@ -275,7 +275,7 @@ export default function Page() {
           </div>
         </CardContent>
         <CardFooter className="text-center text-sm text-gray-400 mt-4 border-t border-gray-700 px-6 py-4">
-          Data combined with the{" "}
+          Data combined with the&nbsp;
           <a
             href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
             target="_blank"
