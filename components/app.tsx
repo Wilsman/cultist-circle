@@ -37,6 +37,7 @@ import { Suspense } from "react";
 import CookieConsent from "@/components/CookieConsent";
 import { VersionInfo } from "@/components/version-info";
 import { Alert, AlertDescription } from "@/components/ui/alert"; // Import Alert components
+import Link from "next/link";
 
 // Static content and Types remain unchanged
 
@@ -813,7 +814,11 @@ function AppContent() {
               className="mb-2 border-yellow-500/50 animate-pulse"
             >
               <AlertDescription className="text-xs font-semibold text-center">
-                We are testing new recipes with The Labyrinth figures. If
+                We have discovered new recipes! Check them out on our{" "}
+                <Link href="/recipes" className="text-blue-400 hover:underline">
+                  Recipes page
+                </Link>
+                . We are also testing recipes with The Labyrinth figures. If
                 you&apos;ve sacrificed 5x of one type or 1x of all 5 types,
                 please share your input and results via the{" "}
                 <span
