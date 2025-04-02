@@ -33,7 +33,7 @@ const tarkovRecipes = [
   {
     requiredItems: ["1x Xenoalien figurine"],
     craftingTime: "66 min",
-    producedItems: ["???"],
+    producedItems: ["Xenomorph sealing foam"],
   },
   {
     requiredItems: ["1x Pointy guy figurine"],
@@ -48,7 +48,7 @@ const tarkovRecipes = [
   {
     requiredItems: ["1x Count Bloodsucker figurine"],
     craftingTime: "66 min",
-    producedItems: ["???"],
+    producedItems: ["Medical bloodset - NOT CONFIRMED"],
   },
   {
     requiredItems: ["Secure container Gamma (The Unheard Edition)"],
