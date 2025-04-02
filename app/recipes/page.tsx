@@ -11,17 +11,8 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import { Check, ArrowLeft } from "lucide-react";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectScrollUpButton,
-  SelectScrollDownButton,
-  SelectLabel,
-  SelectGroup,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft } from "lucide-react";
 
 // Escape from Tarkov crafting recipes
 const tarkovRecipes = [
@@ -48,7 +39,7 @@ const tarkovRecipes = [
   {
     requiredItems: ["1x Count Bloodsucker figurine"],
     craftingTime: "66 min",
-    producedItems: ["Medical bloodset - NOT CONFIRMED"],
+    producedItems: ["Medical bloodset"],
   },
   {
     requiredItems: ["Secure container Gamma (The Unheard Edition)"],
@@ -149,77 +140,80 @@ const tarkovRecipes = [
   },
 ];
 
+// Track new recipes (top 5)
+const newRecipes = new Set([0, 1, 2, 3, 4]); // Indices of new recipes
+
 export default function Page() {
-  const [selectedRecipe, setSelectedRecipe] = useState<string>("All Recipes");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const router = useRouter();
 
   function handleBack() {
-    // Check if we came from another page
     if (window.history.length > 2) {
       router.back();
     } else {
-      // If we came directly to /recipes, go to home
       router.push("/");
     }
   }
 
-  const filteredItems =
-    selectedRecipe === "All Recipes"
-      ? tarkovRecipes
-      : tarkovRecipes.filter((item) =>
-          item.producedItems.includes(selectedRecipe)
-        );
+  const filteredItems = tarkovRecipes.filter((item) => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      // Search in inputs
+      item.requiredItems.some((input) =>
+        input.toLowerCase().includes(searchLower)
+      ) ||
+      // Search in outputs
+      item.producedItems.some((output) =>
+        output.toLowerCase().includes(searchLower)
+      )
+    );
+  });
+
+  // NewBadge component
+  function NewBadge() {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500 text-white absolute -top-1 -right-1 shadow-lg animate-pulse">
+        NEW
+      </span>
+    );
+  }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
-      <Card className="bg-gray-800 border-gray-700 text-secondary shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
-        <CardHeader className="relative">
-          <button
-            className="absolute top-0 left-0 p-2 text-white"
-            onClick={handleBack}
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </button>
-          <CardTitle className="text-3xl sm:text-4xl lg:text-5xl text-center text-red-500">
-            👩‍🍳 Recipes 👨‍🍳
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto">
+    <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4">
+      <Card className="bg-gray-800 border-gray-700 text-secondary shadow-lg h-[90vh] w-full max-w-2xl mx-auto bg-opacity-50 flex flex-col">
+        <div className="sticky top-0 z-10 bg-gray-800/95 border-b border-gray-700 py-8 px-6 rounded-t-lg">
+          <CardHeader className="relative p-0 mb-6">
+            <button
+              className="absolute top-0 left-0 p-2 text-white"
+              onClick={handleBack}
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </button>
+            <CardTitle className="text-3xl sm:text-4xl lg:text-5xl text-center text-red-500">
+              👩‍🍳 Recipes 👨‍🍳
+            </CardTitle>
+          </CardHeader>
           <div className="bg-yellow-200 text-black p-4 rounded-md mb-6">
             ⚠️ Note: Some recipes may only work on the first attempt.
           </div>
-          <Select value={selectedRecipe} onValueChange={setSelectedRecipe}>
-            <SelectTrigger className="w-full justify-between bg-gray-800 text-white">
-              {selectedRecipe || "Select a recipe..."}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectScrollUpButton />
-              <SelectGroup>
-                <SelectLabel>Select a Recipe</SelectLabel>
-                <SelectItem
-                  value="All Recipes"
-                  className="font-bold text-blue-500"
-                >
-                  All Recipes
-                </SelectItem>
-                {tarkovRecipes.map((item, index) => (
-                  <SelectItem key={index} value={item.producedItems[0]}>
-                    {item.producedItems[0]}
-                    {selectedRecipe === item.producedItems[0] && (
-                      <Check className="ml-auto h-4 w-4" />
-                    )}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-              <SelectScrollDownButton />
-            </SelectContent>
-          </Select>
-          <div className="grid gap-2 mt-4">
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Search recipes by input or output..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-gray-700 text-white border-gray-600 focus:border-gray-500 placeholder-gray-400"
+            />
+          </div>
+        </div>
+        <CardContent className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="grid gap-2">
             {filteredItems.map((item, index) => (
               <div
                 key={index}
-                className="p-3 bg-gray-800/90 rounded-lg shadow-md hover:bg-gray-800/95 transition-colors"
+                className="relative bg-gray-700/60 rounded-lg p-4 hover:bg-gray-700/80 transition-colors"
               >
+                {newRecipes.has(index) && <NewBadge />}
                 <div className="grid grid-cols-[2fr,auto,3fr] gap-6 items-start min-h-[3rem]">
                   {/* Input Section */}
                   <div>
@@ -280,8 +274,8 @@ export default function Page() {
             ))}
           </div>
         </CardContent>
-        <CardFooter className="text-center text-sm text-gray-400 mt-4">
-          Data sourced from the&nbsp;{" "}
+        <CardFooter className="text-center text-sm text-gray-400 mt-4 border-t border-gray-700 px-6 py-4">
+          Data combined with the{" "}
           <a
             href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
             target="_blank"
@@ -290,7 +284,7 @@ export default function Page() {
           >
             Escape from Tarkov Wiki
           </a>
-          . Thank you to all contributors!
+          . Thank you all contributors! ❣️
         </CardFooter>
       </Card>
     </div>
