@@ -818,16 +818,8 @@ function AppContent() {
                 <Link href="/recipes" className="text-blue-400 hover:underline">
                   Recipes page
                 </Link>
-                . We are also testing recipes with The Labyrinth figures. If
-                you&apos;ve sacrificed 5x of one type or 1x of all 5 types,
-                please share your input and results via the{" "}
-                <span
-                  className="text-blue-400 cursor-pointer hover:underline"
-                  onClick={() => setIsFeedbackFormVisible(true)}
-                >
-                  Feedback Form
-                </span>{" "}
-                to help our research.
+                . Thank you everyone who left feedback and helped find these
+                recipes! ❣️
               </AlertDescription>
             </Alert>
 
@@ -881,8 +873,17 @@ function AppContent() {
                 className="mb-2 border-yellow-500/50 bg-gray-800 text-gray-400"
               >
                 <AlertDescription className="text-xs font-semibold text-center">
-                  6h outcome has only 25% chance when using 400k; 14h is more
-                  common.
+                  350,001+: 100% chance of getting 14h timer and a High value
+                  item(s).
+                </AlertDescription>
+              </Alert>
+              <Alert
+                variant="default"
+                className="mb-2 border-yellow-500/50 bg-gray-800 text-gray-400"
+              >
+                <AlertDescription className="text-xs font-semibold text-center">
+                  400,000+: 25% chance of getting 6h timer and Quest/Hideout
+                  items and a 75% chance of getting 14h High value item(s).
                 </AlertDescription>
               </Alert>
 
