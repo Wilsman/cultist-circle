@@ -74,13 +74,13 @@ export default function CookieConsent() {
     saveConsent(allAccepted)
   }
 
-  const handleRejectNonEssential = () => {
-    const essentialOnly = cookieTypes.reduce((acc, type) => ({
-      ...acc,
-      [type.id]: type.required ?? false
-    }), {})
-    saveConsent(essentialOnly)
-  }
+  // const handleRejectNonEssential = () => {
+  //   const essentialOnly = cookieTypes.reduce((acc, type) => ({
+  //     ...acc,
+  //     [type.id]: type.required ?? false
+  //   }), {})
+  //   saveConsent(essentialOnly)
+  // }
 
   const handlePreferenceChange = (typeId: string, value: boolean) => {
     setPreferences(prev => ({
@@ -161,7 +161,7 @@ export default function CookieConsent() {
             </div>
             
             <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
-              <Button
+              {/* <Button
                 variant="outline"
                 onClick={() => setShowPreferences(true)}
                 className="text-gray-300 hover:text-white"
@@ -174,12 +174,12 @@ export default function CookieConsent() {
                 className="text-gray-300 hover:text-white"
               >
                 Reject Non-Essential
-              </Button>
+              </Button> */}
               <Button
                 onClick={handleAcceptAll}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200"
               >
-                Accept All
+                Accept
               </Button>
             </div>
           </div>
@@ -267,17 +267,17 @@ export default function CookieConsent() {
               </p>
             </section>
 
-            <section>
+            {/* <section>
               <h3 className="text-lg font-semibold mb-2">Your Choices</h3>
               <p className="mb-4">
                 You can choose to accept or decline different types of cookies. Necessary cookies cannot be declined as they are essential for the website to work properly. You can modify your cookie preferences at any time by clicking the &ldquo;Customize&rdquo; button in the cookie banner.
               </p>
-            </section>
+            </section> */}
 
             <section>
               <h3 className="text-lg font-semibold mb-2">Contact Us</h3>
               <p>
-                If you have any questions about our cookie policy or privacy practices, please contact us at privacy@example.com.
+                If you have any questions about our cookie policy or privacy practices, please contact us at cultistcirclecalculator@gmail.com.
               </p>
             </section>
           </div>

@@ -1,14 +1,15 @@
 import useSWR from "swr";
 import { useEffect } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
-import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
+import { createSWRPersistMiddleware, clearSWRCache } from "@/utils/swr-persistence";
 import { fetchTarkovData } from "./use-tarkov-api";
 import { useToast } from "@/hooks/use-toast";
 
 const CURRENT_VERSION = "1.1.0.1"; // Increment this when you want to trigger a cache clear
 
-// Create the persistence middleware
-const swrPersistMiddleware = createSWRPersistMiddleware(CURRENT_VERSION);
+// Create the persistence middleware with error handling
+// The middleware handles localStorage quota errors and clears old cache when needed
+const swrPersistMiddleware = createSWRPersistMiddleware(CURRENT_VERSION, 3600000);
 
 // Add request tracking outside component
 const requestTracker = {
@@ -20,6 +21,12 @@ const requestTracker = {
 export function useItemsData(isPVE: boolean) {
   const mode = isPVE ? "pve" : "pvp";
   const gameMode = isPVE ? "pve" : "regular";
+  
+  // Clear old cache when version changes
+  useEffect(() => {
+    clearSWRCache();
+  }, []); // Empty dependency array since we only want to run this once
+  
   // Use a unique key for the SWR cache
   const swrKey = `tarkov-dev-api/${mode}?v=${CURRENT_VERSION}`;
   const { toast } = useToast();

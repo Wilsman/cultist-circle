@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CURRENT_VERSION } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -28,12 +29,12 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/submit-feedback', {
-        method: 'POST',
+      const response = await fetch("/api/submit-feedback", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ type, description }),
+        body: JSON.stringify({ type, description, version: CURRENT_VERSION }),
       });
 
       const result = await response.json();
@@ -67,6 +68,8 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
               <SelectContent>
                 <SelectItem value="Issue">Issue</SelectItem>
                 <SelectItem value="Feature">Feature</SelectItem>
+                <SelectItem value="Suggestion">Suggestion</SelectItem>
+                <SelectItem value="Recipe">Recipe</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -82,13 +85,34 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
               required
               className="min-h-[100px]"
             />
+            <p className="text-xs text-muted-foreground pt-2">
+              Alternatively, you can{" "}
+              <a
+                href="https://discord.com/users/248207695943827456"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground"
+              >
+                contact the developer directly on Discord
+              </a>
+              .
+            </p>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline"
+            className="hover:bg-red-500/90"
+            onClick={onClose}
+          >
             Close
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            className="bg-green-500 hover:bg-green-500/90"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
         </CardFooter>

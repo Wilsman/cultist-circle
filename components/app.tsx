@@ -42,8 +42,9 @@ import { FeedbackForm } from "./feedback-form";
 import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
 import { RefreshCw } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const CURRENT_VERSION = "1.1.0.1"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "1.1.0.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
@@ -266,7 +267,9 @@ function AppContent() {
     const totalSeconds = Math.ceil(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    return `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   // Handler for category changes
@@ -300,7 +303,7 @@ function AppContent() {
         return;
       },
       DEFAULT_EXCLUDED_CATEGORIES,
-      toast,
+      toast
     );
   }, [
     setSelectedItems,
@@ -343,8 +346,8 @@ function AppContent() {
     // Then filter out individually excluded items
     const excludedFiltered = excludeIncompatible
       ? categoryFiltered.filter(
-        (item: SimplifiedItem) => !excludedItems.has(item.name)
-      )
+          (item: SimplifiedItem) => !excludedItems.has(item.name)
+        )
       : categoryFiltered;
 
     // Sorting logic...
@@ -711,7 +714,11 @@ function AppContent() {
   useEffect(() => {
     const storedVersion = localStorage.getItem("appVersion");
     if (storedVersion !== CURRENT_VERSION) {
-      console.log(`App version changed from ${storedVersion || 'none'} to ${CURRENT_VERSION}`);
+      console.log(
+        `App version changed from ${
+          storedVersion || "none"
+        } to ${CURRENT_VERSION}`
+      );
       // Just update the version without triggering a reset
       localStorage.setItem("appVersion", CURRENT_VERSION);
 
@@ -800,13 +807,15 @@ function AppContent() {
   // Handle refresh button click with cooldown check
   const handleRefreshClick = () => {
     const { isAllowed, timeRemaining } = canRevalidate();
-    
+
     if (isAllowed) {
       refreshData(mutate);
     } else {
       toast({
         title: "Refresh on cooldown",
-        description: `Please wait ${formatCooldownTime(timeRemaining)} before refreshing again.`,
+        description: `Please wait ${formatCooldownTime(
+          timeRemaining
+        )} before refreshing again.`,
         variant: "default",
       });
     }
@@ -863,7 +872,6 @@ function AppContent() {
                   </Tooltip>
                 </TooltipProvider>
 
-
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -883,29 +891,33 @@ function AppContent() {
             </div>
 
             <div className="flex flex-col items-center justify-center mt-4 w-full">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex-1 hover:bg-gray-700/50 rounded-none"
-                        onClick={handleRefreshClick}
-                        disabled={!refreshCooldown.isAllowed}
-                      >
-                        <RefreshCw className="h-4 w-4 mr-2 text-yellow-500 hover:text-green-300 animate-spin-slower" />
-                        {refreshCooldown.isAllowed 
-                          ? "Refresh" 
-                          : `Wait (${formatCooldownTime(refreshCooldown.timeRemaining)})`}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {refreshCooldown.isAllowed 
-                        ? "Refresh data" 
-                        : `Refresh available in ${formatCooldownTime(refreshCooldown.timeRemaining)}`}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="flex-1 hover:bg-gray-700/50 rounded-none"
+                      onClick={handleRefreshClick}
+                      disabled={!refreshCooldown.isAllowed}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2 text-yellow-500 hover:text-green-300 animate-spin-slower" />
+                      {refreshCooldown.isAllowed
+                        ? "Refresh"
+                        : `Wait (${formatCooldownTime(
+                            refreshCooldown.timeRemaining
+                          )})`}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {refreshCooldown.isAllowed
+                      ? "Refresh data"
+                      : `Refresh available in ${formatCooldownTime(
+                          refreshCooldown.timeRemaining
+                        )}`}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
 
             {/* Title and Version Info */}
             <div className="pt-4 sm:pt-14">
@@ -920,9 +932,23 @@ function AppContent() {
                 />
               </h1>
             </div>
-            <div className="text-center text-gray-400 text-sm mb-1">
+            <div className="text-center text-gray-400 text-sm mb-4">
               <VersionInfo version={CURRENT_VERSION} />
             </div>
+
+            <Alert
+              variant="default"
+              className="mb-2 border-yellow-500/50 animate-pulse"
+            >
+              <AlertDescription className="text-xs font-semibold text-center">
+                We have discovered new recipes! Check them out on our{" "}
+                <Link href="/recipes" className="text-blue-400 hover:underline">
+                  Recipes page
+                </Link>
+                . Thank you everyone who left feedback and helped find these
+                recipes! ❣️
+              </AlertDescription>
+            </Alert>
 
             <CardContent className="p-6">
               {/* Mode Toggle with improved animation */}
@@ -948,8 +974,57 @@ function AppContent() {
                 />
               </div>
 
+              {/* Value Thresholds Information */}
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Alert
+                    variant="default"
+                    className="transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200"
+                  >
+                    <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
+                      <span className="text-base font-bold">350,001+</span>
+                      <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">Guaranteed</span>
+                    </AlertTitle>
+                    <AlertDescription className="mt-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
+                        <span>14h timer</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
+                        <span>High value item(s)</span>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+
+                  <Alert
+                    variant="default"
+                    className="transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200"
+                  >
+                    <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
+                      <span className="text-base font-bold">400,000+</span>
+                      <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">Mixed Chances</span>
+                    </AlertTitle>
+                    <AlertDescription className="mt-2 text-sm space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-yellow-500/30" />
+                        <span className="flex items-center gap-1">
+                          <span className="text-yellow-500/90">25%</span> 6h timer + Quest/Hideout items
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
+                        <span className="flex items-center gap-1">
+                          <span className="text-yellow-500/90">75%</span> 14h High value item(s)
+                        </span>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </div>
+
               {/* Item Selection Components with improved loading states */}
-              <div className="space-y-2 w-full mt-4">
+              <div className="space-y-2 w-full mt-2">
                 <div id="search-items">
                   {loading || !rawItemsData ? (
                     <div className="space-y-2">
@@ -973,8 +1048,9 @@ function AppContent() {
                     selectedItems.map((item, index) => (
                       <div
                         key={`selector-${index}`}
-                        className={`animate-fade-in transition-all duration-200 ${loadingSlots[index] ? "opacity-50" : ""
-                          }`}
+                        className={`animate-fade-in transition-all duration-200 ${
+                          loadingSlots[index] ? "opacity-50" : ""
+                        }`}
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <React.Fragment>
@@ -984,27 +1060,27 @@ function AppContent() {
                               selectedItem={item}
                               onSelect={(selectedItem, overriddenPrice) =>
                                 updateSelectedItem(
-                                    selectedItem,
-                                    index,
-                                    overriddenPrice
-                                  )
-                                }
-                                onCopy={() => handleCopyToClipboard(index)}
-                                onPin={() => handlePinItem(index)}
-                                isPinned={pinnedItems[index]}
-                                overriddenPrice={
-                                  item ? overriddenPrices[item.id] : undefined
-                                }
-                                isAutoPickActive={hasAutoSelected}
-                                overriddenPrices={overriddenPrices}
-                                isExcluded={
-                                  item ? excludedItems.has(item.name) : false
-                                }
-                                onToggleExclude={() =>
-                                  item && toggleExcludedItem(item.name)
-                                }
-                                excludedItems={excludedItems}
-                              />
+                                  selectedItem,
+                                  index,
+                                  overriddenPrice
+                                )
+                              }
+                              onCopy={() => handleCopyToClipboard(index)}
+                              onPin={() => handlePinItem(index)}
+                              isPinned={pinnedItems[index]}
+                              overriddenPrice={
+                                item ? overriddenPrices[item.id] : undefined
+                              }
+                              isAutoPickActive={hasAutoSelected}
+                              overriddenPrices={overriddenPrices}
+                              isExcluded={
+                                item ? excludedItems.has(item.name) : false
+                              }
+                              onToggleExclude={() =>
+                                item && toggleExcludedItem(item.name)
+                              }
+                              excludedItems={excludedItems}
+                            />
                           </Suspense>
                           {index < selectedItems.length - 1 && (
                             <Separator className="my-2" />
@@ -1023,9 +1099,10 @@ function AppContent() {
                         id="clear-item-fields"
                         className={`bg-red-500 hover:bg-red-600 text-white w-1/2 
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
-                          ${isClearButtonDisabled
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
+                          ${
+                            isClearButtonDisabled
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
                           }`}
                         onClick={clearItemFields}
                         disabled={isClearButtonDisabled}
@@ -1044,9 +1121,10 @@ function AppContent() {
                         id="reset-overrides"
                         className={`bg-red-500 hover:bg-red-600 text-white w-1/2
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
-                          ${isResetOverridesButtonDisabled
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
+                          ${
+                            isResetOverridesButtonDisabled
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
                           }`}
                         onClick={resetOverridesAndExclusions}
                         disabled={isResetOverridesButtonDisabled}
@@ -1080,10 +1158,11 @@ function AppContent() {
                   <Skeleton className="h-16 w-3/4 mx-auto" />
                 ) : (
                   <div
-                    className={`text-6xl font-extrabold ${isThresholdMet
-                      ? "text-green-500 animate-pulse"
-                      : "text-red-500 animate-pulse"
-                      }`}
+                    className={`text-6xl font-extrabold ${
+                      isThresholdMet
+                        ? "text-green-500 animate-pulse"
+                        : "text-red-500 animate-pulse"
+                    }`}
                   >
                     ₽{total.toLocaleString()}
                   </div>
