@@ -21,17 +21,21 @@ export function AutoSelectButton({
 }: AutoSelectButtonProps) {
   if (isCalculating) {
     return (
-      <div className="text-center">
-        <p className="text-gray-800 mb-2">
-          Calculating best combination...
-        </p>
-        <div className="lds-ellipsis">
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
+      <TooltipProvider>
+        <div className="flex flex-col justify-center items-center">
+          <Button
+            id="auto-select"
+            disabled
+            className="w-full md:max-w-[300px] lg:max-w-[300px] text-white bg-blue-500">
+            <div className="lds-ellipsis inline-flex items-center">
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+            </div>
+          </Button>
         </div>
-      </div>
+      </TooltipProvider>
     )
   }
 
