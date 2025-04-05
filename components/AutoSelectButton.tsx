@@ -54,7 +54,7 @@ export function AutoSelectButton({
               ) : (
                 <>
                   <Dices className="mr-2 h-4 w-4" />
-                  Auto Select
+                  Select Optimal
                 </>
               )}
             </Button>

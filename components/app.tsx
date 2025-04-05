@@ -43,6 +43,8 @@ import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
 import { RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Switch } from "@radix-ui/react-switch";
+import { cn } from "@/lib/utils";
 
 export const CURRENT_VERSION = "1.1.0.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
@@ -85,6 +87,7 @@ function AppContent() {
     isAllowed: boolean;
     timeRemaining: number;
   }>({ isAllowed: true, timeRemaining: 0 });
+  const [isCompactMode, setIsCompactMode] = useState(false);
 
   // Import hooks
   const { toast } = useToast();
@@ -941,12 +944,9 @@ function AppContent() {
               className="mb-2 border-yellow-500/50 animate-pulse"
             >
               <AlertDescription className="text-xs font-semibold text-center">
-                We have discovered new recipes! Check them out on our{" "}
-                <Link href="/recipes" className="text-blue-400 hover:underline">
-                  Recipes page
-                </Link>
-                . Thank you everyone who left feedback and helped find these
-                recipes! ❣️
+                Adjusted item icon sizes based on community feedback. Thank you
+                for your suggestions! (added a compact mode toggle, please let
+                me know your preference)
               </AlertDescription>
             </Alert>
 
@@ -983,7 +983,9 @@ function AppContent() {
                   >
                     <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
                       <span className="text-base font-bold">350,001+</span>
-                      <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">Guaranteed</span>
+                      <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                        Guaranteed
+                      </span>
                     </AlertTitle>
                     <AlertDescription className="mt-2 text-sm">
                       <div className="flex items-center gap-2">
@@ -1003,19 +1005,23 @@ function AppContent() {
                   >
                     <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
                       <span className="text-base font-bold">400,000+</span>
-                      <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">Mixed Chances</span>
+                      <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                        Mixed Chances
+                      </span>
                     </AlertTitle>
                     <AlertDescription className="mt-2 text-sm space-y-2">
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-yellow-500/30" />
                         <span className="flex items-center gap-1">
-                          <span className="text-yellow-500/90">25%</span> 6h timer + Quest/Hideout items
+                          <span className="text-yellow-500/90">25%</span> 6h
+                          timer + Quest/Hideout items
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
                         <span className="flex items-center gap-1">
-                          <span className="text-yellow-500/90">75%</span> 14h High value item(s)
+                          <span className="text-yellow-500/90">75%</span> 14h
+                          High value item(s)
                         </span>
                       </div>
                     </AlertDescription>
@@ -1023,11 +1029,33 @@ function AppContent() {
                 </div>
               </div>
 
+              <div className="flex justify-center items-center py-3">
+                <div className="flex items-center gap-3 px-4 py-2">
+                  <Switch
+                    checked={isCompactMode}
+                    onCheckedChange={setIsCompactMode}
+                    className="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white bg-white/10 focus-visible:ring-opacity-75"
+                  >
+                    <span className="sr-only">Use setting</span>
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        isCompactMode ? "translate-x-6" : "translate-x-0",
+                        "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
+                      )}
+                    />
+                  </Switch>
+                  <span className="text-sm font-medium text-gray-200">
+                    {isCompactMode ? "Compact View" : "Normal View"}
+                  </span>
+                </div>
+              </div>
+
               {/* Item Selection Components with improved loading states */}
-              <div className="space-y-2 w-full mt-2">
-                <div id="search-items">
+              <div className="w-full">
+                <div id="search-items" className="space-y-0">
                   {loading || !rawItemsData ? (
-                    <div className="space-y-2">
+                    <div className="space-y-0">
                       {Array(5)
                         .fill(0)
                         .map((_, index) => (
@@ -1036,7 +1064,7 @@ function AppContent() {
                             className="animate-pulse"
                             style={{ animationDelay: `${index * 100}ms` }}
                           >
-                            <Skeleton className="h-10 w-full mb-2 bg-gray-700/50" />
+                            <Skeleton className="h-10 w-full bg-gray-700/50" />
                           </div>
                         ))}
                     </div>
@@ -1080,11 +1108,9 @@ function AppContent() {
                                 item && toggleExcludedItem(item.name)
                               }
                               excludedItems={excludedItems}
+                              isCompactMode={isCompactMode} // Pass isCompactMode prop
                             />
                           </Suspense>
-                          {index < selectedItems.length - 1 && (
-                            <Separator className="my-2" />
-                          )}
                         </React.Fragment>
                       </div>
                     ))

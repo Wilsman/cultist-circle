@@ -4,6 +4,7 @@ export const DEFAULT_EXCLUDED_CATEGORIES = new Set([
   "Ammo",
   "Armor",
   "Chest rig",
+  "Flyer",
   "Key",
   "Repair Kits",
   "Weapon",
