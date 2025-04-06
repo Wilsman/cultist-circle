@@ -66,6 +66,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-blue-500">•</span>
                 <span className="text-left">
+                  Remember selected PVP/PVE mode between sessions
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-blue-500">•</span>
+                <span className="text-left">
                   Enhanced filtering and sorting capabilities
                 </span>
               </li>
@@ -73,6 +79,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
                 <span className="text-blue-500">•</span>
                 <span className="text-left">
                   Add 24h average flea price option
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-blue-500">•</span>
+                <span className="text-left">
+                  Add lastOfferCount to detect unstable prices
                 </span>
               </li>
             </ul>
@@ -88,13 +100,15 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-red-500">•</span>
                 <span className="text-left">
-                  Cache optimization in progress
+                  Some style issues with the new theme [please report via
+                  Discord or Feedback form]
                 </span>
               </li>
               <li className="flex gap-2">
                 <span className="text-red-500">•</span>
                 <span className="text-left">
                   Having 4/5 items pinned, may result in auto-selecting to fail
+                  [WIP]
                 </span>
               </li>
             </ul>
