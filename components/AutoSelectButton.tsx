@@ -26,7 +26,7 @@ export function AutoSelectButton({
           <Button
             id="auto-select"
             disabled
-            className="w-full md:max-w-[300px] lg:max-w-[300px] text-white bg-blue-500">
+            className="w-full md:max-w-[300px] lg:max-w-[300px] text-white bg-blue-500 rounded">
             <div className="lds-ellipsis inline-flex items-center">
               <div></div>
               <div></div>
@@ -48,7 +48,7 @@ export function AutoSelectButton({
               id="auto-select"
               onClick={handleAutoPick}
               disabled={isCalculating}
-              className="w-full md:max-w-[300px] lg:max-w-[300px] text-white bg-blue-500 hover:bg-blue-700"
+              className="w-full md:max-w-[300px] lg:max-w-[300px] text-white bg-blue-500 hover:bg-blue-700 rounded"
             >
               {hasAutoSelected ? (
                 <>

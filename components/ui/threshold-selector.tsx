@@ -88,7 +88,7 @@ export default function ThresholdSelector({
   return (
     <div
       ref={ref}
-      className="w-64 bg-gray-700 text-white rounded-lg shadow-md transition-colors duration-200"
+      className="w-64 bg-gray-700 text-white rounded shadow-md transition-colors duration-200"
     >
       <div
         id="threshold"
@@ -118,7 +118,7 @@ export default function ThresholdSelector({
                     variant={value === 350001 ? "outline" : "default"}
                     size="sm"
                     onClick={() => handlePresetClick(350001)}
-                    className="text-sm text-primary bg-background hover:bg-background/80"
+                    className="text-sm text-primary bg-background hover:bg-background/80 rounded"
                   >
                     ₽350,001
                   </Button>
@@ -135,7 +135,7 @@ export default function ThresholdSelector({
                     variant={value === 400000 ? "outline" : "default"}
                     size="sm"
                     onClick={() => handlePresetClick(400000)}
-                    className="text-sm text-primary bg-background hover:bg-background/80"
+                    className="text-sm text-primary bg-background hover:bg-background/80 rounded"
                   >
                     ₽400,000
                   </Button>
@@ -153,7 +153,7 @@ export default function ThresholdSelector({
               type="number"
               value={value}
               onChange={handleInputChange}
-              className="w-full mt-2 bg-primary text-secondary"
+              className="w-full mt-2 bg-primary text-secondary rounded"
             />
           )}
         </div>

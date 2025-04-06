@@ -939,16 +939,44 @@ function AppContent() {
               <VersionInfo version={CURRENT_VERSION} />
             </div>
 
-            <Alert
-              variant="default"
-              className="mb-2 border-yellow-500/50 animate-pulse"
-            >
-              <AlertDescription className="text-xs font-semibold text-center">
-                Adjusted item icon sizes based on community feedback. Thank you
-                for your suggestions! (added a compact mode toggle, please let
-                me know your preference)
-              </AlertDescription>
-            </Alert>
+            <div className="flex items-center justify-center">
+              <Alert
+                variant="default"
+                className="mb-2 border-yellow-500/50 animate-pulse rounded"
+              >
+                <AlertTitle className="text-sm font-semibold text-center">
+                  Join our Discord server!
+                </AlertTitle>
+                <AlertDescription className="text-xs text-center">
+                  We&apos;ve created a Discord server to discuss the cultist
+                  circle, provide feedback, show off results and get support.
+                  <a
+                    href="https://discord.gg/3dFmr5qaJK"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-semibold text-center text-blue-500 hover:underline flex items-center justify-center mt-1"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="white"
+                      stroke="currentColor"
+                      className="h-4 w-4 mr-1"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"
+                      />
+                    </svg>
+                    <span className="flex items-center justify-center">
+                      Click to Join Discord
+                    </span>
+                  </a>
+                </AlertDescription>
+              </Alert>
+            </div>
 
             <CardContent className="p-6">
               {/* Mode Toggle with improved animation */}
@@ -970,7 +998,7 @@ function AppContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Alert
                     variant="default"
-                    className="transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200"
+                    className="transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded"
                   >
                     <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
                       <span className="text-base font-bold">350,001+</span>
@@ -992,7 +1020,7 @@ function AppContent() {
 
                   <Alert
                     variant="default"
-                    className="transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200"
+                    className="transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded"
                   >
                     <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
                       <span className="text-base font-bold">400,000+</span>
@@ -1123,8 +1151,8 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="clear-item-fields"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-1/2 
-                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95
+                        className={`bg-red-500 hover:bg-red-600 text-white w-1/2 rounded
+                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95 
                           ${
                             isClearButtonDisabled
                               ? "opacity-50 cursor-not-allowed"
@@ -1145,7 +1173,7 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="reset-overrides"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-1/2
+                        className={`bg-red-500 hover:bg-red-600 text-white w-1/2 rounded
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
                           ${
                             isResetOverridesButtonDisabled
@@ -1255,14 +1283,38 @@ function AppContent() {
                       width={120}
                       height={34}
                       priority={true}
-                      style={{ height: "auto" }}
+                      className="w-[180px] h-[36px] sm:h-auto sm:w-auto"
                     />
                   </a>
                   <Button
                     onClick={() => setIsFeedbackFormVisible(true)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded shadow-md transition duration-300 ease-in-out"
                   >
                     Feedback
+                  </Button>
+                  {/* Discord button */}
+                  <Button
+                    onClick={() =>
+                      window.open("https://discord.gg/3dFmr5qaJK", "_blank")
+                    }
+                    className="text-white bg-blue-500 hover:bg-blue-600 rounded"
+                  >
+                    <svg
+                      role="img"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="white"
+                      stroke="currentColor"
+                      className="h-4 w-4 fill-white text-white mr-1"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"
+                      />
+                    </svg>
+                    Discord
                   </Button>
                 </div>
               </footer>
