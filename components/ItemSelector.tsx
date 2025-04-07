@@ -462,26 +462,31 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               )}
               <div className={`${isCompactMode ? "flex flex-row items-center flex-wrap gap-y-0.5" : "flex flex-col"} flex-grow`}>
                 {/* Item name and copy button */}
-                <div className={`flex items-center ${isCompactMode ? "mr-3" : ""}`}>
-                  <span className={`text-teal-400 ${isCompactMode ? "text-sm" : "text-lg"} font-semibold mr-2`}>
-                    {selectedItem.name.length > 30
-                      ? `${selectedItem.name.slice(0, 30)}...`
-                      : selectedItem.name}
-                  </span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={handleCopy}
-                        className={`${isCompactMode ? "h-6 w-6" : "h-8 w-8"} text-gray-400 hover:bg-gray-700`}
-                      >
-                        <Copy className={`${isCompactMode ? "h-3 w-3" : "h-4 w-4"}`} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Copy Item Name</TooltipContent>
-                  </Tooltip>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={`flex items-center ${isCompactMode ? "" : ""}`}>
+                      <span className={`text-teal-400 ${isCompactMode ? "text-sm" : "text-lg"} font-semibold`}>
+                        {selectedItem.name.length > 30
+                          ? `${selectedItem.name.slice(0, 30)}...`
+                          : selectedItem.name}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>{selectedItem.name}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleCopy}
+                      className={`${isCompactMode ? "h-6 w-6 mr-1" : "h-8 w-8 mr-1"} text-gray-400 hover:bg-gray-700`}
+                    >
+                      <Copy className={`${isCompactMode ? "h-3 w-3" : "h-4 w-4"}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Copy Item Name</TooltipContent>
+                </Tooltip>
                 {/* Price information */}
                 <div className={`flex items-center flex-wrap ${isCompactMode ? "space-x-2 mt-0" : "space-x-3 mt-1"}`}>
                   <span className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400`}>
