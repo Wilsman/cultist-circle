@@ -311,6 +311,7 @@ function AppContent() {
       setThreshold,
       setExcludedItems,
       setOverriddenPrices,
+      setIsPVE,
       async () => {
         await mutate();
         return;
@@ -326,6 +327,7 @@ function AppContent() {
     setThreshold,
     setExcludedItems,
     setOverriddenPrices,
+    setIsPVE,
     mutate,
     toast,
   ]);

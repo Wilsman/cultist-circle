@@ -13,6 +13,7 @@ export async function resetUserData(
   setOverriddenPrices: React.Dispatch<
     React.SetStateAction<Record<string, number>>
   >,
+  setIsPVE: React.Dispatch<React.SetStateAction<boolean>>,
   fetchData: () => Promise<void>,
   defaultItemCategories: Set<string>,
   toast: (props: { title: string; description: string }) => void
@@ -41,6 +42,7 @@ export async function resetUserData(
   setSortOption("az");
   setThreshold(400000);
   setOverriddenPrices({});
+  setIsPVE(false);
 
   // Fetch fresh data
   await fetchData();
