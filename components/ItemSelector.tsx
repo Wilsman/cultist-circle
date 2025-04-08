@@ -488,7 +488,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   </Tooltip>
                 </div>
                 {/* Price information */}
-                <div className={`flex items-center flex-wrap ${isCompactMode ? "space-x-2 mt-0" : "space-x-3 mt-1"}`}>
+                <div className={`flex items-center flex-wrap ${isCompactMode ? "space-x-1 mt-0" : "space-x-2 mt-1"}`}>
                   <span className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400`}>
                     Base:{" "}
                     <span className={`text-teal-400 font-semibold ${isCompactMode ? "text-xs" : ""}`}>
@@ -529,7 +529,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 </span> */}
                 {/* Updated time */}
                 {selectedItem.updated && (
-                  <span className="text-xs text-gray-500">
+                  <span className={`${isCompactMode ? "text-xs" : "text-sm mb-1"} text-gray-400`}>
                     Updated: {getRelativeDate(selectedItem.updated.toString())}
                   </span>
                 )}
@@ -541,7 +541,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               <div className="flex items-center bg-gray-800/50 rounded p-2">
                 <label
                   htmlFor="price-override"
-                  className="text-xs text-gray-400 mr-2"
+                  className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400 mr-2`}
                 >
                   Override Price:
                 </label>
@@ -550,16 +550,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   type="text"
                   value={priceOverride}
                   onChange={handlePriceOverride}
-                  className="bg-gray-700 text-white p-1 rounded w-24 text-right text-xs"
+                  className={`${isCompactMode ? "text-xs" : "text-sm"} bg-gray-700 text-white p-1 mr-2 rounded w-24 text-right`}
                   placeholder="Enter price"
                 />
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="destructive"
                   onClick={clearPriceOverride}
-                  className="ml-2 h-5 w-5 text-gray-400 hover:text-red-400"
+                  className={`${isCompactMode ? "h-6 px-2" : "h-8 px-3"} text-white hover:bg-red-700 transition-colors`}
                 >
-                  <XIcon className="h-3 w-3" />
+                  Cancel
                 </Button>
               </div>
             )}
@@ -578,7 +578,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           <div className="mt-2 flex items-center">
             <label
               htmlFor="price-override"
-              className="text-xs text-gray-400 mr-2"
+              className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400 mr-2`}
             >
               Override Price:
             </label>
@@ -587,16 +587,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               type="text"
               value={priceOverride}
               onChange={handlePriceOverride}
-              className="bg-gray-700/50 text-white p-1 rounded w-24 text-right text-xs"
+              className={`${isCompactMode ? "text-xs" : "text-sm"} bg-gray-700/50 text-white p-1 mr-2 rounded w-24 text-right`}
               placeholder="Enter price"
             />
             <Button
-              size="sm"
+              size="icon"
               variant="ghost"
               onClick={clearPriceOverride}
-              className="ml-2 h-5 w-5 text-gray-400 hover:text-red-400"
-            >
-              <XIcon className="h-3 w-3" />
+              className={`${isCompactMode ? "h-6 w-6" : "h-8 w-8"} text-gray-400 hover:bg-gray-800`}
+            >r
+              <XIcon className={`text-red-500 ${isCompactMode ? "h-3 w-3" : "h-4 w-4"}`} />r
             </Button>
           </div>
         )}
