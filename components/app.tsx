@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import ItemSocket from "@/components/item-socket";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -93,6 +94,7 @@ function AppContent() {
     timeRemaining: number;
   }>({ isAllowed: true, timeRemaining: 0 });
   const [isCompactMode, setIsCompactMode] = useState(false);
+  const [itemBonus, setItemBonus] = useState<number>(0);
 
   // Import hooks
   const { toast } = useToast();
@@ -406,6 +408,8 @@ function AppContent() {
       threshold: number,
       maxItems: number
     ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
+      // Apply the bonus to the baseValue of each item for calculation
+      const bonusMultiplier = 1 + (itemBonus / 100);
       const maxThreshold = threshold + 5000;
       const dp: Array<Array<number>> = Array(maxItems + 1)
         .fill(null)
@@ -423,7 +427,8 @@ function AppContent() {
       for (let c = 1; c <= maxItems; c++) {
         for (let i = 0; i < validItems.length; i++) {
           const item = validItems[i];
-          const basePrice = item.basePrice;
+          // Apply the bonus to the basePrice for threshold calculation
+          const basePrice = item.basePrice * bonusMultiplier;
           const fleaPrice = item.lastLowPrice || item.basePrice;
 
           for (let v = basePrice; v <= maxThreshold; v++) {
@@ -466,13 +471,19 @@ function AppContent() {
         totalFleaCost: selectedCombination.cost,
       };
     },
-    []
+    [itemBonus]
   );
 
   // Memoized total and flea costs
   const total = useMemo(() => {
-    return selectedItems.reduce((sum, item) => sum + (item?.basePrice || 0), 0);
-  }, [selectedItems]);
+    // Apply the bonus from ItemSocket to increase the baseValue of each item
+    return selectedItems.reduce((sum, item) => {
+      if (!item) return sum;
+      // Apply the bonus percentage to the item's basePrice
+      const bonusMultiplier = 1 + (itemBonus / 100);
+      return sum + (item.basePrice * bonusMultiplier);
+    }, 0);
+  }, [selectedItems, itemBonus]);
 
   const fleaCosts = useMemo(() => {
     return selectedItems.map((item) =>
@@ -664,6 +675,7 @@ function AppContent() {
     selectedItems,
     overriddenPrices,
     findBestCombination,
+    itemBonus,
   ]);
 
   // Modify the mode toggle to prevent unnecessary data fetches
@@ -1213,6 +1225,11 @@ function AppContent() {
                 overrides and{" "}
                 <span className="font-medium">{excludedItems.size}</span>{" "}
                 exclusions currently active
+              </div>
+
+              {/* Item Socket Component */}
+              <div className="mt-6">
+                <ItemSocket onBonusChange={setItemBonus} />
               </div>
 
               {/* Sacrifice Value Display with improved animation */}

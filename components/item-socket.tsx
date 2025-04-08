@@ -1,22 +1,32 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { ChevronDownIcon, ChevronUpIcon, QuestionMarkCircledIcon } from "@radix-ui/react-icons"
-import Image from "next/image"
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  QuestionMarkCircledIcon,
+} from "@radix-ui/react-icons";
+import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 
 interface Item {
-  id: string
-  name: string
-  bonus: number
-  icon: string | JSX.Element
+  id: string;
+  name: string;
+  bonus: number;
+  icon: string | JSX.Element;
 }
 
 const items: Item[] = [
@@ -34,15 +44,19 @@ const items: Item[] = [
         className="object-contain"
         priority
       />
-    )
+    ),
   },
-]
+];
 
-export default function ItemSocket() {
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null)
-  const [hideoutLevel, setHideoutLevel] = useState<number>(1)
-  const [open, setOpen] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(true)
+interface ItemSocketProps {
+  onBonusChange?: (bonus: number) => void;
+}
+
+export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [hideoutLevel, setHideoutLevel] = useState<number>(1);
+  const [open, setOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const calculateBonus = (baseBonus: number, level: number) => {
     const levelMultiplier = level / 100; // Level 50 = 0.5 multiplier
@@ -50,7 +64,16 @@ export default function ItemSocket() {
     return baseBonus + levelBonus;
   };
 
-  const totalBonus = selectedItem ? Number(calculateBonus(selectedItem.bonus, hideoutLevel).toFixed(1)) : 0;
+  const totalBonus = selectedItem
+    ? Number(calculateBonus(selectedItem.bonus, hideoutLevel).toFixed(1))
+    : 0;
+
+  // Notify parent component when bonus changes
+  useEffect(() => {
+    if (onBonusChange) {
+      onBonusChange(totalBonus);
+    }
+  }, [totalBonus, onBonusChange]);
 
   return (
     <div className="flex flex-col items-center text-center w-full">
@@ -66,12 +89,21 @@ export default function ItemSocket() {
               <TooltipTrigger asChild>
                 <QuestionMarkCircledIcon className="w-4 h-4 text-gray-400 hover:text-gray-300 cursor-help" />
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[600px] w-[500px] p-4 text-left space-y-3 bg-gray-900/95 text-sm">
+              <TooltipContent
+                side="top"
+                className="max-w-[600px] w-[500px] p-4 text-left space-y-3 bg-gray-900/95 text-sm"
+              >
                 <div className="pt-1">
                   <p className="font-semibold mb-2">Bonuses:</p>
                   <ul className="space-y-1 list-disc pl-4">
-                    <li>Sacrificing a Sacred Amulet increases the Gift&apos;s value by 15%</li>
-                    <li>The Hideout Management skill increases the bonus of Sacred Amulet</li>
+                    <li>
+                      Sacrificing a Sacred Amulet increases the Gift&apos;s
+                      value by 15%
+                    </li>
+                    <li>
+                      The Hideout Management skill increases the bonus of Sacred
+                      Amulet
+                    </li>
                   </ul>
                 </div>
               </TooltipContent>
@@ -81,24 +113,42 @@ export default function ItemSocket() {
           {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
         </div>
       </Button>
+      <Badge
+        variant="destructive"
+        className="mb-2 rounded-full border-gray-700 "
+      >
+        Work In Progress
+      </Badge>
 
-      <div className={`
+      <div
+        className={`
         overflow-hidden transition-all duration-300 ease-in-out w-full flex flex-col items-center
-        ${isExpanded ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}
-      `}>
+        ${isExpanded ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}
+      `}
+      >
         <div className="flex items-center gap-2 mb-2">
           <span className="font-mono text-gray-300">
-            Total bonus to the Gift <span className={`font-bold ${totalBonus > 0 ? 'text-blue-300' : 'text-red-500'}`}>{totalBonus}%</span>
+            Total bonus to the Gift{" "}
+            <span
+              className={`font-bold ${
+                totalBonus > 0 ? "text-blue-300" : "text-red-500"
+              }`}
+            >
+              {totalBonus}%
+            </span>
           </span>
         </div>
 
         <div className="flex items-center justify-center gap-4">
           <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTitle>Item Socket</DialogTitle>
             <DialogTrigger asChild>
               <div className="flex justify-center">
                 <Button
                   variant="outline"
-                  className={`w-12 h-12 p-1 border-gray-700 bg-gray-800 hover:bg-gray-900/50 ${!selectedItem ? "text-gray-600" : "text-gray-200"}`}
+                  className={`w-12 h-12 p-1 border-gray-700 bg-gray-800 hover:bg-gray-900/50 ${
+                    !selectedItem ? "text-gray-600" : "text-gray-200"
+                  }`}
                 >
                   {selectedItem ? selectedItem.icon : "X"}
                 </Button>
@@ -112,8 +162,8 @@ export default function ItemSocket() {
                     variant="outline"
                     className="justify-start border-gray-700 bg-gray-800 hover:bg-gray-900/20 hover:text-gray-200"
                     onClick={() => {
-                      setSelectedItem(item.id === "none" ? null : item)
-                      setOpen(false)
+                      setSelectedItem(item.id === "none" ? null : item);
+                      setOpen(false);
                     }}
                   >
                     <span className="mr-2">{item.icon}</span>
@@ -124,7 +174,7 @@ export default function ItemSocket() {
             </DialogContent>
           </Dialog>
 
-          {selectedItem && selectedItem.id !== 'none' && (
+          {selectedItem && selectedItem.id !== "none" && (
             <div className="flex items-center gap-2 animate-fade-in">
               <span className="font-mono text-gray-300">Hideout Level:</span>
               <select
@@ -146,9 +196,16 @@ export default function ItemSocket() {
       {/* Show a small indicator of the bonus when collapsed */}
       {!isExpanded && totalBonus > 0 && (
         <div className="text-xs text-gray-400">
-          Total bonus to the Gift: <span className={`font-bold ${totalBonus > 0 ? 'text-blue-300' : 'text-red-500'}`}>+{totalBonus}%</span>
+          Total bonus to the Gift:{" "}
+          <span
+            className={`font-bold ${
+              totalBonus > 0 ? "text-blue-300" : "text-red-500"
+            }`}
+          >
+            +{totalBonus}%
+          </span>
         </div>
       )}
     </div>
-  )
+  );
 }
