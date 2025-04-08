@@ -26,6 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ExcludedItemsManager } from "@/components/excluded-items-manager";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DEFAULT_EXCLUDED_CATEGORIES } from "@/config/item-categories";
 
 interface SettingsPaneProps {
   isOpen: boolean;
@@ -195,9 +196,22 @@ export default function SettingsPane({
 
               <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
                 <div className="w-full">
-                  <Label className="text-sm font-medium">
-                    Excluded Categories
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">
+                      Excluded Categories
+                    </Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-gray-400 hover:text-white bg-gray-700"
+                      onClick={() =>
+                        onCategoryChange([...DEFAULT_EXCLUDED_CATEGORIES])
+                      }
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      <span className="sr-only">Reset excluded categories</span>
+                    </Button>
+                  </div>
                   <p className="text-sm text-gray-400 mb-4">
                     Select which item categories to exclude from display
                   </p>
@@ -227,7 +241,9 @@ export default function SettingsPane({
                           >
                             <Checkbox
                               checked={excludedCategories.includes(category)}
-                              disabled={disabledCategories.has(category as never)}
+                              disabled={disabledCategories.has(
+                                category as never
+                              )}
                               onCheckedChange={() =>
                                 handleCategoryChange(category)
                               }

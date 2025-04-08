@@ -32,6 +32,7 @@ export async function resetUserData(
     console.error("Error clearing cookies:", error);
   }
 
+  //TODO: check this is not triggering twice
   // Reset all state variables
   setSelectedItems(Array(5).fill(null));
   setPinnedItems(Array(5).fill(false));

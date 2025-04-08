@@ -55,7 +55,12 @@ const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
 
 function AppContent() {
   // Define state variables and hooks
-  const [isPVE, setIsPVE] = useState<boolean>(false);
+  const [isPVE, setIsPVE] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("isPVE") === "true";
+    }
+    return false;
+  });
   const [selectedItems, setSelectedItems] = useState<
     Array<SimplifiedItem | null>
   >(Array(5).fill(null));
@@ -95,6 +100,11 @@ function AppContent() {
 
   // Use the items data hook
   const { data: rawItemsData, error, mutate } = useItemsData(isPVE);
+
+  // Save isPVE state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("isPVE", isPVE.toString());
+  }, [isPVE]);
 
   const loading = !rawItemsData && !error;
   const hasError = !!error;
@@ -1344,7 +1354,8 @@ function AppContent() {
               setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
               setOverriddenPrices({});
               setHasAutoSelected(false);
-
+              setIsPVE(false);
+              localStorage.setItem("isPVE", "false");
               toast({
                 title: "Reset Complete",
                 description:
