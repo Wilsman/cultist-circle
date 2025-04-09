@@ -725,7 +725,6 @@ function AppContent() {
     selectedItems,
     overriddenPrices,
     findBestCombination,
-    itemBonus,
   ]);
 
   // Modify the mode toggle to prevent unnecessary data fetches
