@@ -410,29 +410,51 @@ function AppContent() {
     ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
       // Apply the bonus to the baseValue of each item for calculation
       const bonusMultiplier = 1 + (itemBonus / 100);
+      
+      // Pre-calculate adjusted base prices to avoid repeated calculations
+      const adjustedItems = validItems.map(item => ({
+        ...item,
+        adjustedBasePrice: Math.floor(item.basePrice * bonusMultiplier),
+        fleaPrice: item.lastLowPrice || item.basePrice
+      }));
+      
+      // Use adjusted threshold for DP calculation
       const maxThreshold = threshold + 5000;
-      const dp: Array<Array<number>> = Array(maxItems + 1)
-        .fill(null)
-        .map(() => Array(maxThreshold + 1).fill(Infinity));
-      const itemTracking: Array<Array<Array<number>>> = Array(maxItems + 1)
-        .fill(null)
-        .map(() =>
-          Array(maxThreshold + 1)
-            .fill(null)
-            .map(() => [])
-        );
-
+      
+      // Optimize array creation
+      const dp: number[][] = [];
+      const itemTracking: number[][][] = [];
+      
+      // Initialize first row
+      dp[0] = Array(maxThreshold + 1).fill(Infinity);
       dp[0][0] = 0;
-
+      itemTracking[0] = Array(maxThreshold + 1).fill(null).map(() => []);
+      
+      // Build DP table with optimized loops
       for (let c = 1; c <= maxItems; c++) {
-        for (let i = 0; i < validItems.length; i++) {
-          const item = validItems[i];
-          // Apply the bonus to the basePrice for threshold calculation
-          const basePrice = item.basePrice * bonusMultiplier;
-          const fleaPrice = item.lastLowPrice || item.basePrice;
-
+        dp[c] = Array(maxThreshold + 1).fill(Infinity);
+        itemTracking[c] = Array(maxThreshold + 1).fill(null).map(() => []);
+        
+        // Copy values from previous row where no item is added
+        for (let v = 0; v <= maxThreshold; v++) {
+          dp[c][v] = dp[c-1][v];
+          if (dp[c-1][v] !== Infinity) {
+            itemTracking[c][v] = [...itemTracking[c-1][v]];
+          }
+        }
+        
+        for (let i = 0; i < adjustedItems.length; i++) {
+          const item = adjustedItems[i];
+          const basePrice = item.adjustedBasePrice;
+          const fleaPrice = item.fleaPrice;
+          
+          // Skip items with zero or negative base price
+          if (basePrice <= 0) continue;
+          
+          // Optimize inner loop - start from basePrice
           for (let v = basePrice; v <= maxThreshold; v++) {
-            if (dp[c - 1][v - basePrice] + fleaPrice < dp[c][v]) {
+            if (dp[c - 1][v - basePrice] !== Infinity && 
+                dp[c - 1][v - basePrice] + fleaPrice < dp[c][v]) {
               dp[c][v] = dp[c - 1][v - basePrice] + fleaPrice;
               itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
             }
@@ -440,36 +462,64 @@ function AppContent() {
         }
       }
 
+      // Optimize valid combinations collection
       const validCombinations: { c: number; v: number; cost: number }[] = [];
-      for (let c = 1; c <= maxItems; c++) {
+      
+      // Start from the highest number of items for better combinations
+      for (let c = maxItems; c >= 1; c--) {
+        let foundForThisC = false;
+        
+        // Check values from threshold to maxThreshold
         for (let v = threshold; v <= maxThreshold; v++) {
           if (dp[c][v] !== Infinity) {
             validCombinations.push({ c, v, cost: dp[c][v] });
+            foundForThisC = true;
+            
+            // Optimization: Once we've found some valid combinations for this c,
+            // we can limit how many we collect to avoid excessive processing
+            if (validCombinations.length >= 20 && foundForThisC) {
+              break;
+            }
           }
+        }
+        
+        // If we already have enough combinations, stop searching
+        if (validCombinations.length >= 50) {
+          break;
         }
       }
 
-      // Sort by cost and then randomly select one of the top 5 combinations
-      validCombinations.sort((a, b) => a.cost - b.cost);
-      const topCombinations = validCombinations.slice(
-        0,
-        Math.min(5, validCombinations.length)
-      );
-      const selectedCombination =
-        topCombinations[Math.floor(Math.random() * topCombinations.length)];
+      // Optimize sorting - only sort if we have combinations
+      if (validCombinations.length > 0) {
+        // Sort by cost (most efficient first)
+        validCombinations.sort((a, b) => a.cost - b.cost);
+        
+        // Take only top 5 for random selection
+        const topCombinations = validCombinations.slice(
+          0,
+          Math.min(5, validCombinations.length)
+        );
+        
+        // Select one randomly from top combinations
+        const selectedCombination =
+          topCombinations[Math.floor(Math.random() * topCombinations.length)];
 
-      if (!selectedCombination) {
+        if (!selectedCombination) {
+          return { selected: [], totalFleaCost: 0 };
+        }
+
+        const selectedIndices =
+          itemTracking[selectedCombination.c][selectedCombination.v];
+        const selectedItems = selectedIndices.map((index) => validItems[index]);
+
+        return {
+          selected: selectedItems,
+          totalFleaCost: selectedCombination.cost,
+        };
+      } else {
+        // No valid combinations found
         return { selected: [], totalFleaCost: 0 };
       }
-
-      const selectedIndices =
-        itemTracking[selectedCombination.c][selectedCombination.v];
-      const selectedItems = selectedIndices.map((index) => validItems[index]);
-
-      return {
-        selected: selectedItems,
-        totalFleaCost: selectedCombination.cost,
-      };
     },
     [itemBonus]
   );
