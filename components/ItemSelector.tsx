@@ -289,7 +289,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               <div className="flex-1 flex flex-col">
                 <span className="truncate">{item.name}</span>
                 <div className="text-gray-400 text-sm">
-                  <p>Base Value: ₽{item.basePrice.toLocaleString()}</p>
+                  <p>Base Value: ₽{(item.basePrice || 0).toLocaleString()}</p>
                   <p>
                     {item.lastLowPrice ? "Last Low Price:" : "Base Price:"}{" "}
                     <span
@@ -297,7 +297,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                         isOverridden ? "text-yellow-300 font-bold" : ""
                       }
                     >
-                      ₽{displayedPrice.toLocaleString()}
+                      ₽{(displayedPrice || 0).toLocaleString()}
                     </span>
                     {isOverridden && (
                       <span className="text-gray-400 ml-1">(Overridden)</span>
@@ -312,13 +312,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           </TooltipTrigger>
           <TooltipContent>
             <div>
-              <p>Base Value: ₽{item.basePrice.toLocaleString()}</p>
+              <p>Base Value: ₽{(item.basePrice || 0).toLocaleString()}</p>
               <p>
                 {item.lastLowPrice ? "Last Low Price:" : "Base Price:"}{" "}
                 <span
                   className={isOverridden ? "text-yellow-300 font-bold" : ""}
                 >
-                  ₽{displayedPrice.toLocaleString()}
+                  ₽{(displayedPrice || 0).toLocaleString()}
                 </span>
                 {isOverridden && (
                   <span className="text-gray-400 ml-1">(Overridden)</span>
@@ -492,7 +492,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   <span className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400`}>
                     Base:{" "}
                     <span className={`text-teal-400 font-semibold ${isCompactMode ? "text-xs" : ""}`}>
-                      ₽{selectedItem.basePrice.toLocaleString()}
+                      ₽{(selectedItem?.basePrice || 0).toLocaleString()}
                     </span>
                   </span>
                   <span className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400`}>
@@ -501,8 +501,9 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                       ₽
                       {(
                         overriddenPrice ||
-                        selectedItem.lastLowPrice ||
-                        selectedItem.basePrice
+                        selectedItem?.lastLowPrice ||
+                        selectedItem?.basePrice ||
+                        0
                       ).toLocaleString()}
                     </span>
                   </span>

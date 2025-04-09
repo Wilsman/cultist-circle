@@ -13,6 +13,7 @@ import Image from "next/image";
 import ItemSocket from "@/components/item-socket";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { generateShareableLink, loadSharedItemsFromUrl } from "@/lib/share-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -122,15 +123,160 @@ function AppContent() {
     }
   }, [hasError, toast]);
 
+  // State to track if we need to clean up the URL after items are loaded
+  const [pendingUrlCleanup, setPendingUrlCleanup] = useState(false);
+  // Track the items that were loaded from the URL
+  const [sharedItemsLoaded, setSharedItemsLoaded] = useState(false);
+  
   // Initialize client-side state
   useEffect(() => {
     // Only initialize if we have data
     if (!rawItemsData || rawItemsData.length === 0) return;
-
+    
+    try {
+      // Check for shared items in URL
+      const { items: sharedItems, isPVE: sharedIsPVE } = loadSharedItemsFromUrl(rawItemsData, toast);
+      
+      // Set game mode if provided in URL
+      if (sharedIsPVE !== null) {
+        setIsPVE(sharedIsPVE);
+      }
+      
+      // Process shared items if available
+      if (sharedItems && Array.isArray(sharedItems) && sharedItems.length > 0) {
+        // Validate each item in the array before setting state
+        const validatedItems = sharedItems.map(item => {
+          if (!item) return null;
+          
+          // Ensure item has required properties
+          return {
+            ...item,
+            basePrice: typeof item.basePrice === 'number' ? item.basePrice : 0,
+            lastLowPrice: typeof item.lastLowPrice === 'number' ? item.lastLowPrice : 0
+          };
+        });
+        
+        // Set selected items and mark that we've loaded shared items
+        setSelectedItems(validatedItems);
+        setSharedItemsLoaded(true);
+        setPendingUrlCleanup(true);
+      }
+    } catch (error) {
+      console.error("Error processing shared items:", error);
+      toast({
+        title: "Error Loading Shared Items",
+        description: "There was a problem loading the shared items.",
+        variant: "destructive",
+      });
+    }
+    
     // Load sort option
     const savedSort = localStorage.getItem("sortOption");
     if (savedSort) setSortOption(savedSort);
+  }, [rawItemsData, toast]);
 
+  // Effect to clean up URL after shared items are fully loaded and rendered
+  useEffect(() => {
+    // Only proceed if we need to clean up the URL and shared items have been loaded
+    if (!pendingUrlCleanup || !sharedItemsLoaded) return;
+    
+    let checkCount = 0;
+    const maxChecks = 20; // Check up to 20 times
+    
+    // Function to check if items are fully loaded with prices
+    const checkItemsLoaded = () => {
+      checkCount++;
+      console.log(`Checking for rendered items (attempt ${checkCount}/${maxChecks})...`);
+      
+      // Check for specific elements that indicate items are loaded
+      const allElements = document.querySelectorAll('p, span, div');
+      let pricesLoaded = false;
+      let itemsFound = false;
+      
+      // Look for item cards
+      const possibleItemCards = document.querySelectorAll('.flex.items-center, .relative.w-full, li');
+      if (possibleItemCards.length > 0) {
+        console.log('Found possible item elements:', possibleItemCards.length);
+        itemsFound = true;
+      }
+      
+      // Check if any elements contain the ruble symbol (₽) or price indicators
+      for (let i = 0; i < allElements.length; i++) {
+        const el = allElements[i];
+        if (el.textContent && (
+          el.textContent.includes('₽') || 
+          el.textContent.includes('Base Value:') ||
+          el.textContent.includes('Last Low Price:')
+        )) {
+          console.log('Found price element:', el.textContent);
+          pricesLoaded = true;
+          break;
+        }
+      }
+      
+      // If we found both items and prices, the items are fully loaded
+      if (itemsFound && pricesLoaded) {
+        console.log('Items and prices detected - cleaning up URL');
+        // Clean up the URL
+        if (typeof window !== 'undefined' && window.location.search) {
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+        
+        // Reset the pending cleanup flag
+        setPendingUrlCleanup(false);
+        return true; // Successfully cleaned up
+      }
+      
+      // If we've reached max checks, clean up anyway
+      if (checkCount >= maxChecks) {
+        console.log('Reached max check attempts - cleaning up URL');
+        if (typeof window !== 'undefined' && window.location.search) {
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+        setPendingUrlCleanup(false);
+        return true; // Cleanup done (forced)
+      }
+      
+      return false; // Not yet cleaned up
+    };
+    
+    // Set up an interval to check periodically
+    const checkInterval = setInterval(() => {
+      if (checkItemsLoaded()) {
+        clearInterval(checkInterval);
+      }
+    }, 250); // Check every 250ms
+    
+    // Set a fallback timeout (as a safety net)
+    const fallbackTimer = setTimeout(() => {
+      if (pendingUrlCleanup) {
+        if (typeof window !== 'undefined' && window.location.search) {
+          console.log('Fallback: Cleaning up URL after timeout');
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+          setPendingUrlCleanup(false);
+        }
+      }
+      clearInterval(checkInterval);
+    }, 10000); // 10-second fallback as a safety net
+    
+    // Cleanup function
+    return () => {
+      clearInterval(checkInterval);
+      clearTimeout(fallbackTimer);
+    };
+  }, [pendingUrlCleanup, sharedItemsLoaded]);
+  
+  // Load app settings from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Load sort option
+    const savedSort = localStorage.getItem("sortOption");
+    if (savedSort) setSortOption(savedSort);
+    
     // Load excluded categories
     try {
       const saved = localStorage.getItem("excludedCategories");
@@ -199,7 +345,7 @@ function AppContent() {
     } catch (e) {
       console.error("Error loading overriddenPrices from localStorage", e);
     }
-  }, [rawItemsData]);
+  }, [rawItemsData, toast]);
 
   // Save sort option to localStorage
   useEffect(() => {
@@ -409,52 +555,58 @@ function AppContent() {
       maxItems: number
     ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
       // Apply the bonus to the baseValue of each item for calculation
-      const bonusMultiplier = 1 + (itemBonus / 100);
-      
+      const bonusMultiplier = 1 + itemBonus / 100;
+
       // Pre-calculate adjusted base prices to avoid repeated calculations
-      const adjustedItems = validItems.map(item => ({
+      const adjustedItems = validItems.map((item) => ({
         ...item,
         adjustedBasePrice: Math.floor(item.basePrice * bonusMultiplier),
-        fleaPrice: item.lastLowPrice || item.basePrice
+        fleaPrice: item.lastLowPrice || item.basePrice,
       }));
-      
+
       // Use adjusted threshold for DP calculation
       const maxThreshold = threshold + 5000;
-      
+
       // Optimize array creation
       const dp: number[][] = [];
       const itemTracking: number[][][] = [];
-      
+
       // Initialize first row
       dp[0] = Array(maxThreshold + 1).fill(Infinity);
       dp[0][0] = 0;
-      itemTracking[0] = Array(maxThreshold + 1).fill(null).map(() => []);
-      
+      itemTracking[0] = Array(maxThreshold + 1)
+        .fill(null)
+        .map(() => []);
+
       // Build DP table with optimized loops
       for (let c = 1; c <= maxItems; c++) {
         dp[c] = Array(maxThreshold + 1).fill(Infinity);
-        itemTracking[c] = Array(maxThreshold + 1).fill(null).map(() => []);
-        
+        itemTracking[c] = Array(maxThreshold + 1)
+          .fill(null)
+          .map(() => []);
+
         // Copy values from previous row where no item is added
         for (let v = 0; v <= maxThreshold; v++) {
-          dp[c][v] = dp[c-1][v];
-          if (dp[c-1][v] !== Infinity) {
-            itemTracking[c][v] = [...itemTracking[c-1][v]];
+          dp[c][v] = dp[c - 1][v];
+          if (dp[c - 1][v] !== Infinity) {
+            itemTracking[c][v] = [...itemTracking[c - 1][v]];
           }
         }
-        
+
         for (let i = 0; i < adjustedItems.length; i++) {
           const item = adjustedItems[i];
           const basePrice = item.adjustedBasePrice;
           const fleaPrice = item.fleaPrice;
-          
+
           // Skip items with zero or negative base price
           if (basePrice <= 0) continue;
-          
+
           // Optimize inner loop - start from basePrice
           for (let v = basePrice; v <= maxThreshold; v++) {
-            if (dp[c - 1][v - basePrice] !== Infinity && 
-                dp[c - 1][v - basePrice] + fleaPrice < dp[c][v]) {
+            if (
+              dp[c - 1][v - basePrice] !== Infinity &&
+              dp[c - 1][v - basePrice] + fleaPrice < dp[c][v]
+            ) {
               dp[c][v] = dp[c - 1][v - basePrice] + fleaPrice;
               itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
             }
@@ -464,17 +616,17 @@ function AppContent() {
 
       // Optimize valid combinations collection
       const validCombinations: { c: number; v: number; cost: number }[] = [];
-      
+
       // Start from the highest number of items for better combinations
       for (let c = maxItems; c >= 1; c--) {
         let foundForThisC = false;
-        
+
         // Check values from threshold to maxThreshold
         for (let v = threshold; v <= maxThreshold; v++) {
           if (dp[c][v] !== Infinity) {
             validCombinations.push({ c, v, cost: dp[c][v] });
             foundForThisC = true;
-            
+
             // Optimization: Once we've found some valid combinations for this c,
             // we can limit how many we collect to avoid excessive processing
             if (validCombinations.length >= 20 && foundForThisC) {
@@ -482,7 +634,7 @@ function AppContent() {
             }
           }
         }
-        
+
         // If we already have enough combinations, stop searching
         if (validCombinations.length >= 50) {
           break;
@@ -493,13 +645,13 @@ function AppContent() {
       if (validCombinations.length > 0) {
         // Sort by cost (most efficient first)
         validCombinations.sort((a, b) => a.cost - b.cost);
-        
+
         // Take only top 5 for random selection
         const topCombinations = validCombinations.slice(
           0,
           Math.min(5, validCombinations.length)
         );
-        
+
         // Select one randomly from top combinations
         const selectedCombination =
           topCombinations[Math.floor(Math.random() * topCombinations.length)];
@@ -530,8 +682,8 @@ function AppContent() {
     return selectedItems.reduce((sum, item) => {
       if (!item) return sum;
       // Apply the bonus percentage to the item's basePrice
-      const bonusMultiplier = 1 + (itemBonus / 100);
-      return sum + (item.basePrice * bonusMultiplier);
+      const bonusMultiplier = 1 + itemBonus / 100;
+      return sum + item.basePrice * bonusMultiplier;
     }, 0);
   }, [selectedItems, itemBonus]);
 
@@ -1224,7 +1376,7 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="clear-item-fields"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-1/2 rounded
+                        className={`bg-red-500 hover:bg-red-600 text-white w-1/3 rounded
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95 
                           ${
                             isClearButtonDisabled
@@ -1246,7 +1398,7 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="reset-overrides"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-1/2 rounded
+                        className={`bg-red-500 hover:bg-red-600 text-white w-1/3 rounded
                           transition-all duration-300 transform hover:scale-[1.02] active:scale-95
                           ${
                             isResetOverridesButtonDisabled
@@ -1261,6 +1413,30 @@ function AppContent() {
                     </TooltipTrigger>
                     <TooltipContent>
                       Reset overrides and exclusions
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        id="share-items"
+                        className={`bg-blue-500 hover:bg-blue-600 text-white w-1/3 rounded
+                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95
+                          ${
+                            selectedItems.every(item => item === null)
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
+                        onClick={() => generateShareableLink(selectedItems, isPVE, toast)}
+                        disabled={selectedItems.every(item => item === null)}
+                      >
+                        <span className="hidden sm:inline">
+                          Share Items
+                        </span>
+                        <span className="sm:hidden">Share</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Generate a shareable link for selected items
                     </TooltipContent>
                   </Tooltip>
                 </div>
