@@ -182,7 +182,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
                 onChange={(e) => setHideoutLevel(Number(e.target.value))}
                 className="bg-gray-800 text-gray-200 border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-16 text-center"
               >
-                {Array.from({ length: 51 }, (_, i) => i + 1).map((level) => (
+                {Array.from({ length: 50 }, (_, i) => i + 1).map((level) => (
                   <option key={level} value={level}>
                     {level}
                   </option>
