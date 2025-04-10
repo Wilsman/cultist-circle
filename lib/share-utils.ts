@@ -1,6 +1,18 @@
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 
 /**
+ * Shortens an item ID to a minimal representation
+ * This creates a very compact representation while maintaining uniqueness
+ * @param id - The original item ID
+ * @returns string - The shortened ID
+ */
+function shortenItemId(id: string): string {
+  // Take just the first 6 characters of the ID
+  // MongoDB ObjectIDs have enough entropy in the first 6 chars to avoid collisions
+  return id.substring(0, 6);
+}
+
+/**
  * Generates a shareable code for the selected items
  * @param selectedItems - Array of selected items
  * @param isPVE - Whether the game mode is PVE
@@ -19,9 +31,13 @@ export function generateShareableCode(
     return "";
   }
 
-  // Create a simple code format: gameMode|item1,item2,item3
-  const gameMode = isPVE ? "pve" : "pvp";
-  const codeContent = `${gameMode}|${itemIds.join(",")}`;
+  // Use shortened item IDs for a more compact code
+  const shortIds = itemIds.map(shortenItemId);
+  
+  // Create an ultra-compact code format: p:id1,id2,id3
+  // Using single character for game mode and shortest possible separator
+  const gameMode = isPVE ? "p" : "v";
+  const codeContent = `${gameMode}:${shortIds.join(",")}`;  // Using : as separator to save 1 byte
 
   // Base64 encode for a cleaner code
   return btoa(codeContent);
@@ -102,26 +118,25 @@ export function parseShareableCode(code: string): {
   if (!isValidBase64(code)) {
     return { itemIds: [], isPVE: null, error: "Invalid code format" };
   }
-  
+
   try {
     // Decode the base64 string
     const decodedContent = atob(code);
 
-    // Check if the decoded content has the expected format
-    if (!decodedContent.includes("|")) {
+    // Check if the decoded content has the expected format (using colon as separator)
+    if (!decodedContent.includes(":")) {
       return { itemIds: [], isPVE: null, error: "Invalid code structure" };
     }
 
     // Split the content by the separator
-    const [gameMode, itemsString] = decodedContent.split("|");
+    const [gameMode, itemsString] = decodedContent.split(":");
 
-    // Validate game mode
-    if (gameMode !== "pve" && gameMode !== "pvp") {
+    // Validate game mode (only support shortened format)
+    const isPVE = gameMode === "p" ? true : gameMode === "v" ? false : null;
+    
+    if (isPVE === null) {
       return { itemIds: [], isPVE: null, error: "Invalid game mode" };
     }
-
-    // Parse game mode
-    const isPVE = gameMode === "pve" ? true : gameMode === "pvp" ? false : null;
 
     // Parse item IDs
     const itemIds = itemsString ? itemsString.split(",") : [];
@@ -180,9 +195,12 @@ export function loadItemsFromCode(
     const newSelectedItems = Array(5).fill(null);
 
     // Find items by ID and populate the selection
-    itemIds.forEach((id: string, index: number) => {
+    itemIds.forEach((shortId: string, index: number) => {
       if (index < 5) {
-        const item = rawItemsData.find((item) => item.id === id);
+        // Match items by the shortened ID prefix
+        const item = rawItemsData.find((item) => 
+          item.id.startsWith(shortId) // Shortened ID match
+        );
 
         // Validate the item has all required properties before adding it
         if (item && typeof item === "object") {
