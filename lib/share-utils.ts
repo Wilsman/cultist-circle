@@ -1,15 +1,14 @@
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 
 /**
- * Shortens an item ID to a minimal representation
- * This creates a very compact representation while maintaining uniqueness
+ * Shortens an item ID by taking the first 8 characters
+ * This creates a more compact representation while maintaining uniqueness
  * @param id - The original item ID
  * @returns string - The shortened ID
  */
 function shortenItemId(id: string): string {
-  // Take just the first 6 characters of the ID
-  // MongoDB ObjectIDs have enough entropy in the first 6 chars to avoid collisions
-  return id.substring(0, 6);
+  // Take the first 8 characters of the ID, which should be unique enough
+  return id.substring(0, 8);
 }
 
 /**
