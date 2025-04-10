@@ -13,7 +13,6 @@ import Image from "next/image";
 import ItemSocket from "@/components/item-socket";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateShareableLink, loadSharedItemsFromUrl } from "@/lib/share-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -29,6 +28,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithHelper";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { VersionInfo } from "@/components/version-info";
+import { ShareCodeDialog } from "@/components/share-code-dialog";
 import {
   ALL_ITEM_CATEGORIES,
   DEFAULT_EXCLUDED_CATEGORIES,
@@ -123,151 +123,20 @@ function AppContent() {
     }
   }, [hasError, toast]);
 
-  // State to track if we need to clean up the URL after items are loaded
-  const [pendingUrlCleanup, setPendingUrlCleanup] = useState(false);
-  // Track the items that were loaded from the URL
-  const [sharedItemsLoaded, setSharedItemsLoaded] = useState(false);
-  
   // Initialize client-side state
   useEffect(() => {
     // Only initialize if we have data
     if (!rawItemsData || rawItemsData.length === 0) return;
     
-    try {
-      // Check for shared items in URL
-      const { items: sharedItems, isPVE: sharedIsPVE } = loadSharedItemsFromUrl(rawItemsData, toast);
-      
-      // Set game mode if provided in URL
-      if (sharedIsPVE !== null) {
-        setIsPVE(sharedIsPVE);
-      }
-      
-      // Process shared items if available
-      if (sharedItems && Array.isArray(sharedItems) && sharedItems.length > 0) {
-        // Validate each item in the array before setting state
-        const validatedItems = sharedItems.map(item => {
-          if (!item) return null;
-          
-          // Ensure item has required properties
-          return {
-            ...item,
-            basePrice: typeof item.basePrice === 'number' ? item.basePrice : 0,
-            lastLowPrice: typeof item.lastLowPrice === 'number' ? item.lastLowPrice : 0
-          };
-        });
-        
-        // Set selected items and mark that we've loaded shared items
-        setSelectedItems(validatedItems);
-        setSharedItemsLoaded(true);
-        setPendingUrlCleanup(true);
-      }
-    } catch (error) {
-      console.error("Error processing shared items:", error);
-      toast({
-        title: "Error Loading Shared Items",
-        description: "There was a problem loading the shared items.",
-        variant: "destructive",
-      });
-    }
+    // No URL-based initialization needed anymore
+    // We'll use the ShareCodeDialog component for sharing items
     
     // Load sort option
     const savedSort = localStorage.getItem("sortOption");
     if (savedSort) setSortOption(savedSort);
   }, [rawItemsData, toast]);
 
-  // Effect to clean up URL after shared items are fully loaded and rendered
-  useEffect(() => {
-    // Only proceed if we need to clean up the URL and shared items have been loaded
-    if (!pendingUrlCleanup || !sharedItemsLoaded) return;
-    
-    let checkCount = 0;
-    const maxChecks = 20; // Check up to 20 times
-    
-    // Function to check if items are fully loaded with prices
-    const checkItemsLoaded = () => {
-      checkCount++;
-      console.log(`Checking for rendered items (attempt ${checkCount}/${maxChecks})...`);
-      
-      // Check for specific elements that indicate items are loaded
-      const allElements = document.querySelectorAll('p, span, div');
-      let pricesLoaded = false;
-      let itemsFound = false;
-      
-      // Look for item cards
-      const possibleItemCards = document.querySelectorAll('.flex.items-center, .relative.w-full, li');
-      if (possibleItemCards.length > 0) {
-        console.log('Found possible item elements:', possibleItemCards.length);
-        itemsFound = true;
-      }
-      
-      // Check if any elements contain the ruble symbol (₽) or price indicators
-      for (let i = 0; i < allElements.length; i++) {
-        const el = allElements[i];
-        if (el.textContent && (
-          el.textContent.includes('₽') || 
-          el.textContent.includes('Base Value:') ||
-          el.textContent.includes('Last Low Price:')
-        )) {
-          console.log('Found price element:', el.textContent);
-          pricesLoaded = true;
-          break;
-        }
-      }
-      
-      // If we found both items and prices, the items are fully loaded
-      if (itemsFound && pricesLoaded) {
-        console.log('Items and prices detected - cleaning up URL');
-        // Clean up the URL
-        if (typeof window !== 'undefined' && window.location.search) {
-          const cleanUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        }
-        
-        // Reset the pending cleanup flag
-        setPendingUrlCleanup(false);
-        return true; // Successfully cleaned up
-      }
-      
-      // If we've reached max checks, clean up anyway
-      if (checkCount >= maxChecks) {
-        console.log('Reached max check attempts - cleaning up URL');
-        if (typeof window !== 'undefined' && window.location.search) {
-          const cleanUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        }
-        setPendingUrlCleanup(false);
-        return true; // Cleanup done (forced)
-      }
-      
-      return false; // Not yet cleaned up
-    };
-    
-    // Set up an interval to check periodically
-    const checkInterval = setInterval(() => {
-      if (checkItemsLoaded()) {
-        clearInterval(checkInterval);
-      }
-    }, 250); // Check every 250ms
-    
-    // Set a fallback timeout (as a safety net)
-    const fallbackTimer = setTimeout(() => {
-      if (pendingUrlCleanup) {
-        if (typeof window !== 'undefined' && window.location.search) {
-          console.log('Fallback: Cleaning up URL after timeout');
-          const cleanUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-          setPendingUrlCleanup(false);
-        }
-      }
-      clearInterval(checkInterval);
-    }, 10000); // 10-second fallback as a safety net
-    
-    // Cleanup function
-    return () => {
-      clearInterval(checkInterval);
-      clearTimeout(fallbackTimer);
-    };
-  }, [pendingUrlCleanup, sharedItemsLoaded]);
+  
   
   // Load app settings from localStorage
   useEffect(() => {
@@ -1417,26 +1286,20 @@ function AppContent() {
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        id="share-items"
-                        className={`bg-blue-500 hover:bg-blue-600 text-white w-1/3 rounded
-                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95
-                          ${
-                            selectedItems.every(item => item === null)
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
-                        onClick={() => generateShareableLink(selectedItems, isPVE, toast)}
-                        disabled={selectedItems.every(item => item === null)}
-                      >
-                        <span className="hidden sm:inline">
-                          Share Items
-                        </span>
-                        <span className="sm:hidden">Share</span>
-                      </Button>
+                      <ShareCodeDialog
+                        selectedItems={selectedItems}
+                        isPVE={isPVE}
+                        rawItemsData={rawItemsData}
+                        onItemsLoaded={(items, newIsPVE) => {
+                          setSelectedItems(items);
+                          if (newIsPVE !== null) {
+                            setIsPVE(newIsPVE);
+                          }
+                        }}
+                      />
                     </TooltipTrigger>
                     <TooltipContent>
-                      Generate a shareable link for selected items
+                      Share items using a code
                     </TooltipContent>
                   </Tooltip>
                 </div>
