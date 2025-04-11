@@ -28,7 +28,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithHelper";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { VersionInfo } from "@/components/version-info";
-import { ShareCodeDialog } from "@/components/share-code-dialog";
+import { ShareCodeDialog } from "@/components/share-code-component";
 import {
   ALL_ITEM_CATEGORIES,
   DEFAULT_EXCLUDED_CATEGORIES,
@@ -1017,7 +1017,7 @@ function AppContent() {
             </div>
 
             {/* Title and Version Info */}
-            <div className="pt-4 sm:pt-14">
+            <div className="pt-2 sm:pt-2">
               <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
                 <Image
                   src="/images/Cultist-Calulator.webp"
@@ -1072,7 +1072,7 @@ function AppContent() {
               </Alert>
             </div>
 
-            <CardContent className="p-6">
+            <CardContent className="p-2">
               {/* Mode Toggle with improved animation */}
               <div className="transition-all duration-300 transform hover:scale-[1.02]">
                 <ModeToggle isPVE={isPVE} onToggle={handleModeToggle} />
@@ -1173,6 +1173,18 @@ function AppContent() {
                 </div>
               </div>
 
+              <ShareCodeDialog
+                    selectedItems={selectedItems}
+                    isPVE={isPVE}
+                    rawItemsData={rawItemsData}
+                    onItemsLoaded={(items, newIsPVE) => {
+                      setSelectedItems(items);
+                      if (newIsPVE !== null) {
+                        setIsPVE(newIsPVE);
+                      }
+                    }}
+                  />
+
               {/* Item Selection Components with improved loading states */}
               <div className="w-full">
                 <div id="search-items" className="space-y-0">
@@ -1245,8 +1257,8 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="clear-item-fields"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-1/3 rounded
-                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95 
+                        className={`bg-red-500 hover:bg-red-600 text-white w-full rounded
+                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95
                           ${
                             isClearButtonDisabled
                               ? "opacity-50 cursor-not-allowed"
@@ -1282,24 +1294,6 @@ function AppContent() {
                     </TooltipTrigger>
                     <TooltipContent>
                       Reset overrides and exclusions
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <ShareCodeDialog
-                        selectedItems={selectedItems}
-                        isPVE={isPVE}
-                        rawItemsData={rawItemsData}
-                        onItemsLoaded={(items, newIsPVE) => {
-                          setSelectedItems(items);
-                          if (newIsPVE !== null) {
-                            setIsPVE(newIsPVE);
-                          }
-                        }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Share items using a code
                     </TooltipContent>
                   </Tooltip>
                 </div>

@@ -113,19 +113,19 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
           {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
         </div>
       </Button>
-      <Badge
-        variant="destructive"
-        className="mb-2 rounded-full border-gray-700 "
-      >
-        Work In Progress
-      </Badge>
 
       <div
         className={`
-        overflow-hidden transition-all duration-300 ease-in-out w-full flex flex-col items-center
-        ${isExpanded ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}
-      `}
+          overflow-hidden transition-all duration-300 ease-in-out w-full flex flex-col items-center
+          ${isExpanded ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}
+          `}
       >
+          <Badge
+            variant="destructive"
+            className="mb-2 rounded-full border-gray-700 "
+          >
+            Work In Progress
+          </Badge>
         <div className="flex items-center gap-2 mb-2">
           <span className="font-mono text-gray-300">
             Total bonus to the Gift{" "}
