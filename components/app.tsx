@@ -22,7 +22,6 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import SettingsPane from "@/components/settings-pane";
-import { ThresholdHelperPopup } from "@/components/ThresholdHelperPopup";
 import { InstructionsDialog } from "@/components/InstructionsDialog";
 import { ModeToggle } from "@/components/ModeToggle";
 import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithHelper";
@@ -44,9 +43,6 @@ import { FeedbackForm } from "./feedback-form";
 import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
 import { RefreshCw } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Switch } from "@radix-ui/react-switch";
-import { cn } from "@/lib/utils";
 
 export const CURRENT_VERSION = "1.1.0.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
@@ -94,7 +90,6 @@ function AppContent() {
     isAllowed: boolean;
     timeRemaining: number;
   }>({ isAllowed: true, timeRemaining: 0 });
-  const [isCompactMode, setIsCompactMode] = useState(false);
   const [itemBonus, setItemBonus] = useState<number>(0);
 
   // Import hooks
@@ -127,25 +122,23 @@ function AppContent() {
   useEffect(() => {
     // Only initialize if we have data
     if (!rawItemsData || rawItemsData.length === 0) return;
-    
+
     // No URL-based initialization needed anymore
     // We'll use the ShareCodeDialog component for sharing items
-    
+
     // Load sort option
     const savedSort = localStorage.getItem("sortOption");
     if (savedSort) setSortOption(savedSort);
   }, [rawItemsData, toast]);
 
-  
-  
   // Load app settings from localStorage
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     // Load sort option
     const savedSort = localStorage.getItem("sortOption");
     if (savedSort) setSortOption(savedSort);
-    
+
     // Load excluded categories
     try {
       const saved = localStorage.getItem("excludedCategories");
@@ -827,8 +820,6 @@ function AppContent() {
     }
   }, [toast]);
 
-  const [isThresholdHelperOpen, setIsThresholdHelperOpen] = useState(false);
-
   // Move these useMemo hooks here, right after the state declarations
   const isClearButtonDisabled = useMemo(() => {
     return (
@@ -1033,45 +1024,6 @@ function AppContent() {
               <VersionInfo version={CURRENT_VERSION} />
             </div>
 
-            <div className="flex items-center justify-center">
-              <Alert
-                variant="default"
-                className="mb-2 border-yellow-500/50 animate-pulse rounded"
-              >
-                <AlertTitle className="text-sm font-semibold text-center">
-                  Join our Discord server!
-                </AlertTitle>
-                <AlertDescription className="text-xs text-center">
-                  We&apos;ve created a Discord server to discuss the cultist
-                  circle, provide feedback, show off results and get support.
-                  <a
-                    href="https://discord.gg/3dFmr5qaJK"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-semibold text-center text-blue-500 hover:underline flex items-center justify-center mt-1"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="white"
-                      stroke="currentColor"
-                      className="h-4 w-4 mr-1"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"
-                      />
-                    </svg>
-                    <span className="flex items-center justify-center">
-                      Click to Join Discord
-                    </span>
-                  </a>
-                </AlertDescription>
-              </Alert>
-            </div>
-
             <CardContent className="p-2">
               {/* Mode Toggle with improved animation */}
               <div className="transition-all duration-300 transform hover:scale-[1.02]">
@@ -1083,63 +1035,13 @@ function AppContent() {
                 <ThresholdSelectorWithHelper
                   threshold={threshold}
                   onThresholdChange={handleThresholdChange}
-                  onHelperOpen={() => setIsThresholdHelperOpen(true)}
+                  onHelperOpen={() => true}
                 />
               </div>
 
-              {/* Value Thresholds Information */}
-              <div className="mt-4 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Alert
-                    variant="default"
-                    className="transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded"
-                  >
-                    <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
-                      <span className="text-base font-bold">350,001+</span>
-                      <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">
-                        Guaranteed
-                      </span>
-                    </AlertTitle>
-                    <AlertDescription className="mt-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
-                        <span>14h timer</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
-                        <span>High value item(s)</span>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-
-                  <Alert
-                    variant="default"
-                    className="transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded"
-                  >
-                    <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
-                      <span className="text-base font-bold">400,000+</span>
-                      <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">
-                        Mixed Chances
-                      </span>
-                    </AlertTitle>
-                    <AlertDescription className="mt-2 text-sm space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-yellow-500/30" />
-                        <span className="flex items-center gap-1">
-                          <span className="text-yellow-500/90">25%</span> 6h
-                          timer + Quest/Hideout items
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
-                        <span className="flex items-center gap-1">
-                          <span className="text-yellow-500/90">75%</span> 14h
-                          High value item(s)
-                        </span>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                </div>
+              {/* Item Socket Component */}
+              <div className="mt-6">
+                <ItemSocket onBonusChange={setItemBonus} />
               </div>
 
               {/* Auto select button with loading animation */}
@@ -1151,39 +1053,17 @@ function AppContent() {
                 />
               </div>
 
-              <div className="flex justify-center items-center mt-1">
-                <div className="flex items-center gap-3 px-4 py-2">
-                  <Switch
-                    checked={isCompactMode}
-                    onCheckedChange={setIsCompactMode}
-                    className="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white bg-white/10 focus-visible:ring-opacity-75"
-                  >
-                    <span className="sr-only">Use setting</span>
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        isCompactMode ? "translate-x-6" : "translate-x-0",
-                        "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
-                      )}
-                    />
-                  </Switch>
-                  <span className="text-sm font-medium text-gray-200">
-                    {isCompactMode ? "Compact View" : "Normal View"}
-                  </span>
-                </div>
-              </div>
-
               <ShareCodeDialog
-                    selectedItems={selectedItems}
-                    isPVE={isPVE}
-                    rawItemsData={rawItemsData}
-                    onItemsLoaded={(items, newIsPVE) => {
-                      setSelectedItems(items);
-                      if (newIsPVE !== null) {
-                        setIsPVE(newIsPVE);
-                      }
-                    }}
-                  />
+                selectedItems={selectedItems}
+                isPVE={isPVE}
+                rawItemsData={rawItemsData}
+                onItemsLoaded={(items, newIsPVE) => {
+                  setSelectedItems(items);
+                  if (newIsPVE !== null) {
+                    setIsPVE(newIsPVE);
+                  }
+                }}
+              />
 
               {/* Item Selection Components with improved loading states */}
               <div className="w-full">
@@ -1242,7 +1122,6 @@ function AppContent() {
                                 item && toggleExcludedItem(item.name)
                               }
                               excludedItems={excludedItems}
-                              isCompactMode={isCompactMode} // Pass isCompactMode prop
                             />
                           </Suspense>
                         </React.Fragment>
@@ -1307,11 +1186,6 @@ function AppContent() {
                 overrides and{" "}
                 <span className="font-medium">{excludedItems.size}</span>{" "}
                 exclusions currently active
-              </div>
-
-              {/* Item Socket Component */}
-              <div className="mt-6">
-                <ItemSocket onBonusChange={setItemBonus} />
               </div>
 
               {/* Sacrifice Value Display with improved animation */}
@@ -1533,14 +1407,6 @@ function AppContent() {
             onExcludedItemsChange={setExcludedItems}
           />
         </div>
-      )}
-
-      {isThresholdHelperOpen && (
-        <ThresholdHelperPopup
-          isOpen={isThresholdHelperOpen}
-          onClose={() => setIsThresholdHelperOpen(false)}
-          onSetThreshold={handleThresholdChange}
-        />
       )}
     </>
   );

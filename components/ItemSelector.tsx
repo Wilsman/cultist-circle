@@ -39,7 +39,6 @@ interface ItemSelectorProps {
   isExcluded: boolean;
   onToggleExclude: () => void;
   excludedItems: Set<string>;
-  isCompactMode?: boolean;
 }
 
 const ItemSelector: React.FC<ItemSelectorProps> = ({
@@ -55,7 +54,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   isExcluded,
   onToggleExclude,
   excludedItems,
-  isCompactMode,
 }) => {
   // Add validation check at the start with a default empty array
   useEffect(() => {
@@ -281,9 +279,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 <img
                   src={itemIcon}
                   alt={item.name}
-                  className={`w-12 h-12 md:w-16 md:h-16 object-contain rounded mr-4 ${
-                    isCompactMode ? "p-1 text-sm hover:scale-105" : "p-2 text-base"
-                  }`}
+                  className={`w-12 h-12 md:w-16 md:h-16 object-contain rounded mr-4 p-1 text-sm hover:scale-105`}
                 />
               )}
               <div className="flex-1 flex flex-col">
@@ -337,15 +333,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         </Tooltip>
       );
     },
-    [filteredItems, handleSelect, overriddenPrices, excludedItems, isCompactMode]
+    [filteredItems, handleSelect, overriddenPrices, excludedItems]
   );
 
   return (
     <TooltipProvider>
       <div
-        className={`relative w-full ${
-          isCompactMode ? "p-1 text-sm gap-1" : "p-1 text-sm gap-1"
-        }`}
+        className={`relative w-full p-1 text-sm gap-1`}
       >
         {/* If no item is selected, show the search input and dropdown list */}
         {!selectedItem && (
@@ -358,7 +352,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search items..."
-              className={`w-full ${isCompactMode ? "p-1 text-sm" : "p-2"} bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              className={`w-full p-1 text-sm" : "p-2"} bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
 
             {isFocused && (
@@ -386,12 +380,12 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         {/* When an item is selected, show a card-like layout */}
         {selectedItem && (
           <div
-            className={`relative w-full ${isCompactMode ? "p-1" : "p-2"} rounded-md ${
+            className={`relative w-full p-1 rounded-md ${
               isPinned ? "border border-yellow-400" : "border border-gray-600"
             } bg-gray-900`}
           >
             {/* Top row: small icon button to pick another item, then action icons */}
-            <div className={`flex items-center justify-between ${isCompactMode ? "mb-1" : "mb-1"}`}>
+            <div className={`flex items-center justify-between mb-1`}>
               <div className="flex items-center space-x-1">
                 {/* Pick Another Item as a small icon + tooltip */}
                 <Tooltip>
@@ -400,11 +394,11 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                       size="icon"
                       variant="ghost"
                       onClick={onPin}
-                      className={`${isCompactMode ? "h-5 w-5" : "h-8 w-8"} ${
+                      className={`h-5 w-5" : "h-8 w-8"} ${
                         isPinned ? "text-yellow-400" : "text-gray-400"
                       } hover:bg-gray-800`}
                     >
-                      <Pin className={`${isCompactMode ? "h-3 w-3" : "h-4 w-4"}`} />
+                      <Pin className={`h-3 w-3" : "h-4 w-4"}`} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -421,11 +415,11 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                       size="icon"
                       variant="ghost"
                       onClick={toggleExclude}
-                      className={`${isCompactMode ? "h-5 w-5" : "h-8 w-8"} ${
+                      className={`h-5 w-5 ${
                         isExcluded ? "text-red-500" : "text-gray-400"
                       } hover:bg-gray-800`}
                     >
-                      <CircleSlash className={`${isCompactMode ? "h-3 w-3" : "h-4 w-4"}`} />
+                      <CircleSlash className={`h-3 w-3`} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Exclude from Auto</TooltipContent>
@@ -439,9 +433,9 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                         handleRemove();
                         handleSelect(null);
                       }}
-                      className={`${isCompactMode ? "h-6 w-6" : "h-8 w-8"} text-gray-400 hover:bg-gray-800`}
+                      className={`h-6 w-6 text-gray-400 hover:bg-gray-800`}
                     >
-                      <Trash2 className={`text-red-500 ${isCompactMode ? "h-3 w-3" : "h-4 w-4"}`} />
+                      <Trash2 className={`text-red-500 h-3 w-3`} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Remove Item</TooltipContent>
@@ -449,23 +443,21 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               </div>
             </div>
 
-            <div className={`${isCompactMode ? "mt-0.5 flex items-center p-1" : "flex"} rounded-lg`}>
+            <div className={`mt-0.5 flex items-center p-1 rounded-lg`}>
               {/* Item icon */}
               {selectedItem.iconLink && (
                 <img
                   src={selectedItem.iconLink}
                   alt={selectedItem.name}
-                  className={`object-contain rounded mr-2 ${
-                    isCompactMode ? "w-12 h-12 hover:scale-195" : "w-12 h-12 md:w-24 md:h-24 p-2"
-                  }`}
+                  className={`object-contain rounded mr-2 w-12 h-12 md:w-18 md:h-18 p-2`}
                 />
               )}
-              <div className={`${isCompactMode ? "flex flex-row items-center flex-wrap gap-y-0.5" : "flex flex-col"} flex-grow`}>
+              <div className={`flex flex-row items-center flex-wrap gap-y-0.5 flex-grow`}>
                 {/* Item name and copy button */}
                 <div className="flex items-center">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className={`text-teal-400 ${isCompactMode ? "text-sm" : "text-lg"} font-semibold`}>
+                      <span className={`text-teal-400 text-sm font-semibold`}>
                         {selectedItem.name.length > 30
                           ? `${selectedItem.name.slice(0, 30)}...`
                           : selectedItem.name}
@@ -479,25 +471,25 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                         size="icon"
                         variant="ghost"
                         onClick={handleCopy}
-                        className={`${isCompactMode ? "h-6 w-6" : "h-8 w-8"} text-gray-400 hover:bg-gray-700`}
+                        className={`h-6 w-6 text-gray-400 hover:bg-gray-700`}
                       >
-                        <Copy className={`${isCompactMode ? "h-3 w-3" : "h-4 w-4"}`} />
+                        <Copy className={`h-3 w-3`} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Copy Item Name</TooltipContent>
                   </Tooltip>
                 </div>
                 {/* Price information */}
-                <div className={`flex items-center flex-wrap ${isCompactMode ? "space-x-1 mt-0" : "space-x-2 mt-1"}`}>
-                  <span className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400`}>
+                <div className={`flex items-center flex-wrap space-x-1 mt-0" : "space-x-2 mt-1"}`}>
+                  <span className={`text-xs" : "text-sm"} text-gray-400`}>
                     Base:{" "}
-                    <span className={`text-teal-400 font-semibold ${isCompactMode ? "text-xs" : ""}`}>
+                    <span className={`text-teal-400 font-semibold text-xs" : ""}`}>
                       ₽{(selectedItem?.basePrice || 0).toLocaleString()}
                     </span>
                   </span>
-                  <span className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400`}>
+                  <span className={`text-xs" : "text-sm"} text-gray-400`}>
                     Flea:{" "}
-                    <span className={`text-teal-400 ${isCompactMode ? "text-xs" : ""}`}>
+                    <span className={`text-teal-400 text-xs" : ""}`}>
                       ₽
                       {(
                         overriddenPrice ||
@@ -513,9 +505,9 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                         size="icon"
                         variant="ghost"
                         onClick={togglePriceOverride}
-                        className={`${isCompactMode ? "h-6 w-6" : "h-8 w-8"} text-gray-400 hover:bg-gray-700`}
+                        className={`h-6 w-6" : "h-8 w-8"} text-gray-400 hover:bg-gray-700`}
                       >
-                        <Edit className={`${isCompactMode ? "h-3 w-3" : "h-4 w-4"}`} />
+                        <Edit className={`h-3 w-3" : "h-4 w-4"}`} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Toggle Price Override</TooltipContent>
@@ -530,7 +522,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 </span> */}
                 {/* Updated time */}
                 {selectedItem.updated && (
-                  <span className={`${isCompactMode ? "text-xs" : "text-sm mb-1"} text-gray-400`}>
+                  <span className={`text-xs" : "text-sm mb-1"} text-gray-400`}>
                     Updated: {getRelativeDate(selectedItem.updated.toString())}
                   </span>
                 )}
@@ -542,7 +534,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               <div className="flex items-center bg-gray-800/50 rounded p-2">
                 <label
                   htmlFor="price-override"
-                  className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400 mr-2`}
+                  className={`text-xs" : "text-sm"} text-gray-400 mr-2`}
                 >
                   Override Price:
                 </label>
@@ -551,14 +543,14 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   type="text"
                   value={priceOverride}
                   onChange={handlePriceOverride}
-                  className={`${isCompactMode ? "text-xs" : "text-sm"} bg-gray-700 text-white p-1 mr-2 rounded w-24 text-right`}
+                  className={`text-xs" : "text-sm"} bg-gray-700 text-white p-1 mr-2 rounded w-24 text-right`}
                   placeholder="Enter price"
                 />
                 <Button
                   size="sm"
                   variant="destructive"
                   onClick={clearPriceOverride}
-                  className={`${isCompactMode ? "h-6 px-2" : "h-8 px-3"} text-white hover:bg-red-700 transition-colors`}
+                  className={`h-6 px-2" : "h-8 px-3"} text-white hover:bg-red-700 transition-colors`}
                 >
                   Cancel
                 </Button>
@@ -579,7 +571,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           <div className="mt-2 flex items-center">
             <label
               htmlFor="price-override"
-              className={`${isCompactMode ? "text-xs" : "text-sm"} text-gray-400 mr-2`}
+              className={`text-xs" : "text-sm"} text-gray-400 mr-2`}
             >
               Override Price:
             </label>
@@ -588,16 +580,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               type="text"
               value={priceOverride}
               onChange={handlePriceOverride}
-              className={`${isCompactMode ? "text-xs" : "text-sm"} bg-gray-700/50 text-white p-1 mr-2 rounded w-24 text-right`}
+              className={`text-xs" : "text-sm"} bg-gray-700/50 text-white p-1 mr-2 rounded w-24 text-right`}
               placeholder="Enter price"
             />
             <Button
               size="icon"
               variant="ghost"
               onClick={clearPriceOverride}
-              className={`${isCompactMode ? "h-6 w-6" : "h-8 w-8"} text-gray-400 hover:bg-gray-800`}
+              className={`h-6 w-6" : "h-8 w-8"} text-gray-400 hover:bg-gray-800`}
             >r
-              <XIcon className={`text-red-500 ${isCompactMode ? "h-3 w-3" : "h-4 w-4"}`} />r
+              <XIcon className={`text-red-500 h-3 w-3" : "h-4 w-4"}`} />r
             </Button>
           </div>
         )}

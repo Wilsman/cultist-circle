@@ -56,7 +56,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [hideoutLevel, setHideoutLevel] = useState<number>(1);
   const [open, setOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const calculateBonus = (baseBonus: number, level: number) => {
     const levelMultiplier = level / 100; // Level 50 = 0.5 multiplier
@@ -76,12 +76,12 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
   }, [totalBonus, onBonusChange]);
 
   return (
-    <div className="flex flex-col items-center text-center w-full">
+    <div className="flex flex-col items-center text-center w-full relative">
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="mb-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+        className="mb-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200 relative"
       >
         <div className="flex items-center gap-2">
           <TooltipProvider>
@@ -111,6 +111,22 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
           </TooltipProvider>
           <span className="text-sm">Bonus Settings</span>
           {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+          
+          {/* Show indicator next to text when collapsed */}
+          {!isExpanded && selectedItem && (
+            <div className="flex items-center gap-1 ml-2">
+              <div className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full border border-gray-700">
+                {selectedItem.icon}
+              </div>
+              <span
+                className={`text-xs font-bold ${
+                  totalBonus > 0 ? "text-blue-300" : "text-red-500"
+                }`}
+              >
+                +{totalBonus}%
+              </span>
+            </div>
+          )}
         </div>
       </Button>
 
@@ -193,19 +209,6 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
         </div>
       </div>
 
-      {/* Show a small indicator of the bonus when collapsed */}
-      {!isExpanded && totalBonus > 0 && (
-        <div className="text-xs text-gray-400">
-          Total bonus to the Gift:{" "}
-          <span
-            className={`font-bold ${
-              totalBonus > 0 ? "text-blue-300" : "text-red-500"
-            }`}
-          >
-            +{totalBonus}%
-          </span>
-        </div>
-      )}
     </div>
   );
 }
