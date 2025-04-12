@@ -21,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { XIcon } from "lucide-react";
 
 interface Item {
   id: string;
@@ -91,7 +92,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
               </TooltipTrigger>
               <TooltipContent
                 side="top"
-                className="max-w-[600px] w-[500px] p-4 text-left space-y-3 bg-gray-900/95 text-sm"
+                className="max-w-[600px] w-[400px] p-4 text-left space-y-3 bg-gray-700 text-white rounded shadow-md text-sm"
               >
                 <div className="pt-1">
                   <p className="font-semibold mb-2">Bonuses:</p>
@@ -113,10 +114,12 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
           {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
           
           {/* Show indicator next to text when collapsed */}
-          {!isExpanded && selectedItem && (
+          {!isExpanded && (
             <div className="flex items-center gap-1 ml-2">
-              <div className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full border border-gray-700">
-                {selectedItem.icon}
+              <div className="w-8 h-8 flex items-center justify-center bg-gray-800 square-full border border-gray-700">
+                {/* Show icon if selected, show blank socket (square box with x) if not */}
+                {selectedItem && selectedItem.icon}
+                {!selectedItem && <XIcon className="w-4 h-4 text-gray-400" />}
               </div>
               <span
                 className={`text-xs font-bold ${

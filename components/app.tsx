@@ -1026,12 +1026,12 @@ function AppContent() {
 
             <CardContent className="p-2">
               {/* Mode Toggle with improved animation */}
-              <div className="transition-all duration-300 transform hover:scale-[1.02]">
+              <div className="transition-all duration-300">
                 <ModeToggle isPVE={isPVE} onToggle={handleModeToggle} />
               </div>
 
               {/* Threshold selector with improved visual feedback */}
-              <div className="mt-4 transition-all duration-300 transform hover:scale-[1.02]">
+              <div className="mt-4 transition-all duration-300">
                 <ThresholdSelectorWithHelper
                   threshold={threshold}
                   onThresholdChange={handleThresholdChange}
@@ -1045,7 +1045,7 @@ function AppContent() {
               </div>
 
               {/* Auto select button with loading animation */}
-              <div className="mt-4 transition-all duration-300 transform hover:scale-[1.02]">
+              <div className="mt-4 transition-all duration-300">
                 <AutoSelectButton
                   isCalculating={isCalculating}
                   hasAutoSelected={hasAutoSelected}
@@ -1137,7 +1137,7 @@ function AppContent() {
                       <Button
                         id="clear-item-fields"
                         className={`bg-red-500 hover:bg-red-600 text-white w-full rounded
-                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95
+                          transition-all duration-300 active:scale-95
                           ${
                             isClearButtonDisabled
                               ? "opacity-50 cursor-not-allowed"
@@ -1159,7 +1159,7 @@ function AppContent() {
                       <Button
                         id="reset-overrides"
                         className={`bg-red-500 hover:bg-red-600 text-white w-1/3 rounded
-                          transition-all duration-300 transform hover:scale-[1.02] active:scale-95
+                          transition-all duration-300 active:scale-95
                           ${
                             isResetOverridesButtonDisabled
                               ? "opacity-50 cursor-not-allowed"
@@ -1190,7 +1190,7 @@ function AppContent() {
 
               {/* Sacrifice Value Display with improved animation */}
               <div id="sacrifice-value" className="mt-6 text-center w-full">
-                <h2 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
+                <h2 className="text-3xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
                   Sacrifice BaseValue Total
                 </h2>
                 {loading ? (
@@ -1207,12 +1207,12 @@ function AppContent() {
                   </div>
                 )}
                 {!isThresholdMet && (
-                  <div className="text-red-500 mt-2">
+                  <div className="text-red-500 mt-1">
                     ₽{(threshold - total).toLocaleString()} Needed to meet
                     threshold
                   </div>
                 )}
-                <div className="mt-6">
+                <div className="mt-1">
                   <div className="text-sm font-semibold text-gray-400">
                     Total flea Cost ≈{" "}
                     <span

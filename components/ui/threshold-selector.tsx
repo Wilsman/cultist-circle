@@ -95,7 +95,7 @@ export default function ThresholdSelector({
       >
         <Label className="text-sm font-semibold">Threshold:</Label>
         <div className="flex items-center">
-          <span className="mr-2">{formatValue(value)}</span>
+          <span className="m-1">{formatValue(value)}</span>
           {isOpen ? <ChevronUpIcon className="h-4 w-4 text-muted-secondary" /> : <ChevronDownIcon className="h-4 w-4 text-muted-secondary" />}
         </div>
       </div>
