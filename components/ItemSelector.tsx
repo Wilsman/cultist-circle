@@ -109,13 +109,11 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
     let results;
     if (isFocused && !debouncedSearchTerm) {
-      // Show only items with basePrice > 0 when focused but empty
+      // Show only items with basePrice > 0 when focused but the search input is empty
       results = validItems.filter((item) => item.basePrice > 0);
     } else if (!debouncedSearchTerm) {
-      // Not focused or empty search
       return [];
     } else if (!fuse) {
-      // Fuse not ready
       return validItems;
     } else {
       results = fuse
@@ -123,8 +121,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         .map((result) => result.item)
         .filter((item) => item.basePrice > 0);
     }
-
-    // Filter out excluded items
     return results.filter((item) => !excludedItems.has(item.name));
   }, [debouncedSearchTerm, fuse, isFocused, items, excludedItems]);
 
@@ -132,7 +128,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   const handleSelect = useCallback(
     (item: SimplifiedItem | null) => {
       let overriddenPriceToPass: number | undefined | null = undefined;
-
       if (item) {
         if (overriddenPrice !== undefined) {
           overriddenPriceToPass = overriddenPrice;
@@ -140,7 +135,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           overriddenPriceToPass = Number(priceOverride);
         }
       }
-
       onSelect(item, overriddenPriceToPass);
       setSearchTerm("");
       setIsFocused(false);
@@ -191,15 +185,12 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
   useEffect(() => {
     if (priceOverride === debouncedPriceValue) return;
-
     const handler = setTimeout(() => {
       setDebouncedPriceValue(priceOverride);
-      // Only update the parent if we have a value, a selected item, and override is active
       if (selectedItem && priceOverride && isPriceOverrideActive) {
         onSelect(selectedItem, Number(priceOverride) || 0);
       }
     }, 300);
-
     return () => {
       clearTimeout(handler);
     };
@@ -244,7 +235,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     }
   }, [onCopy, onCopyWithToast, toast, selectedItem]);
 
-  // Row component for react-window
+  // Row component for react-window (dropdown list item)
   const Row = useCallback(
     ({ index, style }: ListChildComponentProps) => {
       const item = filteredItems[index];
@@ -343,7 +334,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               className="w-full p-1 text-sm bg-gray-700 text-white rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             {isFocused && (
-              <div className="absolute z-10 w-full mt-1 bg-gray-700 rounded-md shadow-lg max-h-48 overflow-hidden">
+              <div
+                className="
+                  absolute z-10 w-full mt-1 bg-gray-700 rounded-md shadow-lg
+                  max-h-[50vh] overflow-y-auto overflow-x-hidden
+                  touch-pan-y
+                "
+              >
                 <AutoSizer disableHeight>
                   {({ width }) => (
                     <List
@@ -367,12 +364,12 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         {/* SELECTED ITEM CARD */}
         {selectedItem && (
           <div
-            className={`border p-1 rounded-md bg-gray-900 ${
+            className={`border p-1 mb-0.5 rounded-md bg-gray-900 ${
               isPinned ? "border-yellow-400" : "border-gray-600"
             }`}
           >
             <div className="flex items-stretch">
-              <div className="rounded-l-md overflow-hidden flex items-center justify-center w-24 sm:w-28 md:w-32">
+              <div className="rounded-l-md overflow-hidden flex items-center justify-center min-w-3 max-w-10 sm:min-w-24 sm:max-w-28">
                 {selectedItem.iconLink && (
                   <img
                     src={selectedItem.iconLink}
@@ -390,8 +387,18 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   <div className="flex items-center space-x-2">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-teal-400 font-semibold text-sm truncate">
-                          {selectedItem.name.length > 42
+                        <span
+                          className="text-teal-400 font-semibold text-xs sm:text-sm truncate"
+                          style={{
+                            maxWidth: "calc(100vw - 2rem)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {window.innerWidth < 640
+                            ? `${selectedItem.name.slice(0, 20)}...`
+                            : selectedItem.name.length > 42
                             ? `${selectedItem.name.slice(0, 42)}...`
                             : selectedItem.name}
                         </span>
@@ -469,7 +476,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 </div>
 
                 {/* Middle row: base & flea prices, updated, override button */}
-                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
+                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-300">
                   <div>
                     Base:{" "}
                     <span className="text-teal-400 font-semibold">
@@ -512,7 +519,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
                 {/* Price override input (if active) */}
                 {isPriceOverrideActive && (
-                  <div className="flex items-center bg-gray-800/50 rounded p-1 text-xs">
+                  <div className="flex items-center bg-gray-800/50 rounded p-1 text-xs sm:text-sm">
                     <label
                       htmlFor="price-override"
                       className="text-gray-400 mr-1"
@@ -554,7 +561,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           <div className="mt-1 flex items-center">
             <label
               htmlFor="price-override"
-              className="text-xs text-gray-400 mr-1"
+              className="text-xs sm:text-sm text-gray-400 mr-1"
             >
               Override Price:
             </label>
@@ -563,7 +570,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               type="text"
               value={priceOverride}
               onChange={handlePriceOverride}
-              className="text-xs bg-gray-700/50 text-white p-1 mr-1 rounded w-16 text-right"
+              className="text-xs sm:text-sm bg-gray-700/50 text-white p-1 mr-1 rounded w-16 text-right"
               placeholder="Enter price"
             />
             <Button

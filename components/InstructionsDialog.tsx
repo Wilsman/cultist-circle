@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -38,34 +37,31 @@ export const InstructionsDialog = forwardRef<
             Instructions
           </DialogTitle>
         </DialogHeader>
-        <DialogDescription>
-          <h3 className="text-lg font-semibold mb-2">How to use this calculator:</h3>
-          <ol className="list-decimal list-inside space-y-2">
-            <li>Select PVE or PVP mode based on your preference.</li>
-            <li>Set your desired threshold value (default is 400,000 ₽).</li>
-            <li>Use the search fields to select up to 5 items.</li>
-            <li>
-              The calculator will show the total value and flea market cost.
-            </li>
-            <li>
-              Use the &quot;Auto Select&quot; button for quick item selection.
-            </li>
+        <div className="space-y-2 text-sm">
+          <h3 className="text-base font-semibold mb-1">Quick Guide:</h3>
+          <ol className="list-decimal list-inside space-y-1">
+            <li><span className="font-medium">Game Mode:</span> Toggle PVE/PVP</li>
+            <li><span className="font-medium">Threshold:</span> Set target value (default: 400k ₽)</li>
+            <li><span className="font-medium">Settings:</span> Configure excluded categories, sorting options, and other preferences</li>
+            <li><span className="font-medium">Items:</span> Select up to 5 items to sacrifice</li>
+            <li><span className="font-medium">Auto Select:</span> Find optimal item combination</li>
+            <li><span className="font-medium">Pin:</span> Lock items during Auto Select</li>
+            <li><span className="font-medium">Override:</span> Adjust flea prices manually</li>
+            <li><span className="font-medium">Share:</span> Save/share your selection</li>
+            <li><span className="font-medium">Refresh:</span> Update item prices from Tarkov.dev API (subject to cooldown)</li>
           </ol>
-          <Separator className="my-4" />
-          <h3 className="text-lg font-semibold mb-2">
-            Additional features:
-          </h3>
-          <ul className="list-disc list-inside space-y-2">
-            <li>
-              Use the thresholder helper to find the best threshold for your
-              needs.
-            </li>
-            <li>Pin items to keep them during auto-selection.</li>
-            <li>Override flea prices to help match current market prices.</li>
-            <li>Exclude items from auto-selection. Or exclude items permanently from within the settings.</li>
-            <li>Use the settings to customize item categories and sorting.</li>
+          
+          <Separator className="my-1" />
+          
+          <h3 className="text-base font-semibold mb-1">Tips:</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Prices from tarkov.dev API are the best available</li>
+            <li>Yellow price text = manually overridden</li>
+            <li>350,001+ ₽ = high value items 14h cooldown</li>
+            <li>400k+ ₽ = 25% chance for 6h cooldown</li>
+            <li>Use share codes to save selections</li>
           </ul>
-        </DialogDescription>
+        </div>
         <DialogClose asChild>
           <Button className="text-primary bg-secondary hover:bg-secondary/90">
             Close
