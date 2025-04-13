@@ -5,7 +5,7 @@ const STORAGE_KEY_PREFIX = 'swr-cache-';
 /**
  * Creates a middleware for SWR that persists cache data to localStorage
  * @param version Cache version to invalidate when needed
- * @param ttl Time to live in milliseconds (default: 1 hour)
+ * @param ttl Time to live in milliseconds (default: 15 minutes)
  * @returns SWR middleware function
  */
 /**
@@ -14,7 +14,7 @@ const STORAGE_KEY_PREFIX = 'swr-cache-';
  * The middleware is still type-safe at runtime.
  * @eslint-disable @typescript-eslint/no-explicit-any
  */
-export function createSWRPersistMiddleware(version: string, ttl: number = 3600000) {
+export function createSWRPersistMiddleware(version: string, ttl: number = 900000) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (useSWRNext: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,15 +111,20 @@ export function createSWRPersistMiddleware(version: string, ttl: number = 360000
 }
 
 /**
- * Clears all SWR cached data from localStorage
+ * Clears SWR cached data from localStorage
+ * @param keyPattern Optional pattern to selectively clear cache entries
  */
-export function clearSWRCache(): void {
+export function clearSWRCache(keyPattern?: string): void {
   if (typeof window === 'undefined') return;
   
   try {
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith(STORAGE_KEY_PREFIX)) {
-        localStorage.removeItem(key);
+        // If keyPattern is provided, only clear matching keys
+        if (!keyPattern || key.includes(keyPattern)) {
+          console.debug(`🧹 Clearing cache: ${key}`);
+          localStorage.removeItem(key);
+        }
       }
     });
   } catch (error) {

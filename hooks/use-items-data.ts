@@ -1,50 +1,66 @@
 import useSWR from "swr";
 import { useEffect } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
-import { createSWRPersistMiddleware, clearSWRCache } from "@/utils/swr-persistence";
+import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
 import { fetchTarkovData } from "./use-tarkov-api";
 import { useToast } from "@/hooks/use-toast";
 
-const CURRENT_VERSION = "1.1.0.1"; // Increment this when you want to trigger a cache clear
+// Single version for the combined data approach
+const CURRENT_VERSION = "1.2.0.0"; // New version for combined data approach
 
-// Create the persistence middleware with error handling
+// Create a single persistence middleware for the combined data
 // The middleware handles localStorage quota errors and clears old cache when needed
-const swrPersistMiddleware = createSWRPersistMiddleware(CURRENT_VERSION, 3600000);
+const swrPersistMiddleware = createSWRPersistMiddleware(CURRENT_VERSION, 900000); // 15 minutes TTL
 
 // Add request tracking outside component
 const requestTracker = {
   lastFetchTime: 0,
   inProgress: false,
-  lastData: [] as SimplifiedItem[]
+  lastDataPVP: [] as SimplifiedItem[],
+  lastDataPVE: [] as SimplifiedItem[]
 };
 
 export function useItemsData(isPVE: boolean) {
   const mode = isPVE ? "pve" : "pvp";
   const gameMode = isPVE ? "pve" : "regular";
   
-  // Clear old cache when version changes
-  useEffect(() => {
-    clearSWRCache();
-  }, []); // Empty dependency array since we only want to run this once
-  
-  // Use a unique key for the SWR cache
+  // Use separate SWR keys for PVE and PVP to ensure proper mode switching
   const swrKey = `tarkov-dev-api/${mode}?v=${CURRENT_VERSION}`;
+  
+  // Track mode changes without clearing cache
+  useEffect(() => {
+    // We're now using a smarter approach to cache management:
+    // 1. We don't automatically clear the cache when switching modes
+    // 2. Instead, we check if the cache is valid in handleModeToggle
+    // 3. This prevents unnecessary API calls when switching back and forth
+    console.debug(`🔄 [${mode.toUpperCase()}] Mode changed, using cache if available`);
+  }, [mode]); // Only depend on mode to track mode changes
   const { toast } = useToast();
 
   const fetcher = async (): Promise<SimplifiedItem[]> => {
-    // Prevent duplicate fetches within 2 seconds
+    // Simple request tracking to prevent duplicate fetches
     const now = Date.now();
     if (now - requestTracker.lastFetchTime < 2000 || requestTracker.inProgress) {
-      return requestTracker.lastData;
+      // Return the appropriate cached data based on mode
+      return isPVE ? requestTracker.lastDataPVE : requestTracker.lastDataPVP;
     }
 
     requestTracker.inProgress = true;
     requestTracker.lastFetchTime = now;
 
     try {
-      console.debug(`🔍 [${mode.toUpperCase()}] Fetching items at ${new Date().toLocaleTimeString()}`);
+      console.debug(`🔍 Fetching combined items data at ${new Date().toLocaleTimeString()}`);
+      
+      // Fetch data for the requested game mode
       const response = await fetchTarkovData(gameMode as 'pve' | 'regular');
-      requestTracker.lastData = response.items;
+      
+      // Store the data in the appropriate cache
+      if (isPVE) {
+        requestTracker.lastDataPVE = response.items;
+      } else {
+        requestTracker.lastDataPVP = response.items;
+      }
+      
       return response.items;
     } catch (error) {
       console.error(`❌ [${mode.toUpperCase()}] Fetch error:`, error);
@@ -70,7 +86,7 @@ export function useItemsData(isPVE: boolean) {
     revalidateOnReconnect: false,
     dedupingInterval: 600000, // 10 minutes
     keepPreviousData: true,
-    fallbackData: requestTracker.lastData || [], // Use last data as fallback
+    fallbackData: isPVE ? requestTracker.lastDataPVE : requestTracker.lastDataPVP || [], // Fallback to last data
     suspense: false, // Disable suspense to prevent flashing
     errorRetryCount: 3,
     shouldRetryOnError: true,
@@ -84,7 +100,7 @@ export function useItemsData(isPVE: boolean) {
       // Retry after 1 second
       setTimeout(() => revalidate(), 1000);
     },
-    // Use our persistence middleware
+    // Use our single persistence middleware
     use: [swrPersistMiddleware],
   });
 

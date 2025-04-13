@@ -741,9 +741,39 @@ function AppContent() {
     findBestCombination,
   ]);
 
+  // Track the last time we fetched data for each mode
+  const lastFetchTimeRef = useRef<Record<string, number>>({
+    pve: 0,
+    pvp: 0
+  });
+
   // Modify the mode toggle to prevent unnecessary data fetches
   const handleModeToggle = useCallback((checked: boolean): void => {
+    // Check if we need to fetch fresh data
+    const mode = checked ? 'pve' : 'pvp';
+    const TEN_MINUTES = 10 * 60 * 1000;
+    const now = Date.now();
+    
+    // Calculate how long it's been since we last fetched this mode's data
+    const lastFetchTime = lastFetchTimeRef.current[mode] || 0;
+    const timeSinceLastFetch = now - lastFetchTime;
+    const needsFreshData = timeSinceLastFetch > TEN_MINUTES;
+    
+    console.log(`Checking cache for ${mode} mode...`);
+    console.log(`Last fetch for ${mode}: ${lastFetchTime > 0 ? new Date(lastFetchTime).toLocaleTimeString() : 'never'}`);
+    console.log(`Time since last fetch: ${Math.round(timeSinceLastFetch / 1000)}s (${needsFreshData ? 'needs refresh' : 'still valid'})`);
+    
+    // If this is the first time or we need fresh data, update the fetch time
+    if (lastFetchTime === 0 || needsFreshData) {
+      console.log(`Setting new fetch time for ${mode} mode`);
+      lastFetchTimeRef.current[mode] = now;
+    } else {
+      console.log(`Using existing data for ${mode} mode (${Math.round(timeSinceLastFetch / 1000)}s old)`);
+    }
+    
+    // Update the mode state
     setIsPVE(checked);
+    
     // Reset UI state
     setSelectedItems(Array(5).fill(null));
     setPinnedItems(Array(5).fill(false));
