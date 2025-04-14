@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { XIcon } from "lucide-react";
+import { XIcon, DiamondPlus } from "lucide-react";
 
 interface Item {
   id: string;
@@ -31,7 +31,16 @@ interface Item {
 }
 
 const items: Item[] = [
-  { id: "none", name: "NONE", bonus: 0, icon: "X" },
+  {
+    id: "none",
+    name: "NONE",
+    bonus: 0,
+    icon: (
+      <span className="flex items-center justify-center w-8 h-8">
+        <DiamondPlus className="w-5 h-5" />
+      </span>
+    ),
+  },
   {
     id: "sacred-amulet",
     name: "Sacred Amulet",
@@ -112,7 +121,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
           </TooltipProvider>
           <span className="text-sm">Bonus Settings</span>
           {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
-          
+
           {/* Show indicator next to text when collapsed */}
           {!isExpanded && (
             <div className="flex items-center gap-1 ml-2">
@@ -139,12 +148,12 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
           ${isExpanded ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}
           `}
       >
-          <Badge
-            variant="destructive"
-            className="mb-2 rounded-full border-gray-700 "
-          >
-            Work In Progress
-          </Badge>
+        <Badge
+          variant="destructive"
+          className="mb-2 rounded-full border-gray-700 "
+        >
+          Work In Progress
+        </Badge>
         <div className="flex items-center gap-2 mb-2">
           <span className="font-mono text-gray-300">
             Total bonus to the Gift{" "}
@@ -169,24 +178,32 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
                     !selectedItem ? "text-gray-600" : "text-gray-200"
                   }`}
                 >
-                  {selectedItem ? selectedItem.icon : "X"}
+                  {selectedItem ? (
+                    selectedItem.icon
+                  ) : (
+                    <span className="flex items-center justify-center w-8 h-8">
+                      <DiamondPlus className="w-5 h-5" />
+                    </span>
+                  )}
                 </Button>
               </div>
             </DialogTrigger>
-            <DialogContent className="bg-gray-900/95 border-gray-700 text-gray-200">
+            <DialogContent className="bg-gray-900/95 border-gray-700 text-gray-200 max-w-xs">
               <div className="grid gap-2">
                 {items.map((item) => (
                   <Button
                     key={item.id}
                     variant="outline"
-                    className="justify-start border-gray-700 bg-gray-800 hover:bg-gray-900/20 hover:text-gray-200"
+                    className="flex items-center justify-start w-full border-gray-700 bg-gray-800 hover:bg-gray-900/20 hover:text-gray-200"
                     onClick={() => {
                       setSelectedItem(item.id === "none" ? null : item);
                       setOpen(false);
                     }}
                   >
-                    <span className="mr-2">{item.icon}</span>
-                    {item.name}
+                    <div className="flex items-center justify-center w-8 h-8 mr-3">
+                      {item.icon}
+                    </div>
+                    <span className="font-medium">{item.name}</span>
                   </Button>
                 ))}
               </div>
@@ -211,7 +228,6 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
           )}
         </div>
       </div>
-
     </div>
   );
 }
