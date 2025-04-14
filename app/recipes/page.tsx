@@ -17,6 +17,11 @@ import { ArrowLeft } from "lucide-react";
 // Escape from Tarkov crafting recipes
 const tarkovRecipes = [
   {
+    requiredItems: ["1x Nailhead figurine", "1x Xenoalien figurine", "1x Pointy guy figurine", "1x Petya Crooker figurine", "1x Count Bloodsucker figurine"],
+    craftingTime: "66 min",
+    producedItems: ["Tagilla's welding mask \"ZABEY\" (Replica)"],
+  },
+  {
     requiredItems: ["1x Nailhead figurine"],
     craftingTime: "66 min",
     producedItems: ["Pack of nails"],
@@ -141,7 +146,7 @@ const tarkovRecipes = [
 ];
 
 // Track new recipes (top 5)
-const newRecipes = new Set([0, 1, 2, 3, 4]); // Indices of new recipes
+const newRecipes = new Set([0, 1, 2, 3, 4, 5]); // Indices of new recipes
 
 export default function Page() {
   const [searchQuery, setSearchQuery] = useState<string>("");

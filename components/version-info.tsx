@@ -32,6 +32,32 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  New: Bonus settings let users socket a bonus item (e.g. Amulet
+                  +15%) to apply its % bonus to each sacrificed item.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
+                  New: Share Code lets users easily share item combinations with
+                  each other.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
+                  Fix: PVE fetching and caching system
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
+                  PVP/PVE mode persistence between sessions
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   Switched to tarkov.dev API for faster price updates
                 </span>
               </li>
@@ -47,12 +73,6 @@ export function VersionInfo({ version }: VersionInfoProps) {
                   New Excluded Categories & Items settings | Allows more control
                 </span>
               </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  Improved server and local caching system
-                </span>
-              </li>
             </ul>
           </div>
 
@@ -63,12 +83,6 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <span>Upcoming Features</span>
             </h4>
             <ul className="text-sm text-gray-200">
-              <li className="flex gap-2">
-                <span className="text-blue-500">•</span>
-                <span className="text-left">
-                  Remember selected PVP/PVE mode between sessions
-                </span>
-              </li>
               <li className="flex gap-2">
                 <span className="text-blue-500">•</span>
                 <span className="text-left">
@@ -100,8 +114,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-red-500">•</span>
                 <span className="text-left">
-                  Some style issues with the new theme [please report via
-                  Discord or Feedback form]
+                  If you have any issues, please try restting the app in the settings
                 </span>
               </li>
               <li className="flex gap-2">

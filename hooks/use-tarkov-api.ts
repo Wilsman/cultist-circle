@@ -141,20 +141,7 @@ async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
     
     lastFetchTime = now;
     
-    // Log information about the fetched data
-    if (transformPvpItems.length > 0) {
-      const sortedByUpdatePvp = [...transformPvpItems].sort((a, b) => {
-        return new Date(b.updated).getTime() - new Date(a.updated).getTime();
-      });
-      console.debug(`📅 [PVP] Most recent item update: ${sortedByUpdatePvp[0].updated} (${sortedByUpdatePvp[0].name})`);
-    }
-    
-    if (transformPveItems.length > 0) {
-      const sortedByUpdatePve = [...transformPveItems].sort((a, b) => {
-        return new Date(b.updated).getTime() - new Date(a.updated).getTime();
-      });
-      console.debug(`📅 [PVE] Most recent item update: ${sortedByUpdatePve[0].updated} (${sortedByUpdatePve[0].name})`);
-    }
+    // Data has been fetched and processed successfully
     
     return combinedDataCache;
   } catch (error) {

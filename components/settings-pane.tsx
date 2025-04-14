@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ExcludedItemsManager } from "@/components/excluded-items-manager";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DEFAULT_EXCLUDED_CATEGORIES } from "@/config/item-categories";
+import { DEFAULT_EXCLUDED_CATEGORIES, getCategoryDisplayName } from "@/config/item-categories";
 
 interface SettingsPaneProps {
   isOpen: boolean;
@@ -249,7 +249,7 @@ export default function SettingsPane({
                               }
                               className="border-gray-500"
                             />
-                            <Label className="text-sm">{category}</Label>
+                            <Label className="text-sm">{getCategoryDisplayName(category)}</Label>
                           </div>
                         ))}
                     </div>

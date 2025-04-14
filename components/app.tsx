@@ -44,7 +44,7 @@ import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
 import { RefreshCw } from "lucide-react";
 
-export const CURRENT_VERSION = "1.1.0.1"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "1.1.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
@@ -744,36 +744,50 @@ function AppContent() {
   // Track the last time we fetched data for each mode
   const lastFetchTimeRef = useRef<Record<string, number>>({
     pve: 0,
-    pvp: 0
+    pvp: 0,
   });
 
   // Modify the mode toggle to prevent unnecessary data fetches
   const handleModeToggle = useCallback((checked: boolean): void => {
     // Check if we need to fetch fresh data
-    const mode = checked ? 'pve' : 'pvp';
+    const mode = checked ? "pve" : "pvp";
     const TEN_MINUTES = 10 * 60 * 1000;
     const now = Date.now();
-    
+
     // Calculate how long it's been since we last fetched this mode's data
     const lastFetchTime = lastFetchTimeRef.current[mode] || 0;
     const timeSinceLastFetch = now - lastFetchTime;
     const needsFreshData = timeSinceLastFetch > TEN_MINUTES;
-    
+
     console.log(`Checking cache for ${mode} mode...`);
-    console.log(`Last fetch for ${mode}: ${lastFetchTime > 0 ? new Date(lastFetchTime).toLocaleTimeString() : 'never'}`);
-    console.log(`Time since last fetch: ${Math.round(timeSinceLastFetch / 1000)}s (${needsFreshData ? 'needs refresh' : 'still valid'})`);
-    
+    console.log(
+      `Last fetch for ${mode}: ${
+        lastFetchTime > 0
+          ? new Date(lastFetchTime).toLocaleTimeString()
+          : "never"
+      }`
+    );
+    console.log(
+      `Time since last fetch: ${Math.round(timeSinceLastFetch / 1000)}s (${
+        needsFreshData ? "needs refresh" : "still valid"
+      })`
+    );
+
     // If this is the first time or we need fresh data, update the fetch time
     if (lastFetchTime === 0 || needsFreshData) {
       console.log(`Setting new fetch time for ${mode} mode`);
       lastFetchTimeRef.current[mode] = now;
     } else {
-      console.log(`Using existing data for ${mode} mode (${Math.round(timeSinceLastFetch / 1000)}s old)`);
+      console.log(
+        `Using existing data for ${mode} mode (${Math.round(
+          timeSinceLastFetch / 1000
+        )}s old)`
+      );
     }
-    
+
     // Update the mode state
     setIsPVE(checked);
-    
+
     // Reset UI state
     setSelectedItems(Array(5).fill(null));
     setPinnedItems(Array(5).fill(false));
@@ -839,9 +853,14 @@ function AppContent() {
           storedVersion || "none"
         } to ${CURRENT_VERSION}`
       );
+      // clear localStorage all apart from cookieConsent
+      Object.keys(localStorage).forEach(key => {
+        if (key !== 'cookieConsent') {
+          localStorage.removeItem(key);
+        }
+      });
       // Just update the version without triggering a reset
       localStorage.setItem("appVersion", CURRENT_VERSION);
-
       // Optional: Show a toast to inform users of the update
       toast({
         title: "App Updated",
@@ -922,21 +941,67 @@ function AppContent() {
     setHasAutoSelected(false); // Reset Auto Select on exclusion change
   }, []);
 
-  // Handle refresh button click with cooldown check
+  // Track the refresh cooldown state
+  useEffect(() => {
+    // Check refresh cooldown status every second
+    const timer = setInterval(() => {
+      const { isAllowed, timeRemaining } = canRevalidate();
+      setRefreshCooldown({ isAllowed, timeRemaining });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Handle refresh button click with smart cache validation
   const handleRefreshClick = () => {
+    // Check if refresh is allowed based on cooldown
     const { isAllowed, timeRemaining } = canRevalidate();
 
-    if (isAllowed) {
-      refreshData(mutate);
-    } else {
+    if (!isAllowed) {
+      console.log(
+        `Refresh on cooldown. ${formatCooldownTime(timeRemaining)} remaining.`
+      );
       toast({
-        title: "Refresh on cooldown",
+        title: "Refresh Cooldown",
         description: `Please wait ${formatCooldownTime(
           timeRemaining
         )} before refreshing again.`,
-        variant: "default",
+        variant: "warning",
       });
+      return;
     }
+
+    const now = Date.now();
+    const currentMode = isPVE ? "pve" : "pvp";
+
+    console.log(`Refreshing ${currentMode} data...`);
+
+    // Update the last fetch time for both modes
+    lastFetchTimeRef.current.pve = now;
+    lastFetchTimeRef.current.pvp = now;
+
+    // Set the refresh cooldown immediately
+    setRefreshCooldown({ isAllowed: false, timeRemaining: 15 * 60 * 1000 });
+
+    // Refresh the data
+    refreshData(mutate)
+      .then(() => {
+        setSelectedItems(Array(5).fill(null));
+        setPinnedItems(Array(5).fill(false));
+        toast({
+          title: "Data Refreshed",
+          description: "Successfully refreshed the latest market data.",
+          variant: "default",
+        });
+      })
+      .catch((error) => {
+        console.error("Error refreshing data:", error);
+        toast({
+          title: "Refresh Failed",
+          description: "Failed to refresh data. Please try again later.",
+          variant: "destructive",
+        });
+      });
   };
 
   // Update the refresh button UI
