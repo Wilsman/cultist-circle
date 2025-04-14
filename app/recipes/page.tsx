@@ -20,31 +20,37 @@ const tarkovRecipes = [
     requiredItems: ["1x Nailhead figurine", "1x Xenoalien figurine", "1x Pointy guy figurine", "1x Petya Crooker figurine", "1x Count Bloodsucker figurine"],
     craftingTime: "66 min",
     producedItems: ["Tagilla's welding mask \"ZABEY\" (Replica)"],
+    isNew: true,
   },
   {
     requiredItems: ["1x Nailhead figurine"],
     craftingTime: "66 min",
     producedItems: ["Pack of nails"],
+    isNew: true,
   },
   {
     requiredItems: ["1x Xenoalien figurine"],
     craftingTime: "66 min",
     producedItems: ["Xenomorph sealing foam"],
+    isNew: true,
   },
   {
     requiredItems: ["1x Pointy guy figurine"],
     craftingTime: "66 min",
     producedItems: ["Rusty bloody key"],
+    isNew: true,
   },
   {
     requiredItems: ["1x Petya Crooker figurine"],
     craftingTime: "66 min",
     producedItems: ["Video cassette with the Cyborg Killer movie"],
+    isNew: true,
   },
   {
     requiredItems: ["1x Count Bloodsucker figurine"],
     craftingTime: "66 min",
     producedItems: ["Medical bloodset"],
+    isNew: true,
   },
   {
     requiredItems: ["Secure container Gamma (The Unheard Edition)"],
@@ -145,9 +151,6 @@ const tarkovRecipes = [
   },
 ];
 
-// Track new recipes (top 5)
-const newRecipes = new Set([0, 1, 2, 3, 4, 5]); // Indices of new recipes
-
 export default function Page() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const router = useRouter();
@@ -218,7 +221,7 @@ export default function Page() {
                 key={index}
                 className="relative bg-gray-700/60 rounded-lg p-4 hover:bg-gray-700/80 transition-colors"
               >
-                {newRecipes.has(index) && <NewBadge />}
+                {item.isNew && <NewBadge />}
                 <div className="grid grid-cols-[2fr,auto,3fr] gap-6 items-start min-h-[3rem]">
                   {/* Input Section */}
                   <div>
