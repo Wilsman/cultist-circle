@@ -336,10 +336,11 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             {isFocused && (
               <div
                 className="
-                  absolute z-50 w-full mt-1 bg-yellow-700 rounded-md shadow-lg
+                  absolute w-full mt-1 bg-yellow-700 rounded-md shadow-lg
                   max-h-[50vh] overflow-y-auto overflow-x-hidden
                   touch-pan-y
                 "
+                style={{ zIndex: 9999 }} // Use a very high z-index to ensure it's always on top
               >
                 <AutoSizer disableHeight>
                   {({ width }) => (
