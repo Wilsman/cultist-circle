@@ -324,24 +324,23 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         {!selectedItem && (
           <div className="relative border border-gray-700 rounded-md p-1">
             <input
-              onClick={() => setIsFocused(true)}
-              onFocus={() => setIsFocused(true)}
+              onMouseUp={() => setIsFocused(true)}
               onBlur={() => setTimeout(() => setIsFocused(false), 100)}
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search items..."
               className="w-full p-1 text-sm bg-gray-700 text-white rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+              />
             {isFocused && (
               <div
-                className="
-                  absolute w-full mt-1 bg-yellow-700 rounded-md shadow-lg
+              className="
+                  w-full mt-3 pt-2 bg-yellow-700 rounded-md shadow-lg
                   max-h-[50vh] overflow-y-auto overflow-x-hidden
                   touch-pan-y
-                "
-                style={{ zIndex: 9999 }} // Use a very high z-index to ensure it's always on top
-              >
+                  "
+                  style={{ marginTop: '10px' }}
+                  >
                 <AutoSizer disableHeight>
                   {({ width }) => (
                     <List
@@ -349,7 +348,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                       itemCount={filteredItems.length}
                       itemSize={56}
                       width={width}
-                    >
+                      >
                       {Row}
                     </List>
                   )}
@@ -368,7 +367,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             className={`border p-1 mb-0.5 rounded-md bg-gray-900 ${
               isPinned ? "border-yellow-400" : "border-gray-600"
             }`}
-          >
+            >
             <div className="flex items-stretch">
               <div className="rounded-l-md overflow-hidden flex items-center justify-center min-w-3 max-w-10 sm:min-w-24 sm:max-w-28">
                 {selectedItem.iconLink && (
@@ -376,7 +375,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     src={selectedItem.iconLink}
                     alt={selectedItem.name}
                     className="object-contain max-h-20 sm:max-h-24 md:max-h-28"
-                  />
+                    />
                 )}
               </div>
 
