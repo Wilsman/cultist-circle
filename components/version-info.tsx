@@ -32,6 +32,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  Added new sort option: Base Value: High to Low
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   New: Bonus settings let users socket a bonus item (e.g. Amulet
                   +15%) to apply its % bonus to each sacrificed item.
                 </span>
@@ -122,6 +128,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
                 <span className="text-left">
                   Having 4/5 items pinned, may result in auto-selecting to fail
                   [WIP]
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-red-500">•</span>
+                <span className="text-left">
+                  Excluded items get reset after refresh or gamemode switch
                 </span>
               </li>
             </ul>

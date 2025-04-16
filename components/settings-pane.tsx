@@ -1,6 +1,6 @@
 // components/settings-pane.tsx
 
-import { Filter, List, RotateCcw, Search } from "lucide-react";
+import { List, RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,15 +18,26 @@ import {
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ExcludedItemsManager } from "@/components/excluded-items-manager";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DEFAULT_EXCLUDED_CATEGORIES, getCategoryDisplayName } from "@/config/item-categories";
+import {
+  DEFAULT_EXCLUDED_CATEGORIES,
+  getCategoryDisplayName,
+} from "@/config/item-categories";
+import { Alert } from "./ui/alert";
+import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 
 interface SettingsPaneProps {
   isOpen: boolean;
@@ -46,13 +57,6 @@ interface SettingsPaneProps {
   onExcludedItemsChange: React.Dispatch<React.SetStateAction<Set<string>>>;
   onClearLocalStorage: () => void;
 }
-
-const disabledCategories = new Set([
-  // "Weapon",
-  // "Key",
-  // "Armor",
-  // Add any other categories that should be disabled
-]);
 
 export default function SettingsPane({
   isOpen,
@@ -75,6 +79,7 @@ export default function SettingsPane({
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
   const { toast } = useToast();
 
   // Update parent component when sortOption changes
@@ -84,10 +89,6 @@ export default function SettingsPane({
 
   // Handle category selection
   const handleCategoryChange = (category: string) => {
-    if (disabledCategories.has(category as never)) {
-      return; // Cannot change disabled categories
-    }
-
     const updatedCategories = excludedCategories.includes(category)
       ? excludedCategories.filter((cat) => cat !== category)
       : [...excludedCategories, category];
@@ -122,7 +123,7 @@ export default function SettingsPane({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
-      <DialogContent className="bg-gray-800/95 backdrop-blur-md border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-gray-800/95 backdrop-blur-md border-gray-700 text-white max-w-2xl max-h-[90vh] sm:max-h-[85vh] h-full overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <SettingsIcon className="h-5 w-5" />
@@ -133,278 +134,344 @@ export default function SettingsPane({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Filter Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Filter className="h-5 w-5 text-blue-400" />
-              Filter
-            </h3>
-            <div className="grid gap-4">
-              <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
-                <div>
-                  <Label className="text-sm font-medium">Sort Options</Label>
-                  <p className="text-sm text-gray-400">
-                    Sort items by different criteria
-                  </p>
+        {/* Tabs Switcher */}
+        <Tabs
+          defaultValue="general"
+          className="w-full flex-1 flex flex-col overflow-hidden"
+        >
+          <TabsList className="sticky top-0 z-10 flex-shrink-0 overflow-x-auto">
+            <TabsTrigger value="general">Sorting</TabsTrigger>
+            <TabsTrigger value="categories">Excluded Categories</TabsTrigger>
+            <TabsTrigger value="items">Excluded Items</TabsTrigger>
+            <TabsTrigger value="data">Data/Reset</TabsTrigger>
+          </TabsList>
+
+          <ScrollArea className="flex-1 h-[calc(100%-48px)]" type="always">
+            <TabsContent value="general" className="h-full p-1">
+              {/* Sort Options Section (General Tab) */}
+              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <List className="h-5 w-5 text-blue-400" />
+                  <span className="text-lg font-semibold">Sort Options</span>
                 </div>
-                <div className="flex flex-col">
-                  <RadioGroup value={sortOption} onValueChange={setSortOption}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value="az"
-                        id="az"
-                        className={sortOption === "az" ? "bg-white" : ""}
-                      />
-                      <Label htmlFor="az">Item name: A-Z</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value="most-recent"
-                        id="most-recent"
-                        className={
-                          sortOption === "most-recent" ? "bg-pink-500" : ""
-                        }
-                      />
-                      <Label htmlFor="most-recent">
+                <div className="w-56">
+                  <Select value={sortOption} onValueChange={setSortOption}>
+                    <SelectTrigger className="w-full bg-[#232b32] border border-[#e4c15a]/30 text-gray-100 focus:ring-yellow-300 focus:border-yellow-300">
+                      <SelectValue placeholder="Sort by..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#232b32] border border-[#e4c15a]/30 text-gray-100">
+                      <SelectItem value="az">Item name: A-Z</SelectItem>
+                      <SelectItem value="most-recent">
                         Most recently updated first
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value="base-value"
-                        id="base-value"
-                        className={
-                          sortOption === "base-value" ? "bg-blue-500" : ""
-                        }
-                      />
-                      <Label htmlFor="base-value">
+                      </SelectItem>
+                      <SelectItem value="base-value">
                         Base Value: Low to High
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value="ratio"
-                        id="ratio"
-                        className={sortOption === "ratio" ? "bg-green-500" : ""}
-                      />
-                      <Label htmlFor="ratio">Best value for money</Label>
-                    </div>
-                  </RadioGroup>
+                      </SelectItem>
+                      <SelectItem value="base-value-desc">
+                        Base Value: High to Low
+                      </SelectItem>
+                      <SelectItem value="ratio">
+                        Best value for money
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+            </TabsContent>
 
-              <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
-                <div className="w-full">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">
+            <TabsContent value="categories" className="h-full p-1">
+              {/* Excluded Categories Section (Categories Tab) */}
+              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <List className="h-5 w-5 text-blue-400" />
+                    <span className="text-lg font-semibold">
                       Excluded Categories
-                    </Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-gray-400 hover:text-white bg-gray-700"
-                      onClick={() =>
-                        onCategoryChange([...DEFAULT_EXCLUDED_CATEGORIES])
-                      }
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      <span className="sr-only">Reset excluded categories</span>
-                    </Button>
+                    </span>
                   </div>
-                  <p className="text-sm text-gray-400 mb-4">
-                    Select which item categories to exclude from display
-                  </p>
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Search className="h-4 w-4 text-gray-400" />
-                    <Input
-                      type="text"
-                      placeholder="Search categories..."
-                      className="flex-1"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <ScrollArea className="h-[300px] pr-4">
-                    <div className="">
-                      {allCategories
-                        .filter((category) =>
-                          category
-                            .toLowerCase()
-                            .includes(searchTerm.toLowerCase())
-                        )
-                        .sort()
-                        .map((category) => (
-                          <div
-                            key={category}
-                            className="flex items-center space-x-2 py-1"
-                          >
-                            <Checkbox
-                              checked={excludedCategories.includes(category)}
-                              disabled={disabledCategories.has(
-                                category as never
-                              )}
-                              onCheckedChange={() =>
-                                handleCategoryChange(category)
-                              }
-                              className="border-gray-500"
-                            />
-                            <Label className="text-sm">{getCategoryDisplayName(category)}</Label>
-                          </div>
-                        ))}
-                    </div>
-                  </ScrollArea>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Separator className="bg-gray-700" />
-
-          {/* Excluded Items Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <List className="h-5 w-5 text-blue-400" />
-              Excluded Items
-            </h3>
-            <div className="grid gap-4">
-              <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
-                <div>
-                  <Label className="text-sm font-medium">
-                    Hide Incompatible Items
-                  </Label>
-                  <p className="text-sm text-gray-400">
-                    Hide items that are incompatible with your current build
-                  </p>
-                </div>
-                <Switch
-                  checked={excludeIncompatible}
-                  onCheckedChange={(checked) =>
-                    onExcludeIncompatibleChange(checked as boolean)
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
-                <div>
-                  <Label className="text-sm font-medium">
-                    Excluded Items List
-                  </Label>
-                  <p className="text-sm text-gray-400">
-                    Manage the list of excluded items
-                  </p>
-                </div>
-                <ExcludedItemsManager
-                  excludedItems={excludedItems}
-                  onExcludedItemsChange={onExcludedItemsChange}
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator className="bg-gray-700" />
-
-          {/* Data Management Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <HelpCircle className="h-5 w-5 text-blue-400" />
-              Data Management
-            </h3>
-            <div className="grid gap-4">
-              <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
-                <div>
-                  <Label className="text-sm font-medium">Export Data</Label>
-                  <p className="text-sm text-gray-400">
-                    Download your settings and preferences
-                  </p>
-                </div>
-                <Button
-                  onClick={onExportData}
-                  variant="outline"
-                  size="sm"
-                  className="interactive-bounce border-gray-600 hover:bg-gray-600"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
-                <div>
-                  <Label className="text-sm font-medium">Import Data</Label>
-                  <p className="text-sm text-gray-400">
-                    Restore from a backup file
-                  </p>
-                </div>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleImport}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
-                    className="interactive-bounce border-gray-600 hover:bg-gray-600"
+                    className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
+                    onClick={() =>
+                      onCategoryChange([...DEFAULT_EXCLUDED_CATEGORIES])
+                    }
                   >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Reset
                   </Button>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <Separator className="bg-gray-700" />
-
-          {/* Reset Options Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <RotateCcw className="h-5 w-5 text-yellow-400" />
-              Reset Options
-            </h3>
-            <div className="grid gap-4">
-              <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
-                <div>
-                  <Label className="text-sm font-medium">Reset App State</Label>
-                  <p className="text-sm text-gray-400">
-                    Clear all selected items and return to default settings
-                  </p>
+                <div className="flex items-center space-x-2 mb-4">
+                  <Search className="h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search categories..."
+                    className="flex-1"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-                <Button
-                  onClick={() => setShowConfirmReset(true)}
-                  variant="outline"
-                  size="sm"
-                  className="interactive-bounce border-gray-600 hover:bg-gray-600"
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Reset
-                </Button>
+                <ScrollArea className="h-[40vh] max-h-[300px] pr-4">
+                  <div className="">
+                    {allCategories
+                      .filter((category) =>
+                        category
+                          .toLowerCase()
+                          .includes(searchTerm.toLowerCase())
+                      )
+                      .sort()
+                      .map((category) => (
+                        <div
+                          key={category}
+                          className="flex items-center space-x-2 py-1"
+                        >
+                          <Checkbox
+                            checked={excludedCategories.includes(category)}
+                            onCheckedChange={() =>
+                              handleCategoryChange(category)
+                            }
+                            className="border-gray-500"
+                          />
+                          <Label className="text-sm">
+                            {getCategoryDisplayName(category)}
+                          </Label>
+                        </div>
+                      ))}
+                  </div>
+                </ScrollArea>
               </div>
+            </TabsContent>
 
-              <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover-lift">
-                <div>
-                  <Label className="text-sm font-medium text-red-400">
-                    Clear All Data
-                  </Label>
-                  <p className="text-sm text-gray-400">
-                    Remove all stored data and start fresh
-                  </p>
+            <TabsContent value="items" className="h-full p-1">
+              {/* Excluded Items Section (Items Tab) */}
+              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <List className="h-5 w-5 text-blue-400" />
+                    <span className="text-lg font-semibold">
+                      Excluded Items
+                    </span>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
+                    onClick={() => {
+                      // Reset to default excluded items
+                      onExcludedItemsChange(new Set(DEFAULT_EXCLUDED_ITEMS));
+                      toast({
+                        title: "Reset complete",
+                        description:
+                          "Excluded items have been reset to defaults",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Reset
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => setShowConfirmClear(true)}
-                  variant="destructive"
-                  size="sm"
-                  className="interactive-bounce"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear
-                </Button>
+                <div className="border-b border-[#e4c15a]/10 mb-2"></div>
+                <div className="grid gap-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Exclude Incompatible Items
+                      </Label>
+                      <p className="text-sm text-gray-400">
+                        Exclude items that are incompatible with the cultist
+                        circle
+                      </p>
+                    </div>
+                    <Switch
+                      checked={excludeIncompatible}
+                      onCheckedChange={(checked) =>
+                        onExcludeIncompatibleChange(checked as boolean)
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col p-3 bg-gray-700/50 rounded-lg">
+                    <Label className="text-sm font-medium">
+                      Excluded Items List
+                    </Label>
+                    {/* note: add new items with the exclude from auto button */}
+                    <Alert variant="default" className="text-sm mb-2 mt-2">
+                      To add an item to the list, use the{" "}
+                      <span className="font-bold">
+                        &quot;Exclude from Auto&quot;
+                      </span>{" "}
+                      when selecting items.
+                    </Alert>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Manage the list of excluded items
+                    </p>
+
+                    {/* Search existing items */}
+                    <div className="flex items-center space-x-2 mb-4">
+                      <Search className="h-4 w-4 text-gray-400" />
+                      <Input
+                        type="search"
+                        placeholder="Search excluded items..."
+                        className="flex-1"
+                        value={excludedItemsSearch}
+                        onChange={(e) => setExcludedItemsSearch(e.target.value)}
+                      />
+                    </div>
+
+                    <ScrollArea className="overflow-y-auto pr-4">
+                      <div className="">
+                        {Array.from(excludedItems)
+                          .filter((itemId) =>
+                            itemId
+                              .toLowerCase()
+                              .includes(excludedItemsSearch.toLowerCase())
+                          )
+                          .sort()
+                          .map((itemId) => (
+                            <div
+                              key={itemId}
+                              className="flex items-center space-x-2 py-1 justify-between"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <Label className="text-sm">{itemId}</Label>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-xs px-2 py-1 rounded text-white hover:bg-transparent"
+                                onClick={() => {
+                                  const newExcludedItems = new Set(
+                                    excludedItems
+                                  );
+                                  newExcludedItems.delete(itemId);
+                                  onExcludedItemsChange(newExcludedItems);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-400 hover:text-red-600" />
+                              </Button>
+                            </div>
+                          ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
+            </TabsContent>
+            <TabsContent value="data" className="h-full p-1">
+              {/* Data Management Section */}
+              <div className="space-y-6">
+                <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <HelpCircle className="h-5 w-5 text-blue-400" />
+                    <span className="text-lg font-semibold">
+                      Data Management
+                    </span>
+                  </div>
+                  <div className="border-b border-[#e4c15a]/10 mb-2"></div>
+                  <div className="grid gap-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Export Data
+                        </Label>
+                        <p className="text-sm text-gray-400">
+                          Download your settings and preferences
+                        </p>
+                      </div>
+                      <Button
+                        onClick={onExportData}
+                        variant="outline"
+                        size="sm"
+                        className="interactive-bounce border-gray-600 hover:bg-gray-600"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Export
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Import Data
+                        </Label>
+                        <p className="text-sm text-gray-400">
+                          Restore from a backup file
+                        </p>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleImport}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="interactive-bounce border-gray-600 hover:bg-gray-600"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Import
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reset Options Section */}
+                <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <RotateCcw className="h-5 w-5 text-yellow-400" />
+                    <span className="text-lg font-semibold">Reset Options</span>
+                  </div>
+                  <div className="border-b border-[#e4c15a]/10 mb-2"></div>
+                  <div className="grid gap-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Reset App State
+                        </Label>
+                        <p className="text-sm text-gray-400">
+                          Clear all selected items and return to default
+                          settings
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => setShowConfirmReset(true)}
+                        variant="outline"
+                        size="sm"
+                        className="interactive-bounce border-gray-600 hover:bg-gray-600"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Reset
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium text-red-400">
+                          Clear All Data
+                        </Label>
+                        <p className="text-sm text-gray-400">
+                          Remove all stored data and start fresh
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => setShowConfirmClear(true)}
+                        variant="destructive"
+                        size="sm"
+                        className="interactive-bounce"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
 
         {/* Confirmation Dialogs */}
         <Dialog open={showConfirmReset} onOpenChange={setShowConfirmReset}>
