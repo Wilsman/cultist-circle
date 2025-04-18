@@ -12,6 +12,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import ItemSocket from "@/components/item-socket";
 import { Settings } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -99,15 +100,13 @@ function AppContent() {
   const toastShownRef = useRef<boolean>(false);
 
   // Use the items data hook
-  const { data: rawItemsData, error, mutate } = useItemsData(isPVE);
+  const { data: rawItemsData, isLoading: loading, hasError, mutate } =
+    useItemsData(isPVE);
 
   // Save isPVE state to localStorage when it changes
   useEffect(() => {
     localStorage.setItem("isPVE", isPVE.toString());
   }, [isPVE]);
-
-  const loading = !rawItemsData && !error;
-  const hasError = !!error;
 
   // Handle error state
   useEffect(() => {
@@ -353,7 +352,7 @@ function AppContent() {
 
   // Memoized computation of items based on categories, sort option, and excluded items
   const items: SimplifiedItem[] = useMemo(() => {
-    if (loading || hasError || !rawItemsData) {
+    if (loading || !rawItemsData) {
       return [];
     }
 
@@ -414,7 +413,6 @@ function AppContent() {
     excludeIncompatible,
     excludedItems,
     loading,
-    hasError,
   ]);
 
   // Function to find the best combination of items
@@ -880,7 +878,7 @@ function AppContent() {
       setSortOption("az");
       setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
       setExcludeIncompatible(true);
-      setExcludedItems(new Set(Array.from(DEFAULT_EXCLUDED_ITEMS)));
+      setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
       setOverriddenPrices({});
 
       // Force a page reload to ensure all state is properly reset
@@ -1146,7 +1144,7 @@ function AppContent() {
               {/* Item Selection Components with improved loading states */}
               <div className="w-full">
                 <div id="search-items" className="space-y-0">
-                  {loading || !rawItemsData ? (
+                  {loading ? (
                     <div className="space-y-0">
                       {Array(5)
                         .fill(0)
@@ -1163,6 +1161,12 @@ function AppContent() {
                   ) : hasError ? (
                     <div className="text-red-500 text-center p-4">
                       Failed to load items. Please refresh the page.
+                    </div>
+                  ) : rawItemsData.length === 0 ? (
+                    <div className="text-gray-400 text-center p-4 flex flex-col items-center space-y-2">
+                      <Loader2 className="animate-spin h-8 w-8 text-gray-500" />
+                      <span>Fetching items, please wait...</span>
+                      <Button onClick={handleRefreshClick}>Try Again</Button>
                     </div>
                   ) : (
                     selectedItems.map((item, index) => (
@@ -1428,7 +1432,6 @@ function AppContent() {
               setThreshold(400000);
               setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
               setOverriddenPrices({});
-              setHasAutoSelected(false);
 
               toast({
                 title: "Data Cleared",
@@ -1489,6 +1492,8 @@ function AppContent() {
     </>
   );
 }
+
+export default AppContent;
 
 export function App() {
   return <AppContent />;

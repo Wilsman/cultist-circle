@@ -77,4 +77,15 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
 
   // Headgear
   "Wilcox Skull Lock head mount PVS-14",
+
+  // Additional excluded items
+  "Key 01",
+  "Key 02",
+  "Key 03",
+  "Key 04",
+  "Labrys research notes",
+  "Final Moment poster",
+  "Taurus poster",
+  "Tark Souls poster",
+  "Last Breath poster",
 ]);

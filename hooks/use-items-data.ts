@@ -113,8 +113,8 @@ export function useItemsData(isPVE: boolean) {
 
   return {
     data: data || [],
-    error,
-    mutate,
     isLoading: !error && !data,
+    hasError: !!error,
+    mutate,
   };
 }
