@@ -35,7 +35,6 @@ import {
 } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
-import Cookies from "js-cookie";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { resetUserData } from "@/utils/resetUserData";
@@ -82,7 +81,14 @@ function AppContent() {
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
     new Set()
   );
-  const [threshold, setThreshold] = useState<number>(400000);
+  const [threshold, setThreshold] = useState<number>(() => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("userThreshold");
+    const parsed = Number(saved);
+    if (saved && Number.isFinite(parsed)) return parsed;
+  }
+  return 400000;
+});
   const [excludeIncompatible, setExcludeIncompatible] = useState<boolean>(true);
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
   const [overriddenPrices, setOverriddenPrices] = useState<
@@ -164,9 +170,10 @@ function AppContent() {
     }
 
     // Load threshold
-    const savedThreshold = Cookies.get("userThreshold");
-    if (savedThreshold) {
-      setThreshold(Number(savedThreshold));
+    const savedThreshold = localStorage.getItem("userThreshold");
+    const parsed = Number(savedThreshold);
+    if (savedThreshold && Number.isFinite(parsed)) {
+      setThreshold(parsed);
     }
 
     // Load exclude incompatible setting
@@ -234,9 +241,9 @@ function AppContent() {
     }
   }, [excludedCategories]);
 
-  // Save threshold to cookies
+  // Save threshold to localStorage
   useEffect(() => {
-    Cookies.set("userThreshold", threshold.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", threshold.toString());
   }, [threshold]);
 
   // Save excludeIncompatible to localStorage
@@ -346,7 +353,7 @@ function AppContent() {
   // Handler for threshold changes
   const handleThresholdChange = (newValue: number) => {
     setThreshold(newValue);
-    Cookies.set("userThreshold", newValue.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", newValue.toString());
     toastShownRef.current = false; // Reset toast shown flag when threshold changes
   };
 
@@ -1402,23 +1409,6 @@ function AppContent() {
           <SettingsPane
             isOpen={isSettingsPaneVisible}
             onClose={() => setIsSettingsPaneVisible(false)}
-            onSettingsReset={() => {
-              setSelectedItems(Array(5).fill(null));
-              setPinnedItems(Array(5).fill(false));
-              setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
-              setSortOption("az");
-              setThreshold(400000);
-              setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
-              setOverriddenPrices({});
-              setHasAutoSelected(false);
-              setIsPVE(false);
-              localStorage.setItem("isPVE", "false");
-              toast({
-                title: "Reset Complete",
-                description:
-                  "All settings have been reset to their default values.",
-              });
-            }}
             onHardReset={handleReset}
             onClearLocalStorage={() => {
               // Clear localStorage

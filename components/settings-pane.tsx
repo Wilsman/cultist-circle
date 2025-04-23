@@ -42,7 +42,6 @@ import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 interface SettingsPaneProps {
   isOpen: boolean;
   onClose: () => void;
-  onSettingsReset: () => void;
   onHardReset: () => void;
   onExportData: () => void;
   onImportData: (data: string) => void;
@@ -61,7 +60,6 @@ interface SettingsPaneProps {
 export default function SettingsPane({
   isOpen,
   onClose,
-  onSettingsReset,
   onExportData,
   onImportData,
   onSortChange,
@@ -76,7 +74,6 @@ export default function SettingsPane({
   onHardReset,
 }: SettingsPaneProps) {
   const [sortOption, setSortOption] = useState(currentSortOption);
-  const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
@@ -428,27 +425,6 @@ export default function SettingsPane({
                   <div className="grid gap-4">
                     <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
                       <div>
-                        <Label className="text-sm font-medium">
-                          Reset App State
-                        </Label>
-                        <p className="text-sm text-gray-400">
-                          Clear all selected items and return to default
-                          settings
-                        </p>
-                      </div>
-                      <Button
-                        onClick={() => setShowConfirmReset(true)}
-                        variant="outline"
-                        size="sm"
-                        className="interactive-bounce border-gray-600 hover:bg-gray-600"
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Reset
-                      </Button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                      <div>
                         <Label className="text-sm font-medium text-red-400">
                           Clear All Data
                         </Label>
@@ -474,37 +450,6 @@ export default function SettingsPane({
         </Tabs>
 
         {/* Confirmation Dialogs */}
-        <Dialog open={showConfirmReset} onOpenChange={setShowConfirmReset}>
-          <DialogContent className="bg-gray-800 border-gray-700 text-white">
-            <DialogHeader>
-              <DialogTitle>Confirm Reset</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                This will reset all selected items and settings to their default
-                values. This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-3 mt-4">
-              <Button
-                variant="ghost"
-                onClick={() => setShowConfirmReset(false)}
-                className="hover:bg-gray-700"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  onSettingsReset();
-                  setShowConfirmReset(false);
-                }}
-                className="interactive-bounce"
-              >
-                Reset
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
         <Dialog open={showConfirmClear} onOpenChange={setShowConfirmClear}>
           <DialogContent className="bg-gray-800 border-gray-700 text-white">
             <DialogHeader>
@@ -526,6 +471,7 @@ export default function SettingsPane({
                 variant="destructive"
                 onClick={() => {
                   onHardReset();
+                  onClose();
                   setShowConfirmClear(false);
                 }}
                 className="interactive-bounce"
