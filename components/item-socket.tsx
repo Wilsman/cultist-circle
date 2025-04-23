@@ -101,7 +101,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
               </TooltipTrigger>
               <TooltipContent
                 side="top"
-                className="max-w-[600px] w-[400px] p-4 text-left space-y-3 bg-gray-700 text-white rounded shadow-md text-sm"
+                className="max-w-[600px] p-4 text-left space-y-3 bg-gray-700 text-white rounded shadow-md text-sm overflow-auto"
               >
                 <div className="pt-1">
                   <p className="font-semibold mb-2">Bonuses:</p>

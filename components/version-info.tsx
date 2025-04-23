@@ -120,7 +120,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-red-500">•</span>
                 <span className="text-left">
-                  If you have any issues, please try restting the app in the settings
+                  If you have any issues, please try resetting the app in the settings
                 </span>
               </li>
               <li className="flex gap-2">
