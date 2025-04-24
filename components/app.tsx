@@ -72,6 +72,16 @@ function AppContent() {
   const [selectedItems, setSelectedItems] = useState<
     Array<SimplifiedItem | null>
   >(Array(5).fill(null));
+  // Always compute fitDebug for the current selection
+  const fitDebug = useMemo(() => {
+    const result = doItemsFitInBox(
+      selectedItems.filter(Boolean) as SimplifiedItem[],
+      9,
+      6,
+      true // debug mode
+    );
+    return typeof result === "object" && result !== null ? result : null;
+  }, [selectedItems]);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
@@ -590,14 +600,6 @@ function AppContent() {
   // check if selected items fit in the cultist circle box (9x6) and collect debug info
   const itemsFitInBox = useMemo(() => {
     return doItemsFitInBox(selectedItems.filter(Boolean) as SimplifiedItem[]);
-  }, [selectedItems]);
-
-  // debug info for fit check
-  const fitDebug = useMemo(() => {
-    if (process.env.NODE_ENV !== "production") {
-      return doItemsFitInBox(selectedItems.filter(Boolean) as SimplifiedItem[], 9, 6, true);
-    }
-    return null;
   }, [selectedItems]);
 
   // Handler to update selected item
@@ -1173,7 +1175,7 @@ function AppContent() {
               <PlacementPreviewModal
                 open={previewModalOpen}
                 onOpenChange={setPreviewModalOpen}
-                fitDebug={fitDebug && typeof fitDebug === "object" ? fitDebug : null}
+                fitDebug={fitDebug}
                 selectedItems={selectedItems}
               />
               {/* show alert if items do not fit in the 9x6 box */}
@@ -1189,7 +1191,7 @@ function AppContent() {
                         </div>
                       ))}
                       <div className="mt-1">The selected items cannot be arranged in the Cultist Circle box (9×6).</div>
-                      <PlacementPreviewInline fitDebug={fitDebug && typeof fitDebug === "object" ? fitDebug : null} selectedItems={selectedItems} />
+                      <PlacementPreviewInline fitDebug={fitDebug} selectedItems={selectedItems} />
                     </AlertDescription>
                   </Alert>
                 </div>
