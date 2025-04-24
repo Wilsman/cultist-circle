@@ -44,6 +44,8 @@ async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
         basePrice
         lastLowPrice
         updated
+        width
+        height
         lastOfferCount
         iconLink
         categories {
@@ -56,6 +58,8 @@ async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
         basePrice
         lastLowPrice
         updated
+        width
+        height
         lastOfferCount
         iconLink
         categories {
@@ -102,6 +106,8 @@ async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
       updated: item.updated,
       lastOfferCount: item.lastOfferCount || undefined,
       iconLink: item.iconLink,
+      width: item.width,
+      height: item.height,
       categories: item.categories.map((cat: { name: string }) => cat.name),
       tags: [],
       isExcluded: false,
@@ -116,6 +122,8 @@ async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
       updated: item.updated,
       lastOfferCount: item.lastOfferCount || undefined,
       iconLink: item.iconLink,
+      width: item.width,
+      height: item.height,
       categories: item.categories.map((cat: { name: string }) => cat.name),
       tags: [],
       isExcluded: false,

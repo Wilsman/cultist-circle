@@ -11,7 +11,7 @@ import React, {
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import ItemSocket from "@/components/item-socket";
-import { Settings } from "lucide-react";
+import { MessageSquareWarning, Settings } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,6 +35,9 @@ import {
 } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
+import { doItemsFitInBox } from "../lib/fit-items-in-box";
+import { PlacementPreviewModal } from "./placement-preview-modal";
+import { PlacementPreviewInline } from "./placement-preview-inline";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { resetUserData } from "@/utils/resetUserData";
@@ -43,8 +46,13 @@ import { FeedbackForm } from "./feedback-form";
 import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
 import { RefreshCw } from "lucide-react";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "./ui/alert";
 
-export const CURRENT_VERSION = "1.1.2"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "1.2.0"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
@@ -52,6 +60,8 @@ const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
 });
 
 function AppContent() {
+  // Placement preview modal state
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   // Define state variables and hooks
   const [isPVE, setIsPVE] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -577,6 +587,19 @@ function AppContent() {
 
   const isThresholdMet: boolean = total >= threshold;
 
+  // check if selected items fit in the cultist circle box (9x6) and collect debug info
+  const itemsFitInBox = useMemo(() => {
+    return doItemsFitInBox(selectedItems.filter(Boolean) as SimplifiedItem[]);
+  }, [selectedItems]);
+
+  // debug info for fit check
+  const fitDebug = useMemo(() => {
+    if (process.env.NODE_ENV !== "production") {
+      return doItemsFitInBox(selectedItems.filter(Boolean) as SimplifiedItem[], 9, 6, true);
+    }
+    return null;
+  }, [selectedItems]);
+
   // Handler to update selected item
   const handleItemSelect = useCallback(
     (
@@ -1098,8 +1121,7 @@ function AppContent() {
                   alt="Cultist calculator logo"
                   width={400}
                   height={128}
-                  priority
-                  className="hover:scale-105 transition-transform duration-300"
+                  priority={true}
                 />
               </h1>
             </div>
@@ -1147,7 +1169,31 @@ function AppContent() {
                   }
                 }}
               />
-
+              {/* Placement Preview Button/Modal */}
+              <PlacementPreviewModal
+                open={previewModalOpen}
+                onOpenChange={setPreviewModalOpen}
+                fitDebug={fitDebug && typeof fitDebug === "object" ? fitDebug : null}
+                selectedItems={selectedItems}
+              />
+              {/* show alert if items do not fit in the 9x6 box */}
+              {!itemsFitInBox && (
+                <div className="mt-2 mb-2 text-center w-full">
+                  <Alert>
+                    <MessageSquareWarning className="h-4 w-4" />
+                    <AlertTitle className="text-white">Items do not fit!</AlertTitle>
+                    <AlertDescription className="text-white">
+                      {selectedItems.filter(Boolean).map((item, idx) => (
+                        <div key={`${item?.id ?? "no-id"}-${idx}`}>
+                          {item?.name} - {item?.width ?? '?'}w × {item?.height ?? '?'}h
+                        </div>
+                      ))}
+                      <div className="mt-1">The selected items cannot be arranged in the Cultist Circle box (9×6).</div>
+                      <PlacementPreviewInline fitDebug={fitDebug && typeof fitDebug === "object" ? fitDebug : null} selectedItems={selectedItems} />
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
               {/* Item Selection Components with improved loading states */}
               <div className="w-full">
                 <div id="search-items" className="space-y-0">
@@ -1221,6 +1267,20 @@ function AppContent() {
               </div>
               <TooltipProvider>
                 <div className="flex space-x-2 mt-2">
+                  {/* Preview Button (leftmost) */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        className="rounded bg-gray-700 hover:bg-gray-600 text-white"
+                        onClick={() => setPreviewModalOpen(true)}
+                      >
+                        Preview
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Show visual grid preview</TooltipContent>
+                  </Tooltip>
+                  {/* Clear Selected Items Button */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -1243,6 +1303,7 @@ function AppContent() {
                     </TooltipTrigger>
                     <TooltipContent>Clears ALL item fields</TooltipContent>
                   </Tooltip>
+                  {/* Reset Overrides Button */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button

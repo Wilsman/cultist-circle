@@ -32,6 +32,13 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  Added visual placement preview and fit check warning when
+                  items don&apos;t fit
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   Added new sort option: Base Value: High to Low
                 </span>
               </li>
@@ -52,31 +59,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
-                  Fix: PVE fetching and caching system
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
                   PVP/PVE mode persistence between sessions
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  Switched to tarkov.dev API for faster price updates
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  NEW recipes: added new Labyrinth Figurine recipes
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  New Excluded Categories & Items settings | Allows more control
                 </span>
               </li>
             </ul>

@@ -7,6 +7,8 @@ export interface TarkovItem {
   updated: string;
   lastOfferCount: number | null;
   iconLink: string;
+  height: number;
+  width: number;
   categories: Array<{
     name: string;
   }>;
