@@ -88,4 +88,6 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Taurus poster",
   "Tark Souls poster",
   "Last Breath poster",
+  "Sealed weapon case",
+  "Key case",
 ]);

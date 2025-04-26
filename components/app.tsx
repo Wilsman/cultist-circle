@@ -1267,14 +1267,14 @@ function AppContent() {
                   )}
                 </div>
               </div>
+              {/* Preview Button */}
               <TooltipProvider>
                 <div className="flex space-x-2 mt-2">
-                  {/* Preview Button (leftmost) */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="secondary"
-                        className="rounded bg-gray-700 hover:bg-gray-600 text-white"
+                        className="rounded bg-green-700 hover:bg-green-600 text-white w-1/4"
                         onClick={() => setPreviewModalOpen(true)}
                       >
                         Preview
@@ -1287,7 +1287,7 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="clear-item-fields"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-full rounded
+                        className={`bg-red-500 hover:bg-red-600 text-white w-2/4 rounded
                           transition-all duration-300 active:scale-95
                           ${
                             isClearButtonDisabled
@@ -1310,7 +1310,7 @@ function AppContent() {
                     <TooltipTrigger asChild>
                       <Button
                         id="reset-overrides"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-1/3 rounded
+                        className={`bg-red-500 hover:bg-red-600 text-white w-1/4 rounded
                           transition-all duration-300 active:scale-95
                           ${
                             isResetOverridesButtonDisabled
