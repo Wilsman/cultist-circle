@@ -32,7 +32,7 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Takedown sling backpack (Black)",
   "Blackjack 50",
   "Pilgrim",
-  "Attack 2",
+  "SSO Attack 2 raid backpack (Khaki)",
   "6SH118 raid backpack",
   "Mystery Ranch SATL",
   "F4 Terminator",
@@ -77,4 +77,17 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
 
   // Headgear
   "Wilcox Skull Lock head mount PVS-14",
+
+  // Additional excluded items
+  "Key 01",
+  "Key 02",
+  "Key 03",
+  "Key 04",
+  "Labrys research notes",
+  "Final Moment poster",
+  "Taurus poster",
+  "Tark Souls poster",
+  "Last Breath poster",
+  "Sealed weapon case",
+  "Key case",
 ]);

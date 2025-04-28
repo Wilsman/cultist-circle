@@ -6,7 +6,7 @@ import { fetchTarkovData } from "./use-tarkov-api";
 import { useToast } from "@/hooks/use-toast";
 
 // Single version for the combined data approach
-const CURRENT_VERSION = "1.1.1"; // New version for combined data approach
+const CURRENT_VERSION = "1.2.0"; // New version for combined data approach
 
 // Create a single persistence middleware for the combined data
 // The middleware handles localStorage quota errors and clears old cache when needed
@@ -113,8 +113,8 @@ export function useItemsData(isPVE: boolean) {
 
   return {
     data: data || [],
-    error,
-    mutate,
     isLoading: !error && !data,
+    hasError: !!error,
+    mutate,
   };
 }

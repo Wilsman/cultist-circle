@@ -32,6 +32,19 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  Added visual placement preview and fit check warning when
+                  items don&apos;t fit
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
+                  Added new sort option: Base Value: High to Low
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   New: Bonus settings let users socket a bonus item (e.g. Amulet
                   +15%) to apply its % bonus to each sacrificed item.
                 </span>
@@ -46,31 +59,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
-                  Fix: PVE fetching and caching system
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
                   PVP/PVE mode persistence between sessions
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  Switched to tarkov.dev API for faster price updates
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  NEW recipes: added new Labyrinth Figurine recipes
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  New Excluded Categories & Items settings | Allows more control
                 </span>
               </li>
             </ul>
@@ -114,7 +103,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-red-500">•</span>
                 <span className="text-left">
-                  If you have any issues, please try restting the app in the settings
+                  If you have any issues, please try resetting the app in the settings
                 </span>
               </li>
               <li className="flex gap-2">
@@ -122,6 +111,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
                 <span className="text-left">
                   Having 4/5 items pinned, may result in auto-selecting to fail
                   [WIP]
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-red-500">•</span>
+                <span className="text-left">
+                  Excluded items get reset after refresh or gamemode switch
                 </span>
               </li>
             </ul>

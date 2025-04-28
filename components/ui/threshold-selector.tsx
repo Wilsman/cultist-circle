@@ -10,7 +10,7 @@ import {
   AlertTitle,
   AlertDescription,
 } from "@/components/ui/alert";
-import Cookies from "js-cookie";
+
 
 interface ThresholdSelectorProps {
   value: number;
@@ -34,9 +34,10 @@ export default function ThresholdSelector({
   }, [value]);
 
   useEffect(() => {
-    const savedThreshold = Cookies.get("userThreshold");
-    if (savedThreshold) {
-      onChange(Number(savedThreshold));
+    const savedThreshold = localStorage.getItem("userThreshold");
+    const parsed = Number(savedThreshold);
+    if (savedThreshold && Number.isFinite(parsed)) {
+      onChange(parsed);
     }
   }, [onChange]);
 
@@ -67,20 +68,20 @@ export default function ThresholdSelector({
   const handleSliderChange = (newValue: number[]) => {
     const newThreshold = newValue[0];
     onChange(newThreshold);
-    Cookies.set("userThreshold", newThreshold.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", newThreshold.toString());
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = Number(e.target.value);
     const newThreshold = isNaN(newValue) ? 0 : newValue;
     onChange(newThreshold);
-    Cookies.set("userThreshold", newThreshold.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", newThreshold.toString());
   };
 
   const handlePresetClick = (preset: number) => {
     onChange(preset);
     setIsCustom(false);
-    Cookies.set("userThreshold", preset.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", preset.toString());
   };
 
   return (

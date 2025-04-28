@@ -11,7 +11,8 @@ import React, {
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import ItemSocket from "@/components/item-socket";
-import { Settings } from "lucide-react";
+import { MessageSquareWarning, Settings } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -34,15 +35,22 @@ import {
 } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
-import Cookies from "js-cookie";
+import { doItemsFitInBox } from "../lib/fit-items-in-box";
+import { PlacementPreviewModal } from "./placement-preview-modal";
+import { PlacementPreviewInline } from "./placement-preview-inline";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
 import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 
-export const CURRENT_VERSION = "1.1.1"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "1.2.0"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
@@ -50,6 +58,8 @@ const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
 });
 
 function AppContent() {
+  // Placement preview modal state
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   // Define state variables and hooks
   const [isPVE, setIsPVE] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -60,6 +70,16 @@ function AppContent() {
   const [selectedItems, setSelectedItems] = useState<
     Array<SimplifiedItem | null>
   >(Array(5).fill(null));
+  // Always compute fitDebug for the current selection
+  const fitDebug = useMemo(() => {
+    const result = doItemsFitInBox(
+      selectedItems.filter(Boolean) as SimplifiedItem[],
+      9,
+      6,
+      true // debug mode
+    );
+    return typeof result === "object" && result !== null ? result : null;
+  }, [selectedItems]);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
@@ -68,8 +88,10 @@ function AppContent() {
   );
   const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
     useState<boolean>(false);
+  // Set the default sort option to "az" if no saved value exists in local storage
   const [sortOption, setSortOption] = useState<string>(() => {
     if (typeof window !== "undefined") {
+      console.log("Loading sort option from localStorage");
       return localStorage.getItem("sortOption") || "az";
     }
     return "az";
@@ -77,7 +99,14 @@ function AppContent() {
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
     new Set()
   );
-  const [threshold, setThreshold] = useState<number>(400000);
+  const [threshold, setThreshold] = useState<number>(() => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("userThreshold");
+    const parsed = Number(saved);
+    if (saved && Number.isFinite(parsed)) return parsed;
+  }
+  return 400000;
+});
   const [excludeIncompatible, setExcludeIncompatible] = useState<boolean>(true);
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
   const [overriddenPrices, setOverriddenPrices] = useState<
@@ -91,15 +120,13 @@ function AppContent() {
   const toastShownRef = useRef<boolean>(false);
 
   // Use the items data hook
-  const { data: rawItemsData, error, mutate } = useItemsData(isPVE);
+  const { data: rawItemsData, isLoading: loading, hasError, mutate } =
+    useItemsData(isPVE);
 
   // Save isPVE state to localStorage when it changes
   useEffect(() => {
     localStorage.setItem("isPVE", isPVE.toString());
   }, [isPVE]);
-
-  const loading = !rawItemsData && !error;
-  const hasError = !!error;
 
   // Handle error state
   useEffect(() => {
@@ -157,9 +184,10 @@ function AppContent() {
     }
 
     // Load threshold
-    const savedThreshold = Cookies.get("userThreshold");
-    if (savedThreshold) {
-      setThreshold(Number(savedThreshold));
+    const savedThreshold = localStorage.getItem("userThreshold");
+    const parsed = Number(savedThreshold);
+    if (savedThreshold && Number.isFinite(parsed)) {
+      setThreshold(parsed);
     }
 
     // Load exclude incompatible setting
@@ -227,9 +255,9 @@ function AppContent() {
     }
   }, [excludedCategories]);
 
-  // Save threshold to cookies
+  // Save threshold to localStorage
   useEffect(() => {
-    Cookies.set("userThreshold", threshold.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", threshold.toString());
   }, [threshold]);
 
   // Save excludeIncompatible to localStorage
@@ -316,13 +344,13 @@ function AppContent() {
   // Handler for threshold changes
   const handleThresholdChange = (newValue: number) => {
     setThreshold(newValue);
-    Cookies.set("userThreshold", newValue.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", newValue.toString());
     toastShownRef.current = false; // Reset toast shown flag when threshold changes
   };
 
   // Memoized computation of items based on categories, sort option, and excluded items
   const items: SimplifiedItem[] = useMemo(() => {
-    if (loading || hasError || !rawItemsData) {
+    if (loading || !rawItemsData) {
       return [];
     }
 
@@ -339,10 +367,14 @@ function AppContent() {
         )
     );
 
-    // Then filter out individually excluded items
+    // Then filter out individually excluded items (case-insensitive)
+    const excludedItemNames = new Set(
+      Array.from(excludedItems, (name) => name.toLowerCase())
+    );
     const excludedFiltered = excludeIncompatible
       ? categoryFiltered.filter(
-          (item: SimplifiedItem) => !excludedItems.has(item.name)
+          (item: SimplifiedItem) =>
+            !excludedItemNames.has(item.name.toLowerCase())
         )
       : categoryFiltered;
 
@@ -352,6 +384,8 @@ function AppContent() {
       sortedItems.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortOption === "base-value") {
       sortedItems.sort((a, b) => a.basePrice - b.basePrice);
+    } else if (sortOption === "base-value-desc") {
+      sortedItems.sort((a, b) => b.basePrice - a.basePrice);
     } else if (sortOption === "most-recent") {
       // Sort by updated time in descending order (updated is a timestamp so calc timestamp - updated) use datetime.strptime
       sortedItems.sort((a, b) => {
@@ -377,7 +411,6 @@ function AppContent() {
     excludeIncompatible,
     excludedItems,
     loading,
-    hasError,
   ]);
 
   // Function to find the best combination of items
@@ -534,6 +567,11 @@ function AppContent() {
   }, [fleaCosts]);
 
   const isThresholdMet: boolean = total >= threshold;
+
+  // check if selected items fit in the cultist circle box (9x6) and collect debug info
+  const itemsFitInBox = useMemo(() => {
+    return doItemsFitInBox(selectedItems.filter(Boolean) as SimplifiedItem[]);
+  }, [selectedItems]);
 
   // Handler to update selected item
   const handleItemSelect = useCallback(
@@ -816,29 +854,40 @@ function AppContent() {
     }
   }, [isThresholdMet, threshold, toast]);
 
+  // Check if the app version has changed since the user last used it
   useEffect(() => {
+    // Get the version that is currently stored in local storage
     const storedVersion = localStorage.getItem("appVersion");
+    // If the stored version is different from the one we define in the code
     if (storedVersion !== CURRENT_VERSION) {
+      // Print a message to the console to let us know that the version has changed
       console.log(
         `App version changed from ${
           storedVersion || "none"
         } to ${CURRENT_VERSION}`
       );
-      // clear localStorage all apart from cookieConsent
-      Object.keys(localStorage).forEach(key => {
-        if (key !== 'cookieConsent') {
+      // If the version has changed, we want to clear out most of the items in local storage
+      // We don't want to clear out the cookie consent, as that is a user preference
+      Object.keys(localStorage).forEach((key) => {
+        // If the key is not "cookieConsent", remove the item from local storage
+        if (key !== "cookieConsent") {
           localStorage.removeItem(key);
         }
       });
-      // Just update the version without triggering a reset
+      // Now that we have cleared out the old data, update the version in local storage
       localStorage.setItem("appVersion", CURRENT_VERSION);
-      // Optional: Show a toast to inform users of the update
-      toast({
-        title: "App Updated",
-        description: "The app has been updated to the latest version.",
-      });
+
+      // Reset all state to defaults to prevent immediate re-saving to localStorage
+      setSortOption("az");
+      setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+      setExcludeIncompatible(true);
+      setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
+      setOverriddenPrices({});
+
+      // Force a page reload to ensure all state is properly reset
+      window.location.reload();
     }
-  }, [toast]);
+  }, []);
 
   // Move these useMemo hooks here, right after the state declarations
   const isClearButtonDisabled = useMemo(() => {
@@ -922,63 +971,40 @@ function AppContent() {
             {/* Top Navigation Bar */}
             <div className="absolute top-0 left-0 right-0 flex w-full bg-gray-900/80 rounded-t-lg">
               <div className="flex w-full">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InstructionsDialog />
-                    </TooltipTrigger>
-                    <TooltipContent>Help & Instructions</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex-1 hover:bg-gray-700/50 rounded-none border-r border-gray-700"
-                        asChild
+                <InstructionsDialog />
+                <Button
+                  variant="ghost"
+                  className="flex-1 hover:bg-gray-700/50 rounded-none border-r border-gray-700"
+                  asChild
+                >
+                  <Link href="/recipes">
+                    <span className="flex items-center justify-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        className="h-4 w-4 mr-2"
                       >
-                        <Link href="/recipes">
-                          <span className="flex items-center justify-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              className="h-4 w-4 mr-2"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                              />
-                            </svg>
-                            Recipes
-                          </span>
-                        </Link>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>View barter recipes</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tr-lg"
-                        onClick={() => setIsSettingsPaneVisible(true)}
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        Settings
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Configure app settings</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                        />
+                      </svg>
+                      Recipes
+                    </span>
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tr-lg"
+                  onClick={() => setIsSettingsPaneVisible(true)}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
               </div>
             </div>
 
@@ -990,8 +1016,7 @@ function AppContent() {
                   alt="Cultist calculator logo"
                   width={400}
                   height={128}
-                  priority
-                  className="hover:scale-105 transition-transform duration-300"
+                  priority={true}
                 />
               </h1>
             </div>
@@ -1039,11 +1064,35 @@ function AppContent() {
                   }
                 }}
               />
-
+              {/* Placement Preview Button/Modal */}
+              <PlacementPreviewModal
+                open={previewModalOpen}
+                onOpenChange={setPreviewModalOpen}
+                fitDebug={fitDebug}
+                selectedItems={selectedItems}
+              />
+              {/* show alert if items do not fit in the 9x6 box */}
+              {!itemsFitInBox && (
+                <div className="mt-2 mb-2 text-center w-full">
+                  <Alert>
+                    <MessageSquareWarning className="h-4 w-4" />
+                    <AlertTitle className="text-white">Items do not fit!</AlertTitle>
+                    <AlertDescription className="text-white">
+                      {selectedItems.filter(Boolean).map((item, idx) => (
+                        <div key={`${item?.id ?? "no-id"}-${idx}`}>
+                          {item?.name} - {item?.width ?? '?'}w × {item?.height ?? '?'}h
+                        </div>
+                      ))}
+                      <div className="mt-1">The selected items cannot be arranged in the Cultist Circle box (9×6).</div>
+                      <PlacementPreviewInline fitDebug={fitDebug} selectedItems={selectedItems} />
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
               {/* Item Selection Components with improved loading states */}
               <div className="w-full">
                 <div id="search-items" className="space-y-0">
-                  {loading || !rawItemsData ? (
+                  {loading ? (
                     <div className="space-y-0">
                       {Array(5)
                         .fill(0)
@@ -1060,6 +1109,12 @@ function AppContent() {
                   ) : hasError ? (
                     <div className="text-red-500 text-center p-4">
                       Failed to load items. Please refresh the page.
+                    </div>
+                  ) : rawItemsData.length === 0 ? (
+                    <div className="text-gray-400 text-center p-4 flex flex-col items-center space-y-2">
+                      <Loader2 className="animate-spin h-8 w-8 text-gray-500" />
+                      <span>Fetching items, please wait...</span>
+                      {/* <Button onClick={handleRefreshClick}>Try Again</Button> */}
                     </div>
                   ) : (
                     selectedItems.map((item, index) => (
@@ -1105,13 +1160,27 @@ function AppContent() {
                   )}
                 </div>
               </div>
+              {/* Preview Button */}
               <TooltipProvider>
                 <div className="flex space-x-2 mt-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
+                        variant="secondary"
+                        className="rounded bg-green-700 hover:bg-green-600 text-white w-1/4"
+                        onClick={() => setPreviewModalOpen(true)}
+                      >
+                        Preview
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Show visual grid preview</TooltipContent>
+                  </Tooltip>
+                  {/* Clear Selected Items Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
                         id="clear-item-fields"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-full rounded
+                        className={`bg-red-500 hover:bg-red-600 text-white w-2/4 rounded
                           transition-all duration-300 active:scale-95
                           ${
                             isClearButtonDisabled
@@ -1129,11 +1198,12 @@ function AppContent() {
                     </TooltipTrigger>
                     <TooltipContent>Clears ALL item fields</TooltipContent>
                   </Tooltip>
+                  {/* Reset Overrides Button */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         id="reset-overrides"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-1/3 rounded
+                        className={`bg-red-500 hover:bg-red-600 text-white w-1/4 rounded
                           transition-all duration-300 active:scale-95
                           ${
                             isResetOverridesButtonDisabled
@@ -1295,23 +1365,6 @@ function AppContent() {
           <SettingsPane
             isOpen={isSettingsPaneVisible}
             onClose={() => setIsSettingsPaneVisible(false)}
-            onSettingsReset={() => {
-              setSelectedItems(Array(5).fill(null));
-              setPinnedItems(Array(5).fill(false));
-              setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
-              setSortOption("az");
-              setThreshold(400000);
-              setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
-              setOverriddenPrices({});
-              setHasAutoSelected(false);
-              setIsPVE(false);
-              localStorage.setItem("isPVE", "false");
-              toast({
-                title: "Reset Complete",
-                description:
-                  "All settings have been reset to their default values.",
-              });
-            }}
             onHardReset={handleReset}
             onClearLocalStorage={() => {
               // Clear localStorage
@@ -1325,7 +1378,6 @@ function AppContent() {
               setThreshold(400000);
               setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
               setOverriddenPrices({});
-              setHasAutoSelected(false);
 
               toast({
                 title: "Data Cleared",
@@ -1386,6 +1438,8 @@ function AppContent() {
     </>
   );
 }
+
+export default AppContent;
 
 export function App() {
   return <AppContent />;
