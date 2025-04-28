@@ -335,7 +335,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             {isFocused && (
               <div
               className="
-                  w-full mt-3 pt-2 bg-yellow-700 rounded-md shadow-lg
+                  w-full mt-3 pt-2 bg-transparent rounded-md shadow-lg
                   max-h-[50vh] overflow-y-auto overflow-x-hidden
                   touch-pan-y
                   "
