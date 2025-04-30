@@ -72,10 +72,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {/* React Scan Script */}
-        {/* <Script
+        <Script
         crossOrigin="anonymous"
         src="//unpkg.com/react-scan/dist/auto.global.js"
-        /> */}
+        />
         {/* Buy Me a Coffee Widget Script - Using Next.js Script component for proper loading */}
         <Script
           id="bmc-widget"

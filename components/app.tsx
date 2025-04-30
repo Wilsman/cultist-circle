@@ -41,16 +41,14 @@ import { PlacementPreviewInline } from "./placement-preview-inline";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { resetUserData } from "@/utils/resetUserData";
-import { refreshData, canRevalidate } from "@/utils/revalidate-data";
 import { FeedbackForm } from "./feedback-form";
 import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
-import { RefreshCw } from "lucide-react";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "./ui/alert";
+} from "@/components/ui/alert";
 
 export const CURRENT_VERSION = "1.2.0"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
@@ -115,10 +113,6 @@ function AppContent() {
     Record<string, number>
   >({});
   const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
-  const [refreshCooldown, setRefreshCooldown] = useState<{
-    isAllowed: boolean;
-    timeRemaining: number;
-  }>({ isAllowed: true, timeRemaining: 0 });
   const [itemBonus, setItemBonus] = useState<number>(0);
 
   // Import hooks
@@ -299,29 +293,6 @@ function AppContent() {
       }
     }
   }, [overriddenPrices]);
-
-  // Check refresh cooldown status
-  useEffect(() => {
-    // Initial check
-    setRefreshCooldown(canRevalidate());
-
-    // Set up interval to check every second
-    const interval = setInterval(() => {
-      setRefreshCooldown(canRevalidate());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Format the remaining cooldown time as MM:SS
-  const formatCooldownTime = (ms: number): string => {
-    const totalSeconds = Math.ceil(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}`;
-  };
 
   // Handler for category changes
   const handleCategoryChange = useCallback((categories: string[]) => {
@@ -990,68 +961,6 @@ function AppContent() {
     setHasAutoSelected(false); // Reset Auto Select on exclusion change
   }, []);
 
-  // Track the refresh cooldown state
-  useEffect(() => {
-    // Check refresh cooldown status every second
-    const timer = setInterval(() => {
-      const { isAllowed, timeRemaining } = canRevalidate();
-      setRefreshCooldown({ isAllowed, timeRemaining });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Handle refresh button click with smart cache validation
-  const handleRefreshClick = () => {
-    // Check if refresh is allowed based on cooldown
-    const { isAllowed, timeRemaining } = canRevalidate();
-
-    if (!isAllowed) {
-      console.log(
-        `Refresh on cooldown. ${formatCooldownTime(timeRemaining)} remaining.`
-      );
-      toast({
-        title: "Refresh Cooldown",
-        description: `Please wait ${formatCooldownTime(
-          timeRemaining
-        )} before refreshing again.`,
-        variant: "warning",
-      });
-      return;
-    }
-
-    const now = Date.now();
-    const currentMode = isPVE ? "pve" : "pvp";
-
-    console.log(`Refreshing ${currentMode} data...`);
-
-    // Update the last fetch time for both modes
-    lastFetchTimeRef.current.pve = now;
-    lastFetchTimeRef.current.pvp = now;
-
-    // Set the refresh cooldown immediately
-    setRefreshCooldown({ isAllowed: false, timeRemaining: 15 * 60 * 1000 });
-
-    // Refresh the data
-    refreshData(mutate)
-      .then(() => {
-        setSelectedItems(Array(5).fill(null));
-        setPinnedItems(Array(5).fill(false));
-        toast({
-          title: "Data Refreshed",
-          description: "Successfully refreshed the latest market data.",
-          variant: "default",
-        });
-      })
-      .catch((error) => {
-        console.error("Error refreshing data:", error);
-        toast({
-          title: "Refresh Failed",
-          description: "Failed to refresh data. Please try again later.",
-          variant: "destructive",
-        });
-      });
-  };
 
   // Update the refresh button UI
   return (
@@ -1097,22 +1006,6 @@ function AppContent() {
                   Settings
                 </Button>
               </div>
-            </div>
-
-            <div className="flex flex-col items-center justify-center mt-4 w-full">
-              <Button
-                variant="ghost"
-                className="flex-1 hover:bg-gray-700/50 rounded-none"
-                onClick={handleRefreshClick}
-                disabled={!refreshCooldown.isAllowed}
-              >
-                <RefreshCw className="h-4 w-4 mr-2 text-yellow-500 hover:text-green-300 animate-spin-slower" />
-                {refreshCooldown.isAllowed
-                  ? "Refresh"
-                  : `Wait (${formatCooldownTime(
-                      refreshCooldown.timeRemaining
-                    )})`}
-              </Button>
             </div>
 
             {/* Title and Version Info */}
@@ -1221,7 +1114,7 @@ function AppContent() {
                     <div className="text-gray-400 text-center p-4 flex flex-col items-center space-y-2">
                       <Loader2 className="animate-spin h-8 w-8 text-gray-500" />
                       <span>Fetching items, please wait...</span>
-                      <Button onClick={handleRefreshClick}>Try Again</Button>
+                      {/* <Button onClick={handleRefreshClick}>Try Again</Button> */}
                     </div>
                   ) : (
                     selectedItems.map((item, index) => (
