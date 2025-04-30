@@ -17,7 +17,6 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 
 export function FeedbackForm({ onClose }: { onClose: () => void }) {
