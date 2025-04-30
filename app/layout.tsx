@@ -4,6 +4,7 @@ import CookieConsent from "@/components/CookieConsent";
 import { Toaster } from "@/components/ui/toaster";
 import { CookieConsentProvider } from "@/context/cookie-consent-context";
 import Script from "next/script";
+import { PostHogProvider } from "@/components/PostHogProvider";
 
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator",
@@ -90,23 +91,25 @@ export default function RootLayout({
           data-x_margin="50"
           data-y_margin="50"
         />
-        <CookieConsentProvider>
-          <main className="relative min-h-screen">
-            {/* Background gradient effects */}
-            <div className="fixed inset-0 -z-10 bg-gradient-to-b from-gray-900 to-black" />
-            <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_500px_at_50%_200px,#3b82f6,transparent)]" />
-            <div className="fixed inset-0 -z-10 scanlines" />
+        <PostHogProvider>
+          <CookieConsentProvider>
+            <main className="relative min-h-screen">
+              {/* Background gradient effects */}
+              <div className="fixed inset-0 -z-10 bg-gradient-to-b from-gray-900 to-black" />
+              <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_500px_at_50%_200px,#3b82f6,transparent)]" />
+              <div className="fixed inset-0 -z-10 scanlines" />
 
-            {/* Content */}
-            <div className="relative z-10">{children}</div>
+              {/* Content */}
+              <div className="relative z-10">{children}</div>
 
-            {/* Cookie consent and notifications */}
-            <div className="relative z-50">
-              <CookieConsent />
-              <Toaster />
-            </div>
-          </main>
-        </CookieConsentProvider>
+              {/* Cookie consent and notifications */}
+              <div className="relative z-50">
+                <CookieConsent />
+                <Toaster />
+              </div>
+            </main>
+          </CookieConsentProvider>
+        </PostHogProvider>
       </body>
     </html>
   );
