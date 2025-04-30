@@ -17,6 +17,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 
 export function FeedbackForm({ onClose }: { onClose: () => void }) {
@@ -55,6 +56,9 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
       <CardHeader>
         <CardTitle>Submit Feedback or Report Issue</CardTitle>
       </CardHeader>
+      <p className="text-center text-muted-foreground">
+        If you have any issues, please try resetting the app in the settings first.
+      </p>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -85,15 +89,15 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
               required
               className="min-h-[100px]"
             />
-            <p className="text-xs text-muted-foreground pt-2">
+            <p>
               Alternatively, you can{" "}
               <a
-                href="https://discord.com/users/248207695943827456"
+                href="https://discord.gg/3dFmr5qaJK"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-foreground"
               >
-                contact the developer directly on Discord
+                contact us via Discord
               </a>
               .
             </p>
