@@ -52,10 +52,13 @@ import {
 
 export const CURRENT_VERSION = "1.2.0"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
+const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
 });
+
+type FleaPriceType = 'lastLowPrice' | 'avg24hPrice';
 
 function AppContent() {
   // Placement preview modal state
@@ -96,17 +99,28 @@ function AppContent() {
     }
     return "az";
   });
+  const [fleaPriceType, setFleaPriceType] = useState<FleaPriceType>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(FLEA_PRICE_TYPE_KEY) as FleaPriceType | null;
+      if (saved === 'lastLowPrice' || saved === 'avg24hPrice') {
+        console.log("Loading flea price type from localStorage:", saved);
+        return saved;
+      }
+    }
+    console.log("No valid saved flea price type found, using default: lastLowPrice");
+    return 'lastLowPrice';
+  });
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
     new Set()
   );
   const [threshold, setThreshold] = useState<number>(() => {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("userThreshold");
-    const parsed = Number(saved);
-    if (saved && Number.isFinite(parsed)) return parsed;
-  }
-  return 400000;
-});
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("userThreshold");
+      const parsed = Number(saved);
+      if (saved && Number.isFinite(parsed)) return parsed;
+    }
+    return 400000;
+  });
   const [excludeIncompatible, setExcludeIncompatible] = useState<boolean>(true);
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
   const [overriddenPrices, setOverriddenPrices] = useState<
@@ -127,6 +141,14 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem("isPVE", isPVE.toString());
   }, [isPVE]);
+
+  // Save fleaPriceType to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(FLEA_PRICE_TYPE_KEY, fleaPriceType);
+      console.log("Saved flea price type to localStorage:", fleaPriceType);
+    }
+  }, [fleaPriceType]);
 
   // Handle error state
   useEffect(() => {
@@ -150,15 +172,8 @@ function AppContent() {
     // Load sort option
     const savedSort = localStorage.getItem("sortOption");
     if (savedSort) setSortOption(savedSort);
-  }, [rawItemsData, toast]);
 
-  // Load app settings from localStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Load sort option
-    const savedSort = localStorage.getItem("sortOption");
-    if (savedSort) setSortOption(savedSort);
+    // Load flea price type (already handled by useState initializer)
 
     // Load excluded categories
     try {
@@ -200,7 +215,7 @@ function AppContent() {
       console.error("Error parsing excludeIncompatible from localStorage", e);
     }
 
-    // Load excluded items, merging with defaults if none saved
+    // Load excluded items
     try {
       const saved = localStorage.getItem("excludedItems");
       if (saved) {
@@ -427,7 +442,7 @@ function AppContent() {
       const adjustedItems = validItems.map((item) => ({
         ...item,
         adjustedBasePrice: Math.floor(item.basePrice * bonusMultiplier),
-        fleaPrice: item.lastLowPrice || item.basePrice,
+        fleaPrice: item[fleaPriceType],
       }));
 
       // Use adjusted threshold for DP calculation
@@ -464,8 +479,10 @@ function AppContent() {
           const basePrice = item.adjustedBasePrice;
           const fleaPrice = item.fleaPrice;
 
-          // Skip items with zero or negative base price
-          if (basePrice <= 0) continue;
+          // Skip items with zero or negative base price OR undefined/invalid flea price
+          if (basePrice <= 0 || typeof fleaPrice !== 'number' || fleaPrice < 0) {
+            continue;
+          }
 
           // Optimize inner loop - start from basePrice
           for (let v = basePrice; v <= maxThreshold; v++) {
@@ -539,7 +556,7 @@ function AppContent() {
         return { selected: [], totalFleaCost: 0 };
       }
     },
-    [itemBonus]
+    [itemBonus, fleaPriceType]
   );
 
   // Memoized total and flea costs
@@ -556,14 +573,14 @@ function AppContent() {
   const fleaCosts = useMemo(() => {
     return selectedItems.map((item) =>
       item
-        ? overriddenPrices[item.id] || item.lastLowPrice || item.basePrice
+        ? overriddenPrices[item.id] || item[fleaPriceType]
         : 0
     );
-  }, [selectedItems, overriddenPrices]);
+  }, [selectedItems, overriddenPrices, fleaPriceType]);
 
   // Memoized total flea cost
   const totalFleaCost = useMemo(() => {
-    return fleaCosts.reduce((sum, cost) => sum + cost, 0);
+    return fleaCosts.reduce((sum, cost) => sum! + cost!, 0);
   }, [fleaCosts]);
 
   const isThresholdMet: boolean = total >= threshold;
@@ -651,8 +668,7 @@ function AppContent() {
     try {
       // Filter validItems based on heuristics
       let validItems: SimplifiedItem[] = items.filter((item) => {
-        const currentPrice = item.lastLowPrice || item.basePrice;
-        return currentPrice > 0;
+        return item[fleaPriceType] !== undefined && item[fleaPriceType]! > 0;
       });
 
       // Apply filtering heuristics
@@ -660,9 +676,7 @@ function AppContent() {
         .filter((item) => item.basePrice >= threshold * 0.1) // Only items contributing at least 10% to the threshold
         .filter((item) => !excludedItems.has(item.name)) // Exclude user-excluded items
         .sort((a, b) => {
-          const aPrice = a.lastLowPrice || a.basePrice;
-          const bPrice = b.lastLowPrice || b.basePrice;
-          return b.basePrice / bPrice - a.basePrice / aPrice; // Sort by value-to-cost ratio
+          return b.basePrice / b[fleaPriceType]! - a.basePrice / a[fleaPriceType]!;
         })
         .slice(0, 100); // Limit to top 100 items
 
@@ -689,7 +703,7 @@ function AppContent() {
         if (overriddenPrice !== undefined) {
           return {
             ...item,
-            lastLowPrice: overriddenPrice,
+            [fleaPriceType]: overriddenPrice,
           };
         }
         return item;
@@ -748,6 +762,7 @@ function AppContent() {
     selectedItems,
     overriddenPrices,
     findBestCombination,
+    fleaPriceType,
   ]);
 
   // Track the last time we fetched data for each mode
@@ -961,6 +976,9 @@ function AppContent() {
     setHasAutoSelected(false); // Reset Auto Select on exclusion change
   }, []);
 
+  const handleFleaPriceTypeChange = useCallback((newType: FleaPriceType) => {
+    setFleaPriceType(newType);
+  }, []);
 
   // Update the refresh button UI
   return (
@@ -1152,6 +1170,7 @@ function AppContent() {
                                 item && toggleExcludedItem(item.name)
                               }
                               excludedItems={excludedItems}
+                              fleaPriceType={fleaPriceType}
                             />
                           </Suspense>
                         </React.Fragment>
@@ -1267,7 +1286,7 @@ function AppContent() {
                           : ""
                       }
                     >
-                      ₽{totalFleaCost.toLocaleString()}
+                      ₽{totalFleaCost?.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -1393,6 +1412,7 @@ function AppContent() {
                 excludedCategories: Array.from(excludedCategories),
                 excludeIncompatible,
                 excludedItems: Array.from(excludedItems),
+                fleaPriceType,
               };
               const blob = new Blob([JSON.stringify(data, null, 2)], {
                 type: "application/json",
@@ -1419,12 +1439,15 @@ function AppContent() {
                   setExcludeIncompatible(parsed.excludeIncompatible);
                 if (parsed.excludedItems)
                   setExcludedItems(new Set(parsed.excludedItems));
+                if (parsed.fleaPriceType) setFleaPriceType(parsed.fleaPriceType);
               } catch (e) {
                 console.error("Failed to parse imported data:", e);
               }
             }}
             onSortChange={handleSortChange}
             currentSortOption={sortOption}
+            fleaPriceType={fleaPriceType}
+            onFleaPriceTypeChange={handleFleaPriceTypeChange}
             excludedCategories={Array.from(excludedCategories)}
             onCategoryChange={handleCategoryChange}
             allCategories={ALL_ITEM_CATEGORIES}

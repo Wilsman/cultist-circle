@@ -1,6 +1,6 @@
 // components/settings-pane.tsx
 
-import { List, RotateCcw, Search } from "lucide-react";
+import { List, RotateCcw, Search, CandlestickChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import {
   Select,
@@ -47,6 +48,8 @@ interface SettingsPaneProps {
   onImportData: (data: string) => void;
   onSortChange: (sortOption: string) => void;
   currentSortOption: string;
+  fleaPriceType: 'lastLowPrice' | 'avg24hPrice';
+  onFleaPriceTypeChange: (priceType: 'lastLowPrice' | 'avg24hPrice') => void;
   excludedCategories: string[];
   onCategoryChange: (categories: string[]) => void;
   allCategories: string[];
@@ -64,6 +67,8 @@ export default function SettingsPane({
   onImportData,
   onSortChange,
   currentSortOption,
+  fleaPriceType,
+  onFleaPriceTypeChange,
   excludedCategories,
   onCategoryChange,
   allCategories,
@@ -74,6 +79,7 @@ export default function SettingsPane({
   onHardReset,
 }: SettingsPaneProps) {
   const [sortOption, setSortOption] = useState(currentSortOption);
+  const [currentFleaPriceType, setCurrentFleaPriceType] = useState(fleaPriceType);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
@@ -83,6 +89,16 @@ export default function SettingsPane({
   useEffect(() => {
     onSortChange(sortOption);
   }, [sortOption, onSortChange]);
+
+  // Update parent component when fleaPriceType changes
+  useEffect(() => {
+    onFleaPriceTypeChange(currentFleaPriceType);
+  }, [currentFleaPriceType, onFleaPriceTypeChange]);
+
+  // Update local state if prop changes (e.g., initial load or reset)
+  useEffect(() => {
+    setCurrentFleaPriceType(fleaPriceType);
+  }, [fleaPriceType]);
 
   // Handle category selection
   const handleCategoryChange = (category: string) => {
@@ -173,6 +189,29 @@ export default function SettingsPane({
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Flea Price Type Section (General Tab) */}
+              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <CandlestickChart className="h-5 w-5 text-green-400" />
+                  <span className="text-lg font-semibold">Flea Market Price Basis</span>
+                </div>
+                <RadioGroup
+                  value={currentFleaPriceType}
+                  onValueChange={(value) => setCurrentFleaPriceType(value as 'lastLowPrice' | 'avg24hPrice')}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="lastLowPrice" id="lastLowPrice" className="text-yellow-300 border-gray-600" />
+                    <Label htmlFor="lastLowPrice" className="text-gray-200">Last Low Price</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="avg24hPrice" id="avg24hPrice" className="text-yellow-300 border-gray-600" />
+                    <Label htmlFor="avg24hPrice" className="text-gray-200">Average 24h Price</Label>
+                  </div>
+                </RadioGroup>
+                <p className="text-xs text-gray-400 mt-2">Determines which flea market price is used for calculations.</p>
               </div>
             </TabsContent>
 

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
@@ -37,6 +38,7 @@ interface ItemSelectorProps {
   isExcluded: boolean;
   onToggleExclude: () => void;
   excludedItems: Set<string>;
+  fleaPriceType: 'lastLowPrice' | 'avg24hPrice';
 }
 
 const ItemSelector: React.FC<ItemSelectorProps> = ({
@@ -52,6 +54,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   isExcluded,
   onToggleExclude,
   excludedItems,
+  fleaPriceType,
 }) => {
   // Validate that items is an array
   useEffect(() => {
@@ -243,7 +246,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
       const displayedPrice =
         itemOverriddenPrice !== undefined
           ? itemOverriddenPrice
-          : item.lastLowPrice || item.basePrice;
+          : item[fleaPriceType]!;
       const isOverridden = itemOverriddenPrice !== undefined;
       const isItemExcluded = excludedItems.has(item.name);
       const itemIcon = item.iconLink;
@@ -314,7 +317,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         </Tooltip>
       );
     },
-    [filteredItems, handleSelect, overriddenPrices, excludedItems]
+    [filteredItems, handleSelect, overriddenPrices, excludedItems, fleaPriceType]
   );
 
   return (
@@ -486,11 +489,10 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   <div>
                     Flea:{" "}
                     <span className="text-teal-400 font-semibold">
-                      ₽
-                      {(
-                        overriddenPrice ||
-                        selectedItem.lastLowPrice ||
-                        selectedItem.basePrice ||
+                      ₽{(
+                        (isPriceOverrideActive && priceOverride ? Number(priceOverride) : null) ??
+                        overriddenPrices[selectedItem.id] ??
+                        selectedItem[fleaPriceType] ??
                         0
                       ).toLocaleString()}
                     </span>
