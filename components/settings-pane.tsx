@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
 
 import {
   Select,
@@ -193,9 +194,17 @@ export default function SettingsPane({
 
               {/* Flea Price Type Section (General Tab) */}
               <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <CandlestickChart className="h-5 w-5 text-green-400" />
-                  <span className="text-lg font-semibold">Flea Market Price Basis</span>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <CandlestickChart className="h-5 w-5 text-green-400" />
+                    <span className="text-lg font-semibold">Flea Market Price Basis</span>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="text-yellow-300 border-gray-600 rounded-full animate-pulse"
+                  >
+                    New
+                  </Badge>
                 </div>
                 <RadioGroup
                   value={currentFleaPriceType}

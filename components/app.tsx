@@ -50,7 +50,7 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 
-export const CURRENT_VERSION = "1.2.0"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "1.2.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 
@@ -1038,6 +1038,22 @@ function AppContent() {
                 />
               </h1>
             </div>
+
+            {/* New Price Types Alert */}
+            <div className="flex items-center justify-center">
+              <Alert
+                variant="default"
+                className="mb-2 border-yellow-400/70 bg-yellow-50 dark:bg-yellow-900/10 animate-fade-in rounded shadow"
+              >
+                <AlertTitle className="text-sm font-bold text-yellow-700 dark:text-yellow-200 text-center">
+                  New Price Types Available!
+                </AlertTitle>
+                <AlertDescription className="text-xs text-yellow-800 dark:text-yellow-100 text-center">
+                  You can now select between <span className="font-semibold">Last Low Price</span> and <span className="font-semibold">Average 24h Price</span> for items. Try it out in <button type="button" className="underline font-semibold text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 focus:outline-none" onClick={() => setIsSettingsPaneVisible(true)}>Settings</button>.
+                </AlertDescription>
+              </Alert>
+            </div>
+
             <div className="text-center text-gray-400 text-sm mb-4">
               <VersionInfo version={CURRENT_VERSION} />
             </div>

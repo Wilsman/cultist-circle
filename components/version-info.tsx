@@ -32,6 +32,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  New: Added new price types: Last Low Price and Average 24h Price
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   Bug fix: Fixed visual glitch when selecting the second item
                 </span>
               </li>
@@ -46,26 +52,6 @@ export function VersionInfo({ version }: VersionInfoProps) {
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
                   Added new sort option: Base Value: High to Low
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  New: Bonus settings let users socket a bonus item (e.g. Amulet
-                  +15%) to apply its % bonus to each sacrificed item.
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  New: Share Code lets users easily share item combinations with
-                  each other.
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  PVP/PVE mode persistence between sessions
                 </span>
               </li>
             </ul>
@@ -84,7 +70,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
                   Enhanced filtering and sorting capabilities
                 </span>
               </li>
-              <li className="flex gap-2">
+              <li className="flex gap-2 line-through opacity-60">
                 <span className="text-blue-500">•</span>
                 <span className="text-left">
                   Add 24h average flea price option
