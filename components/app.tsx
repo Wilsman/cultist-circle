@@ -53,6 +53,7 @@ import {
 export const CURRENT_VERSION = "1.2.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
+const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
@@ -110,6 +111,15 @@ function AppContent() {
     console.log("No valid saved flea price type found, using default: lastLowPrice");
     return 'lastLowPrice';
   });
+  const [useLastOfferCountFilter, setUseLastOfferCountFilter] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(USE_LAST_OFFER_COUNT_FILTER_KEY);
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    }
+    return true; // Default to true
+  });
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
     new Set()
   );
@@ -149,6 +159,14 @@ function AppContent() {
       console.log("Saved flea price type to localStorage:", fleaPriceType);
     }
   }, [fleaPriceType]);
+
+  // Save useLastOfferCountFilter to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(USE_LAST_OFFER_COUNT_FILTER_KEY, useLastOfferCountFilter.toString());
+      console.log("Saved useLastOfferCountFilter to localStorage:", useLastOfferCountFilter);
+    }
+  }, [useLastOfferCountFilter]);
 
   // Handle error state
   useEffect(() => {
@@ -479,8 +497,13 @@ function AppContent() {
           const basePrice = item.adjustedBasePrice;
           const fleaPrice = item.fleaPrice;
 
-          // Skip items with zero or negative base price OR undefined/invalid flea price
-          if (basePrice <= 0 || typeof fleaPrice !== 'number' || fleaPrice < 0) {
+          // Skip items with zero or negative base price, undefined/invalid flea price, or insufficient market offers
+          if (
+            basePrice <= 0 ||
+            typeof fleaPrice !== "number" ||
+            fleaPrice < 0 ||
+            (useLastOfferCountFilter && typeof item.lastOfferCount === "number" && item.lastOfferCount < 5)
+          ) {
             continue;
           }
 
@@ -556,7 +579,7 @@ function AppContent() {
         return { selected: [], totalFleaCost: 0 };
       }
     },
-    [itemBonus, fleaPriceType]
+    [itemBonus, fleaPriceType, useLastOfferCountFilter]
   );
 
   // Memoized total and flea costs
@@ -980,6 +1003,10 @@ function AppContent() {
     setFleaPriceType(newType);
   }, []);
 
+  const handleUseLastOfferCountFilterChange = useCallback((newState: boolean) => {
+    setUseLastOfferCountFilter(newState);
+  }, []);
+
   // Update the refresh button UI
   return (
     <>
@@ -1046,10 +1073,23 @@ function AppContent() {
                 className="mb-2 border-yellow-400/70 bg-yellow-50 dark:bg-yellow-900/10 animate-fade-in rounded shadow"
               >
                 <AlertTitle className="text-sm font-bold text-yellow-700 dark:text-yellow-200 text-center">
-                  New Price Types Available!
+                  New Price Types and Offer Count Detection Available!
                 </AlertTitle>
                 <AlertDescription className="text-xs text-yellow-800 dark:text-yellow-100 text-center">
-                  You can now select between <span className="font-semibold">Last Low Price</span> and <span className="font-semibold">Average 24h Price</span> for items. Try it out in <button type="button" className="underline font-semibold text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 focus:outline-none" onClick={() => setIsSettingsPaneVisible(true)}>Settings</button>.
+                  You can now select between{" "}
+                  <span className="font-semibold">Last Low Price</span> and{" "}
+                  <span className="font-semibold">Average 24h Price</span> for
+                  items and use{" "}
+                  <span className="font-semibold">lastOfferCount</span> to
+                  detect unstable prices. Try it out in{" "}
+                  <button
+                    type="button"
+                    className="underline font-semibold text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 focus:outline-none"
+                    onClick={() => setIsSettingsPaneVisible(true)}
+                  >
+                    Settings
+                  </button>
+                  .
                 </AlertDescription>
               </Alert>
             </div>
@@ -1110,15 +1150,24 @@ function AppContent() {
                 <div className="mt-2 mb-2 text-center w-full">
                   <Alert>
                     <MessageSquareWarning className="h-4 w-4" />
-                    <AlertTitle className="text-white">Items do not fit!</AlertTitle>
+                    <AlertTitle className="text-white">
+                      Items do not fit!
+                    </AlertTitle>
                     <AlertDescription className="text-white">
                       {selectedItems.filter(Boolean).map((item, idx) => (
                         <div key={`${item?.id ?? "no-id"}-${idx}`}>
-                          {item?.name} - {item?.width ?? '?'}w × {item?.height ?? '?'}h
+                          {item?.name} - {item?.width ?? "?"}w ×{" "}
+                          {item?.height ?? "?"}h
                         </div>
                       ))}
-                      <div className="mt-1">The selected items cannot be arranged in the Cultist Circle box (9×6).</div>
-                      <PlacementPreviewInline fitDebug={fitDebug} selectedItems={selectedItems} />
+                      <div className="mt-1">
+                        The selected items cannot be arranged in the Cultist
+                        Circle box (9×6).
+                      </div>
+                      <PlacementPreviewInline
+                        fitDebug={fitDebug}
+                        selectedItems={selectedItems}
+                      />
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -1429,6 +1478,7 @@ function AppContent() {
                 excludeIncompatible,
                 excludedItems: Array.from(excludedItems),
                 fleaPriceType,
+                useLastOfferCountFilter,
               };
               const blob = new Blob([JSON.stringify(data, null, 2)], {
                 type: "application/json",
@@ -1455,7 +1505,10 @@ function AppContent() {
                   setExcludeIncompatible(parsed.excludeIncompatible);
                 if (parsed.excludedItems)
                   setExcludedItems(new Set(parsed.excludedItems));
-                if (parsed.fleaPriceType) setFleaPriceType(parsed.fleaPriceType);
+                if (parsed.fleaPriceType)
+                  setFleaPriceType(parsed.fleaPriceType);
+                if (parsed.useLastOfferCountFilter !== undefined)
+                  setUseLastOfferCountFilter(parsed.useLastOfferCountFilter);
               } catch (e) {
                 console.error("Failed to parse imported data:", e);
               }
@@ -1471,6 +1524,10 @@ function AppContent() {
             onExcludeIncompatibleChange={setExcludeIncompatible}
             excludedItems={excludedItems}
             onExcludedItemsChange={setExcludedItems}
+            useLastOfferCountFilter={useLastOfferCountFilter}
+            onUseLastOfferCountFilterChange={
+              handleUseLastOfferCountFilterChange
+            }
           />
         </div>
       )}

@@ -1,6 +1,6 @@
 // components/settings-pane.tsx
 
-import { List, RotateCcw, Search, CandlestickChart } from "lucide-react";
+import { List, RotateCcw, Search, CandlestickChart, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -49,8 +49,8 @@ interface SettingsPaneProps {
   onImportData: (data: string) => void;
   onSortChange: (sortOption: string) => void;
   currentSortOption: string;
-  fleaPriceType: 'lastLowPrice' | 'avg24hPrice';
-  onFleaPriceTypeChange: (priceType: 'lastLowPrice' | 'avg24hPrice') => void;
+  fleaPriceType: "lastLowPrice" | "avg24hPrice";
+  onFleaPriceTypeChange: (priceType: "lastLowPrice" | "avg24hPrice") => void;
   excludedCategories: string[];
   onCategoryChange: (categories: string[]) => void;
   allCategories: string[];
@@ -59,6 +59,8 @@ interface SettingsPaneProps {
   excludedItems: Set<string>;
   onExcludedItemsChange: React.Dispatch<React.SetStateAction<Set<string>>>;
   onClearLocalStorage: () => void;
+  useLastOfferCountFilter: boolean;
+  onUseLastOfferCountFilterChange: (value: boolean) => void;
 }
 
 export default function SettingsPane({
@@ -78,9 +80,13 @@ export default function SettingsPane({
   excludedItems,
   onExcludedItemsChange,
   onHardReset,
+  useLastOfferCountFilter,
+  onUseLastOfferCountFilterChange,
 }: SettingsPaneProps) {
   const [sortOption, setSortOption] = useState(currentSortOption);
-  const [currentFleaPriceType, setCurrentFleaPriceType] = useState(fleaPriceType);
+  const [currentFleaPriceType, setCurrentFleaPriceType] =
+    useState(fleaPriceType);
+  const [currentUseLastOfferCountFilter, setCurrentUseLastOfferCountFilter] = useState(useLastOfferCountFilter);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
@@ -100,6 +106,14 @@ export default function SettingsPane({
   useEffect(() => {
     setCurrentFleaPriceType(fleaPriceType);
   }, [fleaPriceType]);
+
+  useEffect(() => {
+    setCurrentUseLastOfferCountFilter(useLastOfferCountFilter);
+  }, [useLastOfferCountFilter]);
+
+  useEffect(() => {
+    onUseLastOfferCountFilterChange(currentUseLastOfferCountFilter);
+  }, [currentUseLastOfferCountFilter, onUseLastOfferCountFilterChange]);
 
   // Handle category selection
   const handleCategoryChange = (category: string) => {
@@ -198,13 +212,13 @@ export default function SettingsPane({
                   <div className="flex items-center gap-2">
                     <CandlestickChart className="h-5 w-5 text-green-400" />
                     <span className="text-lg font-semibold">Flea Market Price Basis</span>
-                  </div>
                   <Badge
                     variant="outline"
                     className="text-yellow-300 border-gray-600 rounded-full animate-pulse"
                   >
                     New
                   </Badge>
+                  </div>
                 </div>
                 <RadioGroup
                   value={currentFleaPriceType}
@@ -222,6 +236,34 @@ export default function SettingsPane({
                 </RadioGroup>
                 <p className="text-xs text-gray-400 mt-2">Determines which flea market price is used for calculations.</p>
               </div>
+
+              {/* Market Offer Count Filter Section (General Tab) */}
+              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-purple-400" />
+                    <span className="text-lg font-semibold">Exclude Low Offer Count Items</span>
+                    <Badge
+                      variant="outline"
+                      className="text-yellow-300 border-gray-600 rounded-full animate-pulse"
+                    >
+                      New
+                    </Badge>
+                  </div>
+                  <Switch
+                    id="use-last-offer-count-filter"
+                    checked={currentUseLastOfferCountFilter}
+                    onCheckedChange={setCurrentUseLastOfferCountFilter}
+                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-600"
+                  />
+                </div>
+                <p className="text-sm text-gray-400">
+                  If enabled, items with fewer than 5 offers on the Flea Market
+                  will be excluded from calculations. This helps avoid using items
+                  with artificially inflated prices due to low availability.
+                </p>
+              </div>
+
             </TabsContent>
 
             <TabsContent value="categories" className="h-full p-1">

@@ -32,6 +32,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  New: Implimented lastOfferCount to detect unstable prices
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   New: Added new price types: Last Low Price and Average 24h Price
                 </span>
               </li>
@@ -76,7 +82,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
                   Add 24h average flea price option
                 </span>
               </li>
-              <li className="flex gap-2">
+              <li className="flex gap-2 line-through opacity-60">
                 <span className="text-blue-500">•</span>
                 <span className="text-left">
                   Add lastOfferCount to detect unstable prices

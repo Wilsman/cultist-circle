@@ -277,10 +277,14 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     Flea:{" "}
                     <span
                       className={
-                        isOverridden ? "text-yellow-300 font-bold" : ""
+                        isOverridden
+                          ? "text-yellow-300 font-bold"
+                          : item.lastOfferCount !== undefined && item.lastOfferCount <= 5
+                          ? "text-red-600 font-bold"
+                          : ""
                       }
                     >
-                      ₽{(displayedPrice || 0).toLocaleString()}
+                      ₽{(displayedPrice || "N/A").toLocaleString()}
                     </span>
                     {isOverridden && (
                       <span className="text-gray-400 ml-1">(Override)</span>
@@ -299,10 +303,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               <p>
                 Flea:{" "}
                 <span
-                  className={isOverridden ? "text-yellow-300 font-bold" : ""}
-                >
-                  ₽{(displayedPrice || 0).toLocaleString()}
-                </span>
+                      className={
+                        isOverridden
+                          ? "text-yellow-300 font-bold"
+                          : item.lastOfferCount !== undefined && item.lastOfferCount <= 5
+                          ? "text-red-600 font-bold"
+                          : ""
+                      }
+                    >
+                      ₽{(displayedPrice || "N/A").toLocaleString()}
+                    </span>
               </p>
               {isItemExcluded && (
                 <p className="text-red-500">This item is excluded.</p>
@@ -487,13 +497,21 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     </span>
                   </div>
                   <div>
-                    Flea:{" "}
-                    <span className="text-teal-400 font-semibold">
+                    Flea:{" "} 
+                    <span
+                      className={
+                        isPriceOverrideActive
+                          ? "text-yellow-300 font-bold"
+                          : selectedItem.lastOfferCount !== undefined && selectedItem.lastOfferCount <= 5
+                          ? "text-red-600 font-bold"
+                          : ""
+                      }
+                    >
                       ₽{(
                         (isPriceOverrideActive && priceOverride ? Number(priceOverride) : null) ??
                         overriddenPrices[selectedItem.id] ??
                         selectedItem[fleaPriceType] ??
-                        0
+                        "N/A"
                       ).toLocaleString()}
                     </span>
                   </div>
