@@ -24,7 +24,7 @@ const CACHE_TTL = 600000; // 10 minutes
  * Fetches all Tarkov item data from the tarkov.dev GraphQL API for both game modes
  * @returns Promise with combined data for both PVP and PVE modes
  */
-async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
+export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
   const now = Date.now();
   
   // Return cached data if it's still fresh
@@ -41,6 +41,7 @@ async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
       pvpItems: items(gameMode: regular) {
         id
         name
+        shortName
         basePrice
         lastLowPrice
         updated
@@ -56,6 +57,7 @@ async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
       pveItems: items(gameMode: pve) {
         id
         name
+        shortName
         basePrice
         lastLowPrice
         updated
@@ -103,6 +105,7 @@ async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
     const transformPvpItems = data.pvpItems.map((item: TarkovItem) => ({
       id: item.id,
       name: item.name,
+      shortName: item.shortName,
       basePrice: item.basePrice,
       lastLowPrice: item.lastLowPrice || undefined,
       updated: item.updated,
@@ -120,6 +123,7 @@ async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
     const transformPveItems = data.pveItems.map((item: TarkovItem) => ({
       id: item.id,
       name: item.name,
+      shortName: item.shortName,
       basePrice: item.basePrice,
       lastLowPrice: item.lastLowPrice || undefined,
       updated: item.updated,

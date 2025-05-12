@@ -1,6 +1,7 @@
 export interface TarkovItem {
   id: string;
   name: string;
+  shortName: string;
   basePrice: number;
   lastLowPrice: number | null;
   avg24hPrice: number | null;

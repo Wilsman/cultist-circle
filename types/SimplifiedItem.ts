@@ -4,6 +4,7 @@ export interface SimplifiedItem {
   // Database fields
   id: string;
   name: string;
+  shortName: string;
   basePrice: number;
   lastLowPrice?: number;
   updated?: string;  // Changed from number to string to match Supabase timestamptz
