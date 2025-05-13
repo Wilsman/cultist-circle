@@ -1,22 +1,13 @@
 // app/base-values/page.tsx
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { fetchMinimalTarkovData, MinimalItem } from "@/hooks/use-tarkov-api";
 import { useDebounce } from "@/hooks/use-debounce";
 // UI components
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-} from "@/components/ui/table";
-import {
-  TableCell,
-  TableRow,
-} from "@/components/ui/memoized-table";
+import { VirtualizedTable } from "@/components/ui/virtualized-table";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -25,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ArrowUp, ArrowDown } from "lucide-react"; // Import Arrows
+import { Loader2 } from "lucide-react";
 
 interface FilterState {
   name: string;
@@ -55,6 +46,12 @@ function getMinMax(
 }
 
 export default function ItemsTablePage() {
+  // Add isPending state for transitions
+  const [isPending, startTransition] = useTransition();
+  
+  // Separate search input state from filter state
+  const [searchInput, setSearchInput] = useState("");
+  
   const [pvp, setPvp] = useState<MinimalItem[]>([]);
   const [pve, setPve] = useState<MinimalItem[]>([]);
   const [mode, setMode] = useState<"pvp" | "pve">("pvp");
@@ -72,7 +69,14 @@ export default function ItemsTablePage() {
   });
   
   // Debounce the search input to prevent excessive re-renders
-  const debouncedSearchTerm = useDebounce(filter.name, 300);
+  const debouncedSearchTerm = useDebounce(searchInput, 300);
+  
+  // Update filter when debounced search term changes
+  useEffect(() => {
+    startTransition(() => {
+      setFilter(prev => ({ ...prev, name: debouncedSearchTerm }));
+    });
+  }, [debouncedSearchTerm, startTransition]);
 
   useEffect(() => {
     let isMounted = true;
@@ -101,21 +105,24 @@ export default function ItemsTablePage() {
   // Memoize the header sort handler to prevent recreating on each render
   const handleHeaderSort = useCallback(
     (sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice") => {
-      setFilter((f) => ({
-        ...f,
-        sort: sortKey,
-        // Toggle direction if same key, else default (asc for name/shortName, desc for prices)
-        sortDir:
-          f.sort === sortKey
-            ? f.sortDir === "asc"
-              ? "desc"
-              : "asc"
-            : sortKey === "name" || sortKey === "shortName"
-            ? "asc"
-            : "desc",
-      }));
+      // Use startTransition to mark UI updates as non-urgent
+      startTransition(() => {
+        setFilter((f) => ({
+          ...f,
+          sort: sortKey,
+          // Toggle direction if same key, else default (asc for name/shortName, desc for prices)
+          sortDir:
+            f.sort === sortKey
+              ? f.sortDir === "asc"
+                ? "desc"
+                : "asc"
+              : sortKey === "name" || sortKey === "shortName"
+              ? "asc"
+              : "desc",
+        }));
+      });
     },
-    []
+    [startTransition]
   )
 
   const items = mode === "pvp" ? pvp : pve;
@@ -221,8 +228,8 @@ export default function ItemsTablePage() {
       <div className="flex flex-wrap items-center gap-4 mb-4">
         <Input
           placeholder="Search name or short name..."
-          value={filter.name}
-          onChange={(e) => setFilter((f) => ({ ...f, name: e.target.value }))}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           className="h-8 w-full md:w-[250px] lg:w-[300px]"
           // Add aria-label for accessibility
           aria-label="Search items"
@@ -233,7 +240,9 @@ export default function ItemsTablePage() {
           value={filter.basePrice[0]}
           onChange={e => {
             const min = Number(e.target.value);
-            setFilter(f => ({ ...f, basePrice: [min, f.basePrice[1]] }));
+            startTransition(() => {
+              setFilter(f => ({ ...f, basePrice: [min, f.basePrice[1]] }));
+            });
           }}
           className="h-8 w-24"
           placeholder="Min Value"
@@ -245,7 +254,9 @@ export default function ItemsTablePage() {
           value={filter.basePrice[1]}
           onChange={e => {
             const max = Number(e.target.value);
-            setFilter(f => ({ ...f, basePrice: [f.basePrice[0], max] }));
+            startTransition(() => {
+              setFilter(f => ({ ...f, basePrice: [f.basePrice[0], max] }));
+            });
           }}
           className="h-8 w-24"
           placeholder="Max Value"
@@ -257,8 +268,10 @@ export default function ItemsTablePage() {
           size="sm"
           className="h-8 px-2"
           onClick={() => {
-            const [min, max] = getMinMax(items, "basePrice");
-            setFilter(f => ({ ...f, basePrice: [min, max] }));
+            startTransition(() => {
+              const [min, max] = getMinMax(items, "basePrice");
+              setFilter(f => ({ ...f, basePrice: [min, max] }));
+            });
           }}
           aria-label="Reset base value filter"
         >
@@ -269,20 +282,22 @@ export default function ItemsTablePage() {
           <Switch
             checked={mode === "pve"}
             onCheckedChange={(checked: boolean) => {
-              const newMode = checked ? "pve" : "pvp";
-              const newItems = checked ? pve : pvp;
-              setMode(newMode);
-              // Reset filters when mode changes (optional, but good practice)
-              setFilter((f) => ({
-                ...f,
-                name: "",
-                basePrice: getMinMax(newItems, "basePrice"),
-                lastLowPrice: getMinMax(newItems, "lastLowPrice"),
-                avg24hPrice: getMinMax(newItems, "avg24hPrice"),
-                // Keep sort settings or reset? Resetting might be less confusing
-                // sort: 'basePrice',
-                // sortDir: 'desc'
-              }));
+              startTransition(() => {
+                const newMode = checked ? "pve" : "pvp";
+                const newItems = checked ? pve : pvp;
+                setMode(newMode);
+                // Reset filters when mode changes (optional, but good practice)
+                setFilter((f) => ({
+                  ...f,
+                  name: "",
+                  basePrice: getMinMax(newItems, "basePrice"),
+                  lastLowPrice: getMinMax(newItems, "lastLowPrice"),
+                  avg24hPrice: getMinMax(newItems, "avg24hPrice"),
+                  // Keep sort settings or reset? Resetting might be less confusing
+                  // sort: 'basePrice',
+                  // sortDir: 'desc'
+                }));
+              });
             }}
             className="mx-1"
             aria-label="Toggle PVP/PVE"
@@ -293,9 +308,11 @@ export default function ItemsTablePage() {
         <Select
           value={filter.sort === "bestValue" ? "bestValue" : ""}
           onValueChange={(value) => {
-            if (value === "bestValue") {
-              setFilter((f) => ({ ...f, sort: "bestValue", sortDir: "desc" }));
-            } // Add else if needed to clear sort when deselecting, or handle via placeholder
+            startTransition(() => {
+              if (value === "bestValue") {
+                setFilter((f) => ({ ...f, sort: "bestValue", sortDir: "desc" }));
+              } // Add else if needed to clear sort when deselecting, or handle via placeholder
+            });
           }}
         >
           <SelectTrigger className="h-8 w-full md:w-auto">
@@ -309,92 +326,21 @@ export default function ItemsTablePage() {
         {/* Removed Asc/Desc Button */}
       </div>
 
-      {/* Table Section */}
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                onClick={() => handleHeaderSort("name")}
-                className="cursor-pointer"
-              >
-                Name{" "}
-                {filter.sort === "name" &&
-                  (filter.sortDir === "asc" ? (
-                    <ArrowUp className="inline h-4 w-4 ml-1" />
-                  ) : (
-                    <ArrowDown className="inline h-4 w-4 ml-1" />
-                  ))}
-              </TableHead>
-              {/* <TableHead onClick={() => handleHeaderSort('shortName')} className="text-muted-foreground cursor-pointer">
-                Short Name {filter.sort === 'shortName' && (filter.sortDir === 'asc' ? <ArrowUp className="inline h-4 w-4 ml-1" /> : <ArrowDown className="inline h-4 w-4 ml-1" />)}
-              </TableHead> */}
-              <TableHead
-                onClick={() => handleHeaderSort("basePrice")}
-                className="text-right font-semibold cursor-pointer"
-              >
-                Base Value{" "}
-                {filter.sort === "basePrice" &&
-                  (filter.sortDir === "asc" ? (
-                    <ArrowUp className="inline h-4 w-4 ml-1" />
-                  ) : (
-                    <ArrowDown className="inline h-4 w-4 ml-1" />
-                  ))}
-              </TableHead>
-              <TableHead
-                onClick={() => handleHeaderSort("lastLowPrice")}
-                className="text-muted-foreground text-right cursor-pointer"
-              >
-                Flea Price{" "}
-                {filter.sort === "lastLowPrice" &&
-                  (filter.sortDir === "asc" ? (
-                    <ArrowUp className="inline h-4 w-4 ml-1" />
-                  ) : (
-                    <ArrowDown className="inline h-4 w-4 ml-1" />
-                  ))}
-              </TableHead>
-              <TableHead
-                onClick={() => handleHeaderSort("avg24hPrice")}
-                className="text-muted-foreground text-right cursor-pointer"
-              >
-                Avg 24h Price{" "}
-                {filter.sort === "avg24hPrice" &&
-                  (filter.sortDir === "asc" ? (
-                    <ArrowUp className="inline h-4 w-4 ml-1" />
-                  ) : (
-                    <ArrowDown className="inline h-4 w-4 ml-1" />
-                  ))}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline text-primary"
-                  >
-                    {item.name}
-                  </a>
-                </TableCell>
-                {/* <TableCell className="text-muted-foreground">{item.shortName}</TableCell> */}
-                <TableCell className="text-right font-semibold">
-                  {item.basePrice.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-right">
-                  {item.lastLowPrice?.toLocaleString() ?? "-"}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-right">
-                  {item.avg24hPrice?.toLocaleString() ?? "-"}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Table Section with loading indicator */}
+      {isPending && (
+        <div className="flex items-center justify-center h-12 mt-2">
+          <Loader2 className="animate-spin h-5 w-5 text-blue-500 mr-2" />
+          <span className="text-sm text-muted-foreground">Updating...</span>
+        </div>
+      )}
+      
+      {/* Virtualized Table */}
+      <VirtualizedTable 
+        items={filtered} 
+        sortKey={filter.sort} 
+        sortDir={filter.sortDir}
+        onHeaderSort={handleHeaderSort}
+      />
     </div>
   );
 }
