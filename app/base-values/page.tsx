@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface FilterState {
   name: string;
@@ -199,19 +200,44 @@ export default function ItemsTablePage() {
     filter.avg24hPrice,
   ]); // Update dependencies
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 text-center p-4">
-        <Loader2 className="animate-spin w-8 h-8 text-blue-500 mb-4" />
-        <p className="text-lg font-semibold text-gray-300 mb-2">
-          Initializing Tarkov Data Interface...
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Establishing quantum link to Flea Market... Standby...
-        </p>
+  // Create a skeleton table component for loading state
+  const TableSkeleton = () => (
+    <div className="rounded-md border overflow-hidden">
+      {/* Header skeleton */}
+      <div className="flex border-b">
+        <div className="font-medium p-2 flex-1 min-w-[200px]">
+          <Skeleton className="h-4 w-20" />
+        </div>
+        <div className="text-right font-semibold p-2 w-[120px]">
+          <Skeleton className="h-4 w-16 ml-auto" />
+        </div>
+        <div className="text-muted-foreground text-right p-2 w-[120px]">
+          <Skeleton className="h-4 w-16 ml-auto" />
+        </div>
+        <div className="text-muted-foreground text-right p-2 w-[120px]">
+          <Skeleton className="h-4 w-16 ml-auto" />
+        </div>
       </div>
-    );
-  }
+      
+      {/* Row skeletons */}
+      {Array.from({ length: 10 }).map((_, index) => (
+        <div className="flex border-b transition-colors" key={index}>
+          <div className="px-4 py-2 font-medium flex-1 min-w-[200px]">
+            <Skeleton className="h-4 w-[180px]" />
+          </div>
+          <div className="px-4 py-2 text-right font-semibold w-[120px]">
+            <Skeleton className="h-4 w-[60px] ml-auto" />
+          </div>
+          <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
+            <Skeleton className="h-4 w-[60px] ml-auto" />
+          </div>
+          <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
+            <Skeleton className="h-4 w-[60px] ml-auto" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -334,13 +360,17 @@ export default function ItemsTablePage() {
         </div>
       )}
       
-      {/* Virtualized Table */}
-      <VirtualizedTable 
-        items={filtered} 
-        sortKey={filter.sort} 
-        sortDir={filter.sortDir}
-        onHeaderSort={handleHeaderSort}
-      />
+      {/* Virtualized Table with skeleton fallback during loading */}
+      {isLoading ? (
+        <TableSkeleton />
+      ) : (
+        <VirtualizedTable 
+          items={filtered} 
+          sortKey={filter.sort} 
+          sortDir={filter.sortDir}
+          onHeaderSort={handleHeaderSort}
+        />
+      )}
     </div>
   );
 }
