@@ -2,8 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { fetchCombinedTarkovData } from "@/hooks/use-tarkov-api";
-import type { SimplifiedItem } from "@/types/SimplifiedItem";
+import { fetchMinimalTarkovData, MinimalItem } from "@/hooks/use-tarkov-api";
 // UI components
 import { Input } from "@/components/ui/input";
 import {
@@ -30,6 +29,7 @@ interface FilterState {
   basePrice: [number, number];
   lastLowPrice: [number, number];
   avg24hPrice: [number, number];
+  link: string;
   sort:
     | "name"
     | "shortName"
@@ -41,8 +41,8 @@ interface FilterState {
 }
 
 function getMinMax(
-  items: SimplifiedItem[],
-  key: keyof SimplifiedItem
+  items: MinimalItem[],
+  key: keyof MinimalItem
 ): [number, number] {
   const nums = items.map((i) =>
     typeof i[key] === "number" ? (i[key] as number) : 0
@@ -51,8 +51,8 @@ function getMinMax(
 }
 
 export default function ItemsTablePage() {
-  const [pvp, setPvp] = useState<SimplifiedItem[]>([]);
-  const [pve, setPve] = useState<SimplifiedItem[]>([]);
+  const [pvp, setPvp] = useState<MinimalItem[]>([]);
+  const [pve, setPve] = useState<MinimalItem[]>([]);
   const [mode, setMode] = useState<"pvp" | "pve">("pvp");
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<FilterState>({
@@ -62,6 +62,7 @@ export default function ItemsTablePage() {
     basePrice: [0, 0],
     lastLowPrice: [0, 0],
     avg24hPrice: [0, 0],
+    link: "",
     sort: "basePrice", // Default sort
     sortDir: "desc",
   });
@@ -69,17 +70,17 @@ export default function ItemsTablePage() {
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
-    fetchCombinedTarkovData().then(
-      (data: { pvp: SimplifiedItem[]; pve: SimplifiedItem[] }) => {
+    fetchMinimalTarkovData().then(
+      (data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }) => {
         if (isMounted) {
-          setPvp(data.pvp || []);
-          setPve(data.pve || []);
+          setPvp(data.pvpItems || []);
+          setPve(data.pveItems || []);
           // Default to PVP min/max
           setFilter((f) => ({
             ...f,
-            basePrice: getMinMax(data.pvp || [], "basePrice"),
-            lastLowPrice: getMinMax(data.pvp || [], "lastLowPrice"),
-            avg24hPrice: getMinMax(data.pvp || [], "avg24hPrice"),
+            basePrice: getMinMax(data.pvpItems || [], "basePrice"),
+            lastLowPrice: getMinMax(data.pvpItems || [], "lastLowPrice"),
+            avg24hPrice: getMinMax(data.pvpItems || [], "avg24hPrice"),
           }));
           setIsLoading(false);
         }
@@ -310,7 +311,16 @@ export default function ItemsTablePage() {
           <TableBody>
             {filtered.map((item) => (
               <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell className="font-medium">
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline text-primary"
+                  >
+                    {item.name}
+                  </a>
+                </TableCell>
                 {/* <TableCell className="text-muted-foreground">{item.shortName}</TableCell> */}
                 <TableCell className="text-right font-semibold">
                   {item.basePrice.toLocaleString()}

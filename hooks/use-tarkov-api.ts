@@ -210,3 +210,85 @@ export async function fetchTarkovData(
     throw error;
   }
 }
+
+export interface MinimalItem {
+  id: string;
+  name: string;
+  shortName: string;
+  basePrice: number;
+  lastLowPrice: number | null;
+  avg24hPrice: number | null;
+  link: string;
+}
+
+interface FetchMinimalTarkovGraphQLResponse {
+  data?: {
+    pvpItems: MinimalItem[];
+    pveItems: MinimalItem[];
+  };
+  errors?: Array<{ message: string }>;
+}
+
+export async function fetchMinimalTarkovData(): Promise<{ pvpItems: MinimalItem[]; pveItems: MinimalItem[] }> {
+  const startTime = Date.now();
+  const query = `
+    {
+      pvpItems: items(gameMode: regular) {
+        id
+        name
+        shortName
+        basePrice
+        lastLowPrice
+        avg24hPrice
+        link
+      }
+      pveItems: items(gameMode: pve) {
+        id
+        name
+        shortName
+        basePrice
+        lastLowPrice
+        avg24hPrice
+        link
+      }
+    }
+  `;
+
+  try {
+    console.debug('🔄 Fetching minimal Tarkov data');
+    const response = await fetch(GRAPHQL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+      next: { revalidate: 300 }, // 5 minutes cache
+    });
+
+    if (!response.ok) {
+      console.error(`❌ HTTP error! Status: ${response.status} when fetching minimal Tarkov data`);
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const result: FetchMinimalTarkovGraphQLResponse = await response.json();
+
+    if (result.errors) {
+      console.error('❌ GraphQL errors on minimal fetch:', result.errors);
+      throw new Error(`GraphQL error: ${result.errors.map(e => e.message).join(', ')}`);
+    }
+
+    if (!result.data || !result.data.pvpItems || !result.data.pveItems) {
+      console.error('❌ No data in GraphQL response for minimal fetch');
+      throw new Error('No data returned from Tarkov API for minimal fetch');
+    }
+
+    const endTime = Date.now();
+    console.debug(`✅ Minimal Tarkov data fetched in ${endTime - startTime}ms`);
+
+    return { pvpItems: result.data.pvpItems, pveItems: result.data.pveItems };
+  } catch (error) {
+    console.error('❌ Failed to fetch minimal Tarkov data:', error);
+    return { pvpItems: [], pveItems: [] };
+  }
+}
