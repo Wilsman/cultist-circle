@@ -1,18 +1,22 @@
 // app/base-values/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchMinimalTarkovData, MinimalItem } from "@/hooks/use-tarkov-api";
+import { useDebounce } from "@/hooks/use-debounce";
 // UI components
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
-  TableRow,
 } from "@/components/ui/table";
+import {
+  TableCell,
+  TableRow,
+} from "@/components/ui/memoized-table";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -66,6 +70,9 @@ export default function ItemsTablePage() {
     sort: "basePrice", // Default sort
     sortDir: "desc",
   });
+  
+  // Debounce the search input to prevent excessive re-renders
+  const debouncedSearchTerm = useDebounce(filter.name, 300);
 
   useEffect(() => {
     let isMounted = true;
@@ -91,35 +98,48 @@ export default function ItemsTablePage() {
     };
   }, []);
 
-  // Function to handle sorting when table headers are clicked
-  function handleHeaderSort(
-    sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice"
-  ) {
-    setFilter((f) => ({
-      ...f,
-      sort: sortKey,
-      // Toggle direction if same key, else default (asc for name/shortName, desc for prices)
-      sortDir:
-        f.sort === sortKey
-          ? f.sortDir === "asc"
-            ? "desc"
-            : "asc"
-          : sortKey === "name" || sortKey === "shortName"
-          ? "asc"
-          : "desc",
-    }));
-  }
+  // Memoize the header sort handler to prevent recreating on each render
+  const handleHeaderSort = useCallback(
+    (sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice") => {
+      setFilter((f) => ({
+        ...f,
+        sort: sortKey,
+        // Toggle direction if same key, else default (asc for name/shortName, desc for prices)
+        sortDir:
+          f.sort === sortKey
+            ? f.sortDir === "asc"
+              ? "desc"
+              : "asc"
+            : sortKey === "name" || sortKey === "shortName"
+            ? "asc"
+            : "desc",
+      }));
+    },
+    []
+  )
 
   const items = mode === "pvp" ? pvp : pve;
   const filtered = useMemo(() => {
-    const q = filter.name.trim().toLowerCase();
-    let filteredItems = items.filter(
-      (
-        item // Renamed to avoid conflict
-      ) =>
-        (!q ||
-          item.name.toLowerCase().includes(q) ||
-          item.shortName.toLowerCase().includes(q)) && // Keep shortName search
+    // Use debounced search term instead of directly using filter.name
+    const q = debouncedSearchTerm.trim().toLowerCase();
+    
+    // Only filter if we have items and either search term or price filters
+    if (!items.length) return [];
+    
+    let filteredItems = items;
+    
+    // Only apply name filter if search term exists
+    if (q) {
+      filteredItems = filteredItems.filter(
+        item => 
+          item.name.toLowerCase().includes(q) || 
+          item.shortName.toLowerCase().includes(q)
+      );
+    }
+    
+    // Apply price filters
+    filteredItems = filteredItems.filter(
+      item => 
         item.basePrice >= filter.basePrice[0] &&
         item.basePrice <= filter.basePrice[1] &&
         (typeof item.lastLowPrice !== "number" ||
@@ -164,7 +184,7 @@ export default function ItemsTablePage() {
     return filteredItems;
   }, [
     items,
-    filter.name,
+    debouncedSearchTerm, // Use debounced search term instead of filter.name
     filter.sort,
     filter.sortDir,
     filter.basePrice,
@@ -203,8 +223,47 @@ export default function ItemsTablePage() {
           placeholder="Search name or short name..."
           value={filter.name}
           onChange={(e) => setFilter((f) => ({ ...f, name: e.target.value }))}
-          className="h-8 w-full md:w-[350px] lg:w-[500px]"
+          className="h-8 w-full md:w-[250px] lg:w-[300px]"
+          // Add aria-label for accessibility
+          aria-label="Search items"
         />
+        <Input
+          type="number"
+          min={0}
+          value={filter.basePrice[0]}
+          onChange={e => {
+            const min = Number(e.target.value);
+            setFilter(f => ({ ...f, basePrice: [min, f.basePrice[1]] }));
+          }}
+          className="h-8 w-24"
+          placeholder="Min Value"
+          aria-label="Min Base Value"
+        />
+        <Input
+          type="number"
+          min={0}
+          value={filter.basePrice[1]}
+          onChange={e => {
+            const max = Number(e.target.value);
+            setFilter(f => ({ ...f, basePrice: [f.basePrice[0], max] }));
+          }}
+          className="h-8 w-24"
+          placeholder="Max Value"
+          aria-label="Max Base Value"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2"
+          onClick={() => {
+            const [min, max] = getMinMax(items, "basePrice");
+            setFilter(f => ({ ...f, basePrice: [min, max] }));
+          }}
+          aria-label="Reset base value filter"
+        >
+          Reset
+        </Button>
         <div className="flex items-center gap-2 ml-auto">
           <span className="text-xs font-medium">PVP</span>
           <Switch
