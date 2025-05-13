@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface FilterState {
@@ -242,8 +242,19 @@ export default function ItemsTablePage() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       {/* Header Section */}
+      {/* Top bar with back button */}
+      <div className="flex items-center gap-2 mb-6">
+        <button
+          className="p-2 text-white bg-muted hover:bg-muted-foreground rounded"
+          onClick={() => window.location.assign("/")}
+          aria-label="Back to home"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </button>
+        <h1 className="text-2xl font-bold tracking-tight ml-2">Items</h1>
+      </div>
+      {/* Header description */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Items</h1>
         <p className="text-muted-foreground">
           Base Values for ALL items from Escape From Tarkov with sorting and
           filtering capabilities.

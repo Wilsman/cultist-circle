@@ -11,7 +11,7 @@ import React, {
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import ItemSocket from "@/components/item-socket";
-import { MessageSquareWarning, Settings } from "lucide-react";
+import { MessageSquareWarning, Settings, Table } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1040,6 +1040,17 @@ function AppContent() {
                       </svg>
                       Recipes
                     </span>
+                  </Link>
+                </Button>
+                {/* button link to base values */}
+                <Button
+                  variant="ghost"
+                  className="flex-1 hover:bg-gray-700/50 rounded-none border-r border-gray-700"
+                  asChild
+                >
+                  <Link href="/base-values" className="flex items-center justify-center">
+                    <Table className="h-4 w-4 mr-2" />
+                    Base Values
                   </Link>
                 </Button>
                 <Button
