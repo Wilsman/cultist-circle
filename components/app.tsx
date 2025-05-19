@@ -1084,22 +1084,16 @@ function AppContent() {
                 className="mb-2 border-yellow-400/70 bg-yellow-50 dark:bg-yellow-900/10 animate-fade-in rounded shadow"
               >
                 <AlertTitle className="text-sm font-bold text-yellow-700 dark:text-yellow-200 text-center">
-                  New Price Types and Offer Count Detection Available!
+                  New Base Value Lookup Table!
                 </AlertTitle>
                 <AlertDescription className="text-xs text-yellow-800 dark:text-yellow-100 text-center">
-                  You can now select between{" "}
-                  <span className="font-semibold">Last Low Price</span> and{" "}
-                  <span className="font-semibold">Average 24h Price</span> for
-                  items and use{" "}
-                  <span className="font-semibold">lastOfferCount</span> to
-                  detect unstable prices. Try it out in{" "}
-                  <button
-                    type="button"
+                  Quickly check the base value of any item. Try it out here{" "}
+                  <Link
+                    href="/base-values"
                     className="underline font-semibold text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 focus:outline-none"
-                    onClick={() => setIsSettingsPaneVisible(true)}
                   >
-                    Settings
-                  </button>
+                    Base Values
+                  </Link>
                   .
                 </AlertDescription>
               </Alert>
