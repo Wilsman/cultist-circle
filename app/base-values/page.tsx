@@ -1,14 +1,22 @@
 // app/base-values/page.tsx
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { fetchMinimalTarkovData, MinimalItem } from "@/hooks/use-tarkov-api";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useFavorites } from "@/hooks/use-favorites";
 // UI components
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { VirtualizedTable } from "@/components/ui/virtualized-table";
 import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
 import {
   Select,
   SelectContent,
@@ -16,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface FilterState {
@@ -49,10 +57,10 @@ function getMinMax(
 export default function ItemsTablePage() {
   // Add isPending state for transitions
   const [isPending, startTransition] = useTransition();
-  
+
   // Separate search input state from filter state
   const [searchInput, setSearchInput] = useState("");
-  
+
   const [pvp, setPvp] = useState<MinimalItem[]>([]);
   const [pve, setPve] = useState<MinimalItem[]>([]);
   const [mode, setMode] = useState<"pvp" | "pve">("pvp");
@@ -68,14 +76,23 @@ export default function ItemsTablePage() {
     sort: "basePrice", // Default sort
     sortDir: "desc",
   });
-  
+
+  // Initialize favorites functionality
+  const {
+    isFavorite,
+    toggleFavorite,
+    showOnlyFavorites,
+    setShowOnlyFavorites,
+    hasFavorites,
+  } = useFavorites(mode);
+
   // Debounce the search input to prevent excessive re-renders
   const debouncedSearchTerm = useDebounce(searchInput, 300);
-  
+
   // Update filter when debounced search term changes
   useEffect(() => {
     startTransition(() => {
-      setFilter(prev => ({ ...prev, name: debouncedSearchTerm }));
+      setFilter((prev) => ({ ...prev, name: debouncedSearchTerm }));
     });
   }, [debouncedSearchTerm, startTransition]);
 
@@ -105,7 +122,14 @@ export default function ItemsTablePage() {
 
   // Memoize the header sort handler to prevent recreating on each render
   const handleHeaderSort = useCallback(
-    (sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice") => {
+    (
+      sortKey:
+        | "name"
+        | "shortName"
+        | "basePrice"
+        | "lastLowPrice"
+        | "avg24hPrice"
+    ) => {
       // Use startTransition to mark UI updates as non-urgent
       startTransition(() => {
         setFilter((f) => ({
@@ -124,30 +148,39 @@ export default function ItemsTablePage() {
       });
     },
     [startTransition]
-  )
+  );
 
-  const items = mode === "pvp" ? pvp : pve;
+  const items = useMemo(() => {
+    const allItems = mode === "pvp" ? pvp : pve;
+
+    // Filter by favorites if enabled
+    if (showOnlyFavorites) {
+      return allItems.filter((item) => isFavorite(item.id));
+    }
+
+    return allItems;
+  }, [mode, pvp, pve, showOnlyFavorites, isFavorite]);
   const filtered = useMemo(() => {
     // Use debounced search term instead of directly using filter.name
     const q = debouncedSearchTerm.trim().toLowerCase();
-    
+
     // Only filter if we have items and either search term or price filters
     if (!items.length) return [];
-    
+
     let filteredItems = items;
-    
+
     // Only apply name filter if search term exists
     if (q) {
       filteredItems = filteredItems.filter(
-        item => 
-          item.name.toLowerCase().includes(q) || 
+        (item) =>
+          item.name.toLowerCase().includes(q) ||
           item.shortName.toLowerCase().includes(q)
       );
     }
-    
+
     // Apply price filters
     filteredItems = filteredItems.filter(
-      item => 
+      (item) =>
         item.basePrice >= filter.basePrice[0] &&
         item.basePrice <= filter.basePrice[1] &&
         (typeof item.lastLowPrice !== "number" ||
@@ -159,7 +192,7 @@ export default function ItemsTablePage() {
     );
 
     if (filter.sort === "bestValue") {
-      filteredItems = filteredItems.sort((a, b) => {
+      filteredItems = [...filteredItems].sort((a, b) => {
         const aVal =
           a.lastLowPrice && a.basePrice ? a.basePrice / a.lastLowPrice : 0;
         const bVal =
@@ -218,7 +251,7 @@ export default function ItemsTablePage() {
           <Skeleton className="h-4 w-16 ml-auto" />
         </div>
       </div>
-      
+
       {/* Row skeletons */}
       {Array.from({ length: 10 }).map((_, index) => (
         <div className="flex border-b transition-colors" key={index}>
@@ -275,10 +308,10 @@ export default function ItemsTablePage() {
           type="number"
           min={0}
           value={filter.basePrice[0]}
-          onChange={e => {
+          onChange={(e) => {
             const min = Number(e.target.value);
             startTransition(() => {
-              setFilter(f => ({ ...f, basePrice: [min, f.basePrice[1]] }));
+              setFilter((f) => ({ ...f, basePrice: [min, f.basePrice[1]] }));
             });
           }}
           className="h-8 w-24"
@@ -289,10 +322,10 @@ export default function ItemsTablePage() {
           type="number"
           min={0}
           value={filter.basePrice[1]}
-          onChange={e => {
+          onChange={(e) => {
             const max = Number(e.target.value);
             startTransition(() => {
-              setFilter(f => ({ ...f, basePrice: [f.basePrice[0], max] }));
+              setFilter((f) => ({ ...f, basePrice: [f.basePrice[0], max] }));
             });
           }}
           className="h-8 w-24"
@@ -307,13 +340,38 @@ export default function ItemsTablePage() {
           onClick={() => {
             startTransition(() => {
               const [min, max] = getMinMax(items, "basePrice");
-              setFilter(f => ({ ...f, basePrice: [min, max] }));
+              setFilter((f) => ({ ...f, basePrice: [min, max] }));
             });
           }}
           aria-label="Reset base value filter"
         >
           Reset
         </Button>
+        {/* Favorites Toggle */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center space-x-2">
+            <Toggle
+              variant="outline"
+              aria-label="Show only favorites"
+              pressed={showOnlyFavorites}
+              onPressedChange={(pressed) => {
+                startTransition(() => {
+                  setShowOnlyFavorites(pressed);
+                });
+              }}
+              disabled={!hasFavorites}
+              className="h-8 px-3"
+            >
+              <Star
+                className={`h-4 w-4 mr-2 ${
+                  showOnlyFavorites ? "fill-yellow-500 text-yellow-500" : ""
+                }`}
+              />
+              <span className="text-xs">Favorites</span>
+            </Toggle>
+          </div>
+        </div>
+
         <div className="flex items-center gap-2 ml-auto">
           <span className="text-xs font-medium">PVP</span>
           <Switch
@@ -347,7 +405,11 @@ export default function ItemsTablePage() {
           onValueChange={(value) => {
             startTransition(() => {
               if (value === "bestValue") {
-                setFilter((f) => ({ ...f, sort: "bestValue", sortDir: "desc" }));
+                setFilter((f) => ({
+                  ...f,
+                  sort: "bestValue",
+                  sortDir: "desc",
+                }));
               } // Add else if needed to clear sort when deselecting, or handle via placeholder
             });
           }}
@@ -370,18 +432,35 @@ export default function ItemsTablePage() {
           <span className="text-sm text-muted-foreground">Updating...</span>
         </div>
       )}
-      
-      {/* Virtualized Table with skeleton fallback during loading */}
-      {isLoading ? (
-        <TableSkeleton />
-      ) : (
-        <VirtualizedTable 
-          items={filtered} 
-          sortKey={filter.sort} 
-          sortDir={filter.sortDir}
-          onHeaderSort={handleHeaderSort}
-        />
+
+      {/* No favorites message */}
+      {showOnlyFavorites && filtered.length === 0 && !isLoading && (
+        <div className="flex flex-col items-center justify-center p-8 text-center border rounded-md">
+          <Star className="h-12 w-12 text-muted-foreground/30 mb-4" />
+          <h3 className="text-lg font-medium mb-2">No favorite items</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            {hasFavorites
+              ? "No favorites match the current filters. Try adjusting your search or filters."
+              : "You haven't added any items to your favorites yet. Click the star icon next to an item to add it to your favorites."}
+          </p>
+        </div>
       )}
+
+      {/* Virtualized Table with skeleton fallback during loading */}
+      {!showOnlyFavorites || filtered.length > 0 ? (
+        isLoading ? (
+          <TableSkeleton />
+        ) : (
+          <VirtualizedTable
+            items={filtered}
+            sortKey={filter.sort}
+            sortDir={filter.sortDir}
+            onHeaderSort={handleHeaderSort}
+            onToggleFavorite={toggleFavorite}
+            isFavorite={isFavorite}
+          />
+        )
+      ) : null}
     </div>
   );
 }
