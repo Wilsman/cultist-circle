@@ -689,21 +689,25 @@ function AppContent() {
     setIsCalculating(true);
 
     try {
-      // Filter validItems based on heuristics
-      let validItems: SimplifiedItem[] = items.filter((item) => {
-        return item[fleaPriceType] !== undefined && item[fleaPriceType]! > 0;
-      });
+      // Single-pass filter with all conditions, then sort and limit
+      const validItems = items
+        .map(item => ({
+          item,
+          price: item[fleaPriceType],
+          efficiency: item.basePrice / (item[fleaPriceType] || 1) // Avoid division by zero
+        }))
+        .filter(({ item, price }) => 
+          price !== undefined && 
+          price > 0 &&
+          item.basePrice >= threshold * 0.1 &&
+          !excludedItems.has(item.name)
+        )
+        .sort((a, b) => b.efficiency - a.efficiency)
+        .slice(0, 100)
+        .map(({ item }) => item); // Map back to just the items
 
-      // Apply filtering heuristics
-      validItems = validItems
-        .filter((item) => item.basePrice >= threshold * 0.1) // Only items contributing at least 10% to the threshold
-        .filter((item) => !excludedItems.has(item.name)) // Exclude user-excluded items
-        .sort((a, b) => {
-          return b.basePrice / b[fleaPriceType]! - a.basePrice / a[fleaPriceType]!;
-        })
-        .slice(0, 100); // Limit to top 100 items
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Small delay to prevent UI freezing
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const pinnedTotal = selectedItems.reduce(
         (sum, item, index) =>
