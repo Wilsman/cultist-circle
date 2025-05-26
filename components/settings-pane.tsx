@@ -188,17 +188,34 @@ export default function SettingsPane({
                       <SelectValue placeholder="Sort by..." />
                     </SelectTrigger>
                     <SelectContent className="bg-[#232b32] border border-[#e4c15a]/30 text-gray-100">
-                      <SelectItem value="az">Item name: A-Z</SelectItem>
-                      <SelectItem value="most-recent">
+                      <SelectItem 
+                        value="az" 
+                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
+                      >
+                        Item name: A-Z
+                      </SelectItem>
+                      <SelectItem 
+                        value="most-recent"
+                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
+                      >
                         Most recently updated first
                       </SelectItem>
-                      <SelectItem value="base-value">
+                      <SelectItem 
+                        value="base-value"
+                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
+                      >
                         Base Value: Low to High
                       </SelectItem>
-                      <SelectItem value="base-value-desc">
+                      <SelectItem 
+                        value="base-value-desc"
+                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
+                      >
                         Base Value: High to Low
                       </SelectItem>
-                      <SelectItem value="ratio">
+                      <SelectItem 
+                        value="ratio"
+                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
+                      >
                         Best value for money
                       </SelectItem>
                     </SelectContent>
