@@ -151,9 +151,9 @@ export default function SettingsPane({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-gray-800/95 backdrop-blur-md border-gray-700 text-white max-w-2xl max-h-[90vh] sm:max-h-[85vh] h-full overflow-hidden flex flex-col">
+      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="bg-gray-800/95 backdrop-blur-md border-gray-700 text-white max-w-2xl max-h-[90vh] sm:max-h-[85vh] h-full overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
+          <DialogTitle className="flex items-center gap-2 text-xl text-white">
             <SettingsIcon className="h-5 w-5" />
             Settings
           </DialogTitle>
