@@ -1,7 +1,7 @@
 // components/ui/virtualized-table.tsx
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { FixedSizeList as List } from "react-window";
 import { cn } from "@/lib/utils";
 import { MinimalItem } from "@/hooks/use-tarkov-api";
@@ -25,6 +25,21 @@ export function VirtualizedTable({
   onToggleFavorite,
   isFavorite,
 }: VirtualizedTableProps) {
+  const [tableHeight, setTableHeight] = useState(0); // Default height, will be updated
+
+  useEffect(() => {
+    function handleResize() {
+      // Assuming 200px for other elements like header/footer/margins
+      setTableHeight(window.innerHeight - 200);
+    }
+
+    // Set initial height
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Custom cell component that uses divs instead of td elements
   const Cell = React.memo(
     ({
@@ -156,7 +171,7 @@ export function VirtualizedTable({
         </div>
       </div>
       <List
-        height={window.innerHeight - 200}
+        height={tableHeight}
         width="100%"
         itemCount={items.length}
         itemSize={40}

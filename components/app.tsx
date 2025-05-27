@@ -17,6 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
@@ -50,7 +56,7 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 
-export const CURRENT_VERSION = "1.2.1"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "1.2.2"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
@@ -1021,45 +1027,62 @@ function AppContent() {
             <div className="absolute top-0 left-0 right-0 flex w-full bg-gray-900/80 rounded-t-lg">
               <div className="flex w-full">
                 <InstructionsDialog />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="flex-1 hover:bg-gray-700/50 rounded-none border-r border-gray-700"
+                    >
+                      <span className="flex items-center justify-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          className="h-4 w-4 mr-2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                          />
+                        </svg>
+                        Tools
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-48 ring-1 ring-gray-700 hover:text-gray-100 bg-gray-800 hover:bg-gray-700 hover:ring-gray-700 hover:ring-1 hover:ring-offset-1" align="start">
+                    <DropdownMenuItem asChild>
+                      <Link href="/recipes" className="cursor-pointer">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          className="h-4 w-4 mr-2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                          />
+                        </svg>
+                        Recipes
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/base-values" className="cursor-pointer">
+                        <Table className="h-4 w-4 mr-2" />
+                        Base Values
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button
                   variant="ghost"
-                  className="flex-1 hover:bg-gray-700/50 rounded-none border-r border-gray-700"
-                  asChild
-                >
-                  <Link href="/recipes">
-                    <span className="flex items-center justify-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        className="h-4 w-4 mr-2"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                        />
-                      </svg>
-                      Recipes
-                    </span>
-                  </Link>
-                </Button>
-                {/* button link to base values */}
-                <Button
-                  variant="ghost"
-                  className="flex-1 hover:bg-gray-700/50 rounded-none border-r border-gray-700"
-                  asChild
-                >
-                  <Link href="/base-values" className="flex items-center justify-center">
-                    <Table className="h-4 w-4 mr-2" />
-                    Base Values
-                  </Link>
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tr-lg"
+                  className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tr-lg ml-auto"
                   onClick={() => setIsSettingsPaneVisible(true)}
                 >
                   <Settings className="h-4 w-4 mr-2" />
@@ -1306,7 +1329,10 @@ function AppContent() {
                         onClick={resetOverridesAndExclusions}
                         disabled={isResetOverridesButtonDisabled}
                       >
-                        Reset Overrides
+                        <span className="hidden sm:inline">
+                          Reset Overrides
+                        </span>
+                        <span className="sm:hidden">Reset</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>

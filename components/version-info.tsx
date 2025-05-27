@@ -32,32 +32,38 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
-                  New: Implimented lastOfferCount to detect unstable prices
+                  <span className="font-medium">New:</span> Base Values quick lookup table page
                 </span>
               </li>
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
-                  New: Added new price types: Last Low Price and Average 24h Price
+                  <span className="font-medium">Bug fix:</span> Fixed settings-sort dropdown causing freezes
                 </span>
               </li>
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
-                  Bug fix: Fixed visual glitch when selecting the second item
+                  <span className="font-medium">New:</span> Implimented lastOfferCount to detect unstable prices
                 </span>
               </li>
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
-                  Added visual placement preview and fit check warning when
+                  <span className="font-medium">New:</span> Added new price types: Last Low Price and Average 24h Price
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
+                  <span className="font-medium">Bug fix:</span> Fixed visual glitch when selecting the second item
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
+                  <span className="font-medium">New:</span> Added visual placement preview and fit check warning when
                   items don&apos;t fit
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  Added new sort option: Base Value: High to Low
                 </span>
               </li>
             </ul>
@@ -115,6 +121,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
                 <span className="text-red-500">•</span>
                 <span className="text-left">
                   Excluded items get reset after refresh or gamemode switch
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-red-500">•</span>
+                <span className="text-left">
+                  Data loading may occasionally get stuck—please refresh the page if needed
                 </span>
               </li>
             </ul>
