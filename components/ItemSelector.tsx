@@ -83,12 +83,17 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     const validItems = Array.isArray(items) ? items : [];
     try {
       return new Fuse(validItems, {
-        keys: ["name"],
-        threshold: 0.3,
-        includeScore: false,
+        keys: [
+          { name: 'name', weight: 0.7 },
+          { name: 'shortName', weight: 0.3 }
+        ],
+        threshold: 0.4,
+        includeScore: true,
+        ignoreLocation: true,
+        minMatchCharLength: 2
       });
     } catch (e) {
-      console.debug("Fuse initialization error or empty items array");
+      console.debug("Fuse initialization error or empty items array", e);
       return null;
     }
   }, [items]);

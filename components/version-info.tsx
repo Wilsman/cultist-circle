@@ -38,6 +38,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  <span className="font-medium">New:</span> Search by either name or shortName e.g. GPU
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   <span className="font-medium">Bug fix:</span> Fixed settings-sort dropdown causing freezes
                 </span>
               </li>

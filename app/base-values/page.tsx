@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Loader2, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 interface FilterState {
   name: string;
@@ -48,6 +50,11 @@ function getMinMax(
   items: MinimalItem[],
   key: keyof MinimalItem
 ): [number, number] {
+  if (items.length === 0) {
+    // Sensible fallback avoids Infinity/-Infinity propagation
+    return [0, 0];
+  }
+
   const nums = items.map((i) =>
     typeof i[key] === "number" ? (i[key] as number) : 0
   );
@@ -201,7 +208,7 @@ export default function ItemsTablePage() {
       });
     } else {
       // Handle header sorting (name, shortName, prices)
-      filteredItems = filteredItems.sort((a, b) => {
+      filteredItems = [...filteredItems].sort((a, b) => {
         const sortKey = filter.sort as
           | "name"
           | "shortName"
@@ -284,15 +291,39 @@ export default function ItemsTablePage() {
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-2xl font-bold tracking-tight ml-2">Items</h1>
+        <h1 className="text-2xl font-bold tracking-tight ml-2">
+          Item Base Values
+        </h1>
       </div>
       {/* Header description */}
       <div className="mb-6">
-        <p className="text-muted-foreground">
-          Base Values for ALL items from Escape From Tarkov with sorting and
-          filtering capabilities.
+        <p className="text-muted-foreground pb-2">
+          Quickly view the base values for{" "}
+          <span className="font-semibold">all items</span> from Escape From
+          Tarkov
         </p>
+        <ul className="text-muted-foreground list-disc list-inside">
+          <li>Sort and filter items by various criteria</li>
+          <li>Search by long or short name</li>
+          <li>
+            Adjust the base value range to find items within a specific price
+          </li>
+          <li>
+            Switch between <span className="font-semibold">PVP</span> and{" "}
+            <span className="font-semibold">PVE</span> to see base values per
+            game mode
+          </li>
+        </ul>
       </div>
+
+      <Alert className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
+        <AlertDescription className="flex items-center gap-2 text-sm">
+          <Info className="h-4 w-4 flex-shrink-0 text-yellow-500" />
+          Flea prices shown are estimates sourced from tarkov.dev and may not
+          reflect real-time market values. These prices are the latest available
+          from the API.
+        </AlertDescription>
+      </Alert>
 
       {/* Filter/Controls Bar */}
       <div className="flex flex-wrap items-center gap-4 mb-4">
