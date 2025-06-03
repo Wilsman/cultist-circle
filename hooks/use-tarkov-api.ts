@@ -22,6 +22,10 @@ export const CACHE_TTL = 900000; // 15 minutes
 let combinedDataCache: CombinedTarkovData | null = null;
 let lastFetchTime = 0;
 
+// Cache for the minimal data to avoid duplicate fetches
+let minimalDataCache: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] } | null = null;
+let minimalDataLastFetchTime = 0;
+
 /**
  * Fetches all Tarkov item data from the tarkov.dev GraphQL API for both game modes
  * @returns Promise with combined data for both PVP and PVE modes
@@ -217,6 +221,14 @@ interface FetchMinimalTarkovGraphQLResponse {
 }
 
 export async function fetchMinimalTarkovData(): Promise<{ pvpItems: MinimalItem[]; pveItems: MinimalItem[] }> {
+  const now = Date.now();
+  
+  // Return cached data if it's still fresh
+  if (minimalDataCache && now - minimalDataLastFetchTime < CACHE_TTL) {
+    console.debug('📦 Using cached minimal Tarkov data');
+    return minimalDataCache;
+  }
+  
   const startTime = Date.now();
   const query = `
     {
@@ -250,7 +262,7 @@ export async function fetchMinimalTarkovData(): Promise<{ pvpItems: MinimalItem[
         'Accept': 'application/json',
       },
       body: JSON.stringify({ query }),
-      next: { revalidate: 300 }, // 5 minutes cache
+      // Using CACHE_TTL instead of next.revalidate for consistency
     });
 
     if (!response.ok) {
@@ -272,8 +284,12 @@ export async function fetchMinimalTarkovData(): Promise<{ pvpItems: MinimalItem[
 
     const endTime = Date.now();
     console.debug(`✅ Minimal Tarkov data fetched in ${endTime - startTime}ms`);
+    
+    // Update the cache
+    minimalDataCache = { pvpItems: result.data.pvpItems, pveItems: result.data.pveItems };
+    minimalDataLastFetchTime = now;
 
-    return { pvpItems: result.data.pvpItems, pveItems: result.data.pveItems };
+    return minimalDataCache;
   } catch (error) {
     console.error('❌ Failed to fetch minimal Tarkov data:', error);
     return { pvpItems: [], pveItems: [] };

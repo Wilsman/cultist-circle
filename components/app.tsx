@@ -718,7 +718,7 @@ function AppContent() {
             price !== undefined &&
             price > 0 &&
             item.basePrice >= threshold * 0.1 &&
-            !excludedItems.has(item.name)
+            !excludedItems.has(item.name.toLowerCase())
         )
         .sort((a, b) => b.efficiency - a.efficiency)
         .slice(0, 100)
