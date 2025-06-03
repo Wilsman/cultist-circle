@@ -11,8 +11,13 @@ import React, {
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import ItemSocket from "@/components/item-socket";
-import { MessageSquareWarning, Settings, Table } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { 
+  AlertCircle,
+  Loader2, 
+  MessageSquareWarning, 
+  Settings, 
+  Table
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -156,6 +161,8 @@ function AppContent() {
     isLoading: loading,
     hasError,
     mutate,
+    needsManualRetry,
+    resetRetryCount
   } = useItemsData(isPVE);
 
   // Save isPVE state to localStorage when it changes
@@ -1209,9 +1216,27 @@ function AppContent() {
                     </div>
                   ) : rawItemsData.length === 0 ? (
                     <div className="text-gray-400 text-center p-4 flex flex-col items-center space-y-2">
-                      <Loader2 className="animate-spin h-8 w-8 text-gray-500" />
-                      <span>Fetching items, please wait...</span>
-                      {/* <Button onClick={handleRefreshClick}>Try Again</Button> */}
+                      {needsManualRetry ? (
+                        <>
+                          <AlertCircle className="h-8 w-8 text-amber-500" />
+                          <span>Failed to fetch items after multiple attempts.</span>
+                          <Button 
+                            onClick={() => {
+                              resetRetryCount();
+                              mutate();
+                            }}
+                            variant="outline"
+                            className="mt-2"
+                          >
+                            Try Again
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Loader2 className="animate-spin h-8 w-8 text-gray-500" />
+                          <span>Fetching items, please wait...</span>
+                        </>
+                      )}
                     </div>
                   ) : (
                     selectedItems.map((item, index) => (

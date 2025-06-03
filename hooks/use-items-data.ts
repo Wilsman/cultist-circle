@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
 import { fetchTarkovData, CACHE_TTL } from "./use-tarkov-api";
@@ -17,7 +17,9 @@ const requestTracker = {
   lastFetchTime: 0,
   inProgress: false,
   lastDataPVP: [] as SimplifiedItem[],
-  lastDataPVE: [] as SimplifiedItem[]
+  lastDataPVE: [] as SimplifiedItem[],
+  retryCount: 0,
+  maxRetries: 3
 };
 
 export function useItemsData(isPVE: boolean) {
@@ -30,8 +32,13 @@ export function useItemsData(isPVE: boolean) {
   // Track mode changes without clearing cache
   useEffect(() => {
     console.debug(`🔄 [${mode.toUpperCase()}] Mode changed, using cache if available`);
+    // Reset retry count when mode changes
+    requestTracker.retryCount = 0;
   }, [mode]); // Only depend on mode to track mode changes
   const { toast } = useToast();
+  
+  // State to track if we need to show a retry button
+  const [needsManualRetry, setNeedsManualRetry] = useState(false);
 
   const fetcher = async (): Promise<SimplifiedItem[]> => {
     // Simple request tracking to prevent duplicate fetches
@@ -49,6 +56,30 @@ export function useItemsData(isPVE: boolean) {
       
       // Fetch data for the requested game mode
       const response = await fetchTarkovData(gameMode as 'pve' | 'regular');
+      
+      // Check if the data is empty
+      if (response.items.length === 0) {
+        console.warn(`⚠️ [${mode.toUpperCase()}] Received empty data from API`);
+        
+        // Increment retry count
+        requestTracker.retryCount++;
+        
+        // If we haven't exceeded max retries, throw an error to trigger retry
+        if (requestTracker.retryCount < requestTracker.maxRetries) {
+          throw new Error('Empty data received, retrying...');
+        } else {
+          // We've exceeded max retries, set flag to show manual retry button
+          setNeedsManualRetry(true);
+          console.error(`❌ [${mode.toUpperCase()}] Max retries (${requestTracker.maxRetries}) exceeded with empty data`);
+          
+          // Return empty array but don't cache it
+          return [];
+        }
+      }
+      
+      // Reset retry count on successful fetch with data
+      requestTracker.retryCount = 0;
+      setNeedsManualRetry(false);
       
       // Store the data in the appropriate cache
       if (isPVE) {
@@ -112,5 +143,10 @@ export function useItemsData(isPVE: boolean) {
     isLoading: !error && !data,
     hasError: !!error,
     mutate,
+    needsManualRetry,
+    resetRetryCount: () => {
+      requestTracker.retryCount = 0;
+      setNeedsManualRetry(false);
+    }
   };
 }
