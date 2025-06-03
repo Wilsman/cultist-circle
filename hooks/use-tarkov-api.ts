@@ -15,10 +15,12 @@ interface CombinedTarkovData {
   };
 }
 
+// Define a consistent cache TTL to use across the application
+export const CACHE_TTL = 900000; // 15 minutes
+
 // Cache for the combined data to avoid duplicate fetches
 let combinedDataCache: CombinedTarkovData | null = null;
 let lastFetchTime = 0;
-const CACHE_TTL = 600000; // 10 minutes
 
 /**
  * Fetches all Tarkov item data from the tarkov.dev GraphQL API for both game modes
@@ -102,7 +104,7 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
     }
 
     // Transform the data for both modes
-    const transformPvpItems = data.pvpItems.map((item: TarkovItem) => ({
+    const transformItem = (item: TarkovItem) => ({
       id: item.id,
       name: item.name,
       shortName: item.shortName,
@@ -118,25 +120,10 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
       tags: [],
       isExcluded: false,
       categories_display: item.categories,
-    }));
+    });
 
-    const transformPveItems = data.pveItems.map((item: TarkovItem) => ({
-      id: item.id,
-      name: item.name,
-      shortName: item.shortName,
-      basePrice: item.basePrice,
-      lastLowPrice: item.lastLowPrice || undefined,
-      updated: item.updated,
-      lastOfferCount: item.lastOfferCount || undefined,
-      avg24hPrice: item.avg24hPrice || undefined,
-      iconLink: item.iconLink,
-      width: item.width,
-      height: item.height,
-      categories: item.categories.map((cat: { name: string }) => cat.name),
-      tags: [],
-      isExcluded: false,
-      categories_display: item.categories,
-    }));
+    const transformPvpItems = data.pvpItems.map(transformItem);
+    const transformPveItems = data.pveItems.map(transformItem);
 
     // Count unique categories (combining both modes)
     const allCategories = new Set([...transformPvpItems, ...transformPveItems].flatMap(item => item.categories || []));

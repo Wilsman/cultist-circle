@@ -50,11 +50,7 @@ import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
 import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const CURRENT_VERSION = "1.2.2"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
@@ -65,7 +61,7 @@ const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
 });
 
-type FleaPriceType = 'lastLowPrice' | 'avg24hPrice';
+type FleaPriceType = "lastLowPrice" | "avg24hPrice";
 
 function AppContent() {
   // Placement preview modal state
@@ -108,24 +104,29 @@ function AppContent() {
   });
   const [fleaPriceType, setFleaPriceType] = useState<FleaPriceType>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(FLEA_PRICE_TYPE_KEY) as FleaPriceType | null;
-      if (saved === 'lastLowPrice' || saved === 'avg24hPrice') {
+      const saved = localStorage.getItem(
+        FLEA_PRICE_TYPE_KEY
+      ) as FleaPriceType | null;
+      if (saved === "lastLowPrice" || saved === "avg24hPrice") {
         console.log("Loading flea price type from localStorage:", saved);
         return saved;
       }
     }
-    console.log("No valid saved flea price type found, using default: lastLowPrice");
-    return 'lastLowPrice';
+    console.log(
+      "No valid saved flea price type found, using default: lastLowPrice"
+    );
+    return "lastLowPrice";
   });
-  const [useLastOfferCountFilter, setUseLastOfferCountFilter] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(USE_LAST_OFFER_COUNT_FILTER_KEY);
-      if (saved !== null) {
-        return saved === 'true';
+  const [useLastOfferCountFilter, setUseLastOfferCountFilter] =
+    useState<boolean>(() => {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(USE_LAST_OFFER_COUNT_FILTER_KEY);
+        if (saved !== null) {
+          return saved === "true";
+        }
       }
-    }
-    return true; // Default to true
-  });
+      return true; // Default to true
+    });
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
     new Set()
   );
@@ -150,8 +151,12 @@ function AppContent() {
   const toastShownRef = useRef<boolean>(false);
 
   // Use the items data hook
-  const { data: rawItemsData, isLoading: loading, hasError, mutate } =
-    useItemsData(isPVE);
+  const {
+    data: rawItemsData,
+    isLoading: loading,
+    hasError,
+    mutate,
+  } = useItemsData(isPVE);
 
   // Save isPVE state to localStorage when it changes
   useEffect(() => {
@@ -169,8 +174,14 @@ function AppContent() {
   // Save useLastOfferCountFilter to localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem(USE_LAST_OFFER_COUNT_FILTER_KEY, useLastOfferCountFilter.toString());
-      console.log("Saved useLastOfferCountFilter to localStorage:", useLastOfferCountFilter);
+      localStorage.setItem(
+        USE_LAST_OFFER_COUNT_FILTER_KEY,
+        useLastOfferCountFilter.toString()
+      );
+      console.log(
+        "Saved useLastOfferCountFilter to localStorage:",
+        useLastOfferCountFilter
+      );
     }
   }, [useLastOfferCountFilter]);
 
@@ -508,7 +519,9 @@ function AppContent() {
             basePrice <= 0 ||
             typeof fleaPrice !== "number" ||
             fleaPrice < 0 ||
-            (useLastOfferCountFilter && typeof item.lastOfferCount === "number" && item.lastOfferCount < 5)
+            (useLastOfferCountFilter &&
+              typeof item.lastOfferCount === "number" &&
+              item.lastOfferCount < 5)
           ) {
             continue;
           }
@@ -601,9 +614,7 @@ function AppContent() {
 
   const fleaCosts = useMemo(() => {
     return selectedItems.map((item) =>
-      item
-        ? overriddenPrices[item.id] || item[fleaPriceType]
-        : 0
+      item ? overriddenPrices[item.id] ?? item[fleaPriceType] : 0
     );
   }, [selectedItems, overriddenPrices, fleaPriceType]);
 
@@ -697,16 +708,17 @@ function AppContent() {
     try {
       // Single-pass filter with all conditions, then sort and limit
       const validItems = items
-        .map(item => ({
+        .map((item) => ({
           item,
           price: item[fleaPriceType],
-          efficiency: item.basePrice / (item[fleaPriceType] || 1) // Avoid division by zero
+          efficiency: item.basePrice / (item[fleaPriceType] || 1), // Avoid division by zero
         }))
-        .filter(({ item, price }) => 
-          price !== undefined && 
-          price > 0 &&
-          item.basePrice >= threshold * 0.1 &&
-          !excludedItems.has(item.name)
+        .filter(
+          ({ item, price }) =>
+            price !== undefined &&
+            price > 0 &&
+            item.basePrice >= threshold * 0.1 &&
+            !excludedItems.has(item.name)
         )
         .sort((a, b) => b.efficiency - a.efficiency)
         .slice(0, 100)
@@ -798,49 +810,11 @@ function AppContent() {
     fleaPriceType,
   ]);
 
-  // Track the last time we fetched data for each mode
-  const lastFetchTimeRef = useRef<Record<string, number>>({
-    pve: 0,
-    pvp: 0,
-  });
-
-  // Modify the mode toggle to prevent unnecessary data fetches
+  // Handle mode toggle with simplified caching approach
   const handleModeToggle = useCallback((checked: boolean): void => {
-    // Check if we need to fetch fresh data
-    const mode = checked ? "pve" : "pvp";
-    const TEN_MINUTES = 10 * 60 * 1000;
-    const now = Date.now();
-
-    // Calculate how long it's been since we last fetched this mode's data
-    const lastFetchTime = lastFetchTimeRef.current[mode] || 0;
-    const timeSinceLastFetch = now - lastFetchTime;
-    const needsFreshData = timeSinceLastFetch > TEN_MINUTES;
-
-    console.log(`Checking cache for ${mode} mode...`);
-    console.log(
-      `Last fetch for ${mode}: ${
-        lastFetchTime > 0
-          ? new Date(lastFetchTime).toLocaleTimeString()
-          : "never"
-      }`
-    );
-    console.log(
-      `Time since last fetch: ${Math.round(timeSinceLastFetch / 1000)}s (${
-        needsFreshData ? "needs refresh" : "still valid"
-      })`
-    );
-
-    // If this is the first time or we need fresh data, update the fetch time
-    if (lastFetchTime === 0 || needsFreshData) {
-      console.log(`Setting new fetch time for ${mode} mode`);
-      lastFetchTimeRef.current[mode] = now;
-    } else {
-      console.log(
-        `Using existing data for ${mode} mode (${Math.round(
-          timeSinceLastFetch / 1000
-        )}s old)`
-      );
-    }
+    // Mode switching is now handled by SWR cache in use-items-data.ts
+    // We just need to update the UI state
+    console.log(`Switching to ${checked ? "PVE" : "PVP"} mode`);
 
     // Update the mode state
     setIsPVE(checked);
@@ -1013,9 +987,12 @@ function AppContent() {
     setFleaPriceType(newType);
   }, []);
 
-  const handleUseLastOfferCountFilterChange = useCallback((newState: boolean) => {
-    setUseLastOfferCountFilter(newState);
-  }, []);
+  const handleUseLastOfferCountFilterChange = useCallback(
+    (newState: boolean) => {
+      setUseLastOfferCountFilter(newState);
+    },
+    []
+  );
 
   // Update the refresh button UI
   return (
@@ -1052,7 +1029,10 @@ function AppContent() {
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-48 ring-1 ring-gray-700 hover:text-gray-100 bg-gray-800 hover:bg-gray-700 hover:ring-gray-700 hover:ring-1 hover:ring-offset-1" align="start">
+                  <DropdownMenuContent
+                    className="w-48 ring-1 ring-gray-700 hover:text-gray-100 bg-gray-800 hover:bg-gray-700 hover:ring-gray-700 hover:ring-1 hover:ring-offset-1"
+                    align="start"
+                  >
                     <DropdownMenuItem asChild>
                       <Link href="/recipes" className="cursor-pointer">
                         <svg
@@ -1111,7 +1091,7 @@ function AppContent() {
                 className="mb-2 border-yellow-400/70 bg-yellow-50 dark:bg-yellow-900/10 animate-fade-in rounded shadow"
               >
                 <AlertTitle className="text-sm font-bold text-yellow-700 dark:text-yellow-200 text-center">
-                  New Base Value Lookup Table!
+                  New Base Value Lookup Table and Help!
                 </AlertTitle>
                 <AlertDescription className="text-xs text-yellow-800 dark:text-yellow-100 text-center">
                   Quickly check the base value of any item. Try it out here{" "}
@@ -1122,6 +1102,8 @@ function AppContent() {
                     Base Values
                   </Link>
                   .
+                  <br />
+                  Also check out the improved Help!
                 </AlertDescription>
               </Alert>
             </div>

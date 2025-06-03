@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { CACHE_TTL } from '@/hooks/use-tarkov-api';
 
 const STORAGE_KEY_PREFIX = 'swr-cache-';
 
@@ -14,7 +15,7 @@ const STORAGE_KEY_PREFIX = 'swr-cache-';
  * The middleware is still type-safe at runtime.
  * @eslint-disable @typescript-eslint/no-explicit-any
  */
-export function createSWRPersistMiddleware(version: string, ttl: number = 900000) {
+export function createSWRPersistMiddleware(version: string, ttl: number = CACHE_TTL) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (useSWRNext: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

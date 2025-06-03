@@ -2,7 +2,7 @@ import useSWR from "swr";
 import { useEffect } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
-import { fetchTarkovData } from "./use-tarkov-api";
+import { fetchTarkovData, CACHE_TTL } from "./use-tarkov-api";
 import { useToast } from "@/hooks/use-toast";
 
 // Single version for the combined data approach
@@ -10,7 +10,7 @@ const CURRENT_VERSION = "1.2.2"; // New version for combined data approach
 
 // Create a single persistence middleware for the combined data
 // The middleware handles localStorage quota errors and clears old cache when needed
-const swrPersistMiddleware = createSWRPersistMiddleware(CURRENT_VERSION, 600000); // 10 minutes TTL
+const swrPersistMiddleware = createSWRPersistMiddleware(CURRENT_VERSION, CACHE_TTL); // Using centralized cache TTL
 
 // Add request tracking outside component
 const requestTracker = {
@@ -29,10 +29,6 @@ export function useItemsData(isPVE: boolean) {
   
   // Track mode changes without clearing cache
   useEffect(() => {
-    // We're now using a smarter approach to cache management:
-    // 1. We don't automatically clear the cache when switching modes
-    // 2. Instead, we check if the cache is valid in handleModeToggle
-    // 3. This prevents unnecessary API calls when switching back and forth
     console.debug(`🔄 [${mode.toUpperCase()}] Mode changed, using cache if available`);
   }, [mode]); // Only depend on mode to track mode changes
   const { toast } = useToast();
