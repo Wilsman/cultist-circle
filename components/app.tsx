@@ -419,6 +419,7 @@ function AppContent() {
     // First filter by excluded categories
     const categoryFiltered = rawItemsData.filter(
       (item: SimplifiedItem) =>
+        item.name.toLowerCase() === "pestily plague mask" || // ! TEMPORARY FIX FOR PESTILY PLAGUE MASK
         !item.categories_display?.some((category) =>
           excludedCategories.has(category.name)
         )

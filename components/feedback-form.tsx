@@ -51,7 +51,7 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto bg-background">
       <CardHeader>
         <CardTitle>Submit Feedback or Report Issue</CardTitle>
       </CardHeader>
@@ -106,14 +106,14 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
           <Button
             type="button"
             variant="outline"
-            className="hover:bg-red-500/90"
+            className="bg-red-500 hover:bg-red-800 "
             onClick={onClose}
           >
             Close
           </Button>
           <Button
             type="submit"
-            className="bg-green-500 hover:bg-green-500/90"
+            className="bg-green-500 hover:bg-green-800"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Submitting..." : "Submit"}
