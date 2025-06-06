@@ -18,43 +18,43 @@ import { ArrowLeft } from "lucide-react";
 const tarkovRecipes = [
   {
     requiredItems: ["1x Bottle of water (0.6L)"],
-    craftingTime: "66 min",
+    craftingTime: "66 mins",
     producedItems: ["Fleece fabric"],
     isNew: true,
   },
   {
     requiredItems: ["1x Nailhead figurine", "1x Xenoalien figurine", "1x Pointy guy figurine", "1x Petya Crooker figurine", "1x Count Bloodsucker figurine"],
-    craftingTime: "66 min",
+    craftingTime: "66 mins",
     producedItems: ["Tagilla's welding mask \"ZABEY\" (Replica)"],
   },
   {
     requiredItems: ["1x Nailhead figurine"],
-    craftingTime: "66 min",
+    craftingTime: "66 mins",
     producedItems: ["Pack of nails"],
   },
   {
     requiredItems: ["1x Xenoalien figurine"],
-    craftingTime: "66 min",
+    craftingTime: "66 mins",
     producedItems: ["Xenomorph sealing foam"],
   },
   {
     requiredItems: ["1x Pointy guy figurine"],
-    craftingTime: "66 min",
+    craftingTime: "66 mins",
     producedItems: ["Rusty bloody key"],
   },
   {
     requiredItems: ["1x Petya Crooker figurine"],
-    craftingTime: "66 min",
+    craftingTime: "66 mins",
     producedItems: ["Video cassette with the Cyborg Killer movie"],
   },
   {
     requiredItems: ["1x Count Bloodsucker figurine"],
-    craftingTime: "66 min",
+    craftingTime: "66 mins",
     producedItems: ["Medical bloodset"],
   },
   {
     requiredItems: ["Secure container Gamma (The Unheard Edition)"],
-    craftingTime: "6 min",
+    craftingTime: "6 mins",
     producedItems: ["Secure container Gamma (Edge of Darkness Edition)"],
   },
   {
