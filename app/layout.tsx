@@ -4,7 +4,7 @@ import CookieConsent from "@/components/CookieConsent";
 import { Toaster } from "@/components/ui/toaster";
 import { CookieConsentProvider } from "@/context/cookie-consent-context";
 import Script from "next/script";
-import { PostHogProvider } from "@/components/PostHogProvider";
+// import { PostHogProvider } from "@/components/PostHogProvider";
 
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator",
@@ -86,7 +86,7 @@ export default function RootLayout({
           data-x_margin="50"
           data-y_margin="50"
         />
-        <PostHogProvider>
+        {/* <PostHogProvider> */}
           <CookieConsentProvider>
             <main className="relative min-h-screen">
               {/* Background color */}
@@ -103,7 +103,7 @@ export default function RootLayout({
               </div>
             </main>
           </CookieConsentProvider>
-        </PostHogProvider>
+        {/* </PostHogProvider> */}
       </body>
     </html>
   );
