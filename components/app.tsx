@@ -1097,7 +1097,8 @@ function AppContent() {
                 rel="nofollow"
                 target="_blank"
                 className="flex items-center"
-              >
+                >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://img.shields.io/discord/1298971881776611470?color=7289DA&label=Discord&logo=discord&logoColor=white"
                   alt="Discord"
