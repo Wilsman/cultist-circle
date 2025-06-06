@@ -1080,7 +1080,7 @@ function AppContent() {
             </div>
 
             {/* Title and Version Info */}
-            <div className="pt-2 sm:pt-2">
+            <div className="pt-2">
               <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
                 <Image
                   src="/images/Cultist-Calulator.webp"
@@ -1090,6 +1090,21 @@ function AppContent() {
                   priority={true}
                 />
               </h1>
+            </div>
+            <div className="flex items-center justify-center pb-4">
+              <a
+                href="https://discord.com/invite/3dFmr5qaJK"
+                rel="nofollow"
+                target="_blank"
+                className="flex items-center"
+              >
+                <img
+                  src="https://img.shields.io/discord/1298971881776611470?color=7289DA&label=Discord&logo=discord&logoColor=white"
+                  alt="Discord"
+                  style={{ maxWidth: "100%" }}
+                  className="h-6"
+                />
+              </a>
             </div>
 
             {/* New Price Types Alert */}
@@ -1448,30 +1463,6 @@ function AppContent() {
                     className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded shadow-md transition duration-300 ease-in-out"
                   >
                     Feedback
-                  </Button>
-                  {/* Discord button */}
-                  <Button
-                    onClick={() =>
-                      window.open("https://discord.gg/3dFmr5qaJK", "_blank")
-                    }
-                    className="text-white bg-blue-500 hover:bg-blue-600 rounded"
-                  >
-                    <svg
-                      role="img"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 256 199"
-                      width="16"
-                      height="16"
-                      className="h-4 w-4 mr-1"
-                      fill="white"
-                      preserveAspectRatio="xMidYMid"
-                    >
-                      <path
-                        d="M216.856 16.597A208.502 208.502 0 0 0 164.042 0c-2.275 4.113-4.933 9.645-6.766 14.046-19.692-2.961-39.203-2.961-58.533 0-1.832-4.4-4.55-9.933-6.846-14.046a207.809 207.809 0 0 0-52.855 16.638C5.618 67.147-3.443 116.4 1.087 164.956c22.169 16.555 43.653 26.612 64.775 33.193A161.094 161.094 0 0 0 79.735 175.3a136.413 136.413 0 0 1-21.846-10.632 108.636 108.636 0 0 0 5.356-4.237c42.122 19.702 87.89 19.702 129.51 0a131.66 131.66 0 0 0 5.355 4.237 136.07 136.07 0 0 1-21.886 10.653c4.006 8.02 8.638 15.67 13.873 22.848 21.142-6.58 42.646-16.637 64.815-33.213 5.316-56.288-9.08-105.09-38.056-148.36ZM85.474 135.095c-12.645 0-23.015-11.805-23.015-26.18s10.149-26.2 23.015-26.2c12.867 0 23.236 11.804 23.015 26.2.02 14.375-10.148 26.18-23.015 26.18Zm85.051 0c-12.645 0-23.014-11.805-23.014-26.18s10.148-26.2 23.014-26.2c12.867 0 23.236 11.804 23.015 26.2 0 14.375-10.148 26.18-23.015 26.18Z"
-                        fill="#ffffff"
-                      />
-                    </svg>
-                    Discord
                   </Button>
                 </div>
               </footer>
