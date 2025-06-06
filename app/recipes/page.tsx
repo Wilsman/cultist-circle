@@ -17,40 +17,40 @@ import { ArrowLeft } from "lucide-react";
 // Escape from Tarkov crafting recipes
 const tarkovRecipes = [
   {
+    requiredItems: ["1x Bottle of water (0.6L)"],
+    craftingTime: "66 min",
+    producedItems: ["Fleece fabric"],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Nailhead figurine", "1x Xenoalien figurine", "1x Pointy guy figurine", "1x Petya Crooker figurine", "1x Count Bloodsucker figurine"],
     craftingTime: "66 min",
     producedItems: ["Tagilla's welding mask \"ZABEY\" (Replica)"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Nailhead figurine"],
     craftingTime: "66 min",
     producedItems: ["Pack of nails"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Xenoalien figurine"],
     craftingTime: "66 min",
     producedItems: ["Xenomorph sealing foam"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Pointy guy figurine"],
     craftingTime: "66 min",
     producedItems: ["Rusty bloody key"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Petya Crooker figurine"],
     craftingTime: "66 min",
     producedItems: ["Video cassette with the Cyborg Killer movie"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Count Bloodsucker figurine"],
     craftingTime: "66 min",
     producedItems: ["Medical bloodset"],
-    isNew: true,
   },
   {
     requiredItems: ["Secure container Gamma (The Unheard Edition)"],
