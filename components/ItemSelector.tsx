@@ -1,16 +1,8 @@
-// components/ui/ItemSelector.tsx
-
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import {
-  Copy,
-  X as XIcon,
-  Pin,
-  BadgeDollarSign,
-  MoreVertical,
-  CircleSlash,
-} from "lucide-react";
+import { Copy, X as XIcon, Pin, Edit, CircleSlash, Trash2 } from "lucide-react";
 import Fuse from "fuse.js";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import {
@@ -20,15 +12,9 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { getRelativeDate } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 // Import Dropdown components
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
 // Import react-window for virtualization
@@ -43,6 +29,7 @@ interface ItemSelectorProps {
     overriddenPrice: number | null | undefined
   ) => void;
   onCopy: () => void;
+  onCopyWithToast?: () => void;
   onPin: () => void;
   isPinned: boolean;
   overriddenPrice?: number;
@@ -51,6 +38,7 @@ interface ItemSelectorProps {
   isExcluded: boolean;
   onToggleExclude: () => void;
   excludedItems: Set<string>;
+  fleaPriceType: 'lastLowPrice' | 'avg24hPrice';
 }
 
 const ItemSelector: React.FC<ItemSelectorProps> = ({
@@ -58,14 +46,23 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   selectedItem,
   onSelect,
   onCopy,
+  onCopyWithToast,
   onPin,
   isPinned,
   overriddenPrice,
   overriddenPrices,
   isExcluded,
   onToggleExclude,
-  excludedItems, // Destructure the new prop
+  excludedItems,
+  fleaPriceType,
 }) => {
+  // Validate that items is an array
+  useEffect(() => {
+    if (!Array.isArray(items)) {
+      console.debug("Items prop is not an array, defaulting to empty array");
+    }
+  }, [items]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [priceOverride, setPriceOverride] = useState<string>("");
@@ -81,44 +78,64 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     }
   }, [selectedItem, overriddenPrice]);
 
-  // Initialize Fuse.js
+  // Initialize Fuse.js for searching
   const fuse = useMemo(() => {
-    return new Fuse(items, {
-      keys: ["name"],
-      threshold: 0.3,
-      includeScore: false,
-    });
+    const validItems = Array.isArray(items) ? items : [];
+    try {
+      return new Fuse(validItems, {
+        keys: [
+          { name: 'name', weight: 0.7 },
+          { name: 'shortName', weight: 0.3 }
+        ],
+        threshold: 0.4,
+        includeScore: true,
+        ignoreLocation: true,
+        minMatchCharLength: 2
+      });
+    } catch (e) {
+      console.debug("Fuse initialization error or empty items array", e);
+      return null;
+    }
   }, [items]);
 
-  // Debounced search term
+  // Debounce the search term
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 300); // 300ms debounce
-
+    }, 300);
     return () => {
       clearTimeout(handler);
     };
   }, [searchTerm]);
 
-  // Filtered items based on search term and focus state
+  // Filter items based on search
   const filteredItems = useMemo(() => {
-    if (isFocused && !debouncedSearchTerm) {
-      return items.filter((item) => item.price > 0);
-    }
-    if (!debouncedSearchTerm) return [];
-    return fuse
-      .search(debouncedSearchTerm)
-      .map((result) => result.item)
-      .filter((item) => item.price > 0);
-  }, [debouncedSearchTerm, fuse, isFocused, items]);
+    const validItems = Array.isArray(items) ? items : [];
+    if (validItems.length === 0) return [];
 
+    let results;
+    if (isFocused && !debouncedSearchTerm) {
+      // Show only items with basePrice > 0 when focused but the search input is empty
+      results = validItems.filter((item) => item.basePrice > 0);
+    } else if (!debouncedSearchTerm) {
+      return [];
+    } else if (!fuse) {
+      return validItems;
+    } else {
+      results = fuse
+        .search(debouncedSearchTerm)
+        .map((result) => result.item)
+        .filter((item) => item.basePrice > 0);
+    }
+    return results.filter((item) => !excludedItems.has(item.name));
+  }, [debouncedSearchTerm, fuse, isFocused, items, excludedItems]);
+
+  // Handle selection
   const handleSelect = useCallback(
     (item: SimplifiedItem | null) => {
       let overriddenPriceToPass: number | undefined | null = undefined;
-
       if (item) {
         if (overriddenPrice !== undefined) {
           overriddenPriceToPass = overriddenPrice;
@@ -126,7 +143,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           overriddenPriceToPass = Number(priceOverride);
         }
       }
-
       onSelect(item, overriddenPriceToPass);
       setSearchTerm("");
       setIsFocused(false);
@@ -139,6 +155,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     [onSelect, overriddenPrice, priceOverride]
   );
 
+  // Handle removing the selected item
   const handleRemove = useCallback(() => {
     if (isPinned) {
       onPin();
@@ -146,6 +163,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     handleSelect(null);
   }, [isPinned, onPin, handleSelect]);
 
+  // Clear price override
   const clearPriceOverride = useCallback(() => {
     setPriceOverride("");
     setIsPriceOverrideActive(false);
@@ -154,278 +172,440 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     }
   }, [onSelect, selectedItem]);
 
-  const handlePriceOverride = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      if (/^\d*$/.test(value)) {
-        // Allow only numbers
-        setPriceOverride(value);
-        if (selectedItem && value && isPriceOverrideActive) {
-          onSelect(selectedItem, Number(value) || 0);
-        }
-      }
-    },
-    [onSelect, selectedItem, isPriceOverrideActive]
-  );
-
+  // Toggle price override
   const togglePriceOverride = useCallback(() => {
-    setIsPriceOverrideActive((prev) => {
-      const newState = !prev;
-      if (newState && selectedItem) {
-        if (priceOverride) {
-          onSelect(selectedItem, Number(priceOverride));
-        } else if (overriddenPrice !== undefined) {
-          setPriceOverride(overriddenPrice.toString());
-        }
-      } else if (!newState && selectedItem) {
+    if (!isPriceOverrideActive) {
+      setIsPriceOverrideActive(true);
+      if (selectedItem && overriddenPrice !== undefined) {
+        setPriceOverride(overriddenPrice.toString());
+      }
+    } else {
+      setIsPriceOverrideActive(false);
+      if (selectedItem) {
         onSelect(selectedItem, null);
         setPriceOverride("");
       }
-      return newState;
-    });
-  }, [selectedItem, priceOverride, overriddenPrice, onSelect]);
+    }
+  }, [isPriceOverrideActive, selectedItem, overriddenPrice, onSelect]);
+
+  // Debounce price override updates
+  const [debouncedPriceValue, setDebouncedPriceValue] = useState("");
+
+  useEffect(() => {
+    if (priceOverride === debouncedPriceValue) return;
+    const handler = setTimeout(() => {
+      setDebouncedPriceValue(priceOverride);
+      if (selectedItem && priceOverride && isPriceOverrideActive) {
+        onSelect(selectedItem, Number(priceOverride) || 0);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [
+    priceOverride,
+    selectedItem,
+    isPriceOverrideActive,
+    onSelect,
+    debouncedPriceValue,
+  ]);
+
+  // Handle changes in the override input
+  const handlePriceOverride = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      // Only numbers allowed
+      if (/^\d*$/.test(value)) {
+        setPriceOverride(value);
+      }
+    },
+    []
+  );
 
   const toggleExclude = useCallback(() => {
     onToggleExclude();
   }, [onToggleExclude]);
 
-  // Row component for react-window
+  // Copy item name (with optional toast)
+  const { toast } = useToast();
+  const handleCopy = useCallback(() => {
+    onCopy();
+    if (onCopyWithToast) {
+      onCopyWithToast();
+    } else {
+      toast({
+        title: "Name Copied",
+        description: selectedItem
+          ? `"${selectedItem.name}" copied to clipboard`
+          : "Item copied to clipboard",
+        variant: "default",
+      });
+    }
+  }, [onCopy, onCopyWithToast, toast, selectedItem]);
+
+  // Row component for react-window (dropdown list item)
   const Row = useCallback(
     ({ index, style }: ListChildComponentProps) => {
       const item = filteredItems[index];
-      const itemOverriddenPrice = overriddenPrices[item.uid];
+      const itemOverriddenPrice = overriddenPrices[item.id];
       const displayedPrice =
-        itemOverriddenPrice !== undefined ? itemOverriddenPrice : item.price;
+        itemOverriddenPrice !== undefined
+          ? itemOverriddenPrice
+          : item[fleaPriceType]!;
       const isOverridden = itemOverriddenPrice !== undefined;
-      const isItemExcluded = excludedItems.has(item.uid); // Check if the item is excluded
+      const isItemExcluded = excludedItems.has(item.name);
+      const itemIcon = item.iconLink;
 
       return (
-        <Tooltip key={item.uid}>
+        <Tooltip key={item.id}>
           <TooltipTrigger asChild>
             <li
               style={style}
               onMouseDown={(e) => e.preventDefault()}
               onMouseUp={() => handleSelect(item)}
-              className="p-2 hover:bg-gray-600 cursor-pointer text-white flex flex-col"
+              className="p-1 hover:bg-gray-600 cursor-pointer text-white flex items-center"
             >
-              <div className="flex justify-between items-center">
-                <span className="truncate">{item.name}</span>{" "}
-                {isItemExcluded && (
-                  <span className="text-red-500 ml-2">Excluded</span>
-                )}
-              </div>
-              <div className="text-gray-400 text-sm mt-1">
-                <p>Base Value: ₱{item.basePrice.toLocaleString()}</p>
-                <p>
-                  Estimated Flea Price:{" "}
-                  <span
-                    className={isOverridden ? "text-yellow-300 font-bold" : ""}
-                  >
-                    ₱{displayedPrice.toLocaleString()}
+              {itemIcon && (
+                <img
+                  src={itemIcon}
+                  alt={item.name}
+                  className="w-10 h-10 object-contain rounded mr-2"
+                />
+              )}
+              <div className="flex-1 flex flex-col text-xs">
+                <span className="truncate font-semibold text-sm">
+                  {item.name}
+                </span>
+                <div className="text-gray-400 flex flex-wrap gap-2">
+                  <span>Base: ₽{(item.basePrice || 0).toLocaleString()}</span>
+                  <span>
+                    Flea:{" "}
+                    <span
+                      className={
+                        isOverridden
+                          ? "text-yellow-300 font-bold"
+                          : item.lastOfferCount !== undefined && item.lastOfferCount <= 5
+                          ? "text-red-600 font-bold"
+                          : ""
+                      }
+                    >
+                      ₽{(displayedPrice || "N/A").toLocaleString()}
+                    </span>
+                    {isOverridden && (
+                      <span className="text-gray-400 ml-1">(Override)</span>
+                    )}
                   </span>
-                  {isOverridden && (
-                    <span className="text-gray-400 ml-1">(Overridden)</span>
+                  {isItemExcluded && (
+                    <span className="text-red-400 ml-auto">Excluded</span>
                   )}
-                </p>
+                </div>
               </div>
             </li>
           </TooltipTrigger>
           <TooltipContent>
-            <div>
-              <p>Base Value: ₱{item.basePrice.toLocaleString()}</p>
+            <div className="text-sm">
+              <p>Base: ₽{(item.basePrice || 0).toLocaleString()}</p>
               <p>
-                Estimated Flea Price:{" "}
+                Flea:{" "}
                 <span
-                  className={isOverridden ? "text-yellow-300 font-bold" : ""}
-                >
-                  ₱{displayedPrice.toLocaleString()}
-                </span>
-                {isOverridden && (
-                  <span className="text-gray-400 ml-1">(Overridden)</span>
-                )}
+                      className={
+                        isOverridden
+                          ? "text-yellow-300 font-bold"
+                          : item.lastOfferCount !== undefined && item.lastOfferCount <= 5
+                          ? "text-red-600 font-bold"
+                          : ""
+                      }
+                    >
+                      ₽{(displayedPrice || "N/A").toLocaleString()}
+                    </span>
               </p>
               {isItemExcluded && (
                 <p className="text-red-500">This item is excluded.</p>
+              )}
+              {item.lastLowPrice && item.updated && (
+                <p className="text-gray-400 text-xs">
+                  Last updated: {getRelativeDate(item.updated.toString())}
+                </p>
               )}
             </div>
           </TooltipContent>
         </Tooltip>
       );
     },
-    [filteredItems, handleSelect, overriddenPrices, excludedItems]
+    [filteredItems, handleSelect, overriddenPrices, excludedItems, fleaPriceType]
   );
 
   return (
     <TooltipProvider>
-      <div className="relative w-full mb-2">
-        <div className="relative">
-          <input
-            onClick={() => setIsFocused(true)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setTimeout(() => setIsFocused(false), 100)}
-            type="text"
-            value={selectedItem ? selectedItem.name : searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              if (selectedItem) handleSelect(null);
-            }}
-            placeholder="Search items..."
-            className={`w-full p-2 pr-24 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              isPinned ? "border-2 border-yellow-500" : ""
-            }`}
-          />
-          {selectedItem && (
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1 bg-gray-700 bg-opacity rounded-md p-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={onPin}
-                className={`h-8 w-8 ${
-                  isPinned ? "text-yellow-500" : "text-gray-400"
-                } hover:bg-gray-200`}
-              >
-                <Pin className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={onCopy}
-                className="h-8 w-8 text-gray-400 hover:bg-gray-200"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={togglePriceOverride}
-                className={`h-8 w-8 ${
-                  isPriceOverrideActive ? "text-blue-500" : "text-gray-400"
-                } hover:bg-gray-200`}
-              >
-                <BadgeDollarSign className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={toggleExclude}
-                className={`h-8 w-8 ${
-                  isExcluded ? "text-red-500" : "text-gray-400"
-                } hover:bg-gray-200`}
-              >
-                <CircleSlash className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleRemove}
-                className="h-8 w-8 text-red-500 hover:bg-gray-200"
-              >
-                <XIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          {selectedItem && (
-            <div className="sm:hidden absolute right-2 top-1/2 transform -translate-y-1/2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="h-8 w-8 bg-gray-500 hover:bg-gray-600 text-white"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                    <span className="sr-only">More</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="bg-primary text-secondary"
-                  align="end"
-                >
-                  <DropdownMenuItem onSelect={onPin}>
-                    <Pin className="mr-2 h-4 w-4" />
-                    <span>{isPinned ? "Unpin Item" : "Pin Item"}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={onCopy}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    <span>Copy Item Name</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={togglePriceOverride}>
-                    <BadgeDollarSign className="mr-2 h-4 w-4" />
-                    <span>
-                      {isPriceOverrideActive
-                        ? "Disable Flea Override"
-                        : "Enable Flea Override"}
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={toggleExclude}>
-                    <CircleSlash className="mr-2 h-4 w-4" />
-                    <span>
-                      {isExcluded ? "Include Item" : "Exclude from Autopick"}
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={handleRemove}>
-                    <XIcon className="mr-2 h-4 w-4 text-red-500" />
-                    <span className="text-red-500">Remove Item</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-        </div>
-
-        {!selectedItem && isFocused && (
-          <div className="absolute z-10 w-full mt-1 bg-gray-700 rounded-md shadow-lg max-h-60 overflow-hidden">
-            <AutoSizer disableHeight>
-              {({ width }) => (
-                <List
-                  height={240} // Adjust based on desired height
-                  itemCount={filteredItems.length}
-                  itemSize={80} // Adjust based on item height
-                  width={width}
-                >
-                  {Row}
-                </List>
-              )}
-            </AutoSizer>
-            {filteredItems.length === 0 && (
-              <div className="p-2 text-gray-400">No items found.</div>
-            )}
-          </div>
-        )}
-        {selectedItem && (
-          <div className="text-sm text-gray-400 mt-1 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-            {" "}
-            <span>Base: ₱{selectedItem.basePrice.toLocaleString()}</span>
-            <span className={overriddenPrice ? "text-blue-500" : ""}>
-              Flea: ₱{(overriddenPrice || selectedItem.price).toLocaleString()}
-            </span>
-            <span>Updated: {getRelativeDate(selectedItem.updated)}</span>
-            {isExcluded && (
-              <span className="text-red-500">Excluded from Autopick</span>
-            )}
-          </div>
-        )}
-        {selectedItem && isPriceOverrideActive && (
-          <div className="mt-1 flex items-center">
+      <div className="relative w-full text-sm gap-1">
+        {/* SEARCH + DROP-DOWN (when no item is selected) */}
+        {!selectedItem && (
+          <div className="relative border border-gray-700 rounded-md p-1">
             <input
+              onMouseUp={() => setIsFocused(true)}
+              onBlur={() => setTimeout(() => setIsFocused(false), 100)}
               type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search items..."
+              className="w-full p-1 text-sm bg-gray-700 text-white rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            {isFocused && (
+              <div
+              className="
+                  w-full mt-3 pt-2 bg-transparent rounded-md shadow-lg
+                  max-h-[50vh] overflow-y-auto overflow-x-hidden
+                  touch-pan-y
+                  "
+                  style={{ marginTop: '10px' }}
+                  >
+                <AutoSizer disableHeight>
+                  {({ width }) => (
+                    <List
+                      height={240}
+                      itemCount={filteredItems.length}
+                      itemSize={56}
+                      width={width}
+                      >
+                      {Row}
+                    </List>
+                  )}
+                </AutoSizer>
+                {filteredItems.length === 0 && (
+                  <div className="p-1 text-gray-400">No items found.</div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SELECTED ITEM CARD */}
+        {selectedItem && (
+          <div
+            className={`border p-1 mb-0.5 rounded-md bg-gray-900 ${
+              isPinned ? "border-yellow-400" : "border-gray-600"
+            }`}
+            >
+            <div className="flex items-stretch">
+              <div className="rounded-l-md overflow-hidden flex items-center justify-center min-w-3 max-w-10 sm:min-w-24 sm:max-w-28">
+                {selectedItem.iconLink && (
+                  <img
+                    src={selectedItem.iconLink}
+                    alt={selectedItem.name}
+                    className="object-contain max-h-20 sm:max-h-24 md:max-h-28"
+                    />
+                )}
+              </div>
+
+              {/* RIGHT SIDE (All info and buttons) */}
+              <div className="flex-1 flex flex-col p-2 space-y-2">
+                {/* Top row: name + copy, pin/exclude/remove */}
+                <div className="flex items-center justify-between">
+                  {/* Item name + copy */}
+                  <div className="flex items-center space-x-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="text-teal-400 font-semibold text-xs sm:text-sm truncate"
+                          style={{
+                            maxWidth: "calc(100vw - 2rem)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {window.innerWidth < 640
+                            ? `${selectedItem.name.slice(0, 20)}...`
+                            : selectedItem.name.length > 42
+                            ? `${selectedItem.name.slice(0, 42)}...`
+                            : selectedItem.name}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>{selectedItem.name}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={handleCopy}
+                          className="h-5 w-5 text-gray-400 hover:bg-gray-700"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Copy Item Name</TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  {/* Pin / Exclude / Remove */}
+                  <div className="flex items-center space-x-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={onPin}
+                          className={`h-5 w-5 rounded ${
+                            isPinned ? "text-yellow-400" : "text-gray-400"
+                          } hover:bg-gray-800`}
+                        >
+                          <Pin className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {isPinned ? "Unpin Item" : "Pin Item"}
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={toggleExclude}
+                          className={`h-5 w-5 ${
+                            isExcluded ? "text-red-500" : "text-gray-400"
+                          } hover:bg-gray-800`}
+                        >
+                          <CircleSlash className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Exclude from Auto</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            handleRemove();
+                            handleSelect(null);
+                          }}
+                          className="h-5 w-5 text-gray-400 hover:bg-gray-800"
+                        >
+                          <Trash2 className="text-red-500 h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Remove Item</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+
+                {/* Middle row: base & flea prices, updated, override button */}
+                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-300">
+                  <div>
+                    Base:{" "}
+                    <span className="text-teal-400 font-semibold">
+                      ₽{(selectedItem.basePrice || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    Flea:{" "} 
+                    <span
+                      className={
+                        isPriceOverrideActive
+                          ? "text-yellow-300 font-bold"
+                          : selectedItem.lastOfferCount !== undefined && selectedItem.lastOfferCount <= 5
+                          ? "text-red-600 font-bold"
+                          : ""
+                      }
+                    >
+                      ₽{(
+                        (isPriceOverrideActive && priceOverride ? Number(priceOverride) : null) ??
+                        overriddenPrices[selectedItem.id] ??
+                        selectedItem[fleaPriceType] ??
+                        "N/A"
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                  {selectedItem.updated && (
+                    <span className="text-gray-500">
+                      Updated:{" "}
+                      {getRelativeDate(selectedItem.updated.toString())}
+                    </span>
+                  )}
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={togglePriceOverride}
+                        className="h-5 w-5 text-gray-400 hover:bg-gray-700 ml-auto"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Toggle Price Override</TooltipContent>
+                  </Tooltip>
+                </div>
+
+                {/* Price override input (if active) */}
+                {isPriceOverrideActive && (
+                  <div className="flex items-center bg-gray-800/50 rounded p-1 text-xs sm:text-sm">
+                    <label
+                      htmlFor="price-override"
+                      className="text-gray-400 mr-1"
+                    >
+                      Override:
+                    </label>
+                    <input
+                      id="price-override"
+                      type="text"
+                      value={priceOverride}
+                      onChange={handlePriceOverride}
+                      className="bg-gray-700 text-white p-1 mr-2 rounded w-20 text-right"
+                      placeholder="Enter price"
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={clearPriceOverride}
+                      className="h-5 px-2 text-white hover:bg-red-700"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+
+                {/* Excluded notice at bottom if item is excluded */}
+                {isExcluded && (
+                  <div className="px-2 py-1 bg-red-900/20 text-red-400 text-xs rounded">
+                    Excluded from Autopick
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* If override is active but no item is selected, show bare input */}
+        {isPriceOverrideActive && !selectedItem && (
+          <div className="mt-1 flex items-center">
+            <label
+              htmlFor="price-override"
+              className="text-xs sm:text-sm text-gray-400 mr-1"
+            >
+              Override Price:
+            </label>
+            <input
+              id="price-override"
+              type="text"
               value={priceOverride}
               onChange={handlePriceOverride}
-              placeholder="Override flea price"
-              className="w-1/2 p-1 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-xs sm:text-sm bg-gray-700/50 text-white p-1 mr-1 rounded w-16 text-right"
+              placeholder="Enter price"
             />
-            {(Number(priceOverride) > 0 || overriddenPrice !== undefined) && (
-              <button
-                onClick={clearPriceOverride}
-                className="ml-2 p-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                title="Clear Price Override Input"
-              >
-                <XIcon size={16} />
-              </button>
-            )}
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={clearPriceOverride}
+              className="h-5 w-5 text-gray-400 hover:bg-gray-800"
+            >
+              <XIcon className="text-red-500 h-4 w-4" />
+            </Button>
           </div>
         )}
       </div>
@@ -433,5 +613,4 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   );
 };
 
-// Memoize the component to prevent unnecessary re-renders
 export default React.memo(ItemSelector);

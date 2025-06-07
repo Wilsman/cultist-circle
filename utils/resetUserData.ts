@@ -1,40 +1,48 @@
+import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 
 export async function resetUserData(
-  setSelectedItems: React.Dispatch<React.SetStateAction<Array<SimplifiedItem | null>>>,
+  setSelectedItems: React.Dispatch<
+    React.SetStateAction<Array<SimplifiedItem | null>>
+  >,
   setPinnedItems: React.Dispatch<React.SetStateAction<boolean[]>>,
-  setSelectedCategories: React.Dispatch<React.SetStateAction<string[]>>,
+  setExcludedCategories: React.Dispatch<React.SetStateAction<Set<string>>>,
   setSortOption: React.Dispatch<React.SetStateAction<string>>,
   setThreshold: React.Dispatch<React.SetStateAction<number>>,
   setExcludedItems: React.Dispatch<React.SetStateAction<Set<string>>>,
-  setOverriddenPrices: React.Dispatch<React.SetStateAction<Record<string, number>>>,
+  setOverriddenPrices: React.Dispatch<
+    React.SetStateAction<Record<string, number>>
+  >,
+  setIsPVE: React.Dispatch<React.SetStateAction<boolean>>,
   fetchData: () => Promise<void>,
-  defaultItemCategories: string[],
+  defaultItemCategories: Set<string>,
   toast: (props: { title: string; description: string }) => void
 ) {
   // Clear local storage
   localStorage.clear();
 
-  // Clear cookies via API route
+  // Clear non-authentication cookies via API route
   try {
-    const response = await fetch('/api/expire-cookies');
+    const response = await fetch("/api/expire-cookies");
     if (response.ok) {
-      console.log('Cookies cleared successfully');
+      console.log("Cookies cleared successfully (preserving authentication cookies)");
     } else {
-      console.error('Failed to clear cookies');
+      console.error("Failed to clear cookies");
     }
   } catch (error) {
-    console.error('Error clearing cookies:', error);
+    console.error("Error clearing cookies:", error);
   }
 
+  //TODO: check this is not triggering twice
   // Reset all state variables
   setSelectedItems(Array(5).fill(null));
   setPinnedItems(Array(5).fill(false));
-  setSelectedCategories(defaultItemCategories);
+  setExcludedCategories(defaultItemCategories);
+  setExcludedItems(DEFAULT_EXCLUDED_ITEMS);
   setSortOption("az");
-  setThreshold(350001);
-  setExcludedItems(new Set());
+  setThreshold(400000);
   setOverriddenPrices({});
+  setIsPVE(false);
 
   // Fetch fresh data
   await fetchData();

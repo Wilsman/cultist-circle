@@ -10,7 +10,7 @@ export function ModeToggle({ isPVE, onToggle }: ModeToggleProps) {
   return (
     <div
       id="pvp-toggle"
-      className="flex items-center justify-center mb-6 w-full"
+      className="flex items-center justify-center w-full"
     >
       <span className="text-gray-300">PVP</span>
       <Switch

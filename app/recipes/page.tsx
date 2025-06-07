@@ -4,185 +4,296 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, ArrowLeft } from "lucide-react";
 import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectScrollUpButton,
-  SelectScrollDownButton,
-  SelectLabel,
-  SelectGroup,
-} from "@/components/ui/select";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft } from "lucide-react";
 
-// Escape from Tarkov related items and recipes
-const tarkovItems: { input: string; time: string; output: string }[] = [
+// Escape from Tarkov crafting recipes
+const tarkovRecipes = [
   {
-    input: "Secure container Gamma (The Unheard Edition)",
-    time: "6 min",
-    output: "Secure container Gamma (Edge of Darkness Edition)",
+    requiredItems: ["1x Bottle of water (0.6L)"],
+    craftingTime: "66 mins",
+    producedItems: ["Fleece fabric"],
+    isNew: true,
   },
-  { input: "Secure container Kappa", time: "66 mins", output: "Waist pouch" },
   {
-    input: "Cultist figurine ×1",
-    time: "66 mins",
-    output: "Spooky skull mask",
+    requiredItems: ["1x Nailhead figurine", "1x Xenoalien figurine", "1x Pointy guy figurine", "1x Petya Crooker figurine", "1x Count Bloodsucker figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Tagilla's welding mask \"ZABEY\" (Replica)"],
   },
-  { input: "Cultist figurine ×5", time: "66 mins", output: "Cultist knife" },
   {
-    input: "Killa figurine",
-    time: "66 mins",
-    output:
+    requiredItems: ["1x Nailhead figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Pack of nails"],
+  },
+  {
+    requiredItems: ["1x Xenoalien figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Xenomorph sealing foam"],
+  },
+  {
+    requiredItems: ["1x Pointy guy figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Rusty bloody key"],
+  },
+  {
+    requiredItems: ["1x Petya Crooker figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Video cassette with the Cyborg Killer movie"],
+  },
+  {
+    requiredItems: ["1x Count Bloodsucker figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Medical bloodset"],
+  },
+  {
+    requiredItems: ["Secure container Gamma (The Unheard Edition)"],
+    craftingTime: "6 mins",
+    producedItems: ["Secure container Gamma (Edge of Darkness Edition)"],
+  },
+  {
+    requiredItems: ["Secure container Kappa"],
+    craftingTime: "66 mins",
+    producedItems: ["Secure container Kappa (Desecrated)"],
+  },
+  {
+    requiredItems: ["Cultist figurine ×1"],
+    craftingTime: "66 mins",
+    producedItems: ["Spooky skull mask"],
+  },
+  {
+    requiredItems: ["Cultist figurine ×5"],
+    craftingTime: "66 mins",
+    producedItems: ["Cultist knife"],
+  },
+  {
+    requiredItems: ["Killa figurine"],
+    craftingTime: "66 mins",
+    producedItems: [
       "Maska-1SCh bulletproof helmet (Killa Edition), Maska-1SCh face shield (Killa Edition)",
+    ],
   },
   {
-    input: "Tagilla figurine",
-    time: "66 mins",
-    output: 'Tagilla\'s welding mask "Gorilla", Tagilla\'s welding mask "UBEY"',
+    requiredItems: ["Tagilla figurine"],
+    craftingTime: "66 mins",
+    producedItems: [
+      'Tagilla\'s welding mask "Gorilla", Tagilla\'s welding mask "UBEY"',
+    ],
   },
   {
-    input: "Reshala figurine",
-    time: "66 mins",
-    output: "TT-33 7.62x25 TT pistol (Golden)",
+    requiredItems: ["Reshala figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["TT-33 7.62x25 TT pistol (Golden)"],
   },
   {
-    input: "Den figurine",
-    time: "66 mins",
-    output: "Deadlyslob's beard oil, Baddie's red beard",
+    requiredItems: ["Den figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Deadlyslob's beard oil, Baddie's red beard"],
   },
   {
-    input: "Politician Mutkevich figurine",
-    time: "66 mins",
-    output: "Bottle of Tarkovskaya vodka ×3",
+    requiredItems: ["Politician Mutkevich figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Bottle of Tarkovskaya vodka ×3"],
   },
   {
-    input: "Scav figurine",
-    time: "66 mins",
-    output: "Scav backpack, Scav Vest",
+    requiredItems: ["Scav figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Scav backpack, Scav Vest"],
   },
   {
-    input: "Ryzhy figurine",
-    time: "66 mins",
-    output: "Obdolbos cocktail injector, Pack of sugar",
+    requiredItems: ["Ryzhy figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Obdolbos cocktail injector, Pack of sugar"],
   },
   {
-    input: "BEAR operative figurine",
-    time: "66 mins",
-    output: "Grizzly medical kit",
+    requiredItems: ["BEAR operative figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Grizzly medical kit"],
   },
   {
-    input: "USEC operative figurine",
-    time: "66 mins",
-    output: "HighCom Trooper TFO body armor (MultiCam)",
+    requiredItems: ["USEC operative figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["HighCom Trooper TFO body armor (MultiCam)"],
   },
   {
-    input: "Relaxation room key",
-    time: "66 mins",
-    output: "Bottle of Fierce Hatchling moonshine",
+    requiredItems: ["Relaxation room key"],
+    craftingTime: "66 mins",
+    producedItems: ["Bottle of Fierce Hatchling moonshine"],
   },
   {
-    input: "Dundukk sport sunglasses",
-    time: "66 mins",
-    output: "Axel parrot figurine",
+    requiredItems: ["Dundukk sport sunglasses"],
+    craftingTime: "66 mins",
+    producedItems: ["Axel parrot figurine"],
   },
-  { input: "Soap", time: "66 mins", output: "Awl" },
-  { input: "Zarya stun grenade", time: "66 mins", output: "Light bulb ×2" },
+  { requiredItems: ["Soap"], craftingTime: "66 mins", producedItems: ["Awl"] },
   {
-    input: "Physical Bitcoin",
-    time: "666 mins",
-    output: "GreenBat lithium battery ×2, Tetriz portable game console ×2",
+    requiredItems: ["Zarya stun grenade"],
+    craftingTime: "66 mins",
+    producedItems: ["Light bulb ×2"],
   },
   {
-    input: "LEDX Skin Transilluminator",
-    time: "666 mins",
-    output: 'TerraGroup "Blue Folders" materials',
+    requiredItems: ["Physical Bitcoin"],
+    craftingTime: "666 mins",
+    producedItems: [
+      "GreenBat lithium battery ×2, Tetriz portable game console ×2",
+    ],
+  },
+  {
+    requiredItems: ["LEDX Skin Transilluminator"],
+    craftingTime: "666 mins",
+    producedItems: ['TerraGroup "Blue Folders" materials'],
   },
 ];
 
 export default function Page() {
-  const [selectedRecipe, setSelectedRecipe] = useState<string | undefined>(
-    "All Recipes"
-  );
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const router = useRouter();
 
-  const filteredItems =
-    selectedRecipe === "All Recipes"
-      ? tarkovItems
-      : tarkovItems.filter((item) => item.output === selectedRecipe);
+  function handleBack() {
+    if (window.history.length > 2) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  }
+
+  const filteredItems = tarkovRecipes.filter((item) => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      // Search in inputs
+      item.requiredItems.some((input) =>
+        input.toLowerCase().includes(searchLower)
+      ) ||
+      // Search in outputs
+      item.producedItems.some((output) =>
+        output.toLowerCase().includes(searchLower)
+      )
+    );
+  });
+
+  // NewBadge component
+  function NewBadge() {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500 text-white absolute -top-1 -right-1 shadow-lg animate-pulse">
+        NEW
+      </span>
+    );
+  }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4 overflow-auto ">
-      <Card className="bg-gray-800 border-gray-700 text-secondary shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto bg-opacity-50 ">
-        <CardHeader className="relative">
-          <button
-            className="absolute top-0 left-0 p-2 text-white"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </button>
-          <CardTitle className="text-3xl sm:text-4xl lg:text-5xl text-center text-red-500">
-            👩‍🍳 Recipes 👨‍🍳
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto">
-            <div className="bg-yellow-200 text-black p-4 rounded-md mb-6">
-            ⚠️ Note: Recipes are only guaranteed to work on the first attempt.
-            </div>
-          <Select value={selectedRecipe} onValueChange={setSelectedRecipe}>
-            <SelectTrigger className="w-full justify-between bg-gray-800 text-white">
-              {selectedRecipe || "Select a recipe..."}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectScrollUpButton />
-              <SelectGroup>
-                <SelectLabel>Select a Recipe</SelectLabel>
-                <SelectItem
-                  value="All Recipes"
-                  className="font-bold text-blue-500"
-                >
-                  All Recipes
-                </SelectItem>
-                {tarkovItems.map((item, index) => (
-                  <SelectItem key={index} value={item.output}>
-                    {item.output}
-                    {selectedRecipe === item.output && (
-                      <Check className="ml-auto h-4 w-4" />
-                    )}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-              <SelectScrollDownButton />
-            </SelectContent>
-          </Select>
-          <div className="mt-6">
-            <div className="space-y-6">
-              {filteredItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="p-4 bg-gray-700 rounded-lg shadow-md"
-                >
-                  <h4 className="font-semibold text-red-400 text-lg">
-                    {item.output}
-                  </h4>
-                  <h4 className="font-semibold mt-2">Ingredients:</h4>
-                  <ul className="list-disc pl-5 mt-2 space-y-1">
-                    {item.input.split(", ").map((ingredient, idx) => (
-                      <li key={idx}>{ingredient}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-2">
-                    <span className="font-semibold text-sm">
-                      Time Required:
-                    </span>{" "}
-                    {item.time}
-                  </p>
+    <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4">
+      <Card className="bg-gray-800 border-gray-700 text-secondary shadow-lg h-[90vh] w-full max-w-2xl mx-auto bg-opacity-50 flex flex-col">
+        <div className="sticky top-0 z-10 bg-gray-800/95 border-b border-gray-700 py-8 px-6 rounded-t-lg">
+          <CardHeader className="relative p-0 mb-6">
+            <button
+              className="absolute top-0 left-0 p-2 text-white"
+              onClick={handleBack}
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </button>
+            <CardTitle className="text-3xl sm:text-4xl lg:text-5xl text-center text-red-500">
+              👩‍🍳 Recipes 👨‍🍳
+            </CardTitle>
+          </CardHeader>
+          <div className="bg-yellow-200 text-black p-4 rounded-md mb-6">
+            ⚠️ Note: Some recipes may only work on the first attempt.
+          </div>
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Search recipes by input or output..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-gray-700 text-white border-gray-600 focus:border-gray-500 placeholder-gray-400"
+            />
+          </div>
+        </div>
+        <CardContent className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="grid gap-2">
+            {filteredItems.map((item, index) => (
+              <div
+                key={index}
+                className="relative bg-gray-700/60 rounded-lg p-4 hover:bg-gray-700/80 transition-colors"
+              >
+                {item.isNew && <NewBadge />}
+                <div className="grid grid-cols-[2fr,auto,3fr] gap-6 items-start min-h-[3rem]">
+                  {/* Input Section */}
+                  <div>
+                    <div className="text-orange-400 text-xs font-medium uppercase tracking-wider mb-1.5">
+                      Input
+                    </div>
+                    <div>
+                      {item.requiredItems.map((ingredient, idx) => (
+                        <div
+                          key={idx}
+                          className="text-gray-100 text-sm leading-relaxed"
+                        >
+                          {ingredient}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Time Section - Center */}
+                  <div className="flex flex-col items-center text-gray-500 mt-5 -mx-2">
+                    <div className="flex items-center mb-0.5 opacity-60">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="text-xs">{item.craftingTime}</span>
+                    </div>
+                    <div className="text-xs mt-0.5">→</div>
+                  </div>
+
+                  {/* Output Section */}
+                  <div>
+                    <div className="text-orange-400 text-xs font-medium uppercase tracking-wider mb-1.5">
+                      Output
+                    </div>
+                    <div className="space-y-1">
+                      {item.producedItems.map((product, idx) => (
+                        <div
+                          key={idx}
+                          className="text-green-400 text-sm leading-relaxed"
+                        >
+                          {product}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </CardContent>
+        <CardFooter className="text-center text-sm text-gray-400 mt-4 border-t border-gray-700 px-6 py-4">
+          Data combined with the&nbsp;
+          <a
+            href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline"
+          >
+            Escape from Tarkov Wiki
+          </a>
+          . Thank you all contributors! ❣️
+        </CardFooter>
       </Card>
     </div>
   );

@@ -31,6 +31,9 @@ yarn-error.log*
 # env files
 .env*
 
+# env example
+!.env.example
+
 # vercel
 .vercel
 
@@ -40,8 +43,17 @@ next-env.d.ts
 
 # local files
 /public/all_items_*
-repopack-output.txt
+repomix-output.txt
 CCC.md
 
 # vscode
 /.vscode
+
+# windsurf rules
+.windsurfrules
+HELP.txt
+all_items_PVE.json
+all_items_PVP.json
+CLAUDE.md
+
+.env.local

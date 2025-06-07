@@ -1,13 +1,54 @@
 // app/lib/rateLimiter.ts
 
-import Bottleneck from 'bottleneck';
+import { NextRequest, NextResponse } from "next/server";
 
-// Create a Bottleneck limiter with a maximum of 5 requests per minute
-const limiter = new Bottleneck({
-  reservoir: 5, // initial number of requests
-  reservoirRefreshAmount: 5,
-  reservoirRefreshInterval: 60 * 1000, // refresh every minute
-  maxConcurrent: 1, // one request at a time
-});
+interface RateLimiterOptions {
+  uniqueTokenPerInterval: number;
+  interval: number;
+  tokensPerInterval: number;
+  timeout: number;
+}
 
-export default limiter;
+interface RequestLog {
+  timestamp: number;
+  count: number;
+}
+
+export function createRateLimiter(options: RateLimiterOptions) {
+  const ipRequestMap = new Map<string, RequestLog>();
+
+  return function rateLimiter(request: NextRequest) {
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded
+      ? forwarded.split(",")[0].trim()
+      : request.headers.get("x-real-ip") ?? "127.0.0.1";
+    const now = Date.now();
+    const windowStart = now - options.interval;
+
+    const requestLog = ipRequestMap.get(ip) ?? { timestamp: now, count: 0 };
+
+    if (requestLog.timestamp < windowStart) {
+      // Reset the counter if the window has passed
+      requestLog.timestamp = now;
+      requestLog.count = 1;
+    } else {
+      // Increment the counter
+      requestLog.count++;
+    }
+
+    ipRequestMap.set(ip, requestLog);
+
+    // If the request count exceeds the limit, return 429
+    if (requestLog.count > options.tokensPerInterval) {
+      return new NextResponse(null, {
+        status: 429,
+        statusText: "Too Many Requests",
+        headers: {
+          "Retry-After": Math.ceil(options.timeout / 1000).toString(),
+        },
+      });
+    }
+
+    return null;
+  };
+}

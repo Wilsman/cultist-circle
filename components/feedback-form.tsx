@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CURRENT_VERSION } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -28,12 +29,12 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/submit-feedback', {
-        method: 'POST',
+      const response = await fetch("/api/submit-feedback", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ type, description }),
+        body: JSON.stringify({ type, description, version: CURRENT_VERSION }),
       });
 
       const result = await response.json();
@@ -50,10 +51,13 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto bg-background">
       <CardHeader>
         <CardTitle>Submit Feedback or Report Issue</CardTitle>
       </CardHeader>
+      <p className="text-center text-muted-foreground">
+        If you have any issues, please try resetting the app in the settings first.
+      </p>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -67,6 +71,8 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
               <SelectContent>
                 <SelectItem value="Issue">Issue</SelectItem>
                 <SelectItem value="Feature">Feature</SelectItem>
+                <SelectItem value="Suggestion">Suggestion</SelectItem>
+                <SelectItem value="Recipe">Recipe</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -82,13 +88,34 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
               required
               className="min-h-[100px]"
             />
+            <p>
+              Alternatively, you can{" "}
+              <a
+                href="https://discord.gg/3dFmr5qaJK"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground"
+              >
+                contact us via Discord
+              </a>
+              .
+            </p>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline"
+            className="bg-red-500 hover:bg-red-800 "
+            onClick={onClose}
+          >
             Close
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            className="bg-green-500 hover:bg-green-800"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
         </CardFooter>

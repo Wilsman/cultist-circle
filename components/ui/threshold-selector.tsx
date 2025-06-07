@@ -3,16 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronUpIcon, ChevronDownIcon } from "@radix-ui/react-icons";
 import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
-import Cookies from "js-cookie";
+  Alert,
+  AlertTitle,
+  AlertDescription,
+} from "@/components/ui/alert";
+
 
 interface ThresholdSelectorProps {
   value: number;
@@ -36,9 +34,10 @@ export default function ThresholdSelector({
   }, [value]);
 
   useEffect(() => {
-    const savedThreshold = Cookies.get("userThreshold");
-    if (savedThreshold) {
-      onChange(Number(savedThreshold));
+    const savedThreshold = localStorage.getItem("userThreshold");
+    const parsed = Number(savedThreshold);
+    if (savedThreshold && Number.isFinite(parsed)) {
+      onChange(parsed);
     }
   }, [onChange]);
 
@@ -69,26 +68,26 @@ export default function ThresholdSelector({
   const handleSliderChange = (newValue: number[]) => {
     const newThreshold = newValue[0];
     onChange(newThreshold);
-    Cookies.set("userThreshold", newThreshold.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", newThreshold.toString());
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = Number(e.target.value);
     const newThreshold = isNaN(newValue) ? 0 : newValue;
     onChange(newThreshold);
-    Cookies.set("userThreshold", newThreshold.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", newThreshold.toString());
   };
 
   const handlePresetClick = (preset: number) => {
     onChange(preset);
     setIsCustom(false);
-    Cookies.set("userThreshold", preset.toString(), { expires: 365 });
+    localStorage.setItem("userThreshold", preset.toString());
   };
 
   return (
     <div
       ref={ref}
-      className="w-64 bg-gray-700 text-white rounded-lg shadow-md transition-colors duration-200"
+      className="w-68 bg-gray-700 text-white rounded shadow-md transition-colors duration-200"
     >
       <div
         id="threshold"
@@ -97,8 +96,8 @@ export default function ThresholdSelector({
       >
         <Label className="text-sm font-semibold">Threshold:</Label>
         <div className="flex items-center">
-          <span className="mr-2">{formatValue(value)}</span>
-          <ChevronsUpDown className="h-4 w-4 text-muted-secondary" />
+          <span className="m-1">{formatValue(value)}</span>
+          {isOpen ? <ChevronUpIcon className="h-4 w-4 text-muted-secondary" /> : <ChevronDownIcon className="h-4 w-4 text-muted-secondary" />}
         </div>
       </div>
       {isOpen && (
@@ -110,50 +109,67 @@ export default function ThresholdSelector({
             step={1000}
             className="mb-4"
           />
-          <div className="flex justify-between mb-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={value === 350001 ? "outline" : "default"}
-                    size="sm"
-                    onClick={() => handlePresetClick(350001)}
-                    className="text-sm bg-primary"
-                  >
-                    ₽350,001
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <div>14 hours | High-value item reward</div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={value === 400000 ? "outline" : "default"}
-                    size="sm"
-                    onClick={() => handlePresetClick(400000)}
-                    className="text-sm bg-primary"
-                  >
-                    ₽400,000
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <div>
-                    6 hours (25% success chance) | Active tasks or hideout item
+          <div className="mt-4 space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <Alert
+                variant="default"
+                className={`transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded cursor-pointer ${value === 350001 ? 'ring-2 ring-yellow-500/50' : ''}`}
+                onClick={() => handlePresetClick(350001)}
+              >
+                <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
+                  <span className="text-base font-bold">350,001+</span>
+                  <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                    Guaranteed
+                  </span>
+                </AlertTitle>
+                <AlertDescription className="mt-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
+                    <span>14h timer</span>
                   </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
+                    <span>High value item(s)</span>
+                  </div>
+                </AlertDescription>
+              </Alert>
+
+              <Alert
+                variant="default"
+                className={`transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded cursor-pointer ${value === 400000 ? 'ring-2 ring-yellow-500/50' : ''}`}
+                onClick={() => handlePresetClick(400000)}
+              >
+                <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
+                  <span className="text-base font-bold">400,000+</span>
+                  <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                    Mixed Chances
+                  </span>
+                </AlertTitle>
+                <AlertDescription className="mt-2 text-sm space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-yellow-500/30" />
+                    <span className="flex items-center gap-1">
+                      <span className="text-yellow-500/90">25%</span> 6h
+                      timer + Quest/Hideout items
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
+                    <span className="flex items-center gap-1">
+                      <span className="text-yellow-500/90">75%</span> 14h
+                      High value item(s)
+                    </span>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
           </div>
           {isCustom && (
             <Input
               type="number"
               value={value}
               onChange={handleInputChange}
-              className="w-full mt-2 bg-primary text-secondary"
+              className="w-full mt-2 bg-primary text-secondary rounded"
             />
           )}
         </div>
