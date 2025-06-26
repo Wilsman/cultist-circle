@@ -9,7 +9,7 @@ import Script from "next/script";
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator",
   description:
-    "Calculate the optimal items for your Cultist Circle runs in Escape from Tarkov",
+    "A powerful web app for Escape from Tarkov players to calculate, optimize, and plan Cultist Circle sacrifices using real-time item values and advanced selection tools.",
   keywords: [
     "Escape from Tarkov",
     "EFT",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Cultist Circle Calculator",
     description:
-      "Calculate the optimal items for your Cultist Circle runs in Escape from Tarkov",
+      "A powerful web app for Escape from Tarkov players to calculate, optimize, and plan Cultist Circle sacrifices using real-time item values and advanced selection tools.",
     url: "https://cultist-circle.vercel.app",
     siteName: "Cultist Circle Calculator",
     locale: "en_US",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Cultist Circle Calculator",
     description:
-      "Calculate the optimal items for your Cultist Circle runs in Escape from Tarkov",
+      "A powerful web app for Escape from Tarkov players to calculate, optimize, and plan Cultist Circle sacrifices using real-time item values and advanced selection tools.",
     creator: "@wilsman77",
   },
 };
