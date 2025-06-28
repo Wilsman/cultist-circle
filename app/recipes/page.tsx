@@ -17,10 +17,15 @@ import { ArrowLeft } from "lucide-react";
 // Escape from Tarkov crafting recipes
 const tarkovRecipes = [
   {
+    requiredItems: ["1x WD-40 (400ml)"],
+    craftingTime: "66 mins",
+    producedItems: ["WD-40 (100ml)"],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Bottle of water (0.6L)"],
     craftingTime: "66 mins",
     producedItems: ["Fleece fabric"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Nailhead figurine", "1x Xenoalien figurine", "1x Pointy guy figurine", "1x Petya Crooker figurine", "1x Count Bloodsucker figurine"],
