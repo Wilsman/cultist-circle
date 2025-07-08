@@ -32,6 +32,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  <span className="font-medium">Updated:</span> Show bonus value under total, add Elite hideout management bonus amount
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   <span className="font-medium">New:</span> Base Values quick lookup table page
                 </span>
               </li>
@@ -57,12 +63,6 @@ export function VersionInfo({ version }: VersionInfoProps) {
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
                   <span className="font-medium">New:</span> Added new price types: Last Low Price and Average 24h Price
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  <span className="font-medium">Bug fix:</span> Fixed visual glitch when selecting the second item
                 </span>
               </li>
               <li className="flex gap-2">

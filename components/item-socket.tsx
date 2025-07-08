@@ -69,13 +69,14 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const calculateBonus = (baseBonus: number, level: number) => {
-    const levelMultiplier = level / 100; // Level 50 = 0.5 multiplier
+    // Linear scaling: 1% per level (level 1 = 1%, level 50 = 50%, level 51 = 51%)
+    const levelMultiplier = level / 100;
     const levelBonus = baseBonus * levelMultiplier;
     return baseBonus + levelBonus;
   };
 
   const totalBonus = selectedItem
-    ? Number(calculateBonus(selectedItem.bonus, hideoutLevel).toFixed(1))
+    ? Number(calculateBonus(selectedItem.bonus, hideoutLevel).toFixed(2))
     : 0;
 
   // Notify parent component when bonus changes
@@ -203,7 +204,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
                     <div className="flex items-center justify-center w-8 h-8 mr-3">
                       {item.icon}
                     </div>
-                    <span className="font-medium">{item.name}</span>
+                    <span className="font-mono">{totalBonus.toFixed(2)}%</span>
                   </Button>
                 ))}
               </div>
@@ -213,17 +214,25 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
           {selectedItem && selectedItem.id !== "none" && (
             <div className="flex items-center gap-2 animate-fade-in">
               <span className="font-mono text-gray-300">Hideout Level:</span>
-              <select
-                value={hideoutLevel}
-                onChange={(e) => setHideoutLevel(Number(e.target.value))}
-                className="bg-gray-800 text-gray-200 border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-16 text-center"
-              >
-                {Array.from({ length: 50 }, (_, i) => i + 1).map((level) => (
-                  <option key={level} value={level}>
-                    {level}
+              <div className="relative">
+                <select
+                  value={hideoutLevel}
+                  onChange={(e) => setHideoutLevel(Number(e.target.value))}
+                  className="bg-gray-800 text-gray-200 border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-24 text-center appearance-none"
+                >
+                  {Array.from({ length: 50 }, (_, i) => i + 1).map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
+                  <option key={51} value={51} className="text-yellow-400 font-bold">
+                    Elite
                   </option>
-                ))}
-              </select>
+                </select>
+                {hideoutLevel === 51 && (
+                  <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-yellow-400 text-xs font-bold">★</span>
+                )}
+              </div>
             </div>
           )}
         </div>

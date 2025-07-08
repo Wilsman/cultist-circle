@@ -1378,27 +1378,29 @@ function AppContent() {
 
               {/* Sacrifice Value Display with improved animation */}
               <div id="sacrifice-value" className="mt-6 text-center w-full">
-                <h2 className="text-3xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
+                <h2 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
                   Sacrifice BaseValue Total
                 </h2>
                 {loading ? (
                   <Skeleton className="h-16 w-3/4 mx-auto" />
                 ) : (
-                  <div
-                    className={`text-6xl font-extrabold ${
-                      isThresholdMet
-                        ? "text-green-500 animate-pulse"
-                        : "text-red-500 animate-pulse"
-                    }`}
-                  >
-                    ₽{total.toLocaleString()}
-                  </div>
-                )}
-                {!isThresholdMet && (
-                  <div className="text-red-500 mt-1">
-                    ₽{(threshold - total).toLocaleString()} Needed to meet
-                    threshold
-                  </div>
+                  <>
+                    <div className="flex flex-col items-center">
+                      <div className="text-5xl font-extrabold text-green-500">
+                        ₽{total.toLocaleString()}
+                      </div>
+                      {itemBonus > 0 && (
+                        <div className="text-sm text-gray-400 mt-1">
+                          (Base: ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} + {itemBonus}% bonus)
+                        </div>
+                      )}
+                    </div>
+                    {!isThresholdMet && (
+                      <div className="text-red-500 mt-2 text-lg">
+                        ₽{(threshold - total).toLocaleString()} needed to meet threshold
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="mt-1">
                   <div className="text-sm font-semibold text-gray-400">
