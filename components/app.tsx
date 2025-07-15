@@ -14,7 +14,6 @@ import ItemSocket from "@/components/item-socket";
 import { 
   AlertCircle,
   Loader2, 
-  MessageSquareWarning, 
   Settings, 
   Table
 } from "lucide-react";
@@ -1186,22 +1185,29 @@ function AppContent() {
               {/* show alert if items do not fit in the 9x6 box */}
               {!itemsFitInBox && (
                 <div className="mt-2 mb-2 text-center w-full">
-                  <Alert>
-                    <MessageSquareWarning className="h-4 w-4" />
-                    <AlertTitle className="text-white">
-                      Items do not fit!
+                  <Alert className="border-red-500/50 bg-red-900/20 text-white animate-pulse">
+                    <AlertTitle className="flex items-center justify-center gap-2 text-xl font-bold bg-red-600/30 border border-red-500/80 rounded-md p-2">
+                      <span className="text-2xl">❌</span>
+                      <span>ITEMS DO NOT FIT!</span>
+                      <span className="text-2xl">❌</span>
                     </AlertTitle>
-                    <AlertDescription className="text-white">
-                      {selectedItems.filter(Boolean).map((item, idx) => (
-                        <div key={`${item?.id ?? "no-id"}-${idx}`}>
-                          {item?.name} - {item?.width ?? "?"}w ×{" "}
-                          {item?.height ?? "?"}h
-                        </div>
-                      ))}
-                      <div className="mt-1">
-                        The selected items cannot be arranged in the Cultist
-                        Circle box (9×6).
+                    <AlertDescription className="mt-3 space-y-3">
+                      <div className="text-left bg-gray-800/50 border border-gray-700 rounded-md p-3">
+                        <p className="font-semibold mb-2 text-yellow-400">The following items could not be placed:</p>
+                        <ul className="space-y-1 list-disc list-inside">
+                          {selectedItems.filter(Boolean).map((item, idx) => (
+                            <li key={`${item?.id ?? "no-id"}-${idx}`}>
+                              {item?.name} -{" "}
+                              <span className="font-mono">{item?.width ?? "?"}w × {item?.height ?? "?"}h</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
+
+                      <p className="font-bold text-lg text-yellow-300">
+                        The selected items cannot be arranged in the Cultist Circle box (9×6).
+                      </p>
+
                       <PlacementPreviewInline
                         fitDebug={fitDebug}
                         selectedItems={selectedItems}
