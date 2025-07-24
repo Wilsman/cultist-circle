@@ -5,13 +5,14 @@ import React, { useCallback, useState, useEffect } from "react";
 import { FixedSizeList as List } from "react-window";
 import { cn } from "@/lib/utils";
 import { MinimalItem } from "@/hooks/use-tarkov-api";
+import {Tooltip, TooltipTrigger, TooltipContent, TooltipProvider} from "@/components/ui/tooltip";
 
 interface VirtualizedTableProps {
   items: MinimalItem[];
   sortKey: string;
   sortDir: "asc" | "desc";
   onHeaderSort?: (
-    sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice"
+    sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice" | "traderPrice"
   ) => void;
   onToggleFavorite?: (itemId: string) => void;
   isFavorite?: (itemId: string) => boolean;
@@ -60,6 +61,17 @@ export function VirtualizedTable({
       const item = items[index];
       if (!item) return null;
 
+      // Best trader price minus "Flea Market"
+      const bestTraderPrice = item.sellFor?.length > 0 
+        ? item.sellFor
+            .filter(seller => seller?.vendor?.normalizedName !== "flea-market" && seller?.priceRUB != null)
+            .reduce<typeof item.sellFor[0] | null>((prev, curr) => {
+              if (!prev) return curr;
+              if (!curr?.priceRUB) return prev;
+              return (prev?.priceRUB ?? 0) > curr.priceRUB ? prev : curr;
+            }, null)
+        : null;
+
       return (
         <div
           style={style}
@@ -90,7 +102,7 @@ export function VirtualizedTable({
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
-                  fill={isFavorite(item.id) ? "currentColor" : "none"}
+                   fill={isFavorite(item.id) ? "currentColor" : "none"}
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
@@ -123,6 +135,20 @@ export function VirtualizedTable({
           </Cell>
           <Cell className="text-muted-foreground text-right w-[120px]">
             {item.avg24hPrice?.toLocaleString() ?? "-"}
+          </Cell>
+          <Cell className="text-muted-foreground text-right w-[120px]">
+            {bestTraderPrice ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>{bestTraderPrice.priceRUB.toLocaleString()}</TooltipTrigger>
+                  <TooltipContent>
+                    <p>{bestTraderPrice.vendor.normalizedName}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              "-"
+            )}
           </Cell>
         </div>
       );
@@ -168,6 +194,13 @@ export function VirtualizedTable({
         >
           Avg 24h Price{" "}
           {sortKey === "avg24hPrice" && (sortDir === "asc" ? "↑" : "↓")}
+        </div>
+        <div
+          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => onHeaderSort?.("traderPrice")}
+        >
+          Sell-to-trader Price{" "}
+          {sortKey === "traderPrice" && (sortDir === "asc" ? "↑" : "↓")}
         </div>
       </div>
       <List

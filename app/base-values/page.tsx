@@ -13,7 +13,6 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useFavorites } from "@/hooks/use-favorites";
 // UI components
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { VirtualizedTable } from "@/components/ui/virtualized-table";
 import { Switch } from "@/components/ui/switch";
 import { Toggle } from "@/components/ui/toggle";
@@ -28,6 +27,7 @@ import { ArrowLeft, Loader2, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
+import { PriceRangeFilter } from "@/components/ui/price-range-filter";
 
 interface FilterState {
   name: string;
@@ -42,6 +42,7 @@ interface FilterState {
     | "basePrice"
     | "lastLowPrice"
     | "avg24hPrice"
+    | "traderPrice"
     | "bestValue"; // Add name/shortName back
   sortDir: "asc" | "desc";
 }
@@ -136,6 +137,7 @@ export default function ItemsTablePage() {
         | "basePrice"
         | "lastLowPrice"
         | "avg24hPrice"
+        | "traderPrice"
     ) => {
       // Use startTransition to mark UI updates as non-urgent
       startTransition(() => {
@@ -209,6 +211,23 @@ export default function ItemsTablePage() {
     } else {
       // Handle header sorting (name, shortName, prices)
       filteredItems = [...filteredItems].sort((a, b) => {
+        if (filter.sort === "traderPrice") {
+          // Safely find the best trader price (non-flea market) - highest price
+          const getBestTraderPrice = (item: MinimalItem) => {
+            if (!item.sellFor?.length) return 0;
+            return item.sellFor.reduce((best, curr) => {
+              if (!curr?.vendor?.normalizedName || curr.vendor.normalizedName === "Flea Market" || !curr.priceRUB) {
+                return best;
+              }
+              // Find the highest price (best for selling)
+              return curr.priceRUB > best ? curr.priceRUB : best;
+            }, 0);
+          };
+          
+          const aPrice = getBestTraderPrice(a);
+          const bPrice = getBestTraderPrice(b);
+          return filter.sortDir === "desc" ? bPrice - aPrice : aPrice - bPrice;
+        }
         const sortKey = filter.sort as
           | "name"
           | "shortName"
@@ -257,6 +276,9 @@ export default function ItemsTablePage() {
         <div className="text-muted-foreground text-right p-2 w-[120px]">
           <Skeleton className="h-4 w-16 ml-auto" />
         </div>
+        <div className="text-muted-foreground text-right p-2 w-[120px]">
+          <Skeleton className="h-4 w-16 ml-auto" />
+        </div>
       </div>
 
       {/* Row skeletons */}
@@ -266,6 +288,9 @@ export default function ItemsTablePage() {
             <Skeleton className="h-4 w-[180px]" />
           </div>
           <div className="px-4 py-2 text-right font-semibold w-[120px]">
+            <Skeleton className="h-4 w-[60px] ml-auto" />
+          </div>
+          <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
             <Skeleton className="h-4 w-[60px] ml-auto" />
           </div>
           <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
@@ -335,49 +360,25 @@ export default function ItemsTablePage() {
           // Add aria-label for accessibility
           aria-label="Search items"
         />
-        <Input
-          type="number"
-          min={0}
-          value={filter.basePrice[0]}
-          onChange={(e) => {
-            const min = Number(e.target.value);
-            startTransition(() => {
-              setFilter((f) => ({ ...f, basePrice: [min, f.basePrice[1]] }));
-            });
-          }}
-          className="h-8 w-24"
-          placeholder="Min Value"
-          aria-label="Min Base Value"
-        />
-        <Input
-          type="number"
-          min={0}
-          value={filter.basePrice[1]}
-          onChange={(e) => {
-            const max = Number(e.target.value);
-            startTransition(() => {
-              setFilter((f) => ({ ...f, basePrice: [f.basePrice[0], max] }));
-            });
-          }}
-          className="h-8 w-24"
-          placeholder="Max Value"
-          aria-label="Max Base Value"
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 px-2"
-          onClick={() => {
-            startTransition(() => {
-              const [min, max] = getMinMax(items, "basePrice");
-              setFilter((f) => ({ ...f, basePrice: [min, max] }));
-            });
-          }}
-          aria-label="Reset base value filter"
-        >
-          Reset
-        </Button>
+        <div className="w-full md:w-80">
+          <PriceRangeFilter
+            min={getMinMax(items, "basePrice")[0]}
+            max={getMinMax(items, "basePrice")[1]}
+            value={filter.basePrice}
+            onChange={(value) => {
+              startTransition(() => {
+                setFilter((f) => ({ ...f, basePrice: value }));
+              });
+            }}
+            onReset={() => {
+              startTransition(() => {
+                const [min, max] = getMinMax(items, "basePrice");
+                setFilter((f) => ({ ...f, basePrice: [min, max] }));
+              });
+            }}
+            label="Base Price Range"
+          />
+        </div>
         {/* Favorites Toggle */}
         <div className="flex items-center gap-2">
           <div className="flex items-center space-x-2">
