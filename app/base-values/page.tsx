@@ -209,23 +209,31 @@ export default function ItemsTablePage() {
         return filter.sortDir === "desc" ? bVal - aVal : aVal - bVal; // Best value is always desc
       });
     } else {
+      // Precompute best trader prices if we're sorting by traderPrice
+      const bestPrices = filter.sort === "traderPrice"
+        ? new Map<string, number>(
+            filteredItems.map(item => {
+              let bestPrice = 0;
+              if (item.sellFor?.length) {
+                for (const offer of item.sellFor) {
+                  if (offer?.vendor?.normalizedName && 
+                      offer.vendor.normalizedName.toLowerCase() !== "flea-market" && 
+                      offer.priceRUB && 
+                      offer.priceRUB > bestPrice) {
+                    bestPrice = offer.priceRUB;
+                  }
+                }
+              }
+              return [item.id, bestPrice];
+            })
+          )
+        : null;
+
       // Handle header sorting (name, shortName, prices)
       filteredItems = [...filteredItems].sort((a, b) => {
-        if (filter.sort === "traderPrice") {
-          // Safely find the best trader price (non-flea market) - highest price
-          const getBestTraderPrice = (item: MinimalItem) => {
-            if (!item.sellFor?.length) return 0;
-            return item.sellFor.reduce((best, curr) => {
-              if (!curr?.vendor?.normalizedName || curr.vendor.normalizedName === "Flea Market" || !curr.priceRUB) {
-                return best;
-              }
-              // Find the highest price (best for selling)
-              return curr.priceRUB > best ? curr.priceRUB : best;
-            }, 0);
-          };
-          
-          const aPrice = getBestTraderPrice(a);
-          const bPrice = getBestTraderPrice(b);
+        if (filter.sort === "traderPrice" && bestPrices) {
+          const aPrice = bestPrices.get(a.id) || 0;
+          const bPrice = bestPrices.get(b.id) || 0;
           return filter.sortDir === "desc" ? bPrice - aPrice : aPrice - bPrice;
         }
         const sortKey = filter.sort as
