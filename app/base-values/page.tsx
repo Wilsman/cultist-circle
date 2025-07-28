@@ -23,11 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Star } from "lucide-react";
+import { ArrowLeft, Loader2, Star, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { PriceRangeFilter } from "@/components/ui/price-range-filter";
+import { Button } from "@/components/ui/button";
 
 interface FilterState {
   name: string;
@@ -158,6 +159,59 @@ export default function ItemsTablePage() {
     },
     [startTransition]
   );
+
+  // Export to Excel function
+  const exportToExcel = (items: MinimalItem[]) => {
+    if (items.length === 0) {
+      return;
+    }
+
+    // Create CSV content
+    const headers = [
+      'Name',
+      'Short Name',
+      'Base Price',
+      'Last Low Price',
+      'Average 24h Price',
+      'Best Trader Price',
+      'Link'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...items.map(item => {
+        // Calculate best trader price
+        const bestTraderPrice = item.sellFor?.length > 0 
+          ? Math.max(...item.sellFor
+              .filter(seller => seller?.vendor?.normalizedName !== "flea-market" && seller?.priceRUB != null)
+              .map(seller => seller.priceRUB)
+            ).toString()
+          : "-";
+
+        return [
+          `"${item.name || ''}"`,
+          `"${item.shortName || ''}"`,
+          item.basePrice || 0,
+          item.lastLowPrice || 0,
+          item.avg24hPrice || 0,
+          bestTraderPrice,
+          `"${item.link || ''}"`
+        ].join(',');
+      })
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `cultist-circle-items-${mode}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const items = useMemo(() => {
     const allItems = mode === "pvp" ? pvp : pve;
@@ -462,7 +516,15 @@ export default function ItemsTablePage() {
             <SelectItem value="bestValue">Best Value</SelectItem>
           </SelectContent>
         </Select>
-        {/* Removed Asc/Desc Button */}
+        <Button
+          onClick={() => exportToExcel(filtered)}
+          variant="outline"
+          size="sm"
+          className="h-8"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export to Excel
+        </Button>
       </div>
 
       {/* Table Section with loading indicator */}
