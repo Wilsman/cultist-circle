@@ -243,11 +243,18 @@ export default function ItemsTablePage() {
 
     // Only apply name filter if search term exists
     if (q) {
-      filteredItems = filteredItems.filter(
-        (item) =>
-          item.name.toLowerCase().includes(q) ||
-          item.shortName.toLowerCase().includes(q)
-      );
+      const searchTerms = q.split(/\s+/).filter(term => term.length > 0);
+      
+      filteredItems = filteredItems.filter((item) => {
+        const lowerName = item.name.toLowerCase();
+        const lowerShortName = item.shortName.toLowerCase();
+        
+        // Check if all search terms appear in either name or shortName
+        return searchTerms.every(term => 
+          lowerName.includes(term) || 
+          lowerShortName.includes(term)
+        );
+      });
     }
 
     // Apply price filters
