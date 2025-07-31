@@ -194,25 +194,27 @@ export default function ItemsTablePage() {
     ];
 
     const csvContent = [
-      headers.join(','),
+      headers.map(h => `"${h}"`).join(','),
       ...items.map(item => {
         // Calculate best trader price
         const bestTraderPrice = item.sellFor?.length > 0 
           ? Math.max(...item.sellFor
               .filter(seller => seller?.vendor?.normalizedName !== "flea-market" && seller?.priceRUB != null)
-              .map(seller => seller.priceRUB)
-            ).toString()
-          : "-";
-
+              .map(seller => seller.priceRUB))
+          : 0;
+        
+        // Escape categories properly
+        const categories = item.categories?.map(c => c.name).join(', ') || '';
+        
         return [
-          `"${item.name || ''}"`,
-          `"${item.shortName || ''}"`,
-          `"${item.categories?.map(c => c.name).join(', ') || ''}"`,
+          `"${(item.name || '').replace(/"/g, '""')}"`,
+          `"${(item.shortName || '').replace(/"/g, '""')}"`,
+          `"${categories.replace(/"/g, '""')}"`,
           item.basePrice || 0,
           item.lastLowPrice || 0,
           item.avg24hPrice || 0,
           bestTraderPrice,
-          `"${item.link || ''}"`
+          `"${(item.link || '').replace(/"/g, '""')}"`
         ].join(',');
       })
     ].join('\n');
