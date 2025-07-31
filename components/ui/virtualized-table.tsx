@@ -3,16 +3,28 @@
 
 import React, { useCallback, useState, useEffect } from "react";
 import { FixedSizeList as List } from "react-window";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { MinimalItem } from "@/hooks/use-tarkov-api";
 import {Tooltip, TooltipTrigger, TooltipContent, TooltipProvider} from "@/components/ui/tooltip";
+
+// Trader image mapping
+const TRADER_IMAGES: Record<string, string> = {
+  "prapor": "https://assets.tarkov.dev/54cb50c76803fa8b248b4571.webp",
+  "therapist": "https://assets.tarkov.dev/54cb57776803fa99248b456e.webp",
+  "skier": "https://assets.tarkov.dev/58330581ace78e27b8b10cee.webp",
+  "peacekeeper": "https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp",
+  "mechanic": "https://assets.tarkov.dev/5a7c2eca46aef81a7ca2145d.webp",
+  "ragman": "https://assets.tarkov.dev/5ac3b934156ae10c4430e83c.webp",
+  "jaeger": "https://assets.tarkov.dev/5c0647fdd443bc2504c2d371.webp"
+};
 
 interface VirtualizedTableProps {
   items: MinimalItem[];
   sortKey: string;
   sortDir: "asc" | "desc";
   onHeaderSort?: (
-    sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice" | "traderPrice"
+    sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice" | "traderPrice" | "buyPrice"
   ) => void;
   onToggleFavorite?: (itemId: string) => void;
   isFavorite?: (itemId: string) => boolean;
@@ -69,6 +81,17 @@ export function VirtualizedTable({
               if (!prev) return curr;
               if (!curr?.priceRUB) return prev;
               return (prev?.priceRUB ?? 0) > curr.priceRUB ? prev : curr;
+            }, null)
+        : null;
+
+      // Best buy price from traders (excluding flea market)
+      const bestBuyPrice = item.buyFor?.length > 0
+        ? item.buyFor
+            .filter(offer => offer?.vendor?.normalizedName !== "flea-market" && offer?.priceRUB != null)
+            .reduce<typeof item.buyFor[0] | null>((prev, curr) => {
+              if (!prev) return curr;
+              if (!curr?.priceRUB) return prev;
+              return (prev?.priceRUB ?? 0) < curr.priceRUB ? prev : curr;
             }, null)
         : null;
 
@@ -150,6 +173,31 @@ export function VirtualizedTable({
               "-"
             )}
           </Cell>
+          <Cell className="text-muted-foreground text-right w-[120px]">
+            {bestBuyPrice ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger className="flex items-center justify-end gap-1">
+                    <span>{bestBuyPrice.priceRUB.toLocaleString()}</span>
+                    {TRADER_IMAGES[bestBuyPrice.vendor.normalizedName] && (
+                      <Image
+                        src={TRADER_IMAGES[bestBuyPrice.vendor.normalizedName]}
+                        alt={bestBuyPrice.vendor.normalizedName}
+                        width={16}
+                        height={16}
+                        className="w-4 h-4 rounded-full"
+                      />
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{bestBuyPrice.vendor.normalizedName} (Level {bestBuyPrice.vendor.minTraderLevel || 1})</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              "-"
+            )}
+          </Cell>
         </div>
       );
     },
@@ -201,6 +249,13 @@ export function VirtualizedTable({
         >
           Sell-to-trader Price{" "}
           {sortKey === "traderPrice" && (sortDir === "asc" ? "↑" : "↓")}
+        </div>
+        <div
+          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => onHeaderSort?.("buyPrice")}
+        >
+          Buy From Traders{" "}
+          {sortKey === "buyPrice" && (sortDir === "asc" ? "↑" : "↓")}
         </div>
       </div>
       <List

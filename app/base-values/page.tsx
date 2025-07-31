@@ -30,6 +30,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { PriceRangeFilter } from "@/components/ui/price-range-filter";
 import { Button } from "@/components/ui/button";
+import { CategoryFilter } from "@/components/ui/category-filter";
+
 
 interface FilterState {
   name: string;
@@ -45,6 +47,7 @@ interface FilterState {
     | "lastLowPrice"
     | "avg24hPrice"
     | "traderPrice"
+    | "buyPrice"
     | "bestValue"; // Add name/shortName back
   sortDir: "asc" | "desc";
 }
@@ -63,6 +66,8 @@ function getMinMax(
   );
   return [Math.min(...nums), Math.max(...nums)];
 }
+
+
 
 export default function ItemsTablePage() {
   // Add isPending state for transitions
@@ -89,6 +94,11 @@ export default function ItemsTablePage() {
 
   // State for showing compatible items only
   const [showCompatibleOnly, setShowCompatibleOnly] = useState(false);
+
+  // State for category filtering
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+
 
   // Initialize favorites functionality
   const {
@@ -143,6 +153,7 @@ export default function ItemsTablePage() {
         | "lastLowPrice"
         | "avg24hPrice"
         | "traderPrice"
+        | "buyPrice"
     ) => {
       // Use startTransition to mark UI updates as non-urgent
       startTransition(() => {
@@ -232,6 +243,21 @@ export default function ItemsTablePage() {
 
     return allItems;
   }, [mode, pvp, pve, showOnlyFavorites, isFavorite, showCompatibleOnly]);
+
+  // Memoize unique categories from all items
+  const categories = useMemo(() => {
+    const categorySet = new Set<string>();
+    items.forEach(item => {
+      if (item.categories && Array.isArray(item.categories)) {
+        item.categories.forEach(category => {
+          if (category && category.name) {
+            categorySet.add(category.name);
+          }
+        });
+      }
+    });
+    return Array.from(categorySet).sort();
+  }, [items]);
   const filtered = useMemo(() => {
     // Use debounced search term instead of directly using filter.name
     const q = debouncedSearchTerm.trim().toLowerCase();
@@ -270,6 +296,14 @@ export default function ItemsTablePage() {
             item.avg24hPrice <= filter.avg24hPrice[1]))
     );
 
+    if (selectedCategory && selectedCategory !== 'All Categories') {
+      filteredItems = filteredItems.filter(item => 
+        item.categories?.some(category => category.name === selectedCategory)
+      );
+    }
+
+
+
     if (filter.sort === "bestValue") {
       filteredItems = [...filteredItems].sort((a, b) => {
         const aVal =
@@ -299,11 +333,36 @@ export default function ItemsTablePage() {
           )
         : null;
 
+      // Precompute best buy prices if we're sorting by buyPrice
+      const bestBuyPrices = filter.sort === "buyPrice"
+        ? new Map<string, number>(
+            filteredItems.map(item => {
+              let bestPrice = 0;
+              if (item.buyFor?.length) {
+                for (const offer of item.buyFor) {
+                  if (offer?.vendor?.normalizedName && 
+                      offer.vendor.normalizedName.toLowerCase() !== "flea-market" && 
+                      offer.priceRUB && 
+                      offer.priceRUB < bestPrice || bestPrice === 0) {
+                    bestPrice = offer.priceRUB;
+                  }
+                }
+              }
+              return [item.id, bestPrice];
+            })
+          )
+        : null;
+
       // Handle header sorting (name, shortName, prices)
       filteredItems = [...filteredItems].sort((a, b) => {
         if (filter.sort === "traderPrice" && bestPrices) {
           const aPrice = bestPrices.get(a.id) || 0;
           const bPrice = bestPrices.get(b.id) || 0;
+          return filter.sortDir === "desc" ? bPrice - aPrice : aPrice - bPrice;
+        }
+        if (filter.sort === "buyPrice" && bestBuyPrices) {
+          const aPrice = bestBuyPrices.get(a.id) || 0;
+          const bPrice = bestBuyPrices.get(b.id) || 0;
           return filter.sortDir === "desc" ? bPrice - aPrice : aPrice - bPrice;
         }
         const sortKey = filter.sort as
@@ -335,6 +394,7 @@ export default function ItemsTablePage() {
     filter.basePrice,
     filter.lastLowPrice,
     filter.avg24hPrice,
+    selectedCategory,
   ]); // Update dependencies
 
   // Create a skeleton table component for loading state
@@ -463,6 +523,8 @@ export default function ItemsTablePage() {
           />
         </div>
 
+
+
         {/* Secondary Controls */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Left side - View Toggles */}
@@ -556,6 +618,13 @@ export default function ItemsTablePage() {
 
           {/* Right side - Actions */}
           <div className="flex items-center gap-2">
+            {/* Category Filter */}
+            <CategoryFilter
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+            />
+            
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground whitespace-nowrap">Sort by:</span>
@@ -565,7 +634,7 @@ export default function ItemsTablePage() {
                   startTransition(() => {
                     setFilter((f) => ({
                       ...f,
-                      sort: value as 'name' | 'shortName' | 'basePrice' | 'lastLowPrice' | 'avg24hPrice' | 'bestValue',
+                      sort: value as 'name' | 'shortName' | 'basePrice' | 'lastLowPrice' | 'avg24hPrice' | 'traderPrice' | 'buyPrice' | 'bestValue',
                       sortDir: value === 'name' || value === 'shortName' ? 'asc' : 'desc',
                     }));
                   });
@@ -578,6 +647,8 @@ export default function ItemsTablePage() {
                   <SelectItem value="basePrice">Base Price</SelectItem>
                   <SelectItem value="lastLowPrice">Last Low Price</SelectItem>
                   <SelectItem value="avg24hPrice">24h Avg Price</SelectItem>
+                  <SelectItem value="traderPrice">Sell to Trader</SelectItem>
+                  <SelectItem value="buyPrice">Buy from Trader</SelectItem>
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="shortName">Short Name</SelectItem>
                   <SelectItem value="bestValue">Best Value</SelectItem>
