@@ -185,6 +185,7 @@ export default function ItemsTablePage() {
     const headers = [
       'Name',
       'Short Name',
+      'Categories',
       'Base Price',
       'Last Low Price',
       'Average 24h Price',
@@ -206,6 +207,7 @@ export default function ItemsTablePage() {
         return [
           `"${item.name || ''}"`,
           `"${item.shortName || ''}"`,
+          `"${item.categories?.map(c => c.name).join(', ') || ''}"`,
           item.basePrice || 0,
           item.lastLowPrice || 0,
           item.avg24hPrice || 0,
