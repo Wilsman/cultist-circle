@@ -492,13 +492,13 @@ export default function ItemsTablePage() {
         </AlertDescription>
       </Alert>
 
-      {/* Search Bar - Full width */}
-      <div className="mb-6">
+      {/* Search Bar - Sticky Full width */}
+      <div className="sticky top-2 z-10 bg-background/95 backdrop-blur-sm border-b mb-4 p-4">
         <Input
           placeholder="Search items by name or short name..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="h-10 w-full max-w-2xl text-base"
+          className="h-12 w-full max-w text-base bg-gray-700 animate-pulse" // make bg of text box more obvious
           aria-label="Search items"
         />
       </div>
