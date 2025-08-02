@@ -90,8 +90,7 @@ export default function RootLayout({
           <CookieConsentProvider>
             <main className="relative min-h-screen">
               {/* Background color */}
-              <div className="fixed inset-0 -z-10 bg-[#1e2733]" />
-              <div className="fixed inset-0 -z-10 scanlines" />
+              <div className="fixed inset-0 -z-10 bg-[#101720]" />
 
               {/* Content */}
               <div className="relative z-10">{children}</div>

@@ -24,14 +24,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ArrowUp, ArrowDown, Loader2, Star, Download, CircleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  Loader2,
+  Star,
+  Download,
+  CircleAlert,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { PriceRangeFilter } from "@/components/ui/price-range-filter";
 import { Button } from "@/components/ui/button";
 import { CategoryFilter } from "@/components/ui/category-filter";
-
 
 interface FilterState {
   name: string;
@@ -67,8 +74,6 @@ function getMinMax(
   return [Math.min(...nums), Math.max(...nums)];
 }
 
-
-
 export default function ItemsTablePage() {
   // Add isPending state for transitions
   const [isPending, startTransition] = useTransition();
@@ -98,7 +103,8 @@ export default function ItemsTablePage() {
   // State for category filtering
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-
+  // State for trader-only filtering
+  const [showTraderOnly, setShowTraderOnly] = useState(false);
 
   // Initialize favorites functionality
   const {
@@ -183,49 +189,77 @@ export default function ItemsTablePage() {
 
     // Create CSV content
     const headers = [
-      'Name',
-      'Short Name',
-      'Categories',
-      'Base Price',
-      'Last Low Price',
-      'Average 24h Price',
-      'Best Trader Price',
-      'Link'
+      "Name",
+      "Short Name",
+      "Categories",
+      "Base Price",
+      "Last Low Price",
+      "Average 24h Price",
+      "Sell to Trader",
+      "Buy from Trader",
+      "Link",
     ];
 
     const csvContent = [
-      headers.map(h => `"${h}"`).join(','),
-      ...items.map(item => {
+      headers.map((h) => `"${h}"`).join(","),
+      ...items.map((item) => {
         // Calculate best trader price
-        const bestTraderPrice = item.sellFor?.length > 0 
-          ? Math.max(...item.sellFor
-              .filter(seller => seller?.vendor?.normalizedName !== "flea-market" && seller?.priceRUB != null)
-              .map(seller => seller.priceRUB))
-          : 0;
-        
+        const bestTraderPrice =
+          item.sellFor?.length > 0
+            ? Math.max(
+                ...item.sellFor
+                  .filter(
+                    (seller) =>
+                      seller?.vendor?.normalizedName !== "flea-market" &&
+                      seller?.priceRUB != null
+                  )
+                  .map((seller) => seller.priceRUB || 0)
+              )
+            : 0;
+
+        // Calculate best buy price
+        const bestBuyPrice =
+          item.buyFor?.length > 0
+            ? Math.min(
+                ...item.buyFor
+                  .filter(
+                    (offer) =>
+                      offer.vendor?.normalizedName !== "flea-market" &&
+                      offer.priceRUB != null
+                  )
+                  .map((offer) => offer.priceRUB || Infinity)
+              )
+            : 0;
+
         // Escape categories properly
-        const categories = item.categories?.map(c => c.name).join(', ') || '';
-        
+        const categories = item.categories?.map((c) => c.name).join(", ") || "";
+
         return [
-          `"${(item.name || '').replace(/"/g, '""')}"`,
-          `"${(item.shortName || '').replace(/"/g, '""')}"`,
+          `"${(item.name || "").replace(/"/g, '""')}"`,
+          `"${(item.shortName || "").replace(/"/g, '""')}"`,
           `"${categories.replace(/"/g, '""')}"`,
           item.basePrice || 0,
           item.lastLowPrice || 0,
           item.avg24hPrice || 0,
           bestTraderPrice,
-          `"${(item.link || '').replace(/"/g, '""')}"`
-        ].join(',');
-      })
-    ].join('\n');
+          bestBuyPrice === Infinity ? 0 : bestBuyPrice,
+          `"${(item.link || "").replace(/"/g, '""')}"`,
+        ].join(",");
+      }),
+    ].join("\n");
 
     // Create blob and download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `cultist-circle-items-${mode}-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `cultist-circle-items-${mode}-${
+        new Date().toISOString().split("T")[0]
+      }.csv`
+    );
+    link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -240,20 +274,56 @@ export default function ItemsTablePage() {
       return allItems.filter((item) => isFavorite(item.id));
     }
 
-    // Filter by compatible items if enabled
+    let filtered = allItems;
+
+    // Apply compatibility filter
     if (showCompatibleOnly) {
-      return allItems.filter((item) => !DEFAULT_EXCLUDED_ITEMS.has(item.name));
+      filtered = filtered.filter((item) => {
+        const isExcluded = DEFAULT_EXCLUDED_ITEMS.has(item.id);
+        const hasValidPrice = item.basePrice > 0;
+        return !isExcluded && hasValidPrice;
+      });
     }
 
-    return allItems;
-  }, [mode, pvp, pve, showOnlyFavorites, isFavorite, showCompatibleOnly]);
+    // Apply trader-only filter
+    if (showTraderOnly) {
+      filtered = filtered.filter((item) => {
+        if (!item.buyFor || item.buyFor.length === 0) return false;
+
+        // Match the exact logic from VirtualizedTable component
+        const bestBuyPrice = item.buyFor
+          .filter(
+            (offer) =>
+              offer?.vendor?.normalizedName !== "flea-market" &&
+              offer?.priceRUB != null
+          )
+          .reduce<(typeof item.buyFor)[0] | null>((prev, curr) => {
+            if (!prev) return curr;
+            if (!curr?.priceRUB) return prev;
+            return (prev?.priceRUB ?? 0) < curr.priceRUB ? prev : curr;
+          }, null);
+
+        return bestBuyPrice !== null;
+      });
+    }
+
+    return filtered;
+  }, [
+    mode,
+    pvp,
+    pve,
+    showOnlyFavorites,
+    isFavorite,
+    showCompatibleOnly,
+    showTraderOnly,
+  ]);
 
   // Memoize unique categories from all items
   const categories = useMemo(() => {
     const categorySet = new Set<string>();
-    items.forEach(item => {
+    items.forEach((item) => {
       if (item.categories && Array.isArray(item.categories)) {
-        item.categories.forEach(category => {
+        item.categories.forEach((category) => {
           if (category && category.name) {
             categorySet.add(category.name);
           }
@@ -273,16 +343,15 @@ export default function ItemsTablePage() {
 
     // Only apply name filter if search term exists
     if (q) {
-      const searchTerms = q.split(/\s+/).filter(term => term.length > 0);
-      
+      const searchTerms = q.split(/\s+/).filter((term) => term.length > 0);
+
       filteredItems = filteredItems.filter((item) => {
         const lowerName = item.name.toLowerCase();
         const lowerShortName = item.shortName.toLowerCase();
-        
+
         // Check if all search terms appear in either name or shortName
-        return searchTerms.every(term => 
-          lowerName.includes(term) || 
-          lowerShortName.includes(term)
+        return searchTerms.every(
+          (term) => lowerName.includes(term) || lowerShortName.includes(term)
         );
       });
     }
@@ -300,13 +369,11 @@ export default function ItemsTablePage() {
             item.avg24hPrice <= filter.avg24hPrice[1]))
     );
 
-    if (selectedCategory && selectedCategory !== 'All Categories') {
-      filteredItems = filteredItems.filter(item => 
-        item.categories?.some(category => category.name === selectedCategory)
+    if (selectedCategory && selectedCategory !== "All Categories") {
+      filteredItems = filteredItems.filter((item) =>
+        item.categories?.some((category) => category.name === selectedCategory)
       );
     }
-
-
 
     if (filter.sort === "bestValue") {
       filteredItems = [...filteredItems].sort((a, b) => {
@@ -318,44 +385,53 @@ export default function ItemsTablePage() {
       });
     } else {
       // Precompute best trader prices if we're sorting by traderPrice
-      const bestPrices = filter.sort === "traderPrice"
-        ? new Map<string, number>(
-            filteredItems.map(item => {
-              let bestPrice = 0;
-              if (item.sellFor?.length) {
-                for (const offer of item.sellFor) {
-                  if (offer?.vendor?.normalizedName && 
-                      offer.vendor.normalizedName.toLowerCase() !== "flea-market" && 
-                      offer.priceRUB && 
-                      offer.priceRUB > bestPrice) {
-                    bestPrice = offer.priceRUB;
+      const bestPrices =
+        filter.sort === "traderPrice"
+          ? new Map<string, number>(
+              filteredItems.map((item) => {
+                let bestPrice = 0;
+                if (item.sellFor?.length) {
+                  for (const offer of item.sellFor) {
+                    if (
+                      offer?.vendor?.normalizedName &&
+                      offer.vendor.normalizedName.toLowerCase() !==
+                        "flea-market" &&
+                      offer.priceRUB &&
+                      offer.priceRUB > bestPrice
+                    ) {
+                      bestPrice = offer.priceRUB;
+                    }
                   }
                 }
-              }
-              return [item.id, bestPrice];
-            })
-          )
-        : null;
+                return [item.id, bestPrice];
+              })
+            )
+          : null;
 
       // Precompute best buy prices if we're sorting by buyPrice
-      const bestBuyPrices = filter.sort === "buyPrice"
-        ? new Map<string, number>(
-            filteredItems.map(item => {
-              let bestPrice = 0;
-              if (item.buyFor?.length) {
-                for (const offer of item.buyFor) {
-                  if (offer?.vendor?.normalizedName && 
-                      offer.vendor.normalizedName.toLowerCase() !== "flea-market" && 
-                      offer.priceRUB && 
-                      offer.priceRUB < bestPrice || bestPrice === 0) {
-                    bestPrice = offer.priceRUB;
+      const bestBuyPrices =
+        filter.sort === "buyPrice"
+          ? new Map<string, number>(
+              filteredItems.map((item) => {
+                let bestPrice = 0;
+                if (item.buyFor?.length) {
+                  for (const offer of item.buyFor) {
+                    if (
+                      (offer?.vendor?.normalizedName &&
+                        offer.vendor.normalizedName.toLowerCase() !==
+                          "flea-market" &&
+                        offer.priceRUB &&
+                        offer.priceRUB < bestPrice) ||
+                      bestPrice === 0
+                    ) {
+                      bestPrice = offer.priceRUB;
+                    }
                   }
                 }
-              }
-              return [item.id, bestPrice];
-            })
-          )
-        : null;
+                return [item.id, bestPrice];
+              })
+            )
+          : null;
 
       // Handle header sorting (name, shortName, prices)
       filteredItems = [...filteredItems].sort((a, b) => {
@@ -527,21 +603,21 @@ export default function ItemsTablePage() {
           />
         </div>
 
-
-
         {/* Secondary Controls */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Left side - View Toggles */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Mode Toggle */}
             <div className="flex items-center gap-2 bg-muted/30 rounded-md p-1">
-              <span className="text-xs font-medium px-2 text-muted-foreground">Mode:</span>
+              <span className="text-xs font-medium px-2 text-muted-foreground">
+                Mode:
+              </span>
               <Button
-                variant={mode === 'pvp' ? 'default' : 'ghost'}
+                variant={mode === "pvp" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => {
                   startTransition(() => {
-                    const newMode = 'pvp';
+                    const newMode = "pvp";
                     setMode(newMode);
                     const newItems = pvp;
                     setFilter((f) => ({
@@ -552,16 +628,18 @@ export default function ItemsTablePage() {
                     }));
                   });
                 }}
-                className={`h-8 px-3 ${mode === 'pvp' ? 'bg-primary text-primary-foreground' : ''}`}
+                className={`h-8 px-3 ${
+                  mode === "pvp" ? "bg-primary text-primary-foreground" : ""
+                }`}
               >
                 PVP
               </Button>
               <Button
-                variant={mode === 'pve' ? 'default' : 'ghost'}
+                variant={mode === "pve" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => {
                   startTransition(() => {
-                    const newMode = 'pve';
+                    const newMode = "pve";
                     setMode(newMode);
                     const newItems = pve;
                     setFilter((f) => ({
@@ -572,7 +650,9 @@ export default function ItemsTablePage() {
                     }));
                   });
                 }}
-                className={`h-8 px-3 ${mode === 'pve' ? 'bg-primary text-primary-foreground' : ''}`}
+                className={`h-8 px-3 ${
+                  mode === "pve" ? "bg-primary text-primary-foreground" : ""
+                }`}
               >
                 PVE
               </Button>
@@ -593,31 +673,39 @@ export default function ItemsTablePage() {
             >
               <Star
                 className={`h-4 w-4 mr-2 ${
-                  showOnlyFavorites ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground"
+                  showOnlyFavorites
+                    ? "fill-yellow-500 text-yellow-500"
+                    : "text-muted-foreground"
                 }`}
               />
               <span className="text-xs font-medium">Favorites</span>
             </Toggle>
 
             {/* Compatible Items Toggle */}
-            <Toggle
-              variant="outline"
-              aria-label="Show compatible items"
-              pressed={showCompatibleOnly}
-              onPressedChange={(pressed) => {
-                startTransition(() => {
-                  setShowCompatibleOnly(pressed);
-                });
-              }}
-              className="h-8 px-3 border-muted-foreground/30"
-            >
-              <CircleAlert
-                className={`h-4 w-4 mr-2 ${
-                  showCompatibleOnly ? "fill-green-500 text-green-500" : "text-muted-foreground"
-                }`}
-              />
-              <span className="text-xs font-medium">Compatible</span>
-            </Toggle>
+            <div className="flex items-center space-x-2">
+              <Toggle
+                pressed={showCompatibleOnly}
+                onPressedChange={setShowCompatibleOnly}
+                variant="outline"
+                size="sm"
+                className="h-8"
+              >
+                <span className="text-xs">Compatible Only</span>
+              </Toggle>
+            </div>
+
+            {/* Trader Only Toggle */}
+            <div className="flex items-center space-x-2">
+              <Toggle
+                pressed={showTraderOnly}
+                onPressedChange={setShowTraderOnly}
+                variant="outline"
+                size="sm"
+                className="h-8"
+              >
+                <span className="text-xs">Trader Only</span>
+              </Toggle>
+            </div>
           </div>
 
           {/* Right side - Actions */}
@@ -628,18 +716,31 @@ export default function ItemsTablePage() {
               selectedCategory={selectedCategory}
               onCategoryChange={setSelectedCategory}
             />
-            
+
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground whitespace-nowrap">Sort by:</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                Sort by:
+              </span>
               <Select
                 value={filter.sort}
                 onValueChange={(value) => {
                   startTransition(() => {
                     setFilter((f) => ({
                       ...f,
-                      sort: value as 'name' | 'shortName' | 'basePrice' | 'lastLowPrice' | 'avg24hPrice' | 'traderPrice' | 'buyPrice' | 'bestValue',
-                      sortDir: value === 'name' || value === 'shortName' ? 'asc' : 'desc',
+                      sort: value as
+                        | "name"
+                        | "shortName"
+                        | "basePrice"
+                        | "lastLowPrice"
+                        | "avg24hPrice"
+                        | "traderPrice"
+                        | "buyPrice"
+                        | "bestValue",
+                      sortDir:
+                        value === "name" || value === "shortName"
+                          ? "asc"
+                          : "desc",
                     }));
                   });
                 }}
@@ -666,12 +767,12 @@ export default function ItemsTablePage() {
                   startTransition(() => {
                     setFilter((f) => ({
                       ...f,
-                      sortDir: f.sortDir === 'asc' ? 'desc' : 'asc',
+                      sortDir: f.sortDir === "asc" ? "desc" : "asc",
                     }));
                   });
                 }}
               >
-                {filter.sortDir === 'asc' ? (
+                {filter.sortDir === "asc" ? (
                   <ArrowUp className="h-4 w-4" />
                 ) : (
                   <ArrowDown className="h-4 w-4" />
@@ -720,6 +821,16 @@ export default function ItemsTablePage() {
           <h3 className="text-lg font-medium mb-2">No compatible items</h3>
           <p className="text-sm text-muted-foreground max-w-md">
             No items match the compatibility criteria with your current filters.
+          </p>
+        </div>
+      )}
+
+      {showTraderOnly && filtered.length === 0 && !isLoading && (
+        <div className="flex flex-col items-center justify-center p-8 text-center border rounded-md">
+          <CircleAlert className="h-12 w-12 text-muted-foreground/30 mb-4" />
+          <h3 className="text-lg font-medium mb-2">No trader items</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            No items with trader buy prices match your current filters.
           </p>
         </div>
       )}
