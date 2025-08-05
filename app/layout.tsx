@@ -7,35 +7,69 @@ import Script from "next/script";
 // import { PostHogProvider } from "@/components/PostHogProvider";
 
 export const metadata: Metadata = {
-  title: "Cultist Circle Calculator",
+  title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
   description:
-    "A powerful web app for Escape from Tarkov players to calculate, optimize, and plan Cultist Circle sacrifices using real-time item values and advanced selection tools.",
+    "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices with real-time flea market data. Auto-select best items, pin favorites, and share sacrifices.",
   keywords: [
     "Escape from Tarkov",
     "EFT",
     "Cultist Circle",
     "Calculator",
-    "Optimal Items",
-    "Tarkov Calculator",
+    "Tarkov Sacrifices",
+    "Cultist Circle Sacrifices",
+    "Best Cultist Circle Sacrifices",
+    "6h Sacrifices",
+    "12h Sacrifices",
+    "14h Sacrifices",
+    "Quest Items",
+    "Hideout Items",
+    "Tarkov Flea Market",
+    "Optimal Sacrifices",
+    "Tarkov Tools",
+    "Tarkov Helper",
   ],
   authors: [{ name: "Wilsman77" }],
   creator: "Wilsman77",
   publisher: "Wilsman77",
   openGraph: {
-    title: "Cultist Circle Calculator",
+    title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
     description:
-      "A powerful web app for Escape from Tarkov players to calculate, optimize, and plan Cultist Circle sacrifices using real-time item values and advanced selection tools.",
-    url: "https://cultist-circle.vercel.app",
+      "Find the perfect item combinations for Cultist Circle sacrifices in Escape from Tarkov. Get 6h quest/hideout rewards with our smart calculator and real-time market data.",
+    url: "https://www.cultistcircle.com/",
     siteName: "Cultist Circle Calculator",
     locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "https://pub-226fae05b0214cbeb8e3cb97c8fb6293.r2.dev/cultist-circle.jpeg",
+        width: 1200,
+        height: 630,
+        alt: "Cultist Circle Calculator - Optimize Your EFT Sacrifices",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Cultist Circle Calculator",
+    title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
     description:
-      "A powerful web app for Escape from Tarkov players to calculate, optimize, and plan Cultist Circle sacrifices using real-time item values and advanced selection tools.",
+      "Get the best Cultist Circle rewards in Escape from Tarkov. Find optimal item combinations for 6h, 12h, and 14h sacrifices with real-time market data.",
     creator: "@wilsman77",
+    // images: ["/twitter-card.jpg"], // TODO: Add Twitter card
+  },
+  metadataBase: new URL("https://www.cultistcircle.com"),
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
