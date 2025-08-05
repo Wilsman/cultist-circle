@@ -12,40 +12,34 @@ export const viewport = {
   themeColor: "#0C0C0C",
 };
 
-export const metadata: Metadata = {
-  title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
-  description: "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices with real-time flea market data.",
-  metadataBase: new URL("https://cultistcircle.com"),
-  icons: {
-    icon: "/favicon.ico",
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_US",
+export async function generateMetadata(): Promise<Metadata> {
+  return {
     title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
     description: "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices.",
-    images: [
-      {
-        url: 'https://assets.cultistcircle.com/og2.webp',
-        width: 800,
-        height: 600,
-      },
-    ],
-    siteName: "Cultist Circle Calculator",
-    url: "https://cultistcircle.com",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
-    description: "Get the best Cultist Circle rewards in Escape from Tarkov. Find optimal item combinations for 6h, 12h, and 14h sacrifices.",
-    creator: "@wilsman77",
-    images: [
-      {
-        url: 'https://assets.cultistcircle.com/og2.webp',
-      },
-    ],
-  },
-};
+    openGraph: {
+      type: "website",
+      locale: "en_US",
+      title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
+      description: "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices.",
+      images: [
+        {
+          url: 'https://assets.cultistcircle.com/og2.png',
+          width: 1200,
+          height: 630,
+        },
+      ],
+      siteName: "Cultist Circle",
+      url: "https://cultistcircle.com",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
+      description: "Get the best Cultist Circle rewards in Escape from Tarkov.",
+      creator: "@wilsman77",
+      images: ['https://assets.cultistcircle.com/og2.png'],
+    },
+  };
+}
 
 export default function RootLayout({
   children,
