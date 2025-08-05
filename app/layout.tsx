@@ -8,19 +8,21 @@ import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
-  description: `Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. 
-  Find optimal item combinations for 6h, 12h, and 14h sacrifices with real-time flea market data. 
-  Auto-select best items, pin favorites, and share your sacrifice builds with other players.`,
+  description: "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices with real-time flea market data.",
   openGraph: {
     type: "website",
     locale: "en_US",
     title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
-    description: `Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. 
-    Find optimal item combinations for 6h, 12h, and 14h sacrifices with real-time flea market data. 
-    Auto-select best items, pin favorites, and share your sacrifice builds with other players.`,
+    description: "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices.",
     images: "https://pub-226fae05b0214cbeb8e3cb97c8fb6293.r2.dev/og2.webp",
     siteName: "Cultist Circle Calculator",
     url: "https://cultist-circle.com",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
+    description: "Get the best Cultist Circle rewards in Escape from Tarkov. Find optimal item combinations for 6h, 12h, and 14h sacrifices.",
+    images: "https://pub-226fae05b0214cbeb8e3cb97c8fb6293.r2.dev/og2.webp",
   },
 };
 
