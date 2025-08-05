@@ -6,10 +6,19 @@ import { CookieConsentProvider } from "@/context/cookie-consent-context";
 import Script from "next/script";
 // import { PostHogProvider } from "@/components/PostHogProvider";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1.0,
+  themeColor: "#0C0C0C",
+};
+
 export const metadata: Metadata = {
   title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
   description: "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices with real-time flea market data.",
   metadataBase: new URL("https://cultistcircle.com"),
+  icons: {
+    icon: "/favicon.ico",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -17,7 +26,7 @@ export const metadata: Metadata = {
     description: "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices.",
     images: [
       {
-        url: 'https://cultistcircle.com/images/og2.webp', // Must be an absolute URL
+        url: 'https://cultistcircle.com/images/og2.webp',
         width: 800,
         height: 600,
       },
@@ -32,7 +41,7 @@ export const metadata: Metadata = {
     creator: "@wilsman77",
     images: [
       {
-        url: 'https://cultistcircle.com/images/og2.webp', // Must be an absolute URL
+        url: 'https://cultistcircle.com/images/og2.webp',
       },
     ],
   },
@@ -65,9 +74,6 @@ export default function RootLayout({
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065"
           crossOrigin="anonymous"
         ></script>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="theme-color" content="#000000" />
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {/* Buy Me a Coffee Widget Script - Using Next.js Script component for proper loading */}
