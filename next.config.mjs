@@ -15,6 +15,11 @@ const nextConfig = {
         hostname: 'pub-226fae05b0214cbeb8e3cb97c8fb6293.r2.dev',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'assets.cultistcircle.com',
+        pathname: '/**',
+      },
     ],
   },
   async rewrites() {

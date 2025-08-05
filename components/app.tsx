@@ -1082,7 +1082,7 @@ function AppContent() {
             <div className="pt-2">
               <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
                 <Image
-                  src="https://pub-226fae05b0214cbeb8e3cb97c8fb6293.r2.dev/Cultist-Calulator.webp"
+                  src="https://assets.cultistcircle.com/Cultist-Calulator.webp"
                   alt="Cultist calculator logo"
                   width={400}
                   height={128}

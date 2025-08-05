@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     description: "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices.",
     images: [
       {
-        url: 'https://cultistcircle.com/images/og2.webp',
+        url: 'https://assets.cultistcircle.com/og2.webp',
         width: 800,
         height: 600,
       },
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     creator: "@wilsman77",
     images: [
       {
-        url: 'https://cultistcircle.com/images/og2.webp',
+        url: 'https://assets.cultistcircle.com/og2.webp',
       },
     ],
   },
