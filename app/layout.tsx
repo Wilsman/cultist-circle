@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
           height: 630,
         },
       ],
-      siteName: "Cultist Circle",
+      siteName: "Cultist Circle Calculator",
       url: "https://cultistcircle.com",
     },
     twitter: {

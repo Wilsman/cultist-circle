@@ -1107,27 +1107,40 @@ function AppContent() {
               </a>
             </div>
 
-            {/* New Price Types Alert */}
-            <div className="flex items-center justify-center">
+            {/* MP5 Pro Tip Alert */}
+            <div className="flex px-8 items-center justify-center">
               <Alert
                 variant="default"
-                className="mb-2 border-yellow-400/70 bg-yellow-50 dark:bg-yellow-900/10 animate-fade-in rounded shadow"
+                className="mb-2 border-amber-400/70 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 animate-fade-in rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                <AlertTitle className="text-sm font-bold text-yellow-700 dark:text-yellow-200 text-center">
-                  New Base Value Lookup Table and Help!
-                </AlertTitle>
-                <AlertDescription className="text-xs text-yellow-800 dark:text-yellow-100 text-center">
-                  Quickly check the base value of any item. Try it out here{" "}
-                  <Link
-                    href="/base-values"
-                    className="underline font-semibold text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 focus:outline-none"
-                  >
-                    Base Values
-                  </Link>
-                  .
-                  <br />
-                  Also check out the improved Help!
-                </AlertDescription>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Image 
+                      src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp" 
+                      alt="MP5 Icon" 
+                      width={64}
+                      height={64}
+                      className="w-15 h-15 flex-shrink-0 rounded-md shadow-sm"
+                    />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">5</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <AlertTitle className="text-sm font-bold text-amber-700 dark:text-amber-200 flex items-center gap-2">
+                      🔥 Hardcore PVP Wipe Tip (L1 Traders)
+                    </AlertTitle>
+                    <AlertDescription className="text-xs text-amber-800 dark:text-amber-100 mt-1">
+                      <div className="font-medium mb-1">
+                        <strong>5x MP5</strong> from PeaceKeeper LL1 = <span className="text-green-600 dark:text-green-400 font-bold">400K+ threshold!</span>
+                      </div>
+                      <div className="text-xs opacity-80 font-mono bg-black/10 dark:bg-white/10 px-2 py-1 rounded">
+                        💰Cost: $478 (63,547₽) × 5 = <span className="font-bold">$2,390 (317,735₽)</span>
+                      </div>
+                    </AlertDescription>
+                    <p className="text-xs text-gray-400 mt-1">Currently investigating why some weapons are giving higher base values.</p>
+                  </div>
+                </div>
               </Alert>
             </div>
 
