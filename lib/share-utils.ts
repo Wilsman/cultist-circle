@@ -1,4 +1,5 @@
 import { SimplifiedItem } from "@/types/SimplifiedItem";
+import { toast as sonnerToast } from "sonner";
 
 /**
  * Shortens an item ID by taking the first 8 characters
@@ -51,20 +52,13 @@ export function generateShareableCode(
  */
 export function copyShareableCode(
   selectedItems: (SimplifiedItem | null)[],
-  isPVE: boolean,
-  toast: (props: {
-    title: string;
-    description: string;
-    variant?: "default" | "destructive";
-  }) => void
+  isPVE: boolean
 ): void {
   const code = generateShareableCode(selectedItems, isPVE);
 
   if (!code) {
-    toast({
-      title: "No Items Selected",
+    sonnerToast("No Items Selected", {
       description: "Please select at least one item to share.",
-      variant: "destructive",
     });
     return;
   }
@@ -74,20 +68,16 @@ export function copyShareableCode(
     .writeText(code)
     .then(() => {
       const itemCount = selectedItems.filter((item) => item !== null).length;
-      toast({
-        title: "Code Copied!",
+      sonnerToast("Code Copied!", {
         description: `Shareable code copied to clipboard. ${itemCount} item${
           itemCount > 1 ? "s" : ""
         } included.`,
-        variant: "default",
       });
     })
     .catch((err) => {
       console.error("Failed to copy code:", err);
-      toast({
-        title: "Failed to Copy Code",
+      sonnerToast("Failed to Copy Code", {
         description: "Please try again or manually copy the code.",
-        variant: "destructive",
       });
     });
 }
@@ -155,12 +145,7 @@ export function parseShareableCode(code: string): {
  */
 export function loadItemsFromCode(
   code: string,
-  rawItemsData: SimplifiedItem[],
-  toast: (props: {
-    title: string;
-    description: string;
-    variant?: "default" | "destructive";
-  }) => void
+  rawItemsData: SimplifiedItem[]
 ): { items: (SimplifiedItem | null)[] | null; isPVE: boolean | null } {
   if (!code || !rawItemsData || rawItemsData.length === 0) {
     return { items: null, isPVE: null };
@@ -171,20 +156,16 @@ export function loadItemsFromCode(
 
   // Handle parsing errors
   if (error) {
-    toast({
-      title: "Invalid Code",
+    sonnerToast("Invalid Code", {
       description: "The code format is invalid. Please check and try again.",
-      variant: "destructive",
     });
     return { items: null, isPVE: null };
   }
 
   // Check if we have any items
   if (itemIds.length === 0) {
-    toast({
-      title: "Invalid Code",
+    sonnerToast("Invalid Code", {
       description: "The provided code doesn't contain any items.",
-      variant: "destructive",
     });
     return { items: null, isPVE };
   }
@@ -217,18 +198,14 @@ export function loadItemsFromCode(
     });
 
     // Show toast notification about loaded items
-    toast({
-      title: "Items Loaded",
+    sonnerToast("Items Loaded", {
       description: "Items have been loaded from the shared code.",
-      variant: "default",
     });
 
     return { items: newSelectedItems, isPVE };
   } catch (error) {
-    toast({
-      title: "Error Loading Items",
+    sonnerToast("Error Loading Items", {
       description: "There was a problem loading the items from the code.",
-      variant: "destructive",
     });
     return { items: null, isPVE: null };
   }

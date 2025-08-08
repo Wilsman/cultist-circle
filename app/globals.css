@@ -21,6 +21,12 @@
   }
 }
 
+@keyframes shimmer {
+  0% { transform: translateX(-160%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(160%); }
+}
+
 @keyframes floating {
   0%, 100% {
     transform: translateY(0);

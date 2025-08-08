@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import CookieConsent from "@/components/CookieConsent";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { CookieConsentProvider } from "@/context/cookie-consent-context";
 import Script from "next/script";
 // import { PostHogProvider } from "@/components/PostHogProvider";
@@ -97,7 +97,7 @@ export default function RootLayout({
               {/* Cookie consent and notifications */}
               <div className="relative z-50">
                 <CookieConsent />
-                <Toaster />
+                <SonnerToaster />
               </div>
             </main>
           </CookieConsentProvider>

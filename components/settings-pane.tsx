@@ -19,9 +19,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
+import { toast as sonnerToast } from "sonner";
 
 import {
   Select,
@@ -90,7 +90,6 @@ export default function SettingsPane({
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
-  const { toast } = useToast();
 
   // Update parent component when sortOption changes
   useEffect(() => {
@@ -132,16 +131,12 @@ export default function SettingsPane({
         try {
           const data = e.target?.result as string;
           onImportData(data);
-          toast({
-            title: "Success",
+          sonnerToast("Success", {
             description: "Data imported successfully",
-            variant: "default",
           });
         } catch (error) {
-          toast({
-            title: "Error",
+          sonnerToast("Error", {
             description: "Failed to import data. Please check the file format.",
-            variant: "destructive",
           });
         }
       };
@@ -363,11 +358,9 @@ export default function SettingsPane({
                     onClick={() => {
                       // Reset to default excluded items
                       onExcludedItemsChange(new Set(DEFAULT_EXCLUDED_ITEMS));
-                      toast({
-                        title: "Reset complete",
+                      sonnerToast("Reset complete", {
                         description:
                           "Excluded items have been reset to defaults",
-                        variant: "default",
                       });
                     }}
                   >

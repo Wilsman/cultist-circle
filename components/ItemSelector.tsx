@@ -12,7 +12,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { getRelativeDate } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 
 // Import Dropdown components
 import { Button } from "@/components/ui/button";
@@ -227,21 +227,18 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   }, [onToggleExclude]);
 
   // Copy item name (with optional toast)
-  const { toast } = useToast();
   const handleCopy = useCallback(() => {
     onCopy();
     if (onCopyWithToast) {
       onCopyWithToast();
     } else {
-      toast({
-        title: "Name Copied",
+      sonnerToast("Name Copied", {
         description: selectedItem
           ? `"${selectedItem.name}" copied to clipboard`
           : "Item copied to clipboard",
-        variant: "default",
       });
     }
-  }, [onCopy, onCopyWithToast, toast, selectedItem]);
+  }, [onCopy, onCopyWithToast, selectedItem]);
 
   // Row component for react-window (dropdown list item)
   const Row = useCallback(
