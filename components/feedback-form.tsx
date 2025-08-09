@@ -51,24 +51,24 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto bg-background">
-      <CardHeader>
-        <CardTitle>Submit Feedback or Report Issue</CardTitle>
+    <Card className="w-full max-w-md mx-auto rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-slate-600/30 shadow-2xl">
+      <CardHeader className="pb-2 text-center">
+        <CardTitle className="text-lg font-semibold text-slate-100">Submit Feedback or Report Issue</CardTitle>
       </CardHeader>
-      <p className="text-center text-muted-foreground">
+      <p className="px-6 text-center text-xs text-slate-400">
         If you have any issues, please try resetting the app in the settings first.
       </p>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4">
           <div className="space-y-2">
-            <label htmlFor="type" className="text-sm font-medium">
+            <label htmlFor="type" className="text-sm font-medium text-slate-200">
               Type
             </label>
-            <Select onValueChange={setType} required>
-              <SelectTrigger id="type">
+            <Select onValueChange={setType}>
+              <SelectTrigger id="type" className="h-9 rounded-full bg-slate-800/60 border-slate-600/30 text-slate-100">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-2xl border-slate-600/30 bg-slate-900/90 backdrop-blur-xl">
                 <SelectItem value="Issue">Issue</SelectItem>
                 <SelectItem value="Feature">Feature</SelectItem>
                 <SelectItem value="Suggestion">Suggestion</SelectItem>
@@ -77,7 +77,7 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
           <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">
+            <label htmlFor="description" className="text-sm font-medium text-slate-200">
               Description
             </label>
             <Textarea
@@ -86,15 +86,15 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
-              className="min-h-[100px]"
+              className="min-h-[110px] rounded-2xl bg-slate-800/60 border-slate-600/30 text-slate-100 placeholder:text-slate-400"
             />
-            <p>
-              Alternatively, you can{" "}
+            <p className="text-xs text-slate-400">
+              Alternatively, you can {" "}
               <a
                 href="https://discord.gg/3dFmr5qaJK"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline hover:text-foreground"
+                className="underline hover:text-slate-200"
               >
                 contact us via Discord
               </a>
@@ -102,19 +102,18 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
             </p>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex items-center justify-between pt-2">
           <Button
             type="button"
-            variant="outline"
-            className="bg-red-500 hover:bg-red-800 "
             onClick={onClose}
+            className="h-9 px-4 rounded-full bg-slate-800/60 hover:bg-slate-800/80 text-slate-100 border border-slate-600/30 shadow-sm"
           >
             Close
           </Button>
           <Button
             type="submit"
-            className="bg-green-500 hover:bg-green-800"
             disabled={isSubmitting}
+            className="h-9 px-5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
           >
             {isSubmitting ? "Submitting..." : "Submit"}
           </Button>

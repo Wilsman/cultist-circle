@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +50,7 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
+import { PvpWipeTipAlert } from "./pvp-wipe-tip-alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
@@ -1176,126 +1176,7 @@ function AppContent() {
             </div>
 
             {/* MP5 Pro Tip Alert — Ultra Sleek */}
-            <div className="flex items-center justify-center px-4 md:px-8">
-              <Alert
-                variant="default"
-                className="
-                  group relative mb-4 overflow-hidden rounded-2xl
-                  border border-amber-300/30 dark:border-amber-300/15
-                  bg-[linear-gradient(180deg,rgba(255,248,236,0.75),rgba(255,239,224,0.6)),radial-gradient(1200px_400px_at_-20%_-10%,rgba(255,170,64,0.10),transparent)]
-                  dark:bg-[linear-gradient(180deg,rgba(60,30,0,0.45),rgba(40,18,0,0.35)),radial-gradient(1200px_400px_at_-20%_-10%,rgba(255,170,64,0.08),transparent)]
-                  backdrop-blur-xl
-                  shadow-[0_12px_40px_-14px_rgba(0,0,0,0.35),inset_0_1px_0_0_rgba(255,255,255,0.25)]
-                  dark:shadow-[0_14px_50px_-16px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.08)]
-                  transition-all duration-500 ease-[cubic-bezier(.2,.8,.2,1)]
-                  will-change-transform
-                  animate-fade-in
-                "
-              >
-                {/* Ambient glow sweep */}
-                <div className="pointer-events-none absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute -top-1/3 right-0 h-[200%] w-1/2 rotate-12 bg-gradient-to-b from-amber-400/10 via-transparent to-transparent blur-2xl" />
-                </div>
-
-                <div className="flex items-start gap-4 p-4 md:p-5">
-                  {/* Product block */}
-                  <div className="relative shrink-0">
-                    <div
-                      className="
-                        overflow-hidden rounded-xl
-                        ring-1 ring-black/5 dark:ring-white/10
-                        shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]
-                        transition-transform duration-500 ease-out
-                        group-hover:scale-[1.02]
-                      "
-                    >
-                      <Image
-                        src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
-                        alt="MP5 Icon"
-                        width={60}
-                        height={60}
-                        className="w-16 h-16 object-cover"
-                      />
-                    </div>
-
-                    {/* Crisp counter badge */}
-                    <div
-                      className="
-                        absolute -top-2 -right-2 h-6 w-6
-                        rounded-full bg-emerald-500 text-white
-                        text-[10px] font-extrabold tracking-tight
-                        flex items-center justify-center
-                        shadow-[0_6px_18px_-6px_rgba(16,185,129,0.9)]
-                        ring-2 ring-white/70 dark:ring-white/20
-                      "
-                    >
-                      5
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="min-w-0 flex-1">
-                    <AlertTitle
-                      className="
-                        flex items-center gap-2
-                        text-[13px] md:text-sm font-semibold tracking-wide
-                        text-amber-900 dark:text-amber-100
-                      "
-                    >
-                      <span
-                        className="
-                          inline-flex h-5 w-5 items-center justify-center
-                          rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-300
-                          ring-1 ring-amber-500/20
-                        "
-                      >
-                        🔥
-                      </span>
-                      Hardcore PVP Wipe Tip (L1 Traders)
-                    </AlertTitle>
-
-                    <AlertDescription className="mt-2 space-y-2">
-                      <div className="text-[13px] text-amber-950/90 dark:text-amber-50/95 leading-relaxed">
-                        <span className="font-medium">
-                          <strong>5× MP5</strong> from PeaceKeeper LL1
-                        </span>{" "}
-                        = <span className="font-bold text-emerald-600 dark:text-emerald-400">400K+ threshold</span>
-                      </div>
-
-                      {/* Price pill */}
-                      <div
-                        className="
-                          inline-flex items-center gap-2 rounded-lg
-                          bg-white/60 dark:bg-white/5
-                          px-3 py-1.5
-                          text-[12px] font-mono tabular-nums
-                          text-amber-900/90 dark:text-amber-50/90
-                          ring-1 ring-black/5 dark:ring-white/10
-                          shadow-[inset_0_1px_0_0_rgba(255,255,255,0.5)]
-                          dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]
-                        "
-                      >
-                        <span className="opacity-70">💰 Cost</span>
-                        <span>: $478 (63,547₽) × 5 =</span>
-                        <span className="font-bold">$2,390 (317,735₽)</span>
-                      </div>
-
-                      <p className="text-[12px] text-gray-500 dark:text-gray-400/90">
-                        Investigating why some weapons are returning higher base values.
-                      </p>
-                    </AlertDescription>
-                  </div>
-                </div>
-
-                {/* Precision underline + progress shimmer */}
-                <div className="relative mx-4 md:mx-5 mb-1 mt-1">
-                  <div className="h-px w-full rounded-full bg-gradient-to-r from-transparent via-amber-400/50 to-transparent dark:via-amber-300/30" />
-                  <div className="pointer-events-none absolute inset-x-0 -top-[1px] h-[2px] overflow-hidden">
-                    <div className="animate-[shimmer_2.4s_ease-in-out_infinite] h-full w-1/3 bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/25 rounded-full mx-auto" />
-                  </div>
-                </div>
-              </Alert>
-            </div>
+            <PvpWipeTipAlert />
 
             <div className="text-center text-gray-400 text-sm mb-4">
               <VersionInfo version={CURRENT_VERSION} />
@@ -1544,99 +1425,98 @@ function AppContent() {
                 exclusions currently active
               </div>
 
-              {/* Sacrifice Value Display with improved animation */}
-              <div id="sacrifice-value" className="mt-6 text-center w-full">
-                <h2 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
-                  Sacrifice BaseValue Total
-                </h2>
-                {loading ? (
-                  <Skeleton className="h-16 w-3/4 mx-auto" />
-                ) : (
-                  <>
-                    <div className="flex flex-col items-center">
-                      <div className="text-5xl font-extrabold text-green-500">
-                        ₽{total.toLocaleString()}
-                      </div>
-                      {itemBonus > 0 && (
-                        <div className="text-sm text-gray-400 mt-1">
-                          (Base: ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} + {itemBonus}% bonus)
+              {/* Sacrifice + Flea costs (revamped) */}
+              <div id="sacrifice-value" className="mt-6 w-full">
+                <div className="mx-auto max-w-2xl rounded-2xl bg-slate-700/40 border border-slate-600/30 backdrop-blur-sm px-4 py-4">
+                  <h2 className="text-center text-2xl md:text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
+                    Sacrifice BaseValue Total
+                  </h2>
+                  {loading ? (
+                    <Skeleton className="h-20 w-4/5 mx-auto" />
+                  ) : (
+                    <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                      <div className="text-center">
+                        <div className="text-4xl md:text-5xl font-extrabold text-green-500">
+                          ₽{total.toLocaleString()}
                         </div>
-                      )}
-                    </div>
-                    {!isThresholdMet && (
-                      <div className="text-red-500 mt-2 text-lg">
-                        ₽{(threshold - total).toLocaleString()} needed to meet threshold
+                        {itemBonus > 0 && (
+                          <div className="text-xs md:text-sm text-gray-400 mt-1">
+                            (Base: ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} + {itemBonus}% bonus)
+                          </div>
+                        )}
+                        {!isThresholdMet && (
+                          <div className="text-red-400 mt-1 text-sm md:text-base">
+                            ₽{(threshold - total).toLocaleString()} needed to meet threshold
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </>
-                )}
-                <div className="mt-1">
-                  <div className="text-sm font-semibold text-gray-400">
-                    Total flea Cost ≈{" "}
-                    <span
-                      className={
-                        Object.keys(overriddenPrices).length > 0
-                          ? "font-bold"
-                          : ""
-                      }
+                      <div className="text-center">
+                        <div className="rounded-xl bg-slate-800/50 border border-slate-700 px-3 py-3 inline-block">
+                          <div className="text-[11px] md:text-xs uppercase tracking-wide text-gray-400">
+                            Total Cost ≈
+                          </div>
+                          <div className={`text-2xl font-semibold ${Object.keys(overriddenPrices).length > 0 ? "text-white" : "text-gray-200"}`}>
+                            ₽{totalFleaCost?.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <footer className="mt-3 text-center text-gray-300 text-[12px] md:text-sm w-full">
+                  <div className="mx-auto max-w-2xl rounded-full bg-slate-700/30 border border-slate-600/30 backdrop-blur-sm px-3 py-2">
+                    <span>Prices provided by </span>
+                    <a
+                      href="https://tarkov.dev"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300"
                     >
-                      ₽{totalFleaCost?.toLocaleString()}
-                    </span>
+                      Tarkov.dev
+                    </a>
+                    <span className="mx-2">·</span>
+                    <span>Research provided by </span>
+                    <a
+                      href="https://bio.link/verybadscav"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300"
+                    >
+                      VeryBadSCAV
+                    </a>
+                    <span className="mx-2">·</span>
+                    <span>Made by Wilsman77</span>
                   </div>
-                </div>
+                  <div className="flex justify-center mt-3 gap-3 sm:gap-4">
+                    <a
+                      href="https://www.buymeacoffee.com/wilsman77"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Buy me a coffee"
+                      title="Buy me a coffee"
+                      className="inline-flex items-center"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+                        alt="Buy Me a Coffee"
+                        width="180"
+                        height="36"
+                        loading="lazy"
+                        decoding="async"
+                        className="h-9 w-auto select-none"
+                      />
+                    </a>
+                    <Button
+                      onClick={() => setIsFeedbackFormVisible(true)}
+                      aria-label="Open feedback form"
+                      className="h-9 px-4 rounded-full bg-red-800/60 hover:bg-red-800/80 text-slate-100 border border-slate-600/30 shadow-sm backdrop-blur-sm"
+                    >
+                      Feedback
+                    </Button>
+                  </div>
+                </footer>
               </div>
-              <Separator className="my-1" />
-              {/* **11. Footer with Credits and Links** */}
-              <footer className="mt-4 text-center text-gray-400 text-sm w-full">
-                <div className="text-center mt-1">
-                  Prices provided by{" "}
-                  <a
-                    href="https://tarkov.dev"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-700"
-                  >
-                    Tarkov.dev
-                  </a>
-                </div>
-                <div className="text-center mt-1">
-                  Research provided by{" "}
-                  <a
-                    href="https://bio.link/verybadscav"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-700"
-                  >
-                    VeryBadSCAV
-                  </a>
-                </div>
-                <div className="text-center mt-1">
-                  {/* maker with cool icons */}
-                  Made by Wilsman77
-                </div>
-                <div className="flex justify-center mt-4 space-x-4">
-                  <a
-                    href="https://www.buymeacoffee.com/wilsman77"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Image
-                      src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-                      alt="Buy Me A Coffee"
-                      width={120}
-                      height={34}
-                      priority={true}
-                      className="w-[180px] h-[36px] sm:h-auto sm:w-auto"
-                    />
-                  </a>
-                  <Button
-                    onClick={() => setIsFeedbackFormVisible(true)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded shadow-md transition duration-300 ease-in-out"
-                  >
-                    Feedback
-                  </Button>
-                </div>
-              </footer>
             </CardContent>
           </Card>
         </div>

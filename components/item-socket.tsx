@@ -149,96 +149,98 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
 
       <div
         className={`
-          overflow-hidden transition-all duration-300 ease-in-out w-full flex flex-col items-center pt-2
-          ${isExpanded ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}
+          overflow-hidden transition-all duration-300 ease-in-out w-full
+          ${isExpanded ? "max-h-[360px] opacity-100 mt-2" : "max-h-0 opacity-0"}
           `}
       >
-        <Badge
-          variant="destructive"
-          className="mb-1 rounded-full border-gray-700 text-[10px]"
-        >
-          Work In Progress
-        </Badge>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-mono text-gray-300 text-sm">
-            Total bonus to the Gift{" "}
-            <span
-              className={`font-bold ${
-                totalBonus > 0 ? "text-blue-300" : "text-red-500"
-              }`}
-            >
-              {totalBonus}%
+        <div className="mx-auto w-full max-w-md rounded-2xl bg-slate-700/40 border border-slate-600/30 backdrop-blur-sm px-3 py-3 flex flex-col items-center">
+          <Badge
+            variant="destructive"
+            className="mb-2 rounded-full border-gray-700 text-[10px]"
+          >
+            Work In Progress
+          </Badge>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-2">
+            <span className="font-mono text-gray-200 text-sm">
+              Total bonus to the Gift{" "}
+              <span
+                className={`font-bold ${
+                  totalBonus > 0 ? "text-blue-300" : "text-red-500"
+                }`}
+              >
+                {totalBonus}%
+              </span>
             </span>
-          </span>
-        </div>
+          </div>
 
-        <div className="flex items-center justify-center gap-4">
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTitle>Item Socket</DialogTitle>
-            <DialogTrigger asChild>
-              <div className="flex justify-center">
-                <Button
-                  variant="outline"
-                  className={`w-10 h-10 p-1 border-gray-700 bg-gray-800 hover:bg-gray-900/50 ${
-                    !selectedItem ? "text-gray-600" : "text-gray-200"
-                  }`}
-                >
-                  {selectedItem ? (
-                    selectedItem.icon
-                  ) : (
-                    <span className="flex items-center justify-center w-8 h-8">
-                      <DiamondPlus className="w-4 h-4" />
-                    </span>
-                  )}
-                </Button>
-              </div>
-            </DialogTrigger>
-            <DialogContent className="bg-gray-900/95 border-gray-700 text-gray-200 max-w-xs">
-              <div className="grid gap-2">
-                {items.map((item) => (
+          <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTitle>Item Socket</DialogTitle>
+              <DialogTrigger asChild>
+                <div className="flex justify-center">
                   <Button
-                    key={item.id}
                     variant="outline"
-                    className="flex items-center justify-start w-full border-gray-700 bg-gray-800 hover:bg-gray-900/20 hover:text-gray-200 h-8"
-                    onClick={() => {
-                      setSelectedItem(item.id === "none" ? null : item);
-                      setOpen(false);
-                    }}
+                    className={`w-10 h-10 p-1 border-slate-600/30 bg-slate-800/70 hover:bg-slate-800 ${
+                      !selectedItem ? "text-gray-600" : "text-gray-200"
+                    }`}
                   >
-                    <div className="flex items-center justify-center w-8 h-8 mr-3">
-                      {item.icon}
-                    </div>
-                    <span className="font-mono text-sm">{totalBonus.toFixed(2)}%</span>
+                    {selectedItem ? (
+                      selectedItem.icon
+                    ) : (
+                      <span className="flex items-center justify-center w-8 h-8">
+                        <DiamondPlus className="w-4 h-4" />
+                      </span>
+                    )}
                   </Button>
-                ))}
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {selectedItem && selectedItem.id !== "none" && (
-            <div className="flex items-center gap-2 animate-fade-in">
-              <span className="font-mono text-gray-300 text-sm">Hideout Level:</span>
-              <div className="relative">
-                <select
-                  value={hideoutLevel}
-                  onChange={(e) => setHideoutLevel(Number(e.target.value))}
-                  className="bg-gray-800 text-gray-200 border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-20 text-center appearance-none text-sm h-8"
-                >
-                  {Array.from({ length: 50 }, (_, i) => i + 1).map((level) => (
-                    <option key={level} value={level}>
-                      {level}
-                    </option>
+                </div>
+              </DialogTrigger>
+              <DialogContent className="bg-slate-900/95 border-slate-700 text-gray-200 max-w-xs">
+                <div className="grid gap-2">
+                  {items.map((item) => (
+                    <Button
+                      key={item.id}
+                      variant="outline"
+                      className="flex items-center justify-start w-full border-slate-700 bg-slate-800 hover:bg-slate-900/20 hover:text-gray-200 h-8"
+                      onClick={() => {
+                        setSelectedItem(item.id === "none" ? null : item);
+                        setOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-center w-8 h-8 mr-3">
+                        {item.icon}
+                      </div>
+                      <span className="font-mono text-sm">{totalBonus.toFixed(2)}%</span>
+                    </Button>
                   ))}
-                  <option key={51} value={51} className="text-yellow-400 font-bold">
-                    Elite
-                  </option>
-                </select>
-                {hideoutLevel === 51 && (
-                  <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-yellow-400 text-xs font-bold">★</span>
-                )}
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {selectedItem && selectedItem.id !== "none" && (
+              <div className="flex items-center gap-2 animate-fade-in">
+                <span className="font-mono text-gray-200 text-sm">Hideout Level:</span>
+                <div className="relative">
+                  <select
+                    value={hideoutLevel}
+                    onChange={(e) => setHideoutLevel(Number(e.target.value))}
+                    className="bg-slate-800 text-gray-200 border border-slate-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-20 text-center appearance-none text-sm h-8"
+                  >
+                    {Array.from({ length: 50 }, (_, i) => i + 1).map((level) => (
+                      <option key={level} value={level}>
+                        {level}
+                      </option>
+                    ))}
+                    <option key={51} value={51} className="text-yellow-400 font-bold">
+                      Elite
+                    </option>
+                  </select>
+                  {hideoutLevel === 51 && (
+                    <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-yellow-400 text-xs font-bold">★</span>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
