@@ -59,6 +59,15 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
         categories {
           name
         }
+        buyFor {
+          priceRUB
+          vendor {
+            normalizedName
+            ... on TraderOffer {
+              minTraderLevel
+            }
+          }
+        }
       }
       pveItems: items(gameMode: pve) {
         id
@@ -74,6 +83,15 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
         iconLink
         categories {
           name
+        }
+        buyFor {
+          priceRUB
+          vendor {
+            normalizedName
+            ... on TraderOffer {
+              minTraderLevel
+            }
+          }
         }
       }
     }
@@ -124,10 +142,23 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
       tags: [],
       isExcluded: false,
       categories_display: item.categories,
+      buyFor: item.buyFor
+        ? item.buyFor
+            .filter((o) => !!o && !!o.vendor && typeof o.priceRUB === 'number')
+            .map((o) => ({
+              priceRUB: o.priceRUB,
+              vendor: {
+                normalizedName: o.vendor.normalizedName,
+                minTraderLevel: o.vendor.minTraderLevel,
+              },
+            }))
+        : undefined,
     });
 
     const transformPvpItems = data.pvpItems.map(transformItem);
     const transformPveItems = data.pveItems.map(transformItem);
+
+    // buyFor is already included in the combined query above; no merge needed.
 
     // Count unique categories (combining both modes)
     const allCategories = new Set([...transformPvpItems, ...transformPveItems].flatMap(item => item.categories || []));

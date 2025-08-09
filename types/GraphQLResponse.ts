@@ -13,6 +13,13 @@ export interface TarkovItem {
   categories: Array<{
     name: string;
   }>;
+  buyFor?: Array<{
+    priceRUB: number;
+    vendor: {
+      normalizedName: string;
+      minTraderLevel?: number;
+    };
+  }>;
 }
 
 export interface GraphQLResponse {

@@ -40,6 +40,10 @@ import {
 } from "@/config/item-categories";
 import { Alert } from "./ui/alert";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
+import {
+  TraderLevelSelector,
+  TraderLevels,
+} from "@/components/ui/trader-level-selector";
 
 interface SettingsPaneProps {
   isOpen: boolean;
@@ -51,6 +55,10 @@ interface SettingsPaneProps {
   currentSortOption: string;
   fleaPriceType: "lastLowPrice" | "avg24hPrice";
   onFleaPriceTypeChange: (priceType: "lastLowPrice" | "avg24hPrice") => void;
+  priceMode: "flea" | "trader";
+  onPriceModeChange: (mode: "flea" | "trader") => void;
+  traderLevels: TraderLevels;
+  onTraderLevelsChange: (levels: TraderLevels) => void;
   excludedCategories: string[];
   onCategoryChange: (categories: string[]) => void;
   allCategories: string[];
@@ -72,6 +80,10 @@ export default function SettingsPane({
   currentSortOption,
   fleaPriceType,
   onFleaPriceTypeChange,
+  priceMode,
+  onPriceModeChange,
+  traderLevels,
+  onTraderLevelsChange,
   excludedCategories,
   onCategoryChange,
   allCategories,
@@ -86,6 +98,7 @@ export default function SettingsPane({
   const [sortOption, setSortOption] = useState(currentSortOption);
   const [currentFleaPriceType, setCurrentFleaPriceType] =
     useState(fleaPriceType);
+  const [currentPriceMode, setCurrentPriceMode] = useState<"flea" | "trader">(priceMode);
   const [currentUseLastOfferCountFilter, setCurrentUseLastOfferCountFilter] = useState(useLastOfferCountFilter);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -105,6 +118,16 @@ export default function SettingsPane({
   useEffect(() => {
     setCurrentFleaPriceType(fleaPriceType);
   }, [fleaPriceType]);
+
+  // Update parent when price mode changes
+  useEffect(() => {
+    onPriceModeChange(currentPriceMode);
+  }, [currentPriceMode, onPriceModeChange]);
+
+  // Sync local price mode when prop changes
+  useEffect(() => {
+    setCurrentPriceMode(priceMode);
+  }, [priceMode]);
 
   useEffect(() => {
     setCurrentUseLastOfferCountFilter(useLastOfferCountFilter);
@@ -217,6 +240,48 @@ export default function SettingsPane({
                   </Select>
                 </div>
               </div>
+
+              {/* Price Mode Toggle */}
+              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <CandlestickChart className="h-5 w-5 text-yellow-400" />
+                    <span className="text-lg font-semibold">Price Mode</span>
+                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">WIP</span>
+                  </div>
+                </div>
+                <RadioGroup
+                  value={currentPriceMode}
+                  onValueChange={(v) => setCurrentPriceMode(v as "flea" | "trader")}
+                  className="grid gap-3 sm:grid-cols-2"
+                >
+                  <div className="flex items-center space-x-2 rounded-md border border-gray-700 p-3">
+                    <RadioGroupItem value="flea" id="mode-flea" />
+                    <Label htmlFor="mode-flea">Flea market prices</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 rounded-md border border-gray-700 p-3">
+                    <RadioGroupItem value="trader" id="mode-trader" />
+                    <Label htmlFor="mode-trader">Trader prices</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              
+              {/* Trader Levels (only when trader mode) */}
+              {currentPriceMode === "trader" && (
+                <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <List className="h-5 w-5 text-yellow-400" />
+                      <span className="text-lg font-semibold">Trader Levels</span>
+                      <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">WIP</span>
+                    </div>
+                  </div>
+                  <TraderLevelSelector
+                    traderLevels={traderLevels}
+                    onTraderLevelsChange={onTraderLevelsChange}
+                  />
+                </div>
+              )}
 
               {/* Flea Price Type Section (General Tab) */}
               <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">

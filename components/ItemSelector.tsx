@@ -5,6 +5,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Copy, X as XIcon, Pin, Edit, CircleSlash, Trash2 } from "lucide-react";
 import Fuse from "fuse.js";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
+import { TraderLevels } from "@/components/ui/trader-level-selector";
 import {
   Tooltip,
   TooltipTrigger,
@@ -39,6 +40,8 @@ interface ItemSelectorProps {
   onToggleExclude: () => void;
   excludedItems: Set<string>;
   fleaPriceType: 'lastLowPrice' | 'avg24hPrice';
+  priceMode: 'flea' | 'trader';
+  traderLevels: TraderLevels;
 }
 
 const ItemSelector: React.FC<ItemSelectorProps> = ({
@@ -55,6 +58,8 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   onToggleExclude,
   excludedItems,
   fleaPriceType,
+  priceMode,
+  traderLevels,
 }) => {
   // Validate that items is an array
   useEffect(() => {
@@ -67,6 +72,54 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const [priceOverride, setPriceOverride] = useState<string>("");
   const [isPriceOverrideActive, setIsPriceOverrideActive] = useState(false);
+
+  // Avatars for trader vendors (normalizedName keys)
+  const TRADER_AVATARS = useMemo<Record<keyof TraderLevels, string>>(
+    () => ({
+      prapor: "https://assets.tarkov.dev/54cb50c76803fa8b248b4571.webp",
+      therapist: "https://assets.tarkov.dev/54cb57776803fa99248b456e.webp",
+      skier: "https://assets.tarkov.dev/58330581ace78e27b8b10cee.webp",
+      peacekeeper: "https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp",
+      mechanic: "https://assets.tarkov.dev/5a7c2eca46aef81a7ca2145d.webp",
+      ragman: "https://assets.tarkov.dev/5ac3b934156ae10c4430e83c.webp",
+      jaeger: "https://assets.tarkov.dev/5c0647fdd443bc2504c2d371.webp",
+    }),
+    []
+  );
+
+  // Helper: compute effective price and chosen vendor info
+  const getEffectivePriceInfo = useCallback(
+    (
+      item: SimplifiedItem | null | undefined
+    ): { price: number | null; vendorName?: keyof TraderLevels; minTraderLevel?: number } => {
+      if (!item) return { price: null };
+      if (priceMode === 'flea') {
+        const fleaVal = item[fleaPriceType as 'lastLowPrice' | 'avg24hPrice'];
+        return { price: typeof fleaVal === 'number' ? fleaVal : null };
+      }
+      // trader mode
+      const offers = item.buyFor ?? [];
+      let best: { price: number; vendorName: keyof TraderLevels; minTraderLevel?: number } | null = null;
+      for (const offer of offers) {
+        const vendorName = offer.vendor?.normalizedName as string | undefined;
+        const minLevel =
+          offer.vendor && 'minTraderLevel' in offer.vendor
+            ? (offer.vendor as { minTraderLevel?: number }).minTraderLevel
+            : undefined;
+        if (!vendorName) continue;
+        const key = vendorName as keyof TraderLevels;
+        const userLevel = traderLevels[key as keyof TraderLevels];
+        if (userLevel === undefined) continue; // not a trader or unknown vendor
+        if (minLevel !== undefined && minLevel > userLevel) continue; // not eligible
+        const price = offer.priceRUB;
+        if (typeof price === 'number') {
+          if (best === null || price > best.price) best = { price, vendorName: key, minTraderLevel: minLevel };
+        }
+      }
+      return best ? { price: best.price, vendorName: best.vendorName, minTraderLevel: best.minTraderLevel } : { price: null };
+    },
+    [fleaPriceType, priceMode, traderLevels]
+  );
 
   useEffect(() => {
     if (selectedItem && overriddenPrice !== undefined) {
@@ -245,11 +298,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     ({ index, style }: ListChildComponentProps) => {
       const item = filteredItems[index];
       const itemOverriddenPrice = overriddenPrices[item.id];
+      const effectiveInfo = getEffectivePriceInfo(item);
       const displayedPrice =
         itemOverriddenPrice !== undefined
           ? itemOverriddenPrice
-          : item[fleaPriceType]!;
+          : (effectiveInfo.price ?? null);
       const isOverridden = itemOverriddenPrice !== undefined;
+
       const isItemExcluded = excludedItems.has(item.name);
       const itemIcon = item.iconLink;
 
@@ -276,7 +331,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 <div className="text-gray-400 flex flex-wrap gap-2">
                   <span>Base: ₽{(item.basePrice || 0).toLocaleString()}</span>
                   <span>
-                    Flea:{" "}
+                    {(priceMode === 'flea' ? 'Flea' : 'Trader') + ': '}
                     <span
                       className={
                         isOverridden
@@ -286,10 +341,22 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                           : ""
                       }
                     >
-                      ₽{(displayedPrice || "N/A").toLocaleString()}
+                      {typeof displayedPrice === 'number' ? `₽${displayedPrice.toLocaleString()}` : 'N/A'}
                     </span>
                     {isOverridden && (
                       <span className="text-gray-400 ml-1">(Override)</span>
+                    )}
+                    {priceMode === 'trader' && effectiveInfo.vendorName && (
+                      <span className="inline-flex items-center ml-2">
+                        <img
+                          src={TRADER_AVATARS[effectiveInfo.vendorName]}
+                          alt={effectiveInfo.vendorName}
+                          className="w-4 h-4 rounded-full"
+                        />
+                        <span className="ml-1 capitalize">
+                          {effectiveInfo.vendorName} {effectiveInfo.minTraderLevel ? `L${effectiveInfo.minTraderLevel}` : ''}
+                        </span>
+                      </span>
                     )}
                   </span>
                   {isItemExcluded && (
@@ -303,7 +370,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             <div className="text-sm">
               <p>Base: ₽{(item.basePrice || 0).toLocaleString()}</p>
               <p>
-                Flea:{" "}
+                {(priceMode === 'flea' ? 'Flea' : 'Trader') + ': '}
                 <span
                       className={
                         isOverridden
@@ -313,8 +380,20 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                           : ""
                       }
                     >
-                      ₽{(displayedPrice || "N/A").toLocaleString()}
+                      {typeof displayedPrice === 'number' ? `₽${displayedPrice.toLocaleString()}` : 'N/A'}
+                </span>
+                {priceMode === 'trader' && effectiveInfo.vendorName && (
+                  <span className="inline-flex items-center ml-2">
+                    <img
+                      src={TRADER_AVATARS[effectiveInfo.vendorName]}
+                      alt={effectiveInfo.vendorName}
+                      className="w-4 h-4 rounded-full"
+                    />
+                    <span className="ml-1 capitalize">
+                      {effectiveInfo.vendorName} {effectiveInfo.minTraderLevel ? `L${effectiveInfo.minTraderLevel}` : ''}
                     </span>
+                  </span>
+                )}
               </p>
               {isItemExcluded && (
                 <p className="text-red-500">This item is excluded.</p>
@@ -329,7 +408,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         </Tooltip>
       );
     },
-    [filteredItems, handleSelect, overriddenPrices, excludedItems, fleaPriceType]
+    [filteredItems, handleSelect, overriddenPrices, excludedItems, priceMode, getEffectivePriceInfo, TRADER_AVATARS]
   );
 
   return (
@@ -490,37 +569,62 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   </div>
                 </div>
 
-                {/* Middle row: base & flea prices, updated, override button */}
+                {/* Middle row: base & price, updated, override button */}
                 <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-300">
-                  <div>
-                    Base:{" "}
-                    <span className="text-teal-400 font-semibold">
+                  {/* Base value chip */}
+                  <div className="inline-flex items-center rounded-full bg-gray-800/60 border border-gray-700 px-2 py-0.5">
+                    <span className="mr-1 text-gray-400">Base</span>
+                    <span className="font-semibold text-teal-300">
                       ₽{(selectedItem.basePrice || 0).toLocaleString()}
                     </span>
                   </div>
-                  <div>
-                    Flea:{" "} 
-                    <span
-                      className={
-                        isPriceOverrideActive
-                          ? "text-yellow-300 font-bold"
-                          : selectedItem.lastOfferCount !== undefined && selectedItem.lastOfferCount <= 5
-                          ? "text-red-600 font-bold"
-                          : ""
-                      }
-                    >
-                      ₽{(
+
+                  {/* Price chip (Flea/Trader) */}
+                  <div
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 border ${
+                      (isPriceOverrideActive && priceOverride)
+                        ? 'bg-amber-500/10 border-amber-400/30 text-amber-300'
+                        : (selectedItem.lastOfferCount !== undefined && selectedItem.lastOfferCount <= 5)
+                        ? 'bg-red-500/10 border-red-400/30 text-red-300'
+                        : 'bg-gray-800/60 border-gray-700 text-gray-300'
+                    }`}
+                  >
+                    <span className="mr-1 text-gray-400">{priceMode === 'flea' ? 'Flea' : 'Trader'}</span>
+                    <span className="font-semibold">
+                      {(
                         (isPriceOverrideActive && priceOverride ? Number(priceOverride) : null) ??
                         overriddenPrices[selectedItem.id] ??
-                        selectedItem[fleaPriceType] ??
-                        "N/A"
-                      ).toLocaleString()}
+                        getEffectivePriceInfo(selectedItem).price ??
+                        null
+                      ) !== null
+                        ? `₽${(
+                            (isPriceOverrideActive && priceOverride ? Number(priceOverride) : null) ??
+                            overriddenPrices[selectedItem.id] ??
+                            getEffectivePriceInfo(selectedItem).price ??
+                            0
+                          ).toLocaleString()}`
+                        : 'N/A'}
                     </span>
                   </div>
-                  {selectedItem.updated && (
-                    <span className="text-gray-500">
-                      Updated:{" "}
-                      {getRelativeDate(selectedItem.updated.toString())}
+
+                  {/* Trader vendor chip */}
+                  {priceMode === 'trader' && getEffectivePriceInfo(selectedItem).vendorName && (
+                    <div className="inline-flex items-center rounded-full bg-gray-800/60 border border-gray-700 px-2 py-0.5">
+                      <img
+                        src={TRADER_AVATARS[getEffectivePriceInfo(selectedItem).vendorName!]}
+                        alt={getEffectivePriceInfo(selectedItem).vendorName!}
+                        className="w-4 h-4 rounded-full"
+                      />
+                      <span className="ml-1 capitalize">
+                        {getEffectivePriceInfo(selectedItem).vendorName} {getEffectivePriceInfo(selectedItem).minTraderLevel ? `L${getEffectivePriceInfo(selectedItem).minTraderLevel}` : ''}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Updated time (flea) */}
+                  {priceMode === 'flea' && selectedItem.updated && (
+                    <span className="text-gray-500 ml-1">
+                      • Updated: {getRelativeDate(selectedItem.updated.toString())}
                     </span>
                   )}
 

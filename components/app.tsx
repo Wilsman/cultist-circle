@@ -46,6 +46,10 @@ import {
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { doItemsFitInBox } from "../lib/fit-items-in-box";
+import {
+  TraderLevels,
+  DEFAULT_TRADER_LEVELS,
+} from "@/components/ui/trader-level-selector";
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,12 +64,15 @@ export const CURRENT_VERSION = "1.2.2"; //* Increment this when you want to trig
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
+const PRICE_MODE_KEY = "priceMode";
+const TRADER_LEVELS_KEY = "traderLevels";
 
 const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
   ssr: false,
 });
 
 type FleaPriceType = "lastLowPrice" | "avg24hPrice";
+type PriceMode = "flea" | "trader";
 
 function AppContent() {
   // Placement preview modal state
@@ -121,6 +128,27 @@ function AppContent() {
     );
     return "lastLowPrice";
   });
+  const [priceMode, setPriceMode] = useState<PriceMode>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(PRICE_MODE_KEY) as PriceMode | null;
+      if (saved === "flea" || saved === "trader") return saved;
+    }
+    return "flea";
+  });
+  const [traderLevels, setTraderLevels] = useState<TraderLevels>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(TRADER_LEVELS_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved) as Partial<TraderLevels>;
+          return { ...DEFAULT_TRADER_LEVELS, ...parsed } as TraderLevels;
+        }
+      } catch (e) {
+        console.error("Failed to parse traderLevels from localStorage", e);
+      }
+    }
+    return DEFAULT_TRADER_LEVELS;
+  });
   const [useLastOfferCountFilter, setUseLastOfferCountFilter] =
     useState<boolean>(() => {
       if (typeof window !== "undefined") {
@@ -175,6 +203,24 @@ function AppContent() {
       console.log("Saved flea price type to localStorage:", fleaPriceType);
     }
   }, [fleaPriceType]);
+
+  // Save priceMode to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(PRICE_MODE_KEY, priceMode);
+    }
+  }, [priceMode]);
+
+  // Save traderLevels to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(TRADER_LEVELS_KEY, JSON.stringify(traderLevels));
+      } catch (e) {
+        console.error("Failed to save traderLevels", e);
+      }
+    }
+  }, [traderLevels]);
 
   // Save useLastOfferCountFilter to localStorage
   useEffect(() => {
@@ -465,6 +511,37 @@ function AppContent() {
     loading,
   ]);
 
+  // Helper: compute effective price for an item given current mode and overrides
+  const getEffectivePrice = useCallback(
+    (item: SimplifiedItem): number | undefined => {
+      // Override takes precedence
+      const overridden = overriddenPrices[item.id];
+      if (typeof overridden === "number") return overridden;
+
+      if (priceMode === "flea") {
+        const val = item[fleaPriceType as keyof SimplifiedItem];
+        return typeof val === "number" ? (val as number) : undefined;
+      }
+
+      // Trader mode: pick the best eligible trader offer based on levels
+      if (!item.buyFor || item.buyFor.length === 0) return undefined;
+      let best: number | undefined = undefined;
+      for (const offer of item.buyFor) {
+        const vendor = offer.vendor?.normalizedName as keyof TraderLevels | undefined;
+        if (!vendor) continue;
+        const minLvl = offer.vendor?.minTraderLevel ?? 1;
+        const userLvl = traderLevels[vendor];
+        if (userLvl && userLvl >= minLvl) {
+          if (typeof offer.priceRUB === "number") {
+            if (best === undefined || offer.priceRUB > best) best = offer.priceRUB;
+          }
+        }
+      }
+      return best;
+    },
+    [fleaPriceType, overriddenPrices, priceMode, traderLevels]
+  );
+
   // Function to find the best combination of items
   const findBestCombination = useCallback(
     (
@@ -479,7 +556,7 @@ function AppContent() {
       const adjustedItems = validItems.map((item) => ({
         ...item,
         adjustedBasePrice: Math.floor(item.basePrice * bonusMultiplier),
-        fleaPrice: item[fleaPriceType],
+        effectivePrice: getEffectivePrice(item),
       }));
 
       // Use adjusted threshold for DP calculation
@@ -514,7 +591,7 @@ function AppContent() {
         for (let i = 0; i < adjustedItems.length; i++) {
           const item = adjustedItems[i];
           const basePrice = item.adjustedBasePrice;
-          const fleaPrice = item.fleaPrice;
+          const fleaPrice = item.effectivePrice;
 
           // Skip items with zero or negative base price, undefined/invalid flea price, or insufficient market offers
           if (
@@ -600,7 +677,7 @@ function AppContent() {
         return { selected: [], totalFleaCost: 0 };
       }
     },
-    [itemBonus, fleaPriceType, useLastOfferCountFilter]
+    [itemBonus, useLastOfferCountFilter, getEffectivePrice]
   );
 
   // Memoized total and flea costs
@@ -615,10 +692,8 @@ function AppContent() {
   }, [selectedItems, itemBonus]);
 
   const fleaCosts = useMemo(() => {
-    return selectedItems.map((item) =>
-      item ? overriddenPrices[item.id] ?? item[fleaPriceType] : 0
-    );
-  }, [selectedItems, overriddenPrices, fleaPriceType]);
+    return selectedItems.map((item) => (item ? getEffectivePrice(item) ?? 0 : 0));
+  }, [selectedItems, getEffectivePrice]);
 
   // Memoized total flea cost
   const totalFleaCost = useMemo(() => {
@@ -712,8 +787,8 @@ function AppContent() {
       const validItems = items
         .map((item) => ({
           item,
-          price: item[fleaPriceType],
-          efficiency: item.basePrice / (item[fleaPriceType] || 1), // Avoid division by zero
+          price: getEffectivePrice(item),
+          efficiency: item.basePrice / ((getEffectivePrice(item) || 1)), // Avoid division by zero
         }))
         .filter(
           ({ item, price }) =>
@@ -745,16 +820,7 @@ function AppContent() {
       );
 
       // Adjust prices in filteredItems to use overridden prices where applicable
-      const adjustedItems = filteredItems.map((item) => {
-        const overriddenPrice = overriddenPrices[item.id];
-        if (overriddenPrice !== undefined) {
-          return {
-            ...item,
-            [fleaPriceType]: overriddenPrice,
-          };
-        }
-        return item;
-      });
+      const adjustedItems = filteredItems;
 
       // Shuffle the adjusted items to increase randomness
       const shuffledAdjustedItems = [...adjustedItems].sort(
@@ -768,7 +834,10 @@ function AppContent() {
       );
 
       if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
-        alert("No combination of items meets the remaining threshold.");
+        sonnerToast("Auto Select", {
+          description:
+            "No combination of items meets the remaining threshold.",
+        });
         return;
       }
 
@@ -809,7 +878,7 @@ function AppContent() {
     selectedItems,
     overriddenPrices,
     findBestCombination,
-    fleaPriceType,
+    getEffectivePrice,
   ]);
 
   // Handle mode toggle with simplified caching approach
@@ -984,6 +1053,14 @@ function AppContent() {
 
   const handleFleaPriceTypeChange = useCallback((newType: FleaPriceType) => {
     setFleaPriceType(newType);
+  }, []);
+
+  const handlePriceModeChange = useCallback((newMode: PriceMode) => {
+    setPriceMode(newMode);
+  }, []);
+
+  const handleTraderLevelsChange = useCallback((levels: TraderLevels) => {
+    setTraderLevels(levels);
   }, []);
 
   const handleUseLastOfferCountFilterChange = useCallback(
@@ -1388,6 +1465,8 @@ function AppContent() {
                               }
                               excludedItems={excludedItems}
                               fleaPriceType={fleaPriceType}
+                              priceMode={priceMode}
+                              traderLevels={traderLevels}
                             />
                           </Suspense>
                         </React.Fragment>
@@ -1610,6 +1689,8 @@ function AppContent() {
                 excludeIncompatible,
                 excludedItems: Array.from(excludedItems),
                 fleaPriceType,
+                priceMode,
+                traderLevels,
                 useLastOfferCountFilter,
               };
               const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -1639,6 +1720,8 @@ function AppContent() {
                   setExcludedItems(new Set(parsed.excludedItems));
                 if (parsed.fleaPriceType)
                   setFleaPriceType(parsed.fleaPriceType);
+                if (parsed.priceMode) setPriceMode(parsed.priceMode);
+                if (parsed.traderLevels) setTraderLevels(parsed.traderLevels);
                 if (parsed.useLastOfferCountFilter !== undefined)
                   setUseLastOfferCountFilter(parsed.useLastOfferCountFilter);
               } catch (e) {
@@ -1649,6 +1732,10 @@ function AppContent() {
             currentSortOption={sortOption}
             fleaPriceType={fleaPriceType}
             onFleaPriceTypeChange={handleFleaPriceTypeChange}
+            priceMode={priceMode}
+            onPriceModeChange={handlePriceModeChange}
+            traderLevels={traderLevels}
+            onTraderLevelsChange={handleTraderLevelsChange}
             excludedCategories={Array.from(excludedCategories)}
             onCategoryChange={handleCategoryChange}
             allCategories={ALL_ITEM_CATEGORIES}

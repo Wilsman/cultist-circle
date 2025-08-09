@@ -1,5 +1,15 @@
 // types/SimplifiedItem.ts
 
+export interface TraderVendorInfo {
+  normalizedName: string;
+  minTraderLevel?: number;
+}
+
+export interface TraderBuyOffer {
+  priceRUB: number;
+  vendor: TraderVendorInfo;
+}
+
 export interface SimplifiedItem {
   // Database fields
   id: string;
@@ -14,6 +24,8 @@ export interface SimplifiedItem {
   categories?: string[];  // Made optional to match DB schema
   iconLink?: string;
   avg24hPrice?: number;
+  // Trader offers (buy prices from traders). Present when fetched via minimal data merge.
+  buyFor?: TraderBuyOffer[];
 
   // UI-specific fields
   tags?: string[];
