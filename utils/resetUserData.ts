@@ -1,5 +1,6 @@
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
+import { toast as sonnerToast } from "sonner";
 
 export async function resetUserData(
   setSelectedItems: React.Dispatch<
@@ -15,8 +16,7 @@ export async function resetUserData(
   >,
   setIsPVE: React.Dispatch<React.SetStateAction<boolean>>,
   fetchData: () => Promise<void>,
-  defaultItemCategories: Set<string>,
-  toast: (props: { title: string; description: string }) => void
+  defaultItemCategories: Set<string>
 ) {
   // Clear local storage
   localStorage.clear();
@@ -48,8 +48,7 @@ export async function resetUserData(
   await fetchData();
 
   // Show a toast notification
-  toast({
-    title: "Reset Successful",
+  sonnerToast("Reset Successful", {
     description: "All settings have been reset and data has been cleared.",
   });
 }

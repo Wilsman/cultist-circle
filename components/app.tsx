@@ -14,7 +14,6 @@ import ItemSocket from "@/components/item-socket";
 import { 
   AlertCircle,
   Loader2, 
-  MessageSquareWarning, 
   Settings, 
   Table
 } from "lucide-react";
@@ -50,12 +49,12 @@ import { doItemsFitInBox } from "../lib/fit-items-in-box";
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
 import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast as sonnerToast } from "sonner";
 
 export const CURRENT_VERSION = "1.2.2"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
@@ -151,8 +150,7 @@ function AppContent() {
   const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
   const [itemBonus, setItemBonus] = useState<number>(0);
 
-  // Import hooks
-  const { toast } = useToast();
+  // Toast state
   const toastShownRef = useRef<boolean>(false);
 
   // Use the items data hook
@@ -195,13 +193,11 @@ function AppContent() {
   // Handle error state
   useEffect(() => {
     if (hasError) {
-      toast({
-        title: "Error Loading Items",
+      sonnerToast("Error Loading Items", {
         description: "Failed to load items. Please refresh the page.",
-        variant: "destructive",
       });
     }
-  }, [hasError, toast]);
+  }, [hasError]);
 
   // Initialize client-side state
   useEffect(() => {
@@ -286,7 +282,7 @@ function AppContent() {
     } catch (e) {
       console.error("Error loading overriddenPrices from localStorage", e);
     }
-  }, [rawItemsData, toast]);
+  }, [rawItemsData]);
 
   // Save sort option to localStorage
   useEffect(() => {
@@ -382,8 +378,7 @@ function AppContent() {
         await mutate();
         return;
       },
-      DEFAULT_EXCLUDED_CATEGORIES,
-      toast
+      DEFAULT_EXCLUDED_CATEGORIES
     );
   }, [
     setSelectedItems,
@@ -395,7 +390,6 @@ function AppContent() {
     setOverriddenPrices,
     setIsPVE,
     mutate,
-    toast,
   ]);
 
   // Handler for threshold changes
@@ -870,8 +864,7 @@ function AppContent() {
           "You have met the threshold. A cooldown has been triggered.";
       }
 
-      toast({
-        title,
+      sonnerToast(title, {
         description,
       });
 
@@ -882,7 +875,7 @@ function AppContent() {
     if (!isThresholdMet) {
       toastShownRef.current = false;
     }
-  }, [isThresholdMet, threshold, toast]);
+  }, [isThresholdMet, threshold]);
 
   // Check if the app version has changed since the user last used it
   useEffect(() => {
@@ -941,11 +934,10 @@ function AppContent() {
     setHasAutoSelected(false);
     toastShownRef.current = false;
 
-    toast({
-      title: "Cleared Items",
+    sonnerToast("Cleared Items", {
       description: "All item fields have been cleared.",
     });
-  }, [toast]);
+  }, []);
 
   // Add loading state
   const [loadingSlots, setLoadingSlots] = useState<boolean[]>(
@@ -971,11 +963,10 @@ function AppContent() {
       }
     }
 
-    toast({
-      title: "Reset Successful",
+    sonnerToast("Reset Successful", {
       description: `${clearedOverridesCount} overrides and ${clearedExcludedItemsCount} excluded items have been cleared.`,
     });
-  }, [excludedItems, overriddenPrices, toast]);
+  }, [excludedItems, overriddenPrices]);
 
   // Handler to toggle excluded items
   const toggleExcludedItem = useCallback((uid: string) => {
@@ -1083,7 +1074,7 @@ function AppContent() {
             <div className="pt-2">
               <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
                 <Image
-                  src="/images/Cultist-Calulator.webp"
+                  src="https://assets.cultistcircle.com/Cultist-Calulator.webp"
                   alt="Cultist calculator logo"
                   width={400}
                   height={128}
@@ -1108,27 +1099,125 @@ function AppContent() {
               </a>
             </div>
 
-            {/* New Price Types Alert */}
-            <div className="flex items-center justify-center">
+            {/* MP5 Pro Tip Alert — Ultra Sleek */}
+            <div className="flex items-center justify-center px-4 md:px-8">
               <Alert
                 variant="default"
-                className="mb-2 border-yellow-400/70 bg-yellow-50 dark:bg-yellow-900/10 animate-fade-in rounded shadow"
+                className="
+                  group relative mb-4 overflow-hidden rounded-2xl
+                  border border-amber-300/30 dark:border-amber-300/15
+                  bg-[linear-gradient(180deg,rgba(255,248,236,0.75),rgba(255,239,224,0.6)),radial-gradient(1200px_400px_at_-20%_-10%,rgba(255,170,64,0.10),transparent)]
+                  dark:bg-[linear-gradient(180deg,rgba(60,30,0,0.45),rgba(40,18,0,0.35)),radial-gradient(1200px_400px_at_-20%_-10%,rgba(255,170,64,0.08),transparent)]
+                  backdrop-blur-xl
+                  shadow-[0_12px_40px_-14px_rgba(0,0,0,0.35),inset_0_1px_0_0_rgba(255,255,255,0.25)]
+                  dark:shadow-[0_14px_50px_-16px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.08)]
+                  transition-all duration-500 ease-[cubic-bezier(.2,.8,.2,1)]
+                  will-change-transform
+                  animate-fade-in
+                "
               >
-                <AlertTitle className="text-sm font-bold text-yellow-700 dark:text-yellow-200 text-center">
-                  New Base Value Lookup Table and Help!
-                </AlertTitle>
-                <AlertDescription className="text-xs text-yellow-800 dark:text-yellow-100 text-center">
-                  Quickly check the base value of any item. Try it out here{" "}
-                  <Link
-                    href="/base-values"
-                    className="underline font-semibold text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 focus:outline-none"
-                  >
-                    Base Values
-                  </Link>
-                  .
-                  <br />
-                  Also check out the improved Help!
-                </AlertDescription>
+                {/* Ambient glow sweep */}
+                <div className="pointer-events-none absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                  <div className="absolute -top-1/3 right-0 h-[200%] w-1/2 rotate-12 bg-gradient-to-b from-amber-400/10 via-transparent to-transparent blur-2xl" />
+                </div>
+
+                <div className="flex items-start gap-4 p-4 md:p-5">
+                  {/* Product block */}
+                  <div className="relative shrink-0">
+                    <div
+                      className="
+                        overflow-hidden rounded-xl
+                        ring-1 ring-black/5 dark:ring-white/10
+                        shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]
+                        transition-transform duration-500 ease-out
+                        group-hover:scale-[1.02]
+                      "
+                    >
+                      <Image
+                        src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
+                        alt="MP5 Icon"
+                        width={60}
+                        height={60}
+                        className="w-16 h-16 object-cover"
+                      />
+                    </div>
+
+                    {/* Crisp counter badge */}
+                    <div
+                      className="
+                        absolute -top-2 -right-2 h-6 w-6
+                        rounded-full bg-emerald-500 text-white
+                        text-[10px] font-extrabold tracking-tight
+                        flex items-center justify-center
+                        shadow-[0_6px_18px_-6px_rgba(16,185,129,0.9)]
+                        ring-2 ring-white/70 dark:ring-white/20
+                      "
+                    >
+                      5
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <AlertTitle
+                      className="
+                        flex items-center gap-2
+                        text-[13px] md:text-sm font-semibold tracking-wide
+                        text-amber-900 dark:text-amber-100
+                      "
+                    >
+                      <span
+                        className="
+                          inline-flex h-5 w-5 items-center justify-center
+                          rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-300
+                          ring-1 ring-amber-500/20
+                        "
+                      >
+                        🔥
+                      </span>
+                      Hardcore PVP Wipe Tip (L1 Traders)
+                    </AlertTitle>
+
+                    <AlertDescription className="mt-2 space-y-2">
+                      <div className="text-[13px] text-amber-950/90 dark:text-amber-50/95 leading-relaxed">
+                        <span className="font-medium">
+                          <strong>5× MP5</strong> from PeaceKeeper LL1
+                        </span>{" "}
+                        = <span className="font-bold text-emerald-600 dark:text-emerald-400">400K+ threshold</span>
+                      </div>
+
+                      {/* Price pill */}
+                      <div
+                        className="
+                          inline-flex items-center gap-2 rounded-lg
+                          bg-white/60 dark:bg-white/5
+                          px-3 py-1.5
+                          text-[12px] font-mono tabular-nums
+                          text-amber-900/90 dark:text-amber-50/90
+                          ring-1 ring-black/5 dark:ring-white/10
+                          shadow-[inset_0_1px_0_0_rgba(255,255,255,0.5)]
+                          dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]
+                        "
+                      >
+                        <span className="opacity-70">💰 Cost</span>
+                        <span>: $478 (63,547₽) × 5 =</span>
+                        <span className="font-bold">$2,390 (317,735₽)</span>
+                      </div>
+
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400/90">
+                        Investigating why some weapons are returning higher base values.
+                      </p>
+                    </AlertDescription>
+                  </div>
+                </div>
+
+                {/* Precision underline + progress shimmer */}
+                <div className="relative mx-4 md:mx-5 mb-1 mt-1">
+                  <div className="h-px w-full rounded-full bg-gradient-to-r from-transparent via-amber-400/50 to-transparent dark:via-amber-300/30" />
+                  <div className="pointer-events-none absolute inset-x-0 -top-[1px] h-[2px] overflow-hidden">
+                    <div className="animate-[shimmer_2.4s_ease-in-out_infinite] h-full w-1/3 bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/25 rounded-full mx-auto" />
+                  </div>
+                </div>
               </Alert>
             </div>
 
@@ -1186,22 +1275,29 @@ function AppContent() {
               {/* show alert if items do not fit in the 9x6 box */}
               {!itemsFitInBox && (
                 <div className="mt-2 mb-2 text-center w-full">
-                  <Alert>
-                    <MessageSquareWarning className="h-4 w-4" />
-                    <AlertTitle className="text-white">
-                      Items do not fit!
+                  <Alert className="border-red-500/50 bg-red-900/20 text-white animate-pulse">
+                    <AlertTitle className="flex items-center justify-center gap-2 text-xl font-bold bg-red-600/30 border border-red-500/80 rounded-md p-2">
+                      <span className="text-2xl">❌</span>
+                      <span>ITEMS DO NOT FIT!</span>
+                      <span className="text-2xl">❌</span>
                     </AlertTitle>
-                    <AlertDescription className="text-white">
-                      {selectedItems.filter(Boolean).map((item, idx) => (
-                        <div key={`${item?.id ?? "no-id"}-${idx}`}>
-                          {item?.name} - {item?.width ?? "?"}w ×{" "}
-                          {item?.height ?? "?"}h
-                        </div>
-                      ))}
-                      <div className="mt-1">
-                        The selected items cannot be arranged in the Cultist
-                        Circle box (9×6).
+                    <AlertDescription className="mt-3 space-y-3">
+                      <div className="text-left bg-gray-800/50 border border-gray-700 rounded-md p-3">
+                        <p className="font-semibold mb-2 text-yellow-400">The following items could not be placed:</p>
+                        <ul className="space-y-1 list-disc list-inside">
+                          {selectedItems.filter(Boolean).map((item, idx) => (
+                            <li key={`${item?.id ?? "no-id"}-${idx}`}>
+                              {item?.name} -{" "}
+                              <span className="font-mono">{item?.width ?? "?"}w × {item?.height ?? "?"}h</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
+
+                      <p className="font-bold text-lg text-yellow-300">
+                        The selected items cannot be arranged in the Cultist Circle box (9×6).
+                      </p>
+
                       <PlacementPreviewInline
                         fitDebug={fitDebug}
                         selectedItems={selectedItems}
@@ -1378,27 +1474,29 @@ function AppContent() {
 
               {/* Sacrifice Value Display with improved animation */}
               <div id="sacrifice-value" className="mt-6 text-center w-full">
-                <h2 className="text-3xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
+                <h2 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
                   Sacrifice BaseValue Total
                 </h2>
                 {loading ? (
                   <Skeleton className="h-16 w-3/4 mx-auto" />
                 ) : (
-                  <div
-                    className={`text-6xl font-extrabold ${
-                      isThresholdMet
-                        ? "text-green-500 animate-pulse"
-                        : "text-red-500 animate-pulse"
-                    }`}
-                  >
-                    ₽{total.toLocaleString()}
-                  </div>
-                )}
-                {!isThresholdMet && (
-                  <div className="text-red-500 mt-1">
-                    ₽{(threshold - total).toLocaleString()} Needed to meet
-                    threshold
-                  </div>
+                  <>
+                    <div className="flex flex-col items-center">
+                      <div className="text-5xl font-extrabold text-green-500">
+                        ₽{total.toLocaleString()}
+                      </div>
+                      {itemBonus > 0 && (
+                        <div className="text-sm text-gray-400 mt-1">
+                          (Base: ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} + {itemBonus}% bonus)
+                        </div>
+                      )}
+                    </div>
+                    {!isThresholdMet && (
+                      <div className="text-red-500 mt-2 text-lg">
+                        ₽{(threshold - total).toLocaleString()} needed to meet threshold
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="mt-1">
                   <div className="text-sm font-semibold text-gray-400">
@@ -1498,8 +1596,7 @@ function AppContent() {
               setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
               setOverriddenPrices({});
 
-              toast({
-                title: "Data Cleared",
+              sonnerToast("Data Cleared", {
                 description:
                   "All data has been cleared. The app has been reset to its initial state.",
               });

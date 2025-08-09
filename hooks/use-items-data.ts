@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
 import { fetchTarkovData, CACHE_TTL } from "./use-tarkov-api";
-import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 
 // Single version for the combined data approach
 const CURRENT_VERSION = "1.2.2"; // New version for combined data approach
@@ -35,7 +35,7 @@ export function useItemsData(isPVE: boolean) {
     // Reset retry count when mode changes
     requestTracker.retryCount = 0;
   }, [mode]); // Only depend on mode to track mode changes
-  const { toast } = useToast();
+  // Using Sonner for notifications
   
   // State to track if we need to show a retry button
   const [needsManualRetry, setNeedsManualRetry] = useState(false);
@@ -95,10 +95,8 @@ export function useItemsData(isPVE: boolean) {
       // Check if this is a rate limit error
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.startsWith('RATE_LIMIT:')) {
-        toast({
-          title: "Rate Limit Hit",
+        sonnerToast("Rate Limit Hit", {
           description: "You've reached the API rate limit. Please wait a moment before refreshing the data again.",
-          variant: "warning",
         });
       }
       

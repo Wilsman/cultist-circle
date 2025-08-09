@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { loadItemsFromCode, generateShareableCode } from "@/lib/share-utils";
 import { ClipboardIcon, CopyIcon, ShareIcon, ChevronRight } from "lucide-react";
@@ -60,7 +60,6 @@ export function ShareCodeDialog({
   rawItemsData,
   onItemsLoaded,
 }: ShareCodeDialogProps) {
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [currentCode, setCurrentCode] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -73,10 +72,8 @@ export function ShareCodeDialog({
 
   const handleCopyCode = () => {
     if (!currentCode) {
-      toast({
-        title: "No Items Selected",
+      sonnerToast("No Items Selected", {
         description: "Please select at least one item to share.",
-        variant: "destructive",
       });
       return;
     }
@@ -86,20 +83,16 @@ export function ShareCodeDialog({
       .writeText(currentCode)
       .then(() => {
         const itemCount = selectedItems.filter((item) => item !== null).length;
-        toast({
-          title: "Code Copied!",
+        sonnerToast("Code Copied!", {
           description: `Shareable code copied to clipboard. ${itemCount} item${
             itemCount > 1 ? "s" : ""
           } included.`,
-          variant: "default",
         });
       })
       .catch((err) => {
         console.error("Failed to copy code:", err);
-        toast({
-          title: "Failed to Copy Code",
+        sonnerToast("Failed to Copy Code", {
           description: "Please try again or manually copy the code.",
-          variant: "destructive",
         });
       })
       .finally(() => {
@@ -114,16 +107,14 @@ export function ShareCodeDialog({
       const trimmedCode = clipboardText.trim();
 
       if (!trimmedCode) {
-        toast({
-          title: "Empty Clipboard",
+        sonnerToast("Empty Clipboard", {
           description: "Your clipboard is empty. Copy a code first.",
-          variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
 
-      const result = loadItemsFromCode(trimmedCode, rawItemsData, toast);
+      const result = loadItemsFromCode(trimmedCode, rawItemsData);
       setIsLoading(false);
 
       if (result.items) {
@@ -131,11 +122,8 @@ export function ShareCodeDialog({
       }
     } catch (error) {
       setIsLoading(false);
-      toast({
-        title: "Clipboard Access Failed",
-        description:
-          "Unable to access clipboard. Please paste the code manually.",
-        variant: "destructive",
+      sonnerToast("Clipboard Access Failed", {
+        description: "Unable to access clipboard. Please paste the code manually.",
       });
     }
   };

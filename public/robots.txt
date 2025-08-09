@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /$
+Allow: /calculator
+Allow: /base-values
+Disallow: /api/
+Disallow: /_next/
+
+Crawl-delay: 10

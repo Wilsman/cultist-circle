@@ -209,7 +209,23 @@ export interface MinimalItem {
   basePrice: number;
   lastLowPrice: number | null;
   avg24hPrice: number | null;
+  categories: {
+    name: string;
+  }[];
   link: string;
+  sellFor: {
+    vendor: {
+      normalizedName: string;
+    };
+    priceRUB: number;
+  }[];
+  buyFor: {
+    priceRUB: number;
+    vendor: {
+      normalizedName: string;
+      minTraderLevel?: number;
+    };
+  }[];
 }
 
 interface FetchMinimalTarkovGraphQLResponse {
@@ -239,7 +255,25 @@ export async function fetchMinimalTarkovData(): Promise<{ pvpItems: MinimalItem[
         basePrice
         lastLowPrice
         avg24hPrice
+        categories {
+          name
+        }
         link
+        sellFor {
+          vendor {
+            normalizedName
+          }
+          priceRUB
+        }
+        buyFor {
+          priceRUB
+          vendor {
+            normalizedName
+            ... on TraderOffer {
+              minTraderLevel
+            }
+          }
+        }
       }
       pveItems: items(gameMode: pve) {
         id
@@ -248,7 +282,25 @@ export async function fetchMinimalTarkovData(): Promise<{ pvpItems: MinimalItem[
         basePrice
         lastLowPrice
         avg24hPrice
+        categories {
+          name
+        }
         link
+        sellFor {
+          vendor {
+            normalizedName
+          }
+          priceRUB
+        }
+        buyFor {
+          priceRUB
+          vendor {
+            normalizedName
+            ... on TraderOffer {
+              minTraderLevel
+            }
+          }
+        }
       }
     }
   `;

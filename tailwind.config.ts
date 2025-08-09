@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       backgroundImage: {
-        my_bg_image: "url('../public/images/bg.webp')",
+        my_bg_image: "url('https://assets.cultistcircle.com/bg.webp')",
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
