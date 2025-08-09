@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { XIcon, DiamondPlus } from "lucide-react";
+import { DiamondPlus } from "lucide-react";
 
 interface Item {
   id: string;
@@ -92,9 +92,9 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
         variant="ghost"
         size="sm"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="mb-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200 relative"
+        className="text-gray-200 hover:bg-slate-700/60 relative h-9 px-3 rounded-full bg-slate-700/50 border border-slate-600/30 backdrop-blur-sm"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -120,24 +120,28 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <span className="text-sm">Bonus Settings</span>
+          <span className="text-xs">Bonus Settings</span>
           {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
 
           {/* Show indicator next to text when collapsed */}
           {!isExpanded && (
-            <div className="flex items-center gap-1 ml-2">
-              <div className="w-8 h-8 flex items-center justify-center bg-gray-800 square-full border border-gray-700">
-                {/* Show icon if selected, show blank socket (square box with x) if not */}
-                {selectedItem && selectedItem.icon}
-                {!selectedItem && <XIcon className="w-4 h-4 text-gray-400" />}
+            <div className="flex items-center gap-1 ml-1.5">
+              <div className="w-6 h-6 flex items-center justify-center bg-gray-800 rounded-md border border-gray-700">
+                {selectedItem ? (
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    {typeof selectedItem.icon === "string" ? (
+                      <Image src={selectedItem.icon} alt={selectedItem.name} width={20} height={20} />
+                    ) : (
+                      selectedItem.icon
+                    )}
+                  </div>
+                ) : (
+                  <span className="flex items-center justify-center w-6 h-6">
+                    <DiamondPlus className="w-4 h-4" />
+                  </span>
+                )}
               </div>
-              <span
-                className={`text-xs font-bold ${
-                  totalBonus > 0 ? "text-blue-300" : "text-red-500"
-                }`}
-              >
-                +{totalBonus}%
-              </span>
+              <span className="text-[11px] text-red-400 font-mono">+{totalBonus}%</span>
             </div>
           )}
         </div>
@@ -145,18 +149,18 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
 
       <div
         className={`
-          overflow-hidden transition-all duration-300 ease-in-out w-full flex flex-col items-center
+          overflow-hidden transition-all duration-300 ease-in-out w-full flex flex-col items-center pt-2
           ${isExpanded ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}
           `}
       >
         <Badge
           variant="destructive"
-          className="mb-2 rounded-full border-gray-700 "
+          className="mb-1 rounded-full border-gray-700 text-[10px]"
         >
           Work In Progress
         </Badge>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-mono text-gray-300">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="font-mono text-gray-300 text-sm">
             Total bonus to the Gift{" "}
             <span
               className={`font-bold ${
@@ -175,7 +179,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
               <div className="flex justify-center">
                 <Button
                   variant="outline"
-                  className={`w-12 h-12 p-1 border-gray-700 bg-gray-800 hover:bg-gray-900/50 ${
+                  className={`w-10 h-10 p-1 border-gray-700 bg-gray-800 hover:bg-gray-900/50 ${
                     !selectedItem ? "text-gray-600" : "text-gray-200"
                   }`}
                 >
@@ -183,7 +187,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
                     selectedItem.icon
                   ) : (
                     <span className="flex items-center justify-center w-8 h-8">
-                      <DiamondPlus className="w-5 h-5" />
+                      <DiamondPlus className="w-4 h-4" />
                     </span>
                   )}
                 </Button>
@@ -195,7 +199,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
                   <Button
                     key={item.id}
                     variant="outline"
-                    className="flex items-center justify-start w-full border-gray-700 bg-gray-800 hover:bg-gray-900/20 hover:text-gray-200"
+                    className="flex items-center justify-start w-full border-gray-700 bg-gray-800 hover:bg-gray-900/20 hover:text-gray-200 h-8"
                     onClick={() => {
                       setSelectedItem(item.id === "none" ? null : item);
                       setOpen(false);
@@ -204,7 +208,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
                     <div className="flex items-center justify-center w-8 h-8 mr-3">
                       {item.icon}
                     </div>
-                    <span className="font-mono">{totalBonus.toFixed(2)}%</span>
+                    <span className="font-mono text-sm">{totalBonus.toFixed(2)}%</span>
                   </Button>
                 ))}
               </div>
@@ -213,12 +217,12 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
 
           {selectedItem && selectedItem.id !== "none" && (
             <div className="flex items-center gap-2 animate-fade-in">
-              <span className="font-mono text-gray-300">Hideout Level:</span>
+              <span className="font-mono text-gray-300 text-sm">Hideout Level:</span>
               <div className="relative">
                 <select
                   value={hideoutLevel}
                   onChange={(e) => setHideoutLevel(Number(e.target.value))}
-                  className="bg-gray-800 text-gray-200 border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-24 text-center appearance-none"
+                  className="bg-gray-800 text-gray-200 border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-20 text-center appearance-none text-sm h-8"
                 >
                   {Array.from({ length: 50 }, (_, i) => i + 1).map((level) => (
                     <option key={level} value={level}>

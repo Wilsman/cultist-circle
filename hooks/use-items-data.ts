@@ -6,7 +6,7 @@ import { fetchTarkovData, CACHE_TTL } from "./use-tarkov-api";
 import { toast as sonnerToast } from "sonner";
 
 // Single version for the combined data approach
-const CURRENT_VERSION = "1.2.2"; // New version for combined data approach
+const CURRENT_VERSION = "2.0.0"; // New version for combined data approach
 
 // Create a single persistence middleware for the combined data
 // The middleware handles localStorage quota errors and clears old cache when needed

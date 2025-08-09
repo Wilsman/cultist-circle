@@ -475,30 +475,33 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
               {/* RIGHT SIDE (All info and buttons) */}
               <div className="flex-1 flex flex-col p-2 space-y-2">
-                {/* Top row: name + copy, pin/exclude/remove */}
+                {/* Top row: name + compact action toolbar */}
                 <div className="flex items-center justify-between">
-                  {/* Item name + copy */}
-                  <div className="flex items-center space-x-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span
-                          className="text-teal-400 font-semibold text-xs sm:text-sm truncate"
-                          style={{
-                            maxWidth: "calc(100vw - 2rem)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {window.innerWidth < 640
-                            ? `${selectedItem.name.slice(0, 20)}...`
-                            : selectedItem.name.length > 42
-                            ? `${selectedItem.name.slice(0, 42)}...`
-                            : selectedItem.name}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>{selectedItem.name}</TooltipContent>
-                    </Tooltip>
+                  {/* Item name */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="text-teal-400 font-semibold text-xs sm:text-sm truncate"
+                        style={{
+                          maxWidth: "calc(100vw - 2rem)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {window.innerWidth < 640
+                          ? `${selectedItem.name.slice(0, 20)}...`
+                          : selectedItem.name.length > 42
+                          ? `${selectedItem.name.slice(0, 42)}...`
+                          : selectedItem.name}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{selectedItem.name}</TooltipContent>
+                  </Tooltip>
+
+                  {/* Actions toolbar */}
+                  <div className="ml-2 flex items-center rounded-full border border-gray-700/60 bg-gray-800/50 px-1.5 py-0.5 shadow-sm">
+                    {/* Copy */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -510,12 +513,35 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                           <Copy className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Copy Item Name</TooltipContent>
+                      <TooltipContent>Copy name</TooltipContent>
                     </Tooltip>
-                  </div>
 
-                  {/* Pin / Exclude / Remove */}
-                  <div className="flex items-center space-x-1">
+                    <span className="mx-0.5 h-5 w-px bg-gray-700/70" />
+
+                    {/* Toggle override */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={togglePriceOverride}
+                          className={`h-5 w-5 rounded ${
+                            isPriceOverrideActive
+                              ? "text-amber-300 bg-amber-500/10"
+                              : "text-gray-400"
+                          } hover:bg-gray-700`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {isPriceOverrideActive ? "Disable override" : "Enable override"}
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <span className="mx-0.5 h-5 w-px bg-gray-700/70" />
+
+                    {/* Pin */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -523,48 +549,53 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                           variant="ghost"
                           onClick={onPin}
                           className={`h-5 w-5 rounded ${
-                            isPinned ? "text-yellow-400" : "text-gray-400"
-                          } hover:bg-gray-800`}
+                            isPinned
+                              ? "text-yellow-400 bg-yellow-500/10"
+                              : "text-gray-400"
+                          } hover:bg-gray-700`}
                         >
                           <Pin className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        {isPinned ? "Unpin Item" : "Pin Item"}
-                      </TooltipContent>
+                      <TooltipContent>{isPinned ? "Unpin" : "Pin"}</TooltipContent>
                     </Tooltip>
 
+                    {/* Exclude */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="icon"
                           variant="ghost"
                           onClick={toggleExclude}
-                          className={`h-5 w-5 ${
-                            isExcluded ? "text-red-500" : "text-gray-400"
-                          } hover:bg-gray-800`}
+                          className={`h-5 w-5 rounded ${
+                            isExcluded
+                              ? "text-red-400 bg-red-500/10"
+                              : "text-gray-400"
+                          } hover:bg-gray-700`}
                         >
                           <CircleSlash className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Exclude from Auto</TooltipContent>
+                      <TooltipContent>
+                        {isExcluded ? "Include in auto-pick" : "Exclude from auto-pick"}
+                      </TooltipContent>
                     </Tooltip>
 
+                    <span className="mx-0.5 h-5 w-px bg-gray-700/70" />
+
+                    {/* Delete */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => {
-                            handleRemove();
-                            handleSelect(null);
-                          }}
-                          className="h-5 w-5 text-gray-400 hover:bg-gray-800"
+                          onClick={handleRemove}
+                          className="h-5 w-5 text-gray-400 hover:bg-gray-700"
                         >
-                          <Trash2 className="text-red-500 h-4 w-4" />
+                          <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Remove Item</TooltipContent>
+                      <TooltipContent>Remove</TooltipContent>
                     </Tooltip>
                   </div>
                 </div>
@@ -572,8 +603,8 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 {/* Middle row: base & price, updated, override button */}
                 <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-300">
                   {/* Base value chip */}
-                  <div className="inline-flex items-center rounded-full bg-gray-800/60 border border-gray-700 px-2 py-0.5">
-                    <span className="mr-1 text-gray-400">Base</span>
+                  <div className="inline-flex items-center rounded-full bg-blue-500/10 border border-gray-700 px-2 py-0.5">
+                    <span className="mr-1 text-gray-400 font-bold">Base</span>
                     <span className="font-semibold text-teal-300">
                       ₽{(selectedItem.basePrice || 0).toLocaleString()}
                     </span>
@@ -628,46 +659,35 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     </span>
                   )}
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={togglePriceOverride}
-                        className="h-5 w-5 text-gray-400 hover:bg-gray-700 ml-auto"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Toggle Price Override</TooltipContent>
-                  </Tooltip>
+                  {/* Override toggle moved to action toolbar above */}
                 </div>
 
                 {/* Price override input (if active) */}
                 {isPriceOverrideActive && (
-                  <div className="flex items-center bg-gray-800/50 rounded p-1 text-xs sm:text-sm">
-                    <label
-                      htmlFor="price-override"
-                      className="text-gray-400 mr-1"
-                    >
-                      Override:
-                    </label>
+                  <div className="flex items-center rounded-full border border-gray-700/60 bg-gray-800/50 px-2 py-1 text-xs sm:text-sm">
+                    <span className="text-gray-400 mr-1">₽</span>
                     <input
                       id="price-override"
                       type="text"
                       value={priceOverride}
                       onChange={handlePriceOverride}
-                      className="bg-gray-700 text-white p-1 mr-2 rounded w-20 text-right"
-                      placeholder="Enter price"
+                      className="bg-transparent text-white px-1 py-0.5 rounded w-24 sm:w-28 text-right outline-none placeholder:text-gray-500"
+                      placeholder="Price"
                     />
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={clearPriceOverride}
-                      className="h-5 px-2 text-white hover:bg-red-700"
-                    >
-                      Cancel
-                    </Button>
+                    <span className="mx-1 h-5 w-px bg-gray-700/70" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={clearPriceOverride}
+                          className="h-5 w-5 text-gray-400 hover:bg-gray-700"
+                        >
+                          <XIcon className="h-4 w-4 text-red-400" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Clear override</TooltipContent>
+                    </Tooltip>
                   </div>
                 )}
 

@@ -34,8 +34,7 @@ import {
 } from "@/components/ui/tooltip";
 import SettingsPane from "@/components/settings-pane";
 import { InstructionsDialog } from "@/components/InstructionsDialog";
-import { ModeToggle } from "@/components/ModeToggle";
-import { ThresholdSelectorWithHelper } from "@/components/ThresholdSelectorWithHelper";
+import { ModeThreshold } from "@/components/mode-threshold";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { VersionInfo } from "@/components/version-info";
 import { ShareCodeDialog } from "@/components/share-code-component";
@@ -60,7 +59,7 @@ import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast as sonnerToast } from "sonner";
 
-export const CURRENT_VERSION = "1.2.2"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "2.0.0"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
@@ -1303,22 +1302,16 @@ function AppContent() {
             </div>
 
             <CardContent className="p-2">
-              {/* Mode Toggle with improved animation */}
-              <div className="transition-all duration-300">
-                <ModeToggle isPVE={isPVE} onToggle={handleModeToggle} />
-              </div>
-
-              {/* Threshold selector with improved visual feedback */}
-              <div className="mt-4 transition-all duration-300">
-                <ThresholdSelectorWithHelper
+              {/* Unified controls */}
+              <div className="mt-1 flex items-center justify-center">
+                <ModeThreshold
+                  isPVE={isPVE}
+                  onModeToggle={handleModeToggle}
                   threshold={threshold}
                   onThresholdChange={handleThresholdChange}
-                  onHelperOpen={() => true}
                 />
               </div>
-
-              {/* Item Socket Component */}
-              <div className="mt-6">
+              <div className="mt-2 flex items-center justify-center">
                 <ItemSocket onBonusChange={setItemBonus} />
               </div>
 

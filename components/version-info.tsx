@@ -32,44 +32,13 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
-                  <span className="font-medium">Updated:</span> Show bonus value under total, add Elite hideout management bonus amount
+                  <span className="font-medium">New:</span> change to Trader-only price mode and select your trader levels (in settings menu)
                 </span>
               </li>
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
                   <span className="font-medium">New:</span> Base Values quick lookup table page
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  <span className="font-medium">New:</span> Search by either name or shortName e.g. GPU
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  <span className="font-medium">Bug fix:</span> Fixed settings-sort dropdown causing freezes
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  <span className="font-medium">New:</span> Implimented lastOfferCount to detect unstable prices
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  <span className="font-medium">New:</span> Added new price types: Last Low Price and Average 24h Price
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-yellow-500">•</span>
-                <span className="text-left">
-                  <span className="font-medium">New:</span> Added visual placement preview and fit check warning when
-                  items don&apos;t fit
                 </span>
               </li>
             </ul>
