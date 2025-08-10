@@ -204,7 +204,7 @@ function getAnswer(question: string): string {
     return "Pick up to 5 items and check total base value: ≥350k for 14h chance; ≥400k for 25% 6h / 75% 14h. Base value uses vendor price ÷ multiplier.";
   }
 
-  return "Ask about thresholds (350k/400k), 6h/12h/14h outcomes, or base value math. Keep it short and specific.";
+  return "Ask about thresholds (350k/400k), 6h/12h/14h chances, base value math (vendor ÷ trader multiplier), PVE/PVP flea, item combos, Auto Select/Pin/Override/Share/Refresh, price indicators, excluding categories, sorting, tips, or Discord.";
 }
 
 function generateId(): string {
