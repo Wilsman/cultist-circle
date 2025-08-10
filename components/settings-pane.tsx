@@ -264,6 +264,7 @@ export default function SettingsPane({
                     <Label htmlFor="mode-trader">Trader prices</Label>
                   </div>
                 </RadioGroup>
+                <p className="text-xs text-gray-400 mt-2">⚠️ Traders are currently work-in-progress, known limitations: all quest locked items present.</p>
               </div>
               
               {/* Trader Levels (only when trader mode) */}

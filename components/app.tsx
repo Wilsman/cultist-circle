@@ -51,6 +51,7 @@ import {
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
 import { PvpWipeTipAlert } from "./pvp-wipe-tip-alert";
+import { PvpFleaExpiredAlert } from "./pvp-flea-expired-alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
@@ -1158,6 +1159,7 @@ function AppContent() {
                 />
               </h1>
             </div>
+            
             <div className="flex items-center justify-center pb-4">
               <a
                 href="https://discord.com/invite/3dFmr5qaJK"
@@ -1174,13 +1176,14 @@ function AppContent() {
                 />
               </a>
             </div>
-
-            {/* MP5 Pro Tip Alert — Ultra Sleek */}
-            <PvpWipeTipAlert />
-
+            
             <div className="text-center text-gray-400 text-sm mb-4">
               <VersionInfo version={CURRENT_VERSION} />
             </div>
+
+            {/* MP5 Pro Tip Alert — Ultra Sleek */}
+            {!isPVE && <PvpFleaExpiredAlert />}
+            <PvpWipeTipAlert />
 
             <CardContent className="p-2">
               {/* Unified controls */}
