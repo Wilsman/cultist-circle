@@ -14,10 +14,27 @@ export const viewport: Viewport = {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
+    // Base URL ensures relative URLs (canonical, images) resolve correctly
     metadataBase: new URL("https://cultistcircle.com"),
-    title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
+    title: {
+      default: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
+      template: "%s | Cultist Circle",
+    },
     description:
       "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices.",
+    keywords: [
+      "Escape from Tarkov",
+      "Tarkov",
+      "Cultist Circle",
+      "Calculator",
+      "EFT",
+      "Ritual",
+      "Base Value",
+      "Items",
+    ],
+    alternates: {
+      canonical: "/",
+    },
     openGraph: {
       type: "website",
       locale: "en_US",
@@ -25,15 +42,36 @@ export async function generateMetadata(): Promise<Metadata> {
       description:
         "Maximize your Escape from Tarkov Cultist Circle rewards with our advanced calculator. Find optimal item combinations for 6h, 12h, and 14h sacrifices.",
       siteName: "Cultist Circle Calculator",
-      url: "https://cultistcircle.com",
-      images: [{ url: "https://assets.cultistcircle.com/og2.png", width: 1200, height: 630 }],
+      url: "/",
+      images: [
+        {
+          // Serve from same domain to avoid third-party fetch issues
+          url: "/images/og2.png",
+          width: 1200,
+          height: 630,
+          alt: "Cultist Circle Calculator preview",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
-      description: "Get the best Cultist Circle rewards in Escape from Tarkov.",
+      description:
+        "Get the best Cultist Circle rewards in Escape from Tarkov.",
       creator: "@wilsman77",
-      images: ["https://assets.cultistcircle.com/og2.png"],
+      site: "@wilsman77",
+      images: ["/images/og2.png"],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
     },
   };
 }

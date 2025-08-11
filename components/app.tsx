@@ -834,9 +834,9 @@ function AppContent() {
       );
 
       if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
-        sonnerToast("Auto Select", {
+        sonnerToast.warning("Auto Select", {
           description:
-            "No combination of items meets the remaining threshold.",
+            "No combination of items meets the remaining threshold. Try Trader Prices in Settings and check your Excluded Categories.",
         });
         return;
       }
