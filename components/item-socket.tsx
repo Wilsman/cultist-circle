@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,12 +15,7 @@ import {
 } from "@radix-ui/react-icons";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { DiamondPlus } from "lucide-react";
 
 interface Item {
@@ -29,6 +24,8 @@ interface Item {
   bonus: number;
   icon: string | JSX.Element;
 }
+
+export default React.memo(ItemSocket);
 
 const items: Item[] = [
   {
@@ -62,7 +59,7 @@ interface ItemSocketProps {
   onBonusChange?: (bonus: number) => void;
 }
 
-export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
+function ItemSocket({ onBonusChange }: ItemSocketProps) {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [hideoutLevel, setHideoutLevel] = useState<number>(1);
   const [open, setOpen] = useState(false);
@@ -79,11 +76,13 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
     ? Number(calculateBonus(selectedItem.bonus, hideoutLevel).toFixed(2))
     : 0;
 
-  // Notify parent component when bonus changes
+  // Notify parent component when bonus changes (only if changed)
+  const lastSentBonusRef = useRef<number | null>(null);
   useEffect(() => {
-    if (onBonusChange) {
-      onBonusChange(totalBonus);
-    }
+    if (!onBonusChange) return;
+    if (lastSentBonusRef.current === totalBonus) return;
+    lastSentBonusRef.current = totalBonus;
+    onBonusChange(totalBonus);
   }, [totalBonus, onBonusChange]);
 
   return (
@@ -98,28 +97,33 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <QuestionMarkCircledIcon className="w-4 h-4 text-gray-400 hover:text-gray-300 cursor-help" />
+                <span
+                  className="inline-flex cursor-help"
+                  tabIndex={0}
+                  aria-label="Item socket bonuses help"
+                >
+                  <QuestionMarkCircledIcon className="w-4 h-4 text-gray-400 hover:text-gray-300" />
+                </span>
               </TooltipTrigger>
               <TooltipContent
                 side="top"
-                className="max-w-[600px] p-4 text-left space-y-3 bg-gray-700 text-white rounded shadow-md text-sm overflow-auto"
+                className="max-w-[340px] p-3 text-left space-y-2 bg-slate-800 text-gray-100 border border-slate-700 rounded-md shadow-lg"
               >
-                <div className="pt-1">
-                  <p className="font-semibold mb-2">Bonuses:</p>
-                  <ul className="space-y-1 list-disc pl-4">
+                <div>
+                  <p className="font-semibold mb-1">Bonuses</p>
+                  <ul className="space-y-1 list-disc pl-4 text-xs">
                     <li>
-                      Sacrificing a Sacred Amulet increases the Gift&apos;s
-                      value by 15%
+                      Sacrificing a Sacred Amulet increases the Gift&apos;s value by 15%
                     </li>
                     <li>
-                      The Hideout Management skill increases the bonus of Sacred
-                      Amulet
+                      The Hideout Management skill increases the bonus of Sacred Amulet
                     </li>
                   </ul>
                 </div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
           <span className="text-xs">Bonus Settings</span>
           {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
 
@@ -141,7 +145,13 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
                   </span>
                 )}
               </div>
-              <span className="text-[11px] text-red-400 font-mono">+{totalBonus}%</span>
+              <span
+                className={`text-[11px] font-mono ${
+                  totalBonus > 0 ? "text-blue-300" : "text-gray-400"
+                }`}
+              >
+                {totalBonus > 0 ? `+${totalBonus}%` : `${totalBonus}%`}
+              </span>
             </div>
           )}
         </div>
@@ -175,7 +185,6 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
 
           <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
             <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTitle>Item Socket</DialogTitle>
               <DialogTrigger asChild>
                 <div className="flex justify-center">
                   <Button
@@ -195,6 +204,7 @@ export default function ItemSocket({ onBonusChange }: ItemSocketProps) {
                 </div>
               </DialogTrigger>
               <DialogContent className="bg-slate-900/95 border-slate-700 text-gray-200 max-w-xs">
+                <DialogTitle>Item Socket</DialogTitle>
                 <div className="grid gap-2">
                   {items.map((item) => (
                     <Button

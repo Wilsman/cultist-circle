@@ -18,25 +18,24 @@ interface CombinedTarkovData {
 // Define a consistent cache TTL to use across the application
 export const CACHE_TTL = 900000; // 15 minutes
 
-// Cache for the combined data to avoid duplicate fetches
-let combinedDataCache: CombinedTarkovData | null = null;
-let lastFetchTime = 0;
+// Cache for the combined data to avoid duplicate fetches (per language)
+const combinedDataCacheByLang: Map<string, { data: CombinedTarkovData; time: number }> = new Map();
 
-// Cache for the minimal data to avoid duplicate fetches
-let minimalDataCache: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] } | null = null;
-let minimalDataLastFetchTime = 0;
+// Cache for the minimal data to avoid duplicate fetches (per language)
+const minimalDataCacheByLang: Map<string, { data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }; time: number }> = new Map();
 
 /**
  * Fetches all Tarkov item data from the tarkov.dev GraphQL API for both game modes
  * @returns Promise with combined data for both PVP and PVE modes
  */
-export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
+export async function fetchCombinedTarkovData(language: string = 'en'): Promise<CombinedTarkovData> {
   const now = Date.now();
   
   // Return cached data if it's still fresh
-  if (combinedDataCache && now - lastFetchTime < CACHE_TTL) {
-    console.debug('📦 Using cached combined Tarkov data');
-    return combinedDataCache;
+  const cached = combinedDataCacheByLang.get(language);
+  if (cached && now - cached.time < CACHE_TTL) {
+    console.debug(`📦 Using cached combined Tarkov data [${language}]`);
+    return cached.data;
   }
   
   const startTime = Date.now();
@@ -44,7 +43,7 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
   // Query both game modes in a single request
   const query = `
     {
-      pvpItems: items(gameMode: regular) {
+      pvpItems: items(gameMode: regular, lang: ${language}) {
         id
         name
         shortName
@@ -71,7 +70,7 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
           }
         }
       }
-      pveItems: items(gameMode: pve) {
+      pveItems: items(gameMode: pve, lang: ${language}) {
         id
         name
         shortName
@@ -143,6 +142,8 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
       link: item.link,
       width: item.width,
       height: item.height,
+      // Use language-agnostic category IDs for filtering logic
+      // Non-null assertion is safe here because this query selects `id` for categories
       categories: item.categories.map((cat: { id?: string; name: string }) => cat.id!),
       tags: [],
       isExcluded: false,
@@ -171,7 +172,7 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
     const processTime = Date.now() - startTime;
     
     // Update the cache
-    combinedDataCache = {
+    const combined: CombinedTarkovData = {
       pvp: transformPvpItems,
       pve: transformPveItems,
       meta: {
@@ -181,12 +182,12 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
         categories: allCategories.size,
       }
     };
-    
-    lastFetchTime = now;
+    // store per-language cache
+    combinedDataCacheByLang.set(language, { data: combined, time: now });
     
     // Data has been fetched and processed successfully
     
-    return combinedDataCache;
+    return combined;
   } catch (error) {
     console.error('Error fetching combined Tarkov data:', error);
     throw error;
@@ -199,7 +200,8 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
  * @returns Promise with transformed items in SimplifiedItem format
  */
 export async function fetchTarkovData(
-  gameMode: 'pve' | 'regular'
+  gameMode: 'pve' | 'regular',
+  language: string = 'en'
 ): Promise<{
   items: SimplifiedItem[];
   meta: {
@@ -212,7 +214,7 @@ export async function fetchTarkovData(
 }> {
   try {
     // Use the combined data fetcher and extract the relevant mode's data
-    const combinedData = await fetchCombinedTarkovData();
+    const combinedData = await fetchCombinedTarkovData(language);
     
     // Extract the items for the requested game mode
     const items = gameMode === 'pve' ? combinedData.pve : combinedData.pvp;
@@ -272,19 +274,20 @@ interface FetchMinimalTarkovGraphQLResponse {
   errors?: Array<{ message: string }>;
 }
 
-export async function fetchMinimalTarkovData(): Promise<{ pvpItems: MinimalItem[]; pveItems: MinimalItem[] }> {
+export async function fetchMinimalTarkovData(language: string = 'en'): Promise<{ pvpItems: MinimalItem[]; pveItems: MinimalItem[] }> {
   const now = Date.now();
   
   // Return cached data if it's still fresh
-  if (minimalDataCache && now - minimalDataLastFetchTime < CACHE_TTL) {
-    console.debug('📦 Using cached minimal Tarkov data');
-    return minimalDataCache;
+  const cached = minimalDataCacheByLang.get(language);
+  if (cached && now - cached.time < CACHE_TTL) {
+    console.debug(`📦 Using cached minimal Tarkov data [${language}]`);
+    return cached.data;
   }
   
   const startTime = Date.now();
   const query = `
     {
-      pvpItems: items(gameMode: regular) {
+      pvpItems: items(gameMode: regular, lang: ${language}) {
         id
         name
         shortName
@@ -311,7 +314,7 @@ export async function fetchMinimalTarkovData(): Promise<{ pvpItems: MinimalItem[
           }
         }
       }
-      pveItems: items(gameMode: pve) {
+      pveItems: items(gameMode: pve, lang: ${language}) {
         id
         name
         shortName
@@ -374,10 +377,10 @@ export async function fetchMinimalTarkovData(): Promise<{ pvpItems: MinimalItem[
     console.debug(`✅ Minimal Tarkov data fetched in ${endTime - startTime}ms`);
     
     // Update the cache
-    minimalDataCache = { pvpItems: result.data.pvpItems, pveItems: result.data.pveItems };
-    minimalDataLastFetchTime = now;
+    const data = { pvpItems: result.data.pvpItems, pveItems: result.data.pveItems };
+    minimalDataCacheByLang.set(language, { data, time: now });
 
-    return minimalDataCache;
+    return data;
   } catch (error) {
     console.error('❌ Failed to fetch minimal Tarkov data:', error);
     return { pvpItems: [], pveItems: [] };

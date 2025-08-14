@@ -123,11 +123,14 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
   useEffect(() => {
     if (selectedItem && overriddenPrice !== undefined) {
-      setPriceOverride(overriddenPrice.toString());
-      setIsPriceOverrideActive(true);
+      const next = overriddenPrice.toString();
+      // Only update when values actually change to avoid render loops
+      setIsPriceOverrideActive((prev) => (prev ? prev : true));
+      setPriceOverride((prev) => (prev !== next ? next : prev));
     } else {
-      setPriceOverride("");
-      setIsPriceOverrideActive(false);
+      // Only reset if there is something to reset
+      setIsPriceOverrideActive((prev) => (prev ? false : prev));
+      setPriceOverride((prev) => (prev !== "" ? "" : prev));
     }
   }, [selectedItem, overriddenPrice]);
 
@@ -248,19 +251,22 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     if (priceOverride === debouncedPriceValue) return;
     const handler = setTimeout(() => {
       setDebouncedPriceValue(priceOverride);
-      if (selectedItem && priceOverride && isPriceOverrideActive) {
-        onSelect(selectedItem, Number(priceOverride) || 0);
-      }
+      if (!selectedItem || !isPriceOverrideActive || !priceOverride) return;
+      const nextValue = Number(priceOverride) || 0;
+      // Skip if parent already has this exact override to prevent update loops
+      if (overriddenPrice !== undefined && overriddenPrice === nextValue) return;
+      onSelect(selectedItem, nextValue);
     }, 300);
     return () => {
       clearTimeout(handler);
     };
   }, [
     priceOverride,
+    debouncedPriceValue,
     selectedItem,
     isPriceOverrideActive,
+    overriddenPrice,
     onSelect,
-    debouncedPriceValue,
   ]);
 
   // Handle changes in the override input

@@ -1,0 +1,426 @@
+{
+    "data": {
+      "itemCategories": [
+        {
+          "id": "5447b5f14bdc2d61278b4567",
+          "name": "Assault rifle"
+        },
+        {
+          "id": "5422acb9af1c889c16000029",
+          "name": "Weapon"
+        },
+        {
+          "id": "566162e44bdc2d3f298b4573",
+          "name": "Compound item"
+        },
+        {
+          "id": "54009119af1c881c07000029",
+          "name": "Item"
+        },
+        {
+          "id": "543be5cb4bdc2deb348b4568",
+          "name": "Ammo container"
+        },
+        {
+          "id": "5661632d4bdc2d903d8b456b",
+          "name": "Stackable item"
+        },
+        {
+          "id": "5c99f98d86f7745c314214b3",
+          "name": "Mechanical Key"
+        },
+        {
+          "id": "543be5e94bdc2df1348b4568",
+          "name": "Key"
+        },
+        {
+          "id": "5447b5cf4bdc2d65278b4567",
+          "name": "Handgun"
+        },
+        {
+          "id": "543be6564bdc2df4348b4568",
+          "name": "Throwable weapon"
+        },
+        {
+          "id": "5448bc234bdc2d3c308b4569",
+          "name": "Magazine"
+        },
+        {
+          "id": "55802f3e4bdc2de7118b4584",
+          "name": "Gear mod"
+        },
+        {
+          "id": "5448fe124bdc2da5018b4567",
+          "name": "Weapon mod"
+        },
+        {
+          "id": "5448e8d64bdc2dce718b4568",
+          "name": "Drink"
+        },
+        {
+          "id": "543be6674bdc2df1348b4569",
+          "name": "Food and drink"
+        },
+        {
+          "id": "5448e8d04bdc2ddf718b4569",
+          "name": "Food"
+        },
+        {
+          "id": "543be5dd4bdc2deb348b4569",
+          "name": "Money"
+        },
+        {
+          "id": "55818b164bdc2ddc698b456c",
+          "name": "Comb. tact. device"
+        },
+        {
+          "id": "550aa4154bdc2dd8348b456b",
+          "name": "Functional mod"
+        },
+        {
+          "id": "5447e1d04bdc2dff2f8b4567",
+          "name": "Knife"
+        },
+        {
+          "id": "5447b6094bdc2dc3278b4567",
+          "name": "Shotgun"
+        },
+        {
+          "id": "5448bf274bdc2dfc2f8b456a",
+          "name": "Port. container"
+        },
+        {
+          "id": "566168634bdc2d144c8b456c",
+          "name": "Searchable item"
+        },
+        {
+          "id": "550aa4bf4bdc2dd6348b456b",
+          "name": "Flashhider"
+        },
+        {
+          "id": "5448fe394bdc2d0d028b456c",
+          "name": "Muzzle device"
+        },
+        {
+          "id": "55818add4bdc2d5b648b456f",
+          "name": "Assault scope"
+        },
+        {
+          "id": "5448fe7a4bdc2d6f028b456b",
+          "name": "Sights"
+        },
+        {
+          "id": "5448e5284bdc2dcb718b4567",
+          "name": "Chest rig"
+        },
+        {
+          "id": "5448e53e4bdc2d60728b4567",
+          "name": "Backpack"
+        },
+        {
+          "id": "5448f3ac4bdc2dce718b4569",
+          "name": "Medical item"
+        },
+        {
+          "id": "543be5664bdc2dd4348b4569",
+          "name": "Meds"
+        },
+        {
+          "id": "5448f3a14bdc2d27728b4569",
+          "name": "Drug"
+        },
+        {
+          "id": "5448f39d4bdc2d0a728b4568",
+          "name": "Medikit"
+        },
+        {
+          "id": "66abb0743f4d8b145b1612c1",
+          "name": "Multitools"
+        },
+        {
+          "id": "5447e0e74bdc2d3c308b4567",
+          "name": "Special item"
+        },
+        {
+          "id": "5485a8684bdc2da71d8b4567",
+          "name": "Ammo"
+        },
+        {
+          "id": "5448e54d4bdc2dcc718b4568",
+          "name": "Armor"
+        },
+        {
+          "id": "57bef4c42459772e8d35a53b",
+          "name": "Armored equipment"
+        },
+        {
+          "id": "543be5f84bdc2dd4348b456a",
+          "name": "Equipment"
+        },
+        {
+          "id": "5448e5724bdc2ddf718b4568",
+          "name": "Vis. observ. device"
+        },
+        {
+          "id": "555ef6e44bdc2de9068b457e",
+          "name": "Barrel"
+        },
+        {
+          "id": "55802f4a4bdc2ddb688b4569",
+          "name": "Essential mod"
+        },
+        {
+          "id": "5447b6254bdc2dc3278b4568",
+          "name": "Sniper rifle"
+        },
+        {
+          "id": "55818ad54bdc2ddc698b4569",
+          "name": "Reflex sight"
+        },
+        {
+          "id": "55818a684bdc2ddd698b456d",
+          "name": "Pistol grip"
+        },
+        {
+          "id": "55818af64bdc2d5b648b4570",
+          "name": "Foregrip"
+        },
+        {
+          "id": "55818a304bdc2db5418b457d",
+          "name": "Receiver"
+        },
+        {
+          "id": "55818a6f4bdc2db9688b456b",
+          "name": "Charging handle"
+        },
+        {
+          "id": "55818a104bdc2db9688b4569",
+          "name": "Handguard"
+        },
+        {
+          "id": "55818b224bdc2dde698b456f",
+          "name": "Mount"
+        },
+        {
+          "id": "55818a594bdc2db9688b456a",
+          "name": "Stock"
+        },
+        {
+          "id": "55818ac54bdc2d5b648b456e",
+          "name": "Ironsight"
+        },
+        {
+          "id": "550aa4cd4bdc2dd8348b456c",
+          "name": "Silencer"
+        },
+        {
+          "id": "550aa4dd4bdc2dc9348b4569",
+          "name": "Comb. muzzle device"
+        },
+        {
+          "id": "5a74651486f7744e73386dd1",
+          "name": "Auxiliary Mod"
+        },
+        {
+          "id": "5a341c4086f77401f2541505",
+          "name": "Headwear"
+        },
+        {
+          "id": "5645bcb74bdc2ded0b8b4578",
+          "name": "Headphones"
+        },
+        {
+          "id": "5671435f4bdc2d96058b4569",
+          "name": "Locking container"
+        },
+        {
+          "id": "57864ee62459775490116fc1",
+          "name": "Battery"
+        },
+        {
+          "id": "5448eb774bdc2d0a728b4567",
+          "name": "Barter item"
+        },
+        {
+          "id": "57864a66245977548f04a81f",
+          "name": "Electronics"
+        },
+        {
+          "id": "57864e4c24597754843f8723",
+          "name": "Lubricant"
+        },
+        {
+          "id": "55818ae44bdc2dde698b456c",
+          "name": "Scope"
+        },
+        {
+          "id": "55818afb4bdc2dde698b456d",
+          "name": "Bipod"
+        },
+        {
+          "id": "56ea9461d2720b67698b456f",
+          "name": "Gas block"
+        },
+        {
+          "id": "5a2c3a9486f774688b05e574",
+          "name": "Night Vision"
+        },
+        {
+          "id": "55818aeb4bdc2ddc698b456a",
+          "name": "Special scope"
+        },
+        {
+          "id": "5a341c4686f77469e155819e",
+          "name": "Face Cover"
+        },
+        {
+          "id": "57864a3d24597754843f8721",
+          "name": "Jewelry"
+        },
+        {
+          "id": "590c745b86f7743cc433c5f2",
+          "name": "Other"
+        },
+        {
+          "id": "57864ada245977548638de91",
+          "name": "Building material"
+        },
+        {
+          "id": "57864c322459775490116fbf",
+          "name": "Household goods"
+        },
+        {
+          "id": "5447b5fc4bdc2d87278b4567",
+          "name": "Assault carbine"
+        },
+        {
+          "id": "567849dd4bdc2d150f8b456e",
+          "name": "Map"
+        },
+        {
+          "id": "55818acf4bdc2dde698b456b",
+          "name": "Compact reflex sight"
+        },
+        {
+          "id": "5447b6194bdc2d67278b4567",
+          "name": "Marksman rifle"
+        },
+        {
+          "id": "5795f317245977243854e041",
+          "name": "Common container"
+        },
+        {
+          "id": "5447b5e04bdc2d62278b4567",
+          "name": "SMG"
+        },
+        {
+          "id": "55818b084bdc2d5b648b4571",
+          "name": "Flashlight"
+        },
+        {
+          "id": "57864bb7245977548b3b66c2",
+          "name": "Tool"
+        },
+        {
+          "id": "5448ecbe4bdc2d60728b4568",
+          "name": "Info"
+        },
+        {
+          "id": "616eb7aea207f41933308f46",
+          "name": "Repair Kits"
+        },
+        {
+          "id": "57864c8c245977548867e7f1",
+          "name": "Medical supplies"
+        },
+        {
+          "id": "5b3f15d486f77432d0509248",
+          "name": "Arm Band"
+        },
+        {
+          "id": "5447bed64bdc2d97278b4568",
+          "name": "Machinegun"
+        },
+        {
+          "id": "5448f3a64bdc2d60728b456a",
+          "name": "Stimulant"
+        },
+        {
+          "id": "5d21f59b6dbe99052b54ef83",
+          "name": "Thermal Vision"
+        },
+        {
+          "id": "5c164d2286f774194c5e69fa",
+          "name": "Keycard"
+        },
+        {
+          "id": "5d650c3e815116009f6201d2",
+          "name": "Fuel"
+        },
+        {
+          "id": "5447bedf4bdc2d87278b4568",
+          "name": "Grenade launcher"
+        },
+        {
+          "id": "5f4fbaaca5573a5ac31db429",
+          "name": "Compass"
+        },
+        {
+          "id": "617f1ef5e8b54b0998387733",
+          "name": "Revolver"
+        },
+        {
+          "id": "610720f290b75a49ff2e5e25",
+          "name": "Cylinder Magazine"
+        },
+        {
+          "id": "61605ddea09d851a0a0c1bbc",
+          "name": "Portable Range Finder"
+        },
+        {
+          "id": "627a137bf21bc425b06ab944",
+          "name": "Spring Driven Cylinder"
+        },
+        {
+          "id": "55818b014bdc2ddc698b456b",
+          "name": "UBGL"
+        },
+        {
+          "id": "62e9103049c018f425059f38",
+          "name": "Radio Transmitter"
+        },
+        {
+          "id": "62f109593b54472778797866",
+          "name": "Random Loot Container"
+        },
+        {
+          "id": "644120aa86ffbe10ee032b6f",
+          "name": "Armor Plate"
+        },
+        {
+          "id": "64b69b0c8f3be32ed22682f8",
+          "name": "Cultist Amulet"
+        },
+        {
+          "id": "65ddcc7aef36f6413d0829b9",
+          "name": "Mark of the Unheard"
+        },
+        {
+          "id": "6672e40ebb23210ae87d39eb",
+          "name": "Planting Kits"
+        },
+        {
+          "id": "677ae5df4be46b83620bf055",
+          "name": "Rocket"
+        },
+        {
+          "id": "6759673c76e93d8eb20b2080",
+          "name": "Flyer"
+        },
+        {
+          "id": "67446d4f04141c10630604e7",
+          "name": "Rocket Launcher"
+        }
+      ]
+    }
+  }

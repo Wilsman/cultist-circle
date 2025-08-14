@@ -5,6 +5,7 @@ import CookieConsent from "@/components/CookieConsent";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { CookieConsentProvider } from "@/context/cookie-consent-context";
 import Script from "next/script";
+import { LanguageProvider } from "@/contexts/language-context";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -116,14 +117,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
 
         <CookieConsentProvider>
-          <main className="relative min-h-screen">
-            <div className="fixed inset-0 -z-10 bg-[#101720]" />
-            <div className="relative z-10">{children}</div>
-            <div className="relative z-50">
-              <CookieConsent />
-              <SonnerToaster />
-            </div>
-          </main>
+          <LanguageProvider>
+            <main className="relative min-h-screen">
+              <div className="fixed inset-0 -z-10 bg-[#101720]" />
+              <div className="relative z-10">{children}</div>
+              <div className="relative z-50">
+                <CookieConsent />
+                <SonnerToaster />
+              </div>
+            </main>
+          </LanguageProvider>
         </CookieConsentProvider>
       </body>
     </html>
