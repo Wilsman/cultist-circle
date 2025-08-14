@@ -56,7 +56,9 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
         lastOfferCount
         iconLink
         avg24hPrice
+        link
         categories {
+          id
           name
         }
         buyFor {
@@ -81,7 +83,9 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
         lastOfferCount
         avg24hPrice
         iconLink
+        link
         categories {
+          id
           name
         }
         buyFor {
@@ -136,9 +140,10 @@ export async function fetchCombinedTarkovData(): Promise<CombinedTarkovData> {
       lastOfferCount: item.lastOfferCount || undefined,
       avg24hPrice: item.avg24hPrice || undefined,
       iconLink: item.iconLink,
+      link: item.link,
       width: item.width,
       height: item.height,
-      categories: item.categories.map((cat: { name: string }) => cat.name),
+      categories: item.categories.map((cat: { id?: string; name: string }) => cat.id!),
       tags: [],
       isExcluded: false,
       categories_display: item.categories,

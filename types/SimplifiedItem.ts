@@ -24,6 +24,7 @@ export interface SimplifiedItem {
   categories?: string[];  // Made optional to match DB schema
   iconLink?: string;
   avg24hPrice?: number;
+  link?: string;
   // Trader offers (buy prices from traders). Present when fetched via minimal data merge.
   buyFor?: TraderBuyOffer[];
 

@@ -32,6 +32,12 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  <span className="font-medium">New:</span> item name now links to Tarkov.dev item page
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   <span className="font-medium">New:</span> change to Trader-only price mode and select your trader levels (in settings menu)
                 </span>
               </li>

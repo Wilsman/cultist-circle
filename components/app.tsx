@@ -60,7 +60,7 @@ import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast as sonnerToast } from "sonner";
 
-export const CURRENT_VERSION = "2.0.0"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "2.0.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";

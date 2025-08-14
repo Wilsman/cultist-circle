@@ -302,113 +302,98 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
       const displayedPrice =
         itemOverriddenPrice !== undefined
           ? itemOverriddenPrice
-          : (effectiveInfo.price ?? null);
+          : effectiveInfo.price ?? null;
       const isOverridden = itemOverriddenPrice !== undefined;
 
       const isItemExcluded = excludedItems.has(item.name);
       const itemIcon = item.iconLink;
 
       return (
-        <Tooltip key={item.id}>
-          <TooltipTrigger asChild>
-            <li
-              style={style}
-              onMouseDown={(e) => e.preventDefault()}
-              onMouseUp={() => handleSelect(item)}
-              className="p-1 hover:bg-gray-600 cursor-pointer text-white flex items-center"
-            >
-              {itemIcon && (
-                <img
-                  src={itemIcon}
-                  alt={item.name}
-                  className="w-10 h-10 object-contain rounded mr-2"
-                />
-              )}
-              <div className="flex-1 flex flex-col text-xs">
-                <span className="truncate font-semibold text-sm">
-                  {item.name}
+        <li
+          style={style}
+          onMouseDown={(e) => e.preventDefault()}
+          onMouseUp={() => handleSelect(item)}
+          className="p-1 hover:bg-gray-600 cursor-pointer text-white flex items-center"
+        >
+          {itemIcon && (
+            <img
+              src={itemIcon}
+              alt={item.name}
+              className="w-10 h-10 object-contain rounded mr-2"
+            />
+          )}
+          <div className="flex-1 flex flex-col text-xs">
+            <span className="truncate font-semibold text-sm">{item.name}</span>
+            <div className="text-gray-400 flex flex-wrap items-center gap-2">
+              {/* Base value chip */}
+              <div className="inline-flex items-center rounded-full bg-blue-500/10 border border-gray-700 px-2 py-0.5">
+                <span className="mr-1 text-gray-400 font-bold">Base</span>
+                <span className="font-semibold text-teal-300">
+                  ₽{(item.basePrice || 0).toLocaleString()}
                 </span>
-                <div className="text-gray-400 flex flex-wrap gap-2">
-                  <span>Base: ₽{(item.basePrice || 0).toLocaleString()}</span>
-                  <span>
-                    {(priceMode === 'flea' ? 'Flea' : 'Trader') + ': '}
-                    <span
-                      className={
-                        isOverridden
-                          ? "text-yellow-300 font-bold"
-                          : item.lastOfferCount !== undefined && item.lastOfferCount <= 5
-                          ? "text-red-600 font-bold"
-                          : ""
-                      }
-                    >
-                      {typeof displayedPrice === 'number' ? `₽${displayedPrice.toLocaleString()}` : 'N/A'}
-                    </span>
-                    {isOverridden && (
-                      <span className="text-gray-400 ml-1">(Override)</span>
-                    )}
-                    {priceMode === 'trader' && effectiveInfo.vendorName && (
-                      <span className="inline-flex items-center ml-2">
-                        <img
-                          src={TRADER_AVATARS[effectiveInfo.vendorName]}
-                          alt={effectiveInfo.vendorName}
-                          className="w-4 h-4 rounded-full"
-                        />
-                        <span className="ml-1 capitalize">
-                          {effectiveInfo.vendorName} {effectiveInfo.minTraderLevel ? `L${effectiveInfo.minTraderLevel}` : ''}
-                        </span>
-                      </span>
-                    )}
-                  </span>
-                  {isItemExcluded && (
-                    <span className="text-red-400 ml-auto">Excluded</span>
-                  )}
-                </div>
               </div>
-            </li>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="text-sm">
-              <p>Base: ₽{(item.basePrice || 0).toLocaleString()}</p>
-              <p>
-                {(priceMode === 'flea' ? 'Flea' : 'Trader') + ': '}
-                <span
-                      className={
-                        isOverridden
-                          ? "text-yellow-300 font-bold"
-                          : item.lastOfferCount !== undefined && item.lastOfferCount <= 5
-                          ? "text-red-600 font-bold"
-                          : ""
-                      }
-                    >
-                      {typeof displayedPrice === 'number' ? `₽${displayedPrice.toLocaleString()}` : 'N/A'}
+
+              {/* Price chip (Flea/Trader) */}
+              <div
+                className={`inline-flex items-center rounded-full px-2 py-0.5 border ${
+                  isOverridden
+                    ? "bg-amber-500/10 border-amber-400/30 text-amber-300"
+                    : item.lastOfferCount !== undefined &&
+                      item.lastOfferCount <= 5
+                    ? "bg-red-500/10 border-red-400/30 text-red-300"
+                    : "bg-gray-800/60 border-gray-700 text-gray-300"
+                }`}
+              >
+                <span className="mr-1 text-gray-400">
+                  {priceMode === "flea" ? "Flea" : "Trader"}
                 </span>
-                {priceMode === 'trader' && effectiveInfo.vendorName && (
-                  <span className="inline-flex items-center ml-2">
-                    <img
-                      src={TRADER_AVATARS[effectiveInfo.vendorName]}
-                      alt={effectiveInfo.vendorName}
-                      className="w-4 h-4 rounded-full"
-                    />
-                    <span className="ml-1 capitalize">
-                      {effectiveInfo.vendorName} {effectiveInfo.minTraderLevel ? `L${effectiveInfo.minTraderLevel}` : ''}
-                    </span>
-                  </span>
+                <span className="font-semibold">
+                  {typeof displayedPrice === "number"
+                    ? `₽${displayedPrice.toLocaleString()}`
+                    : "N/A"}
+                </span>
+                {isOverridden && (
+                  <span className="text-gray-400 ml-1">(Override)</span>
                 )}
-              </p>
-              {isItemExcluded && (
-                <p className="text-red-500">This item is excluded.</p>
+              </div>
+
+              {/* Trader vendor chip */}
+              {priceMode === "trader" && effectiveInfo.vendorName && (
+                <div className="inline-flex items-center rounded-full bg-gray-800/60 border border-gray-700 px-2 py-0.5">
+                  <img
+                    src={TRADER_AVATARS[effectiveInfo.vendorName]}
+                    alt={effectiveInfo.vendorName}
+                    className="w-4 h-4 rounded-full"
+                  />
+                  <span className="ml-1 capitalize">
+                    {effectiveInfo.vendorName}{" "}
+                    {effectiveInfo.minTraderLevel
+                      ? `L${effectiveInfo.minTraderLevel}`
+                      : ""}
+                  </span>
+                </div>
               )}
-              {item.lastLowPrice && item.updated && (
-                <p className="text-gray-400 text-xs">
-                  Last updated: {getRelativeDate(item.updated.toString())}
-                </p>
+
+              {/* Excluded badge */}
+              {isItemExcluded && (
+                <span className="ml-auto inline-flex items-center rounded-full bg-red-500/10 border border-red-400/30 text-red-300 px-2 py-0.5">
+                  Excluded
+                </span>
               )}
             </div>
-          </TooltipContent>
-        </Tooltip>
+          </div>
+        </li>
       );
     },
-    [filteredItems, handleSelect, overriddenPrices, excludedItems, priceMode, getEffectivePriceInfo, TRADER_AVATARS]
+    [
+      filteredItems,
+      handleSelect,
+      overriddenPrices,
+      excludedItems,
+      priceMode,
+      getEffectivePriceInfo,
+      TRADER_AVATARS,
+    ]
   );
 
   return (
@@ -480,21 +465,42 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   {/* Item name */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span
-                        className="text-teal-400 font-semibold text-xs sm:text-sm truncate"
-                        style={{
-                          maxWidth: "calc(100vw - 2rem)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {window.innerWidth < 640
-                          ? `${selectedItem.name.slice(0, 20)}...`
-                          : selectedItem.name.length > 42
-                          ? `${selectedItem.name.slice(0, 42)}...`
-                          : selectedItem.name}
-                      </span>
+                      {selectedItem.link ? (
+                        <a
+                          href={selectedItem.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-teal-400 font-semibold text-xs sm:text-sm truncate hover:underline"
+                          style={{
+                            maxWidth: "calc(100vw - 2rem)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {window.innerWidth < 640
+                            ? `${selectedItem.name.slice(0, 20)}...`
+                            : selectedItem.name.length > 42
+                            ? `${selectedItem.name.slice(0, 42)}...`
+                            : selectedItem.name}
+                        </a>
+                      ) : (
+                        <span
+                          className="text-teal-400 font-semibold text-xs sm:text-sm truncate"
+                          style={{
+                            maxWidth: "calc(100vw - 2rem)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {window.innerWidth < 640
+                            ? `${selectedItem.name.slice(0, 20)}...`
+                            : selectedItem.name.length > 42
+                            ? `${selectedItem.name.slice(0, 42)}...`
+                            : selectedItem.name}
+                        </span>
+                      )}
                     </TooltipTrigger>
                     <TooltipContent>{selectedItem.name}</TooltipContent>
                   </Tooltip>

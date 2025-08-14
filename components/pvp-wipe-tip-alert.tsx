@@ -28,48 +28,83 @@ export function PvpWipeTipAlert() {
         <details className="group w-full open:mb-1">
           <summary className="flex items-center justify-between cursor-pointer list-none p-2 sm:p-2.5">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-slate-500/10 text-slate-600 dark:text-slate-300 ring-1 ring-slate-500/15">💡</span>
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-slate-500/10 text-slate-600 dark:text-slate-300 ring-1 ring-slate-500/15">
+                💡
+              </span>
               <span className="truncate text-[11px] sm:text-[12px] font-semibold text-slate-800 dark:text-slate-200">
                 Hardcore PVP Wipe Tip (L1 Traders)
               </span>
               <span className="hidden sm:inline text-[10px] font-medium text-slate-500/90 ml-1">
-                5× MP5 = 400K+
+                Some tips found by the community
               </span>
             </div>
             <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 group-open:rotate-180" />
           </summary>
           <div className="px-2.5 sm:px-3.5 pb-3 sm:pb-4">
-            <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-              {/* Product block */}
-              <div className="relative shrink-0 self-center sm:self-auto">
-                <div className="overflow-hidden rounded-xl ring-1 ring-black/5 dark:ring-white/10 shadow-[0_6px_18px_-10px_rgba(0,0,0,0.25)]">
-                  <Image
-                    src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
-                    alt="MP5 Icon"
-                    width={48}
-                    height={48}
-                    className="w-10 h-10 sm:w-12 sm:h-12 object-cover"
-                  />
-                </div>
-                {/* Crisp counter badge */}
-                <div className="absolute -top-2 -right-2 h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-emerald-500/90 text-white text-[8px] sm:text-[9px] font-extrabold tracking-tight flex items-center justify-center shadow-[0_4px_14px_-6px_rgba(16,185,129,0.7)] ring-1 ring-white/70 dark:ring-white/20">
-                  5
-                </div>
-              </div>
+            <div className="flex flex-col items-start gap-3 sm:gap-4">
               {/* Content */}
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 w-full">
                 <AlertDescription className="mt-1 space-y-2">
-                  <div className="text-[12px] sm:text-[13px] text-slate-800 dark:text-slate-200 leading-relaxed">
-                    <span className="font-medium"><strong>5× MP5</strong> from PeaceKeeper LL1</span>{" "}
-                    = <span className="font-bold text-emerald-600 dark:text-emerald-400">400K+ threshold</span>
-                  </div>
-                  <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] font-mono tabular-nums text-slate-700/90 dark:text-slate-200/90 ring-1 ring-black/5 dark:ring-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.5)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-                    <span className="opacity-70">💰 Cost</span>
-                    <span>: $478 (63,547₽) × 5 =</span>
-                    <span className="font-bold">$2,390 (317,735₽)</span>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
+                      <Image
+                        src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
+                        alt="MP5"
+                        width={32}
+                        height={32}
+                        className="rounded"
+                      />
+                      <span className="font-semibold">5× MP5</span>
+                      <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
+                        <Image
+                          src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
+                          alt="Peacekeeper"
+                          width={14}
+                          height={14}
+                          className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
+                        />
+                        <span className="font-medium">LL1</span>
+                      </span>
+                      <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
+                        400K+ (6h & 14h)
+                      </span>
+                    </div>
+                    <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
+                      <Image
+                        src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
+                        alt="MP5"
+                        width={32}
+                        height={32}
+                        className="rounded"
+                      />
+                      <span className="font-semibold">4× MP5</span>
+                      <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
+                        <Image
+                          src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
+                          alt="Peacekeeper"
+                          width={14}
+                          height={14}
+                          className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
+                        />
+                        <span className="font-medium">LL1</span>
+                      </span>
+                      <span className="opacity-60">+</span>
+                      <Image
+                        src="https://assets.tarkov.dev/590c645c86f77412b01304d9-icon.webp"
+                        alt="Diary"
+                        width={32}
+                        height={32}
+                        className="rounded"
+                      />
+                      <span className="font-semibold">1× Diary</span>
+                      <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
+                        400K+ (6h & 14h)
+                      </span>
+                    </div>
                   </div>
                   <p className="text-[11px] sm:text-[12px] text-gray-500 dark:text-gray-400/90">
-                    Investigating why some weapons are returning higher base values.
+                    Investigating why some weapons are returning higher base
+                    values.
                   </p>
                 </AlertDescription>
               </div>
