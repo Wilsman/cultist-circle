@@ -57,3 +57,5 @@ all_items_PVP.json
 CLAUDE.md
 
 .env.local
+# Sentry Config File
+.env.sentry-build-plugin

@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
 import { fetchTarkovData, CACHE_TTL } from "@/hooks/use-tarkov-api";
@@ -36,6 +36,15 @@ export function useItemsData(isPVE: boolean) {
   const gameMode = isPVE ? "pve" : "regular";
   const { language } = useLanguage();
   const IS_TEST = typeof process !== 'undefined' && (process.env?.VITEST || process.env?.NODE_ENV === 'test');
+  const isMounted = useRef(true);
+
+  // Track mount state to avoid setState after unmount during async fetches
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   
   // Use separate SWR keys for PVE and PVP to ensure proper mode switching
   const swrKey = `tarkov-dev-api/${mode}/${language}?v=${CURRENT_VERSION}`;
@@ -145,8 +154,8 @@ export function useItemsData(isPVE: boolean) {
         if (requestTracker.retryCount < requestTracker.maxRetries) {
           throw new Error('Empty data received, retrying...');
         } else {
-          // We've exceeded max retries, set flag to show manual retry button
-          setNeedsManualRetry(true);
+          // We've exceeded max retries, set flag to show manual retry button (only if still mounted)
+          if (isMounted.current) setNeedsManualRetry(true);
           console.error(`❌ [${mode.toUpperCase()}] Max retries (${requestTracker.maxRetries}) exceeded with empty data`);
           
           // Return empty array but don't cache it
@@ -155,7 +164,7 @@ export function useItemsData(isPVE: boolean) {
       }
       // Reset retry count on successful fetch with data
       requestTracker.retryCount = 0;
-      setNeedsManualRetry(false);
+      if (isMounted.current) setNeedsManualRetry(false);
 
       // Merge English with localized by id
       const localizedById = new Map(localized.items.map((it) => [it.id, it] as const));
@@ -231,10 +240,15 @@ export function useItemsData(isPVE: boolean) {
     ),
     suspense: false, // Disable suspense to prevent flashing
     errorRetryCount: 3,
+    errorRetryInterval: 5000,
     shouldRetryOnError: true,
     onErrorRetry: (error: Error & { status?: number }, key, config, revalidate, { retryCount }) => {
       // Don't retry on 404s
       if (error?.status === 404) return;
+      // Don't retry on our intentional empty-data sentinel
+      if (typeof error.message === 'string' && error.message.includes('Empty data received')) return;
+      // Back off if rate limited
+      if (typeof error.message === 'string' && error.message.startsWith('RATE_LIMIT:')) return;
 
       // Only retry up to 3 times
       if (retryCount >= 3) return;
