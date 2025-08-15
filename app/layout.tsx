@@ -7,6 +7,7 @@ import { CookieConsentProvider } from "@/context/cookie-consent-context";
 import Script from "next/script";
 import { LanguageProvider } from "@/contexts/language-context";
 import { PostHogProvider } from "@/components/PostHogProvider";
+import { ChatbotWidget } from "@/components/ai-chatbot/chatbot-widget";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -116,20 +117,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           data-x_margin="50"
           data-y_margin="50"
         />
-
         <PostHogProvider>
-          <CookieConsentProvider>
+            <CookieConsentProvider>
             <LanguageProvider>
-              <main className="relative min-h-screen">
-                <div className="fixed inset-0 -z-10 bg-[#101720]" />
-                <div className="relative z-10">{children}</div>
-                <div className="relative z-50">
-                  <CookieConsent />
-                  <SonnerToaster />
-                </div>
-              </main>
+                <main className="relative min-h-screen">
+                  {/* Background color */}
+              <div className="fixed inset-0 -z-10 bg-[#101720]" />
+    
+              {/* Content */}
+              <div className="relative z-10">{children}</div>
+    
+              {/* Cookie consent and notifications */}
+              <div className="relative z-50">
+                    <ChatbotWidget />
+                <CookieConsent />
+                    <SonnerToaster />
+                  </div>
+                </main>
             </LanguageProvider>
-          </CookieConsentProvider>
+            </CookieConsentProvider>
         </PostHogProvider>
       </body>
     </html>
