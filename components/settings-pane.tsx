@@ -384,17 +384,28 @@ export default function SettingsPane({
                       Excluded Categories
                     </span>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
-                    onClick={() =>
-                      onCategoryChange([...DEFAULT_EXCLUDED_CATEGORY_IDS])
-                    }
-                  >
-                    <RotateCcw className="h-4 w-4 mr-1" />
-                    Reset
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
+                      onClick={() =>
+                        onCategoryChange([...DEFAULT_EXCLUDED_CATEGORY_IDS])
+                      }
+                    >
+                      <RotateCcw className="h-4 w-4 mr-1" />
+                      Reset
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
+                      onClick={() => onCategoryChange([])}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Clear
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2 mb-4">
                   <Search className="h-4 w-4 text-gray-400" />

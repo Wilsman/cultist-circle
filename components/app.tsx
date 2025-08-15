@@ -491,15 +491,20 @@ function AppContent() {
       return !ids.some((id) => excludedCategories.has(id));
     });
 
-    // Then filter out individually excluded items (case-insensitive)
+    // Then filter out individually excluded items (case-insensitive, language-agnostic)
     const excludedItemNames = new Set(
       Array.from(excludedItems, (name) => name.toLowerCase())
     );
     const excludedFiltered = excludeIncompatible
-      ? categoryFiltered.filter(
-          (item: SimplifiedItem) =>
-            !excludedItemNames.has(item.name.toLowerCase())
-        )
+      ? categoryFiltered.filter((item: SimplifiedItem) => {
+          const candidates = [
+            item.name,
+            item.shortName,
+            item.englishName,
+            item.englishShortName,
+          ].filter(Boolean) as string[];
+          return !candidates.some((n) => excludedItemNames.has(n.toLowerCase()));
+        })
       : categoryFiltered;
 
     // Sorting logic...

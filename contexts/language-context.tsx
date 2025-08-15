@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
 
 export interface LanguageContextValue {
@@ -31,15 +31,14 @@ const SUPPORTED_LANGUAGES: { code: string; label: string }[] = [
 ];
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<string>("en");
-
-  useEffect(() => {
-    if (!ENABLE_LANGUAGE_FEATURE) return;
+  const [language, setLanguageState] = useState<string>(() => {
+    if (!ENABLE_LANGUAGE_FEATURE) return "en";
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("language");
-      if (saved) setLanguageState(saved);
+      return saved || "en";
     }
-  }, []);
+    return "en";
+  });
 
   const setLanguage = (lang: string) => {
     if (!ENABLE_LANGUAGE_FEATURE) {

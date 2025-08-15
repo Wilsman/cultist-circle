@@ -185,7 +185,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         .map((result) => result.item)
         .filter((item) => item.basePrice > 0);
     }
-    return results.filter((item) => !excludedItems.has(item.name));
+    return results.filter((item) => {
+      const candidates = [
+        item.name,
+        item.shortName,
+        item.englishName,
+        item.englishShortName,
+      ].filter(Boolean) as string[];
+      const lowered = new Set(Array.from(excludedItems, (n) => n.toLowerCase()));
+      return !candidates.some((n) => lowered.has(n.toLowerCase()));
+    });
   }, [debouncedSearchTerm, fuse, isFocused, items, excludedItems]);
 
   // Handle selection
@@ -311,7 +320,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           : effectiveInfo.price ?? null;
       const isOverridden = itemOverriddenPrice !== undefined;
 
-      const isItemExcluded = excludedItems.has(item.name);
+      const isItemExcluded = (() => {
+        const candidates = [
+          item.name,
+          item.shortName,
+          item.englishName,
+          item.englishShortName,
+        ].filter(Boolean) as string[];
+        const lowered = new Set(Array.from(excludedItems, (n) => n.toLowerCase()));
+        return candidates.some((n) => lowered.has(n.toLowerCase()));
+      })();
       const itemIcon = item.iconLink;
 
       return (
