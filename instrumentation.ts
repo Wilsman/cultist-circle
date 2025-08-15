@@ -8,7 +8,7 @@ export const onRequestError = async (err: unknown, request: Request) => {
   try {
     // Lazy import to avoid bundling in edge
     const { getPostHogServer } = await import("./lib/posthog-server");
-    const posthog = getPostHogServer();
+    const posthog = await getPostHogServer();
     type PostHogLike = {
       captureException?: (error: unknown, distinctId?: string) => Promise<void> | void;
       capture?: (payload: {
