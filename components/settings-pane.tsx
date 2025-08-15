@@ -203,6 +203,7 @@ export default function SettingsPane({
                 <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg font-semibold">Language</span>
+                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">WIP</span>
                   </div>
                   <div className="w-56">
                     <Select value={language} onValueChange={setLanguage}>
@@ -222,6 +223,9 @@ export default function SettingsPane({
                       </SelectContent>
                     </Select>
                   </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                  ⚠️ Known issue: the &quot;Excluded Items&quot; list in Settings is still shown in English, but items are still excluded in the app. This setting is work-in-progress.
+                  </p>
                 </div>
               )}
               {/* Sort Options Section (General Tab) */}

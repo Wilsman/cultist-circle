@@ -32,6 +32,18 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
+                  <span className="font-medium">New:</span> Language support for item name localization (16 languages)
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
+                  <span className="font-medium">New:</span> Simple AI chatbot for quick Q&As (bottom-right)
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
                   <span className="font-medium">New:</span> item name now links to Tarkov.dev item page
                 </span>
               </li>

@@ -57,7 +57,7 @@ import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast as sonnerToast } from "sonner";
 
-export const CURRENT_VERSION = "2.0.1"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "2.1.0"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
@@ -865,10 +865,21 @@ function AppContent() {
       );
 
       if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
-        sonnerToast.warning("Auto Select", {
-          description:
-            "No combination of items meets the remaining threshold. Try Trader Prices in Settings and check your Excluded Categories.",
-        });
+        if (!isPVE && priceMode === "flea") {
+          sonnerToast.error("Auto Select", {
+            description:
+              "No valid combo using Flea prices in PvP. Switch to Trader prices?",
+            action: {
+              label: "Use Traders",
+              onClick: () => setPriceMode("trader"),
+            },
+          });
+        } else {
+          sonnerToast.error("Auto Select", {
+            description:
+              "Failed to find a valid combo. Try checking Trader prices or adjust Excluded Categories in Settings.",
+          });
+        }
         return;
       }
 
@@ -910,6 +921,9 @@ function AppContent() {
     overriddenPrices,
     findBestCombination,
     getEffectivePrice,
+    isPVE,
+    priceMode,
+    setPriceMode,
   ]);
 
   // Handle mode toggle with simplified caching approach
