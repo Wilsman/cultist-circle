@@ -1,16 +1,25 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
+import posthog from "posthog-js";
 import NextError from "next/error";
 import { useEffect } from "react";
 
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    // Capture error event in PostHog
+    const props = {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack,
+      digest: 'digest' in error ? error.digest : undefined,
+    };
+    try {
+      posthog.capture("app_error", props);
+    } catch {}
   }, [error]);
 
   return (
-    <html>
+    <html lang="en">
       <body>
         {/* `NextError` is the default Next.js error page component. Its type
         definition requires a `statusCode` prop. However, since the App Router
