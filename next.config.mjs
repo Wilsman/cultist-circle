@@ -40,6 +40,14 @@ const nextConfig = {
   },
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Prevent bundling posthog-node; require it at runtime in Node.js
+      config.externals = config.externals || [];
+      config.externals.push('posthog-node');
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

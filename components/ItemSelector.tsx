@@ -123,11 +123,14 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
   useEffect(() => {
     if (selectedItem && overriddenPrice !== undefined) {
-      setPriceOverride(overriddenPrice.toString());
-      setIsPriceOverrideActive(true);
+      const next = overriddenPrice.toString();
+      // Only update when values actually change to avoid render loops
+      setIsPriceOverrideActive((prev) => (prev ? prev : true));
+      setPriceOverride((prev) => (prev !== next ? next : prev));
     } else {
-      setPriceOverride("");
-      setIsPriceOverrideActive(false);
+      // Only reset if there is something to reset
+      setIsPriceOverrideActive((prev) => (prev ? false : prev));
+      setPriceOverride((prev) => (prev !== "" ? "" : prev));
     }
   }, [selectedItem, overriddenPrice]);
 
@@ -182,7 +185,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         .map((result) => result.item)
         .filter((item) => item.basePrice > 0);
     }
-    return results.filter((item) => !excludedItems.has(item.name));
+    return results.filter((item) => {
+      const candidates = [
+        item.name,
+        item.shortName,
+        item.englishName,
+        item.englishShortName,
+      ].filter(Boolean) as string[];
+      const lowered = new Set(Array.from(excludedItems, (n) => n.toLowerCase()));
+      return !candidates.some((n) => lowered.has(n.toLowerCase()));
+    });
   }, [debouncedSearchTerm, fuse, isFocused, items, excludedItems]);
 
   // Handle selection
@@ -248,19 +260,22 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     if (priceOverride === debouncedPriceValue) return;
     const handler = setTimeout(() => {
       setDebouncedPriceValue(priceOverride);
-      if (selectedItem && priceOverride && isPriceOverrideActive) {
-        onSelect(selectedItem, Number(priceOverride) || 0);
-      }
+      if (!selectedItem || !isPriceOverrideActive || !priceOverride) return;
+      const nextValue = Number(priceOverride) || 0;
+      // Skip if parent already has this exact override to prevent update loops
+      if (overriddenPrice !== undefined && overriddenPrice === nextValue) return;
+      onSelect(selectedItem, nextValue);
     }, 300);
     return () => {
       clearTimeout(handler);
     };
   }, [
     priceOverride,
+    debouncedPriceValue,
     selectedItem,
     isPriceOverrideActive,
+    overriddenPrice,
     onSelect,
-    debouncedPriceValue,
   ]);
 
   // Handle changes in the override input
@@ -305,7 +320,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           : effectiveInfo.price ?? null;
       const isOverridden = itemOverriddenPrice !== undefined;
 
-      const isItemExcluded = excludedItems.has(item.name);
+      const isItemExcluded = (() => {
+        const candidates = [
+          item.name,
+          item.shortName,
+          item.englishName,
+          item.englishShortName,
+        ].filter(Boolean) as string[];
+        const lowered = new Set(Array.from(excludedItems, (n) => n.toLowerCase()));
+        return candidates.some((n) => lowered.has(n.toLowerCase()));
+      })();
       const itemIcon = item.iconLink;
 
       return (

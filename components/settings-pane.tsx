@@ -35,8 +35,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  DEFAULT_EXCLUDED_CATEGORIES,
+  DEFAULT_EXCLUDED_CATEGORY_IDS,
   getCategoryDisplayName,
+  type ItemCategory,
 } from "@/config/item-categories";
 import { Alert } from "./ui/alert";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
@@ -44,6 +45,8 @@ import {
   TraderLevelSelector,
   TraderLevels,
 } from "@/components/ui/trader-level-selector";
+import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
+import { useLanguage } from "@/contexts/language-context";
 
 interface SettingsPaneProps {
   isOpen: boolean;
@@ -59,9 +62,9 @@ interface SettingsPaneProps {
   onPriceModeChange: (mode: "flea" | "trader") => void;
   traderLevels: TraderLevels;
   onTraderLevelsChange: (levels: TraderLevels) => void;
-  excludedCategories: string[];
-  onCategoryChange: (categories: string[]) => void;
-  allCategories: string[];
+  excludedCategories: string[]; // category IDs
+  onCategoryChange: (categories: string[]) => void; // array of category IDs
+  allCategories: ItemCategory[]; // list of categories with id+name
   excludeIncompatible: boolean;
   onExcludeIncompatibleChange: (exclude: boolean) => void;
   excludedItems: Set<string>;
@@ -103,6 +106,7 @@ export default function SettingsPane({
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
+  const { language, setLanguage, supported } = useLanguage();
 
   // Update parent component when sortOption changes
   useEffect(() => {
@@ -138,10 +142,10 @@ export default function SettingsPane({
   }, [currentUseLastOfferCountFilter, onUseLastOfferCountFilterChange]);
 
   // Handle category selection
-  const handleCategoryChange = (category: string) => {
-    const updatedCategories = excludedCategories.includes(category)
-      ? excludedCategories.filter((cat) => cat !== category)
-      : [...excludedCategories, category];
+  const handleCategoryChange = (categoryId: string) => {
+    const updatedCategories = excludedCategories.includes(categoryId)
+      ? excludedCategories.filter((id) => id !== categoryId)
+      : [...excludedCategories, categoryId];
 
     onCategoryChange(updatedCategories);
   };
@@ -186,7 +190,7 @@ export default function SettingsPane({
           className="w-full flex-1 flex flex-col overflow-hidden"
         >
           <TabsList className="sticky top-0 z-10 flex-shrink-0 overflow-x-auto">
-            <TabsTrigger value="general">Sorting</TabsTrigger>
+            <TabsTrigger value="general">General/Sorting</TabsTrigger>
             <TabsTrigger value="categories">Excluded Categories</TabsTrigger>
             <TabsTrigger value="items">Excluded Items</TabsTrigger>
             <TabsTrigger value="data">Data/Reset</TabsTrigger>
@@ -194,6 +198,32 @@ export default function SettingsPane({
 
           <ScrollArea className="flex-1 h-[calc(100%-48px)]" type="always">
             <TabsContent value="general" className="h-full p-1">
+              {/* Language Section (General Tab) */}
+              {ENABLE_LANGUAGE_FEATURE && (
+                <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg font-semibold">Language</span>
+                  </div>
+                  <div className="w-56">
+                    <Select value={language} onValueChange={setLanguage}>
+                      <SelectTrigger className="w-full bg-[#232b32] border border-[#e4c15a]/30 text-gray-100 focus:ring-yellow-300 focus:border-yellow-300">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#232b32] border border-[#e4c15a]/30 text-gray-100">
+                        {supported.map((l) => (
+                          <SelectItem
+                            key={l.code}
+                            value={l.code}
+                            className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
+                          >
+                            {l.label} ({l.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
               {/* Sort Options Section (General Tab) */}
               <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -354,17 +384,28 @@ export default function SettingsPane({
                       Excluded Categories
                     </span>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
-                    onClick={() =>
-                      onCategoryChange([...DEFAULT_EXCLUDED_CATEGORIES])
-                    }
-                  >
-                    <RotateCcw className="h-4 w-4 mr-1" />
-                    Reset
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
+                      onClick={() =>
+                        onCategoryChange([...DEFAULT_EXCLUDED_CATEGORY_IDS])
+                      }
+                    >
+                      <RotateCcw className="h-4 w-4 mr-1" />
+                      Reset
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
+                      onClick={() => onCategoryChange([])}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Clear
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2 mb-4">
                   <Search className="h-4 w-4 text-gray-400" />
@@ -379,26 +420,26 @@ export default function SettingsPane({
                 <ScrollArea className="h-[40vh] max-h-[300px] pr-4">
                   <div className="">
                     {allCategories
-                      .filter((category) =>
-                        category
+                      .filter((c) =>
+                        c.name
                           .toLowerCase()
                           .includes(searchTerm.toLowerCase())
                       )
-                      .sort()
-                      .map((category) => (
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((c) => (
                         <div
-                          key={category}
+                          key={c.id}
                           className="flex items-center space-x-2 py-1"
                         >
                           <Checkbox
-                            checked={excludedCategories.includes(category)}
+                            checked={excludedCategories.includes(c.id)}
                             onCheckedChange={() =>
-                              handleCategoryChange(category)
+                              handleCategoryChange(c.id)
                             }
                             className="border-gray-500"
                           />
                           <Label className="text-sm">
-                            {getCategoryDisplayName(category)}
+                            {getCategoryDisplayName(c.name)}
                           </Label>
                         </div>
                       ))}

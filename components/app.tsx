@@ -25,12 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
 import SettingsPane from "@/components/settings-pane";
 import { InstructionsDialog } from "@/components/InstructionsDialog";
 import { ModeThreshold } from "@/components/mode-threshold";
@@ -39,7 +33,10 @@ import { VersionInfo } from "@/components/version-info";
 import { ShareCodeDialog } from "@/components/share-code-component";
 import {
   ALL_ITEM_CATEGORIES,
-  DEFAULT_EXCLUDED_CATEGORIES,
+  DEFAULT_EXCLUDED_CATEGORY_IDS,
+  CATEGORY_BY_ID,
+  CATEGORY_ID_BY_NAME,
+  type ItemCategory,
 } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
@@ -191,6 +188,25 @@ function AppContent() {
     resetRetryCount
   } = useItemsData(isPVE);
 
+  // Build localized category list (ID -> localized name) from current items
+  const allCategoriesLocalized: ItemCategory[] = useMemo(() => {
+    if (!rawItemsData || rawItemsData.length === 0) return ALL_ITEM_CATEGORIES;
+    const byId = new Map<string, string>();
+    for (const item of rawItemsData) {
+      const cats = item.categories_display ?? [];
+      for (const c of cats) {
+        const id = c.id ?? (c.name ? CATEGORY_ID_BY_NAME.get(c.name) ?? undefined : undefined);
+        if (!id) continue;
+        // Prefer first-seen localized name for this language
+        if (!byId.has(id)) byId.set(id, c.name);
+      }
+    }
+    if (byId.size === 0) return ALL_ITEM_CATEGORIES;
+    return Array.from(byId.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [rawItemsData]);
+
   // Save isPVE state to localStorage when it changes
   useEffect(() => {
     localStorage.setItem("isPVE", isPVE.toString());
@@ -259,27 +275,35 @@ function AppContent() {
 
     // Load flea price type (already handled by useState initializer)
 
-    // Load excluded categories
+    // Load excluded categories (IDs)
     try {
       const saved = localStorage.getItem("excludedCategories");
       if (saved) {
-        const parsedCategories = JSON.parse(saved);
+        const parsedCategories = JSON.parse(saved) as unknown;
         if (Array.isArray(parsedCategories)) {
-          setExcludedCategories(new Set(parsedCategories));
+          // Back-compat: convert any legacy names to IDs
+          const ids = (parsedCategories as string[])
+            .map((val) => {
+              if (CATEGORY_BY_ID.has(val)) return val; // already an ID
+              const id = CATEGORY_ID_BY_NAME.get(val);
+              return id ?? null;
+            })
+            .filter((x): x is string => Boolean(x));
+          setExcludedCategories(new Set(ids));
         } else {
           console.error(
             "Saved excludedCategories is not an array:",
             parsedCategories
           );
-          setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+          setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
         }
       } else {
         console.log("No saved categories found, using defaults");
-        setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+        setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
       }
     } catch (e) {
       console.error("Error parsing excludedCategories from localStorage", e);
-      setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+      setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
     }
 
     // Load threshold
@@ -424,7 +448,7 @@ function AppContent() {
         await mutate();
         return;
       },
-      DEFAULT_EXCLUDED_CATEGORIES
+      DEFAULT_EXCLUDED_CATEGORY_IDS
     );
   }, [
     setSelectedItems,
@@ -456,24 +480,31 @@ function AppContent() {
       return [];
     }
 
-    // First filter by excluded categories
-    const categoryFiltered = rawItemsData.filter(
-      (item: SimplifiedItem) =>
-        item.name.toLowerCase() === "pestily plague mask" || // ! TEMPORARY FIX FOR PESTILY PLAGUE MASK
-        !item.categories_display?.some((category) =>
-          excludedCategories.has(category.name)
-        )
-    );
+    // First filter by excluded categories (by category ID)
+    const categoryFiltered = rawItemsData.filter((item: SimplifiedItem) => {
+      if (item.name.toLowerCase() === "pestily plague mask") return true; // TEMP FIX
+      const ids = (item.categories && item.categories.length > 0)
+        ? item.categories
+        : (item.categories_display_en ?? [])
+            .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
+            .filter((x): x is string => Boolean(x));
+      return !ids.some((id) => excludedCategories.has(id));
+    });
 
-    // Then filter out individually excluded items (case-insensitive)
+    // Then filter out individually excluded items (case-insensitive, language-agnostic)
     const excludedItemNames = new Set(
       Array.from(excludedItems, (name) => name.toLowerCase())
     );
     const excludedFiltered = excludeIncompatible
-      ? categoryFiltered.filter(
-          (item: SimplifiedItem) =>
-            !excludedItemNames.has(item.name.toLowerCase())
-        )
+      ? categoryFiltered.filter((item: SimplifiedItem) => {
+          const candidates = [
+            item.name,
+            item.shortName,
+            item.englishName,
+            item.englishShortName,
+          ].filter(Boolean) as string[];
+          return !candidates.some((n) => excludedItemNames.has(n.toLowerCase()));
+        })
       : categoryFiltered;
 
     // Sorting logic...
@@ -971,7 +1002,7 @@ function AppContent() {
 
       // Reset all state to defaults to prevent immediate re-saving to localStorage
       setSortOption("az");
-      setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+      setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
       setExcludeIncompatible(true);
       setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
       setOverriddenPrices({});
@@ -1352,71 +1383,64 @@ function AppContent() {
                   )}
                 </div>
               </div>
-              {/* Preview Button */}
-              <TooltipProvider>
-                <div className="flex space-x-2 mt-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+              {/* Preview / Clear / Reset Buttons */}
+              <div className="flex space-x-2 mt-2">
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setPreviewModalOpen(true)}
+                      className="inline-flex w-1/4"
+                    >
                       <Button
                         variant="secondary"
-                        className="rounded bg-green-700 hover:bg-green-600 text-white w-1/4"
-                        onClick={() => setPreviewModalOpen(true)}
+                        className="rounded bg-green-700 hover:bg-green-600 text-white w-full"
                       >
                         Preview
                       </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Show visual grid preview</TooltipContent>
-                  </Tooltip>
-                  {/* Clear Selected Items Button */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+                    </span>
+                {/* Clear Selected Items Button */}
+                    <span
+                      role="button"
+                      tabIndex={isClearButtonDisabled ? -1 : 0}
+                      aria-disabled={isClearButtonDisabled}
+                      onClick={() => {
+                        if (!isClearButtonDisabled) clearItemFields()
+                      }}
+                      className={`inline-flex w-2/4 ${
+                        isClearButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
                       <Button
                         id="clear-item-fields"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-2/4 rounded
-                          transition-all duration-300 active:scale-95
-                          ${
-                            isClearButtonDisabled
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
-                        onClick={clearItemFields}
+                        className={`bg-red-500 hover:bg-red-600 text-white w-full rounded transition-all duration-300 active:scale-95`}
                         disabled={isClearButtonDisabled}
                       >
-                        <span className="hidden sm:inline">
-                          Clear Selected Items
-                        </span>
+                        <span className="hidden sm:inline">Clear Selected Items</span>
                         <span className="sm:hidden">Clear Selected</span>
                       </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Clears ALL item fields</TooltipContent>
-                  </Tooltip>
-                  {/* Reset Overrides Button */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+                    </span>
+                {/* Reset Overrides Button */}
+                    <span
+                      role="button"
+                      tabIndex={isResetOverridesButtonDisabled ? -1 : 0}
+                      aria-disabled={isResetOverridesButtonDisabled}
+                      onClick={() => {
+                        if (!isResetOverridesButtonDisabled) resetOverridesAndExclusions()
+                      }}
+                      className={`inline-flex w-1/4 ${
+                        isResetOverridesButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
                       <Button
                         id="reset-overrides"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-1/4 rounded
-                          transition-all duration-300 active:scale-95
-                          ${
-                            isResetOverridesButtonDisabled
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
-                        onClick={resetOverridesAndExclusions}
+                        className={`bg-red-500 hover:bg-red-600 text-white w-full rounded transition-all duration-300 active:scale-95`}
                         disabled={isResetOverridesButtonDisabled}
                       >
-                        <span className="hidden sm:inline">
-                          Reset Overrides
-                        </span>
+                        <span className="hidden sm:inline">Reset Overrides</span>
                         <span className="sm:hidden">Reset</span>
                       </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Reset overrides and exclusions
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </TooltipProvider>
+                    </span>
+              </div>
 
               {/* Status text with improved styling */}
               <div className="text-center text-sm text-gray-400 mt-4 p-2 rounded-md bg-gray-700/30">
@@ -1545,7 +1569,7 @@ function AppContent() {
               // Reset all state to defaults
               setSelectedItems(Array(5).fill(null));
               setPinnedItems(Array(5).fill(false));
-              setExcludedCategories(DEFAULT_EXCLUDED_CATEGORIES);
+              setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
               setSortOption("az");
               setThreshold(400000);
               setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
@@ -1614,7 +1638,7 @@ function AppContent() {
             onTraderLevelsChange={handleTraderLevelsChange}
             excludedCategories={Array.from(excludedCategories)}
             onCategoryChange={handleCategoryChange}
-            allCategories={ALL_ITEM_CATEGORIES}
+            allCategories={allCategoriesLocalized}
             excludeIncompatible={excludeIncompatible}
             onExcludeIncompatibleChange={setExcludeIncompatible}
             excludedItems={excludedItems}

@@ -15,6 +15,9 @@ export interface SimplifiedItem {
   id: string;
   name: string;
   shortName: string;
+  // Language-agnostic fields for filtering
+  englishName?: string;
+  englishShortName?: string;
   basePrice: number;
   lastLowPrice?: number;
   updated?: string;  // Changed from number to string to match Supabase timestamptz
@@ -31,5 +34,7 @@ export interface SimplifiedItem {
   // UI-specific fields
   tags?: string[];
   isExcluded?: boolean;
-  categories_display?: Array<{ name: string }>;  // For UI display of categories
+  categories_display?: Array<{ id?: string; name: string }>;  // For UI display of categories (id optional)
+  // English categories for stable filtering across languages
+  categories_display_en?: Array<{ id?: string; name: string }>;  
 }
