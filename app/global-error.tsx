@@ -6,15 +6,8 @@ import { useEffect } from "react";
 
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   useEffect(() => {
-    // Capture error event in PostHog
-    const props = {
-      message: error?.message,
-      name: error?.name,
-      stack: error?.stack,
-      digest: 'digest' in error ? error.digest : undefined,
-    };
     try {
-      posthog.capture("app_error", props);
+      posthog.captureException(error);
     } catch {}
   }, [error]);
 

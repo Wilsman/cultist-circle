@@ -13,12 +13,7 @@ export default function Error({ error, reset }: ErrorProps) {
     // eslint-disable-next-line no-console
     console.error("App Router error boundary:", error);
     try {
-      posthog.capture("segment_error", {
-        message: error?.message,
-        name: error?.name,
-        stack: error?.stack,
-        digest: error?.digest,
-      });
+      posthog.captureException(error);
     } catch {}
   }, [error]);
 
