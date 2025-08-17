@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -31,13 +31,18 @@ export default function ThresholdSelector({
     }
   }, [value]);
 
+  // Initialize from localStorage only once to avoid re-triggering on changing onChange identity
+  const didInitRef = useRef(false);
   useEffect(() => {
+    if (didInitRef.current) return;
     const savedThreshold = localStorage.getItem("userThreshold");
     const parsed = Number(savedThreshold);
-    if (savedThreshold && Number.isFinite(parsed)) {
+    if (savedThreshold && Number.isFinite(parsed) && parsed !== value) {
       onChange(parsed);
     }
-  }, [onChange]);
+    didInitRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   const formatValue = (val: number) => {
     return new Intl.NumberFormat("ru-RU", {

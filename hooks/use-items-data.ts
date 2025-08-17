@@ -7,7 +7,7 @@ import { toast as sonnerToast } from "sonner";
 import { useLanguage } from "@/contexts/language-context";
 
 // Single version for the combined data approach
-const CURRENT_VERSION = "2.1.0"; // New version for combined data approach
+const CURRENT_VERSION = "2.1.1"; // New version for combined data approach
 
 // Create a single persistence middleware for the combined data
 // The middleware handles localStorage quota errors and clears old cache when needed

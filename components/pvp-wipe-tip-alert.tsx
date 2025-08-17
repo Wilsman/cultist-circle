@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, BadgeCheck } from "lucide-react";
 
 export function PvpWipeTipAlert() {
   return (
@@ -101,6 +101,20 @@ export function PvpWipeTipAlert() {
                         400K+ (6h & 14h)
                       </span>
                     </div>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
+                    <Image
+                      src="https://assets.tarkov.dev/679b9d43597ba2ed120c3d44-icon.webp"
+                      alt="Labyrinth figurine"
+                      width={32}
+                      height={32}
+                      className="rounded"
+                    />
+                    <span className="font-semibold">You can get Labyrinth figurines from the 6-hour rituals</span>
+                    <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-300">
+                      <BadgeCheck className="h-3.5 w-3.5" />
+                      Confirmed
+                    </span>
                   </div>
                   <p className="text-[11px] sm:text-[12px] text-gray-500 dark:text-gray-400/90">
                     Investigating why some weapons are returning higher base

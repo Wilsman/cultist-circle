@@ -47,8 +47,7 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
-import { PvpWipeTipAlert } from "./pvp-wipe-tip-alert";
-import { PvpFleaExpiredAlert } from "./pvp-flea-expired-alert";
+import TopAlerts from "./top-alerts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
@@ -57,7 +56,7 @@ import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast as sonnerToast } from "sonner";
 
-export const CURRENT_VERSION = "2.1.0"; //* Increment this when you want to trigger a cache clear
+export const CURRENT_VERSION = "2.1.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
@@ -177,6 +176,8 @@ function AppContent() {
 
   // Toast state
   const toastShownRef = useRef<boolean>(false);
+  // One-time init guard for localStorage/state hydration
+  const didInitStateRef = useRef<boolean>(false);
 
   // Use the items data hook
   const {
@@ -261,8 +262,9 @@ function AppContent() {
     }
   }, [hasError]);
 
-  // Initialize client-side state
+  // Initialize client-side state (run once after data is available)
   useEffect(() => {
+    if (didInitStateRef.current) return;
     // Only initialize if we have data
     if (!rawItemsData || rawItemsData.length === 0) return;
 
@@ -272,8 +274,6 @@ function AppContent() {
     // Load sort option
     const savedSort = localStorage.getItem("sortOption");
     if (savedSort) setSortOption(savedSort);
-
-    // Load flea price type (already handled by useState initializer)
 
     // Load excluded categories (IDs)
     try {
@@ -352,6 +352,10 @@ function AppContent() {
     } catch (e) {
       console.error("Error loading overriddenPrices from localStorage", e);
     }
+
+    // Mark initialization complete
+    didInitStateRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawItemsData]);
 
   // Save sort option to localStorage
@@ -1226,9 +1230,8 @@ function AppContent() {
               <VersionInfo version={CURRENT_VERSION} />
             </div>
 
-            {/* MP5 Pro Tip Alert — Ultra Sleek */}
-            {!isPVE && <PvpFleaExpiredAlert />}
-            <PvpWipeTipAlert />
+            {/* Combined compact alerts */}
+            <TopAlerts isPVE={isPVE} />
 
             <CardContent className="p-2">
               {/* Unified controls */}
