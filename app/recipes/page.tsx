@@ -2,20 +2,29 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
   CardFooter,
 } from "@/components/ui/card";
+
 import { Input } from "@/components/ui/input";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Package, CheckCircle2, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+// Types
+interface Recipe {
+  requiredItems: string[];
+  craftingTime: string;
+  producedItems: string[];
+  isNew?: boolean;
+}
 
 // Escape from Tarkov crafting recipes
-const tarkovRecipes = [
+const tarkovRecipes: Recipe[] = [
   {
     requiredItems: ["1x WD-40 (400ml)"],
     craftingTime: "66 mins",
@@ -158,6 +167,7 @@ const tarkovRecipes = [
 
 export default function Page() {
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const searchRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
 
   function handleBack() {
@@ -182,110 +192,168 @@ export default function Page() {
     );
   });
 
+  // Keyboard shortcut to focus search with "/"
+  useEffect(function registerSlashToFocus() {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const composing = (e as KeyboardEvent & { isComposing?: boolean }).isComposing === true;
+      const isTyping = tag === "input" || tag === "textarea" || tag === "select" || composing;
+      if (isTyping) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // NewBadge component
   function NewBadge() {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500 text-white absolute -top-1 -right-1 shadow-lg animate-pulse">
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500 text-white absolute -top-1 -left-1 shadow-lg animate-pulse">
         NEW
       </span>
     );
   }
 
+  // RecipeCard subcomponent
+  function RecipeCard({ recipe }: { recipe: Recipe }) {
+    return (
+      <div className="relative rounded-2xl border border-gray-700/70 bg-gray-700/50 p-4 backdrop-blur transition-colors hover:bg-gray-700/70">
+        {recipe.isNew && <NewBadge />}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          {/* Inputs */}
+          <div className="flex-1 min-w-0">
+            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-orange-300">
+              <Package className="h-3.5 w-3.5 opacity-90" aria-hidden />
+              <span>Input</span>
+              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">{recipe.requiredItems.length}</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {recipe.requiredItems.map((ing, idx) => (
+                <Badge key={idx} variant="secondary" title={ing} className="inline-flex w-full max-w-full truncate rounded-full bg-gray-800/70 text-gray-100 border border-gray-600">
+                  <span className="truncate">{ ing }</span>
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Time */}
+          <div className="grid place-items-center self-stretch px-2" aria-label={`Crafting time ${recipe.craftingTime}`}>
+            <div className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-900/60 px-3 py-1 text-[11px] font-medium text-gray-100 tracking-wide">
+              <Clock className="h-3.5 w-3.5" aria-hidden />
+              <span className="font-mono">{recipe.craftingTime}</span>
+            </div>
+          </div>
+
+          {/* Outputs */}
+          <div className="flex-1 min-w-0">
+            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-orange-300">
+              <CheckCircle2 className="h-3.5 w-3.5 opacity-90" aria-hidden />
+              <span>Output</span>
+              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">{recipe.producedItems.length}</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {recipe.producedItems.map((out, idx) => (
+                <Badge key={idx} title={out} className="inline-flex w-full max-w-full truncate rounded-full bg-green-900/40 text-green-300 border border-green-800/60">
+                  <span className="truncate">{ out }</span>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4">
-      <Card className="bg-gray-800 border-gray-700 text-secondary shadow-lg h-[90vh] w-full max-w-2xl mx-auto bg-opacity-50 flex flex-col">
-        <div className="sticky top-0 z-10 bg-gray-800/95 border-b border-gray-700 py-8 px-6 rounded-t-lg">
-          <CardHeader className="relative p-0 mb-6">
-            <button
-              className="absolute top-0 left-0 p-2 text-white"
-              onClick={handleBack}
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </button>
-            <CardTitle className="text-3xl sm:text-4xl lg:text-5xl text-center text-red-500">
-              👩‍🍳 Recipes 👨‍🍳
-            </CardTitle>
+      <Card className="bg-gray-800/80 border-gray-700 text-secondary shadow-lg h-[90vh] w-full max-w-3xl mx-auto flex flex-col">
+        <div className="sticky top-0 z-10 bg-gray-800/95 border-b border-gray-700 px-6 pt-6 pb-4 rounded-t-lg backdrop-blur">
+          <CardHeader className="p-0 mb-4">
+            <div className="flex items-center justify-between">
+              <button
+                aria-label="Go back"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-700 bg-gray-800/60 text-gray-200 shadow-sm backdrop-blur transition-colors hover:border-gray-600 hover:bg-gray-700/70"
+                onClick={handleBack}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <h1 className="select-none text-center text-2xl sm:text-3xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-orange-300 to-yellow-300 drop-shadow">
+                Recipes
+              </h1>
+              <span className="w-9" aria-hidden />
+            </div>
           </CardHeader>
-          <div className="bg-yellow-200 text-black p-4 rounded-md mb-6">
-            ⚠️ Note: Some recipes may only work on the first attempt.
-          </div>
           <div className="relative">
             <Input
               type="text"
               placeholder="Search recipes by input or output..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-700 text-white border-gray-600 focus:border-gray-500 placeholder-gray-400"
+              ref={searchRef}
+              className="w-full rounded-full bg-gray-700 text-white border-gray-600 focus:border-gray-500 placeholder-gray-400"
             />
-          </div>
-        </div>
-        <CardContent className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="grid gap-2">
-            {filteredItems.map((item, index) => (
-              <div
-                key={index}
-                className="relative bg-gray-700/60 rounded-lg p-4 hover:bg-gray-700/80 transition-colors"
+            {searchQuery && (
+              <button
+                aria-label="Clear search"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-gray-600 bg-gray-800/70 px-2 py-0.5 text-xs text-gray-200 hover:bg-gray-700"
               >
-                {item.isNew && <NewBadge />}
-                <div className="grid grid-cols-[2fr,auto,3fr] gap-6 items-start min-h-[3rem]">
-                  {/* Input Section */}
-                  <div>
-                    <div className="text-orange-400 text-xs font-medium uppercase tracking-wider mb-1.5">
-                      Input
-                    </div>
-                    <div>
-                      {item.requiredItems.map((ingredient, idx) => (
-                        <div
-                          key={idx}
-                          className="text-gray-100 text-sm leading-relaxed"
-                        >
-                          {ingredient}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Time Section - Center */}
-                  <div className="flex flex-col items-center text-gray-500 mt-5 -mx-2">
-                    <div className="flex items-center mb-0.5 opacity-60">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span className="text-xs">{item.craftingTime}</span>
-                    </div>
-                    <div className="text-xs mt-0.5">→</div>
-                  </div>
-
-                  {/* Output Section */}
-                  <div>
-                    <div className="text-orange-400 text-xs font-medium uppercase tracking-wider mb-1.5">
-                      Output
-                    </div>
-                    <div className="space-y-1">
-                      {item.producedItems.map((product, idx) => (
-                        <div
-                          key={idx}
-                          className="text-green-400 text-sm leading-relaxed"
-                        >
-                          {product}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                Clear
+              </button>
+            )}
           </div>
+          <div className="mt-2 text-center text-xs text-gray-400">Tip: Try keywords like <span className="text-gray-300">WD-40</span> or <span className="text-gray-300">mask</span>.</div>
+          <div className="mt-1 text-center text-[11px] text-gray-500">{filteredItems.length} result{filteredItems.length === 1 ? "" : "s"}</div>
+        </div>
+        <CardContent className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Special Task</div>
+          <div className="relative mb-6 rounded-2xl border border-gray-700/70 bg-gray-700/50 p-4 backdrop-blur">
+            <NewBadge />
+            <div className="mb-2 text-xl font-semibold text-red-400">
+              🔥 Friend from Norvinsk – Part 5 🔥
+            </div>
+            <p className="mb-3 text-sm text-gray-200">
+              📜 &quot;Diary. Circle. Location: you know where. Add: flammable.&quot; — Use the
+              cultist circle for this task.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl bg-gray-800/40 p-2.5 sm:p-3 ring-1 ring-gray-700/70">
+                <div className="mb-1 text-sm font-medium text-green-400">✅ Confirmed working (66s timer)</div>
+                <ul className="list-disc pl-5 text-sm text-gray-100">
+                  <li>Expeditionary Fuel Tank</li>
+                  <li>Zibbo</li>
+                  <li>(Task) Diary</li>
+                </ul>
+              </div>
+              <div className="rounded-xl bg-gray-800/40 p-2.5 sm:p-3 ring-1 ring-gray-700/70">
+                <div className="mb-1 text-sm font-medium text-red-400">❌ Tested but did NOT work (8h timer)</div>
+                <ul className="list-disc pl-5 text-sm text-gray-100">
+                  <li>(Task) Diary</li>
+                  <li>Dry Fuel</li>
+                  <li>Fuel Conditioner</li>
+                  <li>Classic Matches</li>
+                </ul>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-yellow-200/90">
+              💡 There may be other valid combinations. Share your findings!
+            </p>
+          </div>
+          <div className="mb-6 h-px w-full bg-gray-700/60" />
+          {filteredItems.length === 0 ? (
+            <div className="mt-8 rounded-2xl border border-gray-700/70 bg-gray-800/40 p-6 text-center text-sm text-gray-300">
+              No recipes match your search. Try a different keyword.
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {filteredItems.map((item, index) => (
+                <RecipeCard key={index} recipe={item} />
+              ))}
+            </div>
+          )}
         </CardContent>
         <CardFooter className="text-center text-sm text-gray-400 mt-4 border-t border-gray-700 px-6 py-4">
           Data combined with the&nbsp;

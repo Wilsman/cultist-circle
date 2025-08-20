@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, BadgeCheck, ChevronDown } from "lucide-react";
 
@@ -32,6 +33,22 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
 
         {/* Compact header row(s) */}
         <div className="flex flex-col gap-1 px-2.5 sm:px-3.5 pt-2">
+          {/* New special task announcement (always visible, top-most) */}
+          <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/20">
+              🔥
+            </span>
+            <span className="truncate font-semibold">
+              New: Friend from Norvinsk – Part 5 recipe
+            </span>
+            <Link
+              href="/recipes"
+              className="ml-auto inline-flex items-center gap-1 rounded-full border border-slate-300/40 dark:border-slate-700/40 bg-white/50 dark:bg-slate-900/30 px-2 py-0.5 text-[10px] text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-900/50 transition-colors"
+            >
+              View
+            </Link>
+          </div>
+
           {!isPVE && (
             <div className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-1.5 text-[11px] sm:text-[12px] text-red-800 dark:text-red-200 ring-1 ring-red-500/25">
               <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-red-500/15 text-red-600 dark:text-red-300 ring-1 ring-red-500/20">
@@ -53,8 +70,12 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
               className="rounded"
             />
             <div className="min-w-0 flex flex-col">
-              <span className="truncate font-semibold">You can get Labyrinth figurines from the 6-hour rituals</span>
-              <span className="text-[10px] leading-tight text-slate-600 dark:text-slate-400">Might require having the prestige task New Beginning active</span>
+              <span className="truncate font-semibold">
+                You can get Labyrinth figurines from the 6-hour rituals
+              </span>
+              <span className="text-[10px] leading-tight text-slate-600 dark:text-slate-400">
+                Might require having the prestige task New Beginning active
+              </span>
             </div>
             <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-300">
               <BadgeCheck className="h-3.5 w-3.5" />
@@ -63,8 +84,12 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
           </div>
 
           <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-slate-500/10 text-slate-600 dark:text-slate-300 ring-1 ring-slate-500/15">💡</span>
-            <span className="truncate font-semibold">Hardcore PVP Wipe Tip</span>
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-slate-500/10 text-slate-600 dark:text-slate-300 ring-1 ring-slate-500/15">
+              💡
+            </span>
+            <span className="truncate font-semibold">
+              Hardcore PVP Wipe Tip
+            </span>
           </div>
         </div>
 
@@ -139,7 +164,31 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
                     </span>
                   </div>
 
-                  
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
+                    <Image
+                      src="https://assets.tarkov.dev/59411abb86f77478f702b5d2-icon.webp"
+                      alt="HK MP5 9x19 submachine gun (Navy 3 Round Burst) SD"
+                      width={32}
+                      height={32}
+                      className="rounded"
+                    />
+                    <span className="font-semibold">
+                      2× MP5 SD
+                    </span>
+                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
+                      <Image
+                        src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
+                        alt="Peacekeeper"
+                        width={14}
+                        height={14}
+                        className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
+                      />
+                      <span className="font-medium">LL2</span>
+                    </span>
+                    <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
+                      Cheap 14h(only)
+                    </span>
+                  </div>
                 </AlertDescription>
               </div>
             </div>
