@@ -219,6 +219,12 @@ export default function Page() {
 
   // RecipeCard subcomponent
   function RecipeCard({ recipe }: { recipe: Recipe }) {
+    // Normalize outputs: split any comma-separated strings into individual items
+    const outputs = recipe.producedItems
+      .flatMap((s) => s.split(","))
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     return (
       <div className="relative rounded-2xl border border-gray-700/70 bg-gray-700/50 p-4 backdrop-blur transition-colors hover:bg-gray-700/70">
         {recipe.isNew && <NewBadge />}
@@ -248,15 +254,15 @@ export default function Page() {
           </div>
 
           {/* Outputs */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 pr-4 sm:pr-6">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-orange-300">
               <CheckCircle2 className="h-3.5 w-3.5 opacity-90" aria-hidden />
               <span>Output</span>
-              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">{recipe.producedItems.length}</span>
+              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">{outputs.length}</span>
             </div>
-            <div className="flex flex-col gap-2">
-              {recipe.producedItems.map((out, idx) => (
-                <Badge key={idx} title={out} className="inline-flex w-full max-w-full truncate rounded-full bg-green-900/40 text-green-300 border border-green-800/60">
+            <div className="flex flex-col gap-2 pr-1">
+              {outputs.map((out, idx) => (
+                <Badge key={`${out}-${idx}`} title={out} className="inline-flex w-full max-w-full truncate rounded-full bg-green-900/40 text-green-300 border border-green-800/60">
                   <span className="truncate">{ out }</span>
                 </Badge>
               ))}
