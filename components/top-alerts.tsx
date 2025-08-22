@@ -55,7 +55,7 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
                 <AlertTriangle className="h-3 w-3" />
               </span>
               <span className="font-semibold truncate">
-                PVP Flea prices expired — switch to Trader prices in Settings
+                PVP Flea is back (35+). Prices coming soon. Trader prices still available.
               </span>
             </div>
           )}
@@ -82,13 +82,28 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
               Confirmed
             </span>
           </div>
-
+          {/* First combo preview (always visible) */}
           <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-slate-500/10 text-slate-600 dark:text-slate-300 ring-1 ring-slate-500/15">
-              💡
+            <Image
+              src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
+              alt="MP5"
+              width={32}
+              height={32}
+              className="rounded"
+            />
+            <span className="font-semibold">5× MP5</span>
+            <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
+              <Image
+                src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
+                alt="Peacekeeper"
+                width={14}
+                height={14}
+                className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
+              />
+              <span className="font-medium">LL1</span>
             </span>
-            <span className="truncate font-semibold">
-              Hardcore PVP Wipe Tip
+            <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
+              400K+ (6h & 14h)
             </span>
           </div>
         </div>
@@ -97,7 +112,7 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
           <summary className="flex items-center justify-between cursor-pointer list-none p-2 sm:p-2.5">
             <div className="flex items-center gap-2 min-w-0">
               <span className="hidden sm:inline text-[10px] font-medium text-slate-500/90 ml-1 truncate">
-                Expand for examples and more tips
+                Expand to view most popular sacrifices — found by our amazing community
               </span>
             </div>
             <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 group-open:rotate-180" />
@@ -107,30 +122,6 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
               <div className="min-w-0 w-full">
                 <AlertDescription className="mt-1 space-y-2">
                   {/* Example rows */}
-                  <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-                    <Image
-                      src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
-                      alt="MP5"
-                      width={32}
-                      height={32}
-                      className="rounded"
-                    />
-                    <span className="font-semibold">5× MP5</span>
-                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
-                      <Image
-                        src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
-                        alt="Peacekeeper"
-                        width={14}
-                        height={14}
-                        className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
-                      />
-                      <span className="font-medium">LL1</span>
-                    </span>
-                    <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
-                      400K+ (6h & 14h)
-                    </span>
-                  </div>
-
                   <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
                     <Image
                       src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
@@ -161,6 +152,49 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
                     <span className="font-semibold">1× Diary</span>
                     <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
                       400K+ (6h & 14h)
+                    </span>
+                  </div>
+
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
+                    <Image
+                      src="https://assets.tarkov.dev/60479c3f420fac5ebc199f86-icon.webp"
+                      alt="STM-9"
+                      width={32}
+                      height={32}
+                      className="rounded"
+                    />
+                    <span className="font-semibold">3× STM-9</span>
+                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
+                      <Image
+                        src="https://assets.tarkov.dev/58330581ace78e27b8b10cee.webp"
+                        alt="Skier"
+                        width={14}
+                        height={14}
+                        className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
+                      />
+                      <span className="font-medium">LL2</span>
+                    </span>
+                    <span className="opacity-60">+</span>
+                    <Image
+                      src="https://assets.tarkov.dev/5a13df5286f774032f5454a0-icon.webp"
+                      alt="Saiga-9"
+                      width={32}
+                      height={32}
+                      className="rounded"
+                    />
+                    <span className="font-semibold">1× Saiga-9</span>
+                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
+                      <Image
+                        src="https://assets.tarkov.dev/58330581ace78e27b8b10cee.webp"
+                        alt="Skier"
+                        width={14}
+                        height={14}
+                        className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
+                      />
+                      <span className="font-medium">LL1</span>
+                    </span>
+                    <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
+                      Cheap 14h(only)
                     </span>
                   </div>
 
