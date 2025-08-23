@@ -22,6 +22,8 @@ export default function ThresholdSelector({
 }: ThresholdSelectorProps) {
   const [isCustom, setIsCustom] = useState(false);
   const [open, setOpen] = useState(false);
+  // Buffer live slider/input changes locally to reduce re-layout churn
+  const [tempValue, setTempValue] = useState<number>(value);
 
   useEffect(() => {
     if (value !== 350001 && value !== 400000) {
@@ -30,6 +32,11 @@ export default function ThresholdSelector({
       setIsCustom(false);
     }
   }, [value]);
+
+  // Keep local buffer in sync when external value changes or popover opens
+  useEffect(() => {
+    setTempValue(value);
+  }, [value, open]);
 
   // Initialize from localStorage only once to avoid re-triggering on changing onChange identity
   const didInitRef = useRef(false);
@@ -53,6 +60,13 @@ export default function ThresholdSelector({
   };
 
   const handleSliderChange = (newValue: number[]) => {
+    // Update only the local buffer during drag
+    const newThreshold = newValue[0];
+    setTempValue(newThreshold);
+  };
+
+  const handleSliderCommit = (newValue: number[]) => {
+    // Commit once on release to avoid ResizeObserver loops from rapid updates
     const newThreshold = newValue[0];
     onChange(newThreshold);
     localStorage.setItem("userThreshold", newThreshold.toString());
@@ -61,6 +75,11 @@ export default function ThresholdSelector({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = Number(e.target.value);
     const newThreshold = isNaN(newValue) ? 0 : newValue;
+    setTempValue(newThreshold);
+  };
+
+  const commitInput = () => {
+    const newThreshold = Number.isFinite(tempValue) ? tempValue : 0;
     onChange(newThreshold);
     localStorage.setItem("userThreshold", newThreshold.toString());
   };
@@ -94,8 +113,9 @@ export default function ThresholdSelector({
       </PopoverTrigger>
       <PopoverContent className="w-72 p-3 bg-gray-900/95 border-gray-700 text-gray-200">
         <Slider
-          value={[value]}
+          value={[tempValue]}
           onValueChange={handleSliderChange}
+          onValueCommit={handleSliderCommit}
           max={1000000}
           step={1000}
           className="mb-3"
@@ -158,8 +178,12 @@ export default function ThresholdSelector({
         {isCustom && (
           <Input
             type="number"
-            value={value}
+            value={tempValue}
             onChange={handleInputChange}
+            onBlur={commitInput}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitInput();
+            }}
             className="w-full mt-2 bg-primary text-secondary rounded h-8 text-sm"
           />
         )}
