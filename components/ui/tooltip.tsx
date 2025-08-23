@@ -5,9 +5,28 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
 
-const TooltipProvider = TooltipPrimitive.Provider
+// Provider with zero delays to avoid lingering portals during fast UI updates
+const TooltipProvider: React.FC<
+  React.ComponentProps<typeof TooltipPrimitive.Provider>
+> = ({ children, ...props }) => (
+  <TooltipPrimitive.Provider
+    delayDuration={0}
+    skipDelayDuration={0}
+    {...props}
+  >
+    {children}
+  </TooltipPrimitive.Provider>
+)
 
-const Tooltip = TooltipPrimitive.Root
+// Root with disableHoverableContent to prevent keeping tooltip open when moving
+// cursor to its content, which can race with unmounts
+const Tooltip: React.FC<
+  React.ComponentProps<typeof TooltipPrimitive.Root>
+> = ({ children, ...props }) => (
+  <TooltipPrimitive.Root disableHoverableContent {...props}>
+    {children}
+  </TooltipPrimitive.Root>
+)
 
 const TooltipTrigger = TooltipPrimitive.Trigger
 

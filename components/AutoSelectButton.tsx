@@ -53,7 +53,13 @@ function AutoSelectButtonImpl({
           <Button
             id="auto-select"
             type="button"
-            onClick={handleAutoPick}
+            onClick={() => {
+              // Blur any focused element (e.g., inputs/tooltips) to ensure
+              // portal-based UI (Radix Tooltip/Popover) closes before rerender.
+              const ae = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement | null;
+              if (ae && typeof ae.blur === 'function') ae.blur();
+              handleAutoPick();
+            }}
             disabled={isCalculating}
             className={`${baseClasses} bg-gradient-to-r from-slate-700/90 to-slate-700/80 hover:from-slate-700 hover:to-slate-800`}
           >
