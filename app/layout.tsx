@@ -8,6 +8,7 @@ import Script from "next/script";
 import { LanguageProvider } from "@/contexts/language-context";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { ChatbotWidget } from "@/components/ai-chatbot/chatbot-widget";
+import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -113,7 +114,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           data-description="Support me on Buy me a coffee!"
           data-message=""
           data-color="#5F7FFF"
-          data-position="Right"
+          data-position="Left"
           data-x_margin="50"
           data-y_margin="50"
         />
@@ -129,6 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     
               {/* Cookie consent and notifications */}
               <div className="relative z-50">
+                    <OnboardingDialog />
                     <ChatbotWidget />
                 <CookieConsent />
                     <SonnerToaster />

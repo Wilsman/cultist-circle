@@ -15,7 +15,7 @@ export function PvpWipeTipAlert() {
           backdrop-blur-xl
           shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25),inset_0_1px_0_0_rgba(255,255,255,0.15)]
           dark:shadow-[0_10px_36px_-14px_rgba(0,0,0,0.45),inset_0_1px_0_0_rgba(255,255,255,0.06)]
-          transition-all duration-500 ease-[cubic-bezier(.2,.8,.2,1)]
+          transition-all duration-500 [transition-timing-function:cubic-bezier(.2,.8,.2,1)]
           will-change-transform
           animate-fade-in
           w-full max-w-3xl

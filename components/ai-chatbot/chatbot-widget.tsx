@@ -314,7 +314,7 @@ export function ChatbotWidget({ className }: { className?: string }) {
           aria-label="Open AI helper"
         >
           <MessageCircleIcon className="size-4" />
-          <span className="text-sm font-medium">AI Help</span>
+          <span className="text-sm font-medium">Help</span>
         </button>
       )}
 
