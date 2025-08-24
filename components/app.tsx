@@ -807,6 +807,19 @@ function AppContent() {
 
   // Handler to pin/unpin items
   const handlePinItem = (index: number) => {
+    const willPin = !pinnedItems[index];
+    if (willPin) {
+      const newPinnedCount = pinnedItems.filter(Boolean).length + 1;
+      // Guardrail: prevent pinning all 5 when threshold is not met (would make auto-select impossible)
+      if (newPinnedCount === 5 && total < threshold) {
+        sonnerToast.error("Cannot pin all 5 items", {
+          description:
+            `Current total ${Math.floor(total).toLocaleString()} is below threshold ${threshold.toLocaleString()}. Unpin one item or increase item values.`,
+        });
+        return;
+      }
+    }
+
     const newPinnedItems = [...pinnedItems];
     newPinnedItems[index] = !newPinnedItems[index];
     setPinnedItems(newPinnedItems);
@@ -818,8 +831,11 @@ function AppContent() {
     setIsCalculating(true);
 
     try {
-      // Single-pass filter with all conditions, then sort and limit
-      const validItems = items
+      // Determine remaining slots before heavy work
+      const slotsLeft = 5 - pinnedItems.filter(Boolean).length;
+
+      // Single-pass filter with all conditions, then sort; only cap to top-100 when more than one slot left
+      let ranked = items
         .map((item) => ({
           item,
           price: getEffectivePrice(item),
@@ -832,9 +848,11 @@ function AppContent() {
             item.basePrice >= threshold * 0.1 &&
             !excludedItems.has(item.name.toLowerCase())
         )
-        .sort((a, b) => b.efficiency - a.efficiency)
-        .slice(0, 100)
-        .map(({ item }) => item); // Map back to just the items
+        .sort((a, b) => b.efficiency - a.efficiency);
+
+      if (slotsLeft > 1) ranked = ranked.slice(0, 100);
+
+      const validItems = ranked.map(({ item }) => item); // Map back to just the items
 
       // Small delay to prevent UI freezing
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -846,6 +864,12 @@ function AppContent() {
       );
 
       const remainingThreshold = Math.max(0, threshold - pinnedTotal);
+
+      // If there's nothing left to fulfill, keep current unpinned items as-is and mark success
+      if (remainingThreshold === 0) {
+        setHasAutoSelected(true);
+        return;
+      }
 
       const filteredItems = validItems.filter(
         (item) =>
@@ -862,10 +886,60 @@ function AppContent() {
         () => Math.random() - 0.5
       );
 
+      // If only one slot is left, run a deterministic single-slot resolver
+      if (slotsLeft === 1) {
+        // Build a deterministic candidate list sorted by lowest effective price first.
+        const buildCandidates = (window: number) =>
+          [...adjustedItems]
+            .filter(
+              (it) =>
+                it.basePrice >= remainingThreshold && it.basePrice <= remainingThreshold + window
+            )
+            .map((it) => ({ it, price: getEffectivePrice(it) }))
+            .filter(({ price }) => typeof price === "number" && (price as number) > 0)
+            .sort((a, b) => (a.price as number) - (b.price as number))
+            .map(({ it }) => it);
+
+        let candidates: SimplifiedItem[] = buildCandidates(5000);
+        if (candidates.length === 0) candidates = buildCandidates(15000);
+
+        if (candidates.length === 0) {
+          sonnerToast.error("Auto Select", {
+            description: `No single item meets remaining base value of ${remainingThreshold.toLocaleString()} within +5k (+15k after relax). Unpin one item or lower threshold.`,
+          });
+          return;
+        }
+
+        const newSelectedItems: Array<SimplifiedItem | null> = [...selectedItems];
+        const targetIndex = pinnedItems.findIndex((p) => !p);
+        const currentId = targetIndex !== -1 ? newSelectedItems[targetIndex]?.id : undefined;
+        const currentIdxInList = currentId
+          ? candidates.findIndex((c) => c.id === currentId)
+          : -1;
+        const nextIdx = currentIdxInList >= 0
+          ? (currentIdxInList + 1) % candidates.length
+          : 0;
+        if (targetIndex !== -1) newSelectedItems[targetIndex] = candidates[nextIdx] || candidates[0];
+
+        // Preserve overridden prices for items that remain selected
+        const newOverriddenPrices = { ...overriddenPrices };
+        for (let i = 0; i < 5; i++) {
+          const item = newSelectedItems[i];
+          if (item && overriddenPrices[item.id]) {
+            newOverriddenPrices[item.id] = overriddenPrices[item.id];
+          }
+        }
+
+        setSelectedItems(newSelectedItems);
+        setOverriddenPrices(newOverriddenPrices);
+        setHasAutoSelected(true);
+        return;
+      }
+
       const bestCombination = findBestCombination(
         shuffledAdjustedItems,
         remainingThreshold,
-        5 - pinnedItems.filter(Boolean).length
+        slotsLeft
       );
 
       if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
@@ -881,7 +955,7 @@ function AppContent() {
         } else {
           sonnerToast.error("Auto Select", {
             description:
-              "Failed to find a valid combo. Try checking Trader prices or adjust Excluded Categories in Settings.",
+              `Failed to find a valid combo for remaining ${remainingThreshold.toLocaleString()}. Try Trader prices, relax filters, or unpin one item.`,
           });
         }
         return;

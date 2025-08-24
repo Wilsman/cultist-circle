@@ -32,7 +32,13 @@ export function VersionInfo({ version }: VersionInfoProps) {
               <li className="flex gap-2">
                 <span className="text-yellow-500">•</span>
                 <span className="text-left">
-                  <span className="font-medium">New:</span> Language support for item name localization (16 languages)
+                  <span className="font-medium">Fix:</span> Auto Select now, with 4 items pinned, cycles through all valid last-slot items that meet the remaining threshold (cheapest first).
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-yellow-500">•</span>
+                <span className="text-left">
+                  <span className="font-medium">New:</span> Language support for item name localization
                 </span>
               </li>
               <li className="flex gap-2">
@@ -103,7 +109,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
                   If you have any issues, please try resetting the app in the settings
                 </span>
               </li>
-              <li className="flex gap-2">
+              <li className="flex gap-2 line-through opacity-60">
                 <span className="text-red-500">•</span>
                 <span className="text-left">
                   Having 4/5 items pinned, may result in auto-selecting to fail
