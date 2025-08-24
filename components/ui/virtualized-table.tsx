@@ -7,6 +7,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { MinimalItem } from "@/hooks/use-tarkov-api";
 import {Tooltip, TooltipTrigger, TooltipContent, TooltipProvider} from "@/components/ui/tooltip";
+import { Copy } from "lucide-react";
 
 // Trader image mapping
 const TRADER_IMAGES: Record<string, string> = {
@@ -151,7 +152,28 @@ export function VirtualizedTable({
             </a>
           </Cell>
           <Cell className="text-right font-semibold w-[120px]">
-            {item.basePrice.toLocaleString()}
+            <div className="flex items-center justify-end gap-2">
+              <span>{item.basePrice.toLocaleString()}</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-background/60 hover:bg-muted/50 text-muted-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void navigator.clipboard.writeText(String(item.basePrice));
+                      }}
+                      aria-label="Copy base price"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy base price</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </Cell>
           <Cell className="text-muted-foreground text-right w-[120px]">
             {item.lastLowPrice?.toLocaleString() ?? "-"}

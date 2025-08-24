@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,20 +42,68 @@ export function PriceRangeFilter({
     value[1].toString(),
   ]);
 
+  // --- Log scale helpers (slider is 0..1000, values are real prices) ---
+  const normMinMax = useMemo(() => {
+    // Avoid log(0) by shifting when min <= 0
+    const shift = min <= 0 ? 1 - min : 0;
+    const a = min + shift;
+    const b = max + shift;
+    return { shift, a: Math.max(1, a), b: Math.max(1, b) };
+  }, [min, max]);
+
+  const toSlider = useCallback(
+    (v: number) => {
+      const { shift, a, b } = normMinMax;
+      const nv = Math.max(1, v + shift);
+      if (a === b) return 0; // degenerate case
+      const t = (Math.log(nv) - Math.log(a)) / (Math.log(b) - Math.log(a));
+      // clamp [0,1]
+      const tc = Math.min(1, Math.max(0, t));
+      return Math.round(tc * 1000);
+    },
+    [normMinMax]
+  );
+
+  const fromSlider = useCallback(
+    (s: number) => {
+      const { shift, a, b } = normMinMax;
+      if (a === b) return Math.max(0, a - shift);
+      const t = Math.min(1, Math.max(0, s / 1000));
+      const nv = Math.exp(Math.log(a) + t * (Math.log(b) - Math.log(a)));
+      // round to integer rubles
+      const real = Math.round(nv - shift);
+      return real;
+    },
+    [normMinMax]
+  );
+
+  // Keep a separate slider-value in 0..1000 that mirrors localValue
+  const [sliderValue, setSliderValue] = useState<[number, number]>([
+    toSlider(value[0]),
+    toSlider(value[1]),
+  ]);
+
   // Update local state when external value changes
   useEffect(() => {
     setLocalValue(value);
     setInputValues([value[0].toString(), value[1].toString()]);
-  }, [value]);
+    setSliderValue([toSlider(value[0]), toSlider(value[1])]);
+  }, [value, toSlider]);
 
   const handleSliderChange = useCallback(
     (newValue: number[]) => {
-      const range: [number, number] = [newValue[0], newValue[1]];
+      const s0 = Math.min(newValue[0], newValue[1]);
+      const s1 = Math.max(newValue[0], newValue[1]);
+      setSliderValue([s0, s1] as [number, number]);
+
+      const v0 = fromSlider(s0);
+      const v1 = fromSlider(s1);
+      const range: [number, number] = [v0, v1];
       setLocalValue(range);
       setInputValues([range[0].toString(), range[1].toString()]);
       onChange(range);
     },
-    [onChange]
+    [fromSlider, onChange]
   );
 
   const handleInputChange = useCallback(
@@ -77,10 +125,11 @@ export function PriceRangeFilter({
         }
         
         setLocalValue(newValue);
+        setSliderValue([toSlider(newValue[0]), toSlider(newValue[1])]);
         onChange(newValue);
       }
     },
-    [inputValues, localValue, min, max, onChange]
+    [inputValues, localValue, min, max, onChange, toSlider]
   );
 
   const handleInputBlur = useCallback(
@@ -119,11 +168,11 @@ export function PriceRangeFilter({
       {/* Slider */}
       <div className="px-2">
         <Slider
-          value={localValue}
+          value={sliderValue}
           onValueChange={handleSliderChange}
-          min={min}
-          max={max}
-          step={Math.max(1, Math.floor((max - min) / 1000))}
+          min={0}
+          max={1000}
+          step={1}
           className="w-full"
           aria-label={`${label} slider`}
         />
