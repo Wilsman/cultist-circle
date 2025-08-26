@@ -9,6 +9,7 @@ import { LanguageProvider } from "@/contexts/language-context";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { ChatbotWidget } from "@/components/ai-chatbot/chatbot-widget";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
+import { NotesWidget } from "@/components/notes-widget";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -132,6 +133,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="relative z-50">
                     <OnboardingDialog />
                     <ChatbotWidget />
+                    <NotesWidget />
                 <CookieConsent />
                     <SonnerToaster />
                   </div>
