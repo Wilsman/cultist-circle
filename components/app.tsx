@@ -55,6 +55,9 @@ import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast as sonnerToast } from "sonner";
+import ThresholdProgress from "@/components/threshold-progress";
+import NextItemHints from "@/components/next-item-hints";
+import ShareCardButton from "@/components/share-card-button";
 
 export const CURRENT_VERSION = "2.1.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
@@ -737,10 +740,125 @@ function AppContent() {
 
   const isThresholdMet: boolean = total >= threshold;
 
+  // Show hint pills only when at least one item is selected AND threshold not met
+  const showHintPills = useMemo(
+    () => selectedItems.some(Boolean) && total < threshold,
+    [selectedItems, total, threshold]
+  );
+
   // check if selected items fit in the cultist circle box (9x6) and collect debug info
   const itemsFitInBox = useMemo(() => {
     return doItemsFitInBox(selectedItems.filter(Boolean) as SimplifiedItem[]);
   }, [selectedItems]);
+
+  // Compute per-slot suggestions:
+  // - First: cheapest single item that alone meets the need (if any)
+  // - Then: up to two items from a minimal-cost multi-pick plan that collectively meet the need, bounded by remaining empty slots
+  const nextItemSuggestions = useMemo(() => {
+    const bonusMultiplier = 1 + itemBonus / 100;
+    const candidates = items
+      .map((item) => ({ item, price: getEffectivePrice(item) as number, adjBase: item.basePrice * bonusMultiplier }))
+      .filter(({ item, price }) => Number.isFinite(price) && price > 0 && item.basePrice > 0)
+      .sort((a, b) => a.price - b.price);
+
+    // Deterministic seeded randomness helpers (stable for same selection/threshold/slot)
+    const selKey = selectedItems.map((s) => (s ? s.id : "-")).join("|") + `:${threshold}`;
+    function hashString(s: string): number {
+      let h = 2166136261 >>> 0; // FNV-1a
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+    function rng(seed: number) {
+      return function () {
+        seed += 0x6D2B79F5;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function seededShuffle<T>(arr: T[], seed: number): T[] {
+      const a = arr.slice();
+      const rnd = rng(seed);
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // Helper: build a cheap plan of up to k items that covers need by greedy on price,
+    // prioritizing items that each contribute at least an even share towards the need.
+    function buildPlan(need: number, k: number, perItemMin: number) {
+      const eligible = candidates.filter((c) => c.adjBase >= perItemMin);
+      const source = eligible.length > 0 ? eligible : candidates;
+      const plan: typeof candidates = [];
+      let acc = 0;
+      // Add slight randomness within the top window
+      const windowed = seededShuffle(source.slice(0, Math.min(12, source.length)), hashString(selKey))
+        .concat(source.slice(12));
+      for (const c of windowed) {
+        if (plan.length >= k) break;
+        if (acc >= need) break;
+        plan.push(c);
+        acc += c.adjBase;
+      }
+      if (acc < need && source === eligible) {
+        // eligible too strict, try again with all candidates but prefer larger base contributors
+        const byBaseDesc = [...candidates].sort((a, b) => b.adjBase - a.adjBase);
+        plan.length = 0;
+        acc = 0;
+        for (const c of byBaseDesc) {
+          if (plan.length >= k) break;
+          if (acc >= need) break;
+          plan.push(c);
+          acc += c.adjBase;
+        }
+      }
+      return plan;
+    }
+
+    const totalEmpty = selectedItems.filter((x) => !x).length;
+
+    return selectedItems.map((slotItem, idx) => {
+      if (slotItem) return [] as SimplifiedItem[];
+      const subtotalExSlot = selectedItems.reduce((s, it, i) => (i === idx || !it ? s : s + it.basePrice * bonusMultiplier), 0);
+      const need = Math.max(0, threshold - subtotalExSlot);
+      if (need <= 0) {
+        // Any cheap items ok; pick 3 from top 8 with a seeded shuffle per slot
+        const seed = hashString(selKey + `:${idx}`);
+        return seededShuffle(candidates.slice(0, Math.min(8, candidates.length)), seed)
+          .slice(0, 3)
+          .map((c) => c.item);
+      }
+
+      const remainingSlots = Math.max(1, totalEmpty); // number of empties available overall
+
+      // Single that meets
+      const seedSingle = hashString(selKey + `:single:${idx}`);
+      const meetPool = candidates.filter((c) => c.adjBase >= need).slice(0, 5);
+      const single = (meetPool.length > 0
+        ? seededShuffle(meetPool, seedSingle)[0]
+        : undefined)?.item;
+
+      // Multi-pick plan up to remainingSlots items; enforce meaningful per-item contribution when possible
+      const perItemMin = Math.ceil(need / remainingSlots);
+      const plan = buildPlan(need, remainingSlots, perItemMin).map((c) => c.item);
+
+      const out: SimplifiedItem[] = [];
+      if (single) out.push(single);
+      for (const it of plan) {
+        if (out.length >= 3) break;
+        if (single && it.id === single.id) continue; // avoid duplicate
+        out.push(it);
+      }
+      // Fallback if nothing found: suggest cheapest few
+      if (out.length === 0) return candidates.slice(0, 3).map((c) => c.item);
+      return out;
+    });
+  }, [items, selectedItems, threshold, itemBonus, getEffectivePrice]);
 
   // Handler to update selected item
   const handleItemSelect = useCallback(
@@ -1468,6 +1586,13 @@ function AppContent() {
                               traderLevels={traderLevels}
                             />
                           </Suspense>
+                          {showHintPills && !item && nextItemSuggestions[index] && nextItemSuggestions[index].length > 0 ? (
+                            <NextItemHints
+                              items={nextItemSuggestions[index]}
+                              prevItem={index > 0 ? selectedItems[index - 1] : null}
+                              onPick={(it) => updateSelectedItem(it, index)}
+                            />
+                          ) : null}
                         </React.Fragment>
                       </div>
                     ))
@@ -1552,33 +1677,47 @@ function AppContent() {
                   {loading ? (
                     <Skeleton className="h-20 w-4/5 mx-auto" />
                   ) : (
-                    <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
-                      <div className="text-center">
-                        <div className="text-4xl md:text-5xl font-extrabold text-green-500">
-                          ₽{total.toLocaleString()}
+                    <>
+                      <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                        <div className="text-center">
+                          <div className="text-4xl md:text-5xl font-extrabold text-green-500">
+                            ₽{total.toLocaleString()}
+                          </div>
+                          {itemBonus > 0 && (
+                            <div className="text-xs md:text-sm text-gray-400 mt-1">
+                              (Base: ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} + {itemBonus}% bonus)
+                            </div>
+                          )}
+                          {!isThresholdMet && (
+                            <div className="text-red-400 mt-1 text-sm md:text-base">
+                              ₽{(threshold - total).toLocaleString()} needed to meet threshold
+                            </div>
+                          )}
                         </div>
-                        {itemBonus > 0 && (
-                          <div className="text-xs md:text-sm text-gray-400 mt-1">
-                            (Base: ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} + {itemBonus}% bonus)
-                          </div>
-                        )}
-                        {!isThresholdMet && (
-                          <div className="text-red-400 mt-1 text-sm md:text-base">
-                            ₽{(threshold - total).toLocaleString()} needed to meet threshold
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-center">
-                        <div className="rounded-xl bg-slate-800/50 border border-slate-700 px-3 py-3 inline-block">
-                          <div className="text-[11px] md:text-xs uppercase tracking-wide text-gray-400">
-                            Total Cost ≈
-                          </div>
-                          <div className={`text-2xl font-semibold ${Object.keys(overriddenPrices).length > 0 ? "text-white" : "text-gray-200"}`}>
-                            ₽{totalFleaCost?.toLocaleString()}
+                        <div className="text-center">
+                          <div className="rounded-xl bg-slate-800/50 border border-slate-700 px-3 py-3 inline-block">
+                            <div className="text-[11px] md:text-xs uppercase tracking-wide text-gray-400">
+                              Total Cost ≈
+                            </div>
+                            <div className={`text-2xl font-semibold ${Object.keys(overriddenPrices).length > 0 ? "text-white" : "text-gray-200"}`}>
+                              ₽{totalFleaCost?.toLocaleString()}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                      <div className="mt-4">
+                        <ThresholdProgress total={Math.floor(total)} />
+                      </div>
+                      <div className="mt-4 flex justify-center">
+                        <ShareCardButton
+                          items={selectedItems}
+                          total={Math.floor(total)}
+                          totalFlea={Math.floor(totalFleaCost || 0)}
+                          modeLabel={isPVE ? "PVE" : "PVP"}
+                          sacred={itemBonus > 0}
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
                 <footer className="mt-3 text-center text-gray-300 text-[12px] md:text-sm w-full">
