@@ -215,6 +215,8 @@ export default function ItemsTablePage() {
       "Average 24h Price",
       "Sell to Trader",
       "Buy from Trader",
+      "Buy from Trader Name",
+      "Buy from Trader Level",
       "Link",
     ];
 
@@ -235,19 +237,22 @@ export default function ItemsTablePage() {
               )
             : 0;
 
-        // Calculate best buy price
-        const bestBuyPrice =
-          item.buyFor?.length > 0
-            ? Math.min(
-                ...item.buyFor
-                  .filter(
-                    (offer) =>
-                      offer.vendor?.normalizedName !== "flea-market" &&
-                      offer.priceRUB != null
-                  )
-                  .map((offer) => offer.priceRUB || Infinity)
-              )
-            : 0;
+        // Find best buy offer (lowest price, excluding flea market)
+        const validBuyOffers = item.buyFor?.filter(
+          (offer) =>
+            offer.vendor?.normalizedName !== "flea-market" &&
+            offer.priceRUB != null
+        ) || [];
+
+        const bestBuyOffer = validBuyOffers.length > 0
+          ? validBuyOffers.reduce((prev, curr) =>
+              (prev.priceRUB || Infinity) < (curr.priceRUB || Infinity) ? prev : curr
+            )
+          : null;
+
+        const bestBuyPrice = bestBuyOffer ? bestBuyOffer.priceRUB : 0;
+        const bestBuyTraderName = bestBuyOffer?.vendor?.normalizedName || "";
+        const bestBuyTraderLevel = bestBuyOffer?.vendor?.minTraderLevel || "";
 
         // Escape categories properly
         const categories = item.categories?.map((c) => c.name).join(", ") || "";
@@ -261,6 +266,8 @@ export default function ItemsTablePage() {
           item.avg24hPrice || 0,
           bestTraderPrice,
           bestBuyPrice === Infinity ? 0 : bestBuyPrice,
+          `"${bestBuyTraderName.replace(/"/g, '""')}"`,
+          bestBuyTraderLevel,
           `"${(item.link || "").replace(/"/g, '""')}"`,
         ].join(",");
       }),
