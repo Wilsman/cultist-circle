@@ -120,6 +120,11 @@ export const InstructionsDialog = forwardRef<
                   <span className="font-medium text-green-400">Auto Select:</span> <span className="text-yellow-300">★ Key Feature ★</span>
                   <p className="text-xs ml-5 text-gray-400">Automatically finds the most cost-effective combination of items to reach your threshold</p>
                 </li>
+
+                <li>
+                  <span className="font-medium text-green-400">Item Hints:</span> <span className="text-blue-300">✨ New ✨</span>
+                  <p className="text-xs ml-5 text-gray-400">Smart suggestions appear below empty slots with color-coded hints to guide your selection</p>
+                </li>
                 
                 <li>
                   <span className="font-medium text-green-400">Pin:</span> Lock specific items during Auto Select
@@ -170,6 +175,7 @@ export const InstructionsDialog = forwardRef<
                 </div>
               </div>
             </TabsContent>
+
           </Tabs>
         </ScrollArea>
         <DialogClose asChild>

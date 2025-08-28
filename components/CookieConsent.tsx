@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Cookie } from 'lucide-react'
+import { Cookie, X } from 'lucide-react'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Switch } from './ui/switch'
@@ -74,6 +74,15 @@ export default function CookieConsent() {
     saveConsent(allAccepted)
   }
 
+  const handleDismiss = () => {
+    // Dismiss with default preferences (essential cookies only)
+    const essentialOnly = cookieTypes.reduce((acc, type) => ({
+      ...acc,
+      [type.id]: type.defaultValue ?? false
+    }), {})
+    saveConsent(essentialOnly)
+  }
+
   // const handleRejectNonEssential = () => {
   //   const essentialOnly = cookieTypes.reduce((acc, type) => ({
   //     ...acc,
@@ -136,52 +145,53 @@ export default function CookieConsent() {
 
   return (
     <>
-      <div className="fixed inset-0 bg-gray-900/90 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-        <div className="w-full max-w-2xl animate-slide-up">
-          <div className="relative bg-gray-800/95 backdrop-blur-md border border-gray-700 p-6 rounded-lg shadow-xl">
-            <div className="flex items-start space-x-6">
-              <div className="flex-shrink-0">
-                <Cookie className="h-8 w-8 text-blue-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-semibold mb-3 text-white">Cookie Preferences</h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  We use cookies to enhance your experience and analyze our traffic. You can customize your preferences or accept all cookies.{' '}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      setShowPrivacyPolicy(true)
-                    }}
-                    className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                  >
-                    Privacy Policy
-                  </button>
-                </p>
-              </div>
+      <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:bottom-4 sm:max-w-md z-50">
+        <div className="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-lg animate-slide-up">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <Cookie className="h-5 w-5 text-blue-400" />
             </div>
-            
-            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
-              {/* <Button
-                variant="outline"
-                onClick={() => setShowPreferences(true)}
-                className="text-gray-300 hover:text-white"
-              >
-                Customize
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleRejectNonEssential}
-                className="text-gray-300 hover:text-white"
-              >
-                Reject Non-Essential
-              </Button> */}
-              <Button
-                onClick={handleAcceptAll}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200"
-              >
-                Accept
-              </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between">
+                <h3 className="text-sm font-medium text-white">Cookie Preferences</h3>
+                <button
+                  onClick={handleDismiss}
+                  className="ml-2 p-1 text-gray-400 hover:text-gray-300 transition-colors"
+                  aria-label="Close cookie notification"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-gray-300 text-xs leading-relaxed mt-1">
+                We use cookies to enhance your experience.{' '}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setShowPrivacyPolicy(true)
+                  }}
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors text-xs"
+                >
+                  Privacy Policy
+                </button>
+              </p>
             </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPreferences(true)}
+              className="text-gray-300 hover:text-white h-8 px-3 text-xs"
+            >
+              Customize
+            </Button>
+            <Button
+              onClick={handleAcceptAll}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200 h-8 px-3 text-xs"
+            >
+              Accept All
+            </Button>
           </div>
         </div>
       </div>

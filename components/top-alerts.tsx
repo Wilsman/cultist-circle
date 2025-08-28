@@ -194,7 +194,7 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
                       <span className="font-medium">LL1</span>
                     </span>
                     <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
-                      Cheap 14h(only)
+                      14h (+1 STM for 6h)
                     </span>
                   </div>
 

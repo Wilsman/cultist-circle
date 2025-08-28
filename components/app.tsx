@@ -58,6 +58,7 @@ import { toast as sonnerToast } from "sonner";
 import ThresholdProgress from "@/components/threshold-progress";
 import NextItemHints from "@/components/next-item-hints";
 import ShareCardButton from "@/components/share-card-button";
+import { useToastNotifications } from "@/hooks/use-toast-notifications";
 
 export const CURRENT_VERSION = "2.1.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
@@ -191,6 +192,33 @@ function AppContent() {
     needsManualRetry,
     resetRetryCount
   } = useItemsData(isPVE);
+
+  // Initialize toast notifications
+  const { triggerNewNotifications } = useToastNotifications();
+
+  // Check if onboarding is complete
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+
+  // Monitor onboarding completion
+  useEffect(() => {
+    const checkOnboarding = () => {
+      try {
+        const seen = typeof window !== "undefined" &&
+          window.localStorage.getItem("cc_onboarding_seen_v1");
+        setOnboardingComplete(!!seen);
+      } catch {
+        // If storage fails, assume not complete for safety
+        setOnboardingComplete(false);
+      }
+    };
+
+    checkOnboarding();
+    // Listen for changes (in case onboarding happens in another tab)
+    const handleStorageChange = () => checkOnboarding();
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   // Build localized category list (ID -> localized name) from current items
   const allCategoriesLocalized: ItemCategory[] = useMemo(() => {
@@ -360,6 +388,19 @@ function AppContent() {
     didInitStateRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawItemsData]);
+
+  // Auto-trigger notifications after onboarding completion and data load
+  useEffect(() => {
+    // Only trigger notifications once the app is fully loaded, initialized, AND onboarding is complete
+    if (didInitStateRef.current && !loading && rawItemsData && rawItemsData.length > 0 && onboardingComplete) {
+      // Delay to let user settle after completing onboarding
+      const timeoutId = setTimeout(() => {
+        triggerNewNotifications();
+      }, 2000); // 2 second delay after onboarding and data loads
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [rawItemsData, loading, onboardingComplete, triggerNewNotifications]);
 
   // Save sort option to localStorage
   useEffect(() => {
@@ -740,9 +781,9 @@ function AppContent() {
 
   const isThresholdMet: boolean = total >= threshold;
 
-  // Show hint pills only when at least one item is selected AND threshold not met
+  // Show hint pills only when at least one item is selected AND threshold not met, or when all empty
   const showHintPills = useMemo(
-    () => selectedItems.some(Boolean) && total < threshold,
+    () => (selectedItems.some(Boolean) && total < threshold) || selectedItems.every((it) => !it),
     [selectedItems, total, threshold]
   );
 
@@ -1586,9 +1627,26 @@ function AppContent() {
                               traderLevels={traderLevels}
                             />
                           </Suspense>
-                          {showHintPills && !item && nextItemSuggestions[index] && nextItemSuggestions[index].length > 0 ? (
+                          {showHintPills && !item && nextItemSuggestions[index] && nextItemSuggestions[index].length > 0 && (
+                            index === selectedItems.findIndex((it) => !it) ||
+                            (selectedItems.every((it) => !it) && index === 0)
+                          ) ? (
                             <NextItemHints
-                              items={nextItemSuggestions[index]}
+                              items={
+                                selectedItems.every((it) => !it) && index === 0
+                                  ? (() => {
+                                      const divisorOptions = [5, 4, 3, 2];
+                                      let filteredSuggestions: SimplifiedItem[] = [];
+                                      for (const divisor of divisorOptions) {
+                                        filteredSuggestions = nextItemSuggestions[index].filter((it) => it.basePrice >= threshold / divisor);
+                                        if (filteredSuggestions.length >= 3) break;
+                                      }
+                                      return filteredSuggestions
+                                        .sort((a, b) => (getEffectivePrice(a) ?? 0) - (getEffectivePrice(b) ?? 0))
+                                        .slice(0, 3);
+                                    })()
+                                  : nextItemSuggestions[index]
+                              }
                               prevItem={index > 0 ? selectedItems[index - 1] : null}
                               onPick={(it) => updateSelectedItem(it, index)}
                             />
