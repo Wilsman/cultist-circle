@@ -14,19 +14,10 @@ import ItemSocket from "@/components/item-socket";
 import { 
   AlertCircle,
   Loader2, 
-  Settings, 
-  Table
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import SettingsPane from "@/components/settings-pane";
-import { InstructionsDialog } from "@/components/InstructionsDialog";
 import { ModeThreshold } from "@/components/mode-threshold";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { VersionInfo } from "@/components/version-info";
@@ -51,7 +42,6 @@ import TopAlerts from "./top-alerts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
-import Link from "next/link";
 import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast as sonnerToast } from "sonner";
@@ -1352,82 +1342,26 @@ function AppContent() {
     []
   );
 
+  // Listen for global nav events to open settings from SiteNav
+  useEffect(() => {
+    function openSettings() {
+      setIsSettingsPaneVisible(true);
+    }
+    document.addEventListener("cc:open-settings", openSettings as EventListener);
+    return () =>
+      document.removeEventListener(
+        "cc:open-settings",
+        openSettings as EventListener
+      );
+  }, []);
+
   // Update the refresh button UI
   return (
     <>
-      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 p-4 overflow-auto">
+      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-4 pb-4 pt-0 sm:pt-1 overflow-auto">
         <div className="min-h-screen flex items-center justify-center">
-          <Card className="bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto transition-all duration-300 hover:shadow-xl">
-            {/* Top Navigation Bar */}
-            <div className="absolute top-0 left-0 right-0 flex w-full bg-gray-900/80 rounded-t-lg">
-              <div className="flex w-full">
-                <InstructionsDialog />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="flex-1 hover:bg-gray-700/50 rounded-none border-r border-gray-700"
-                    >
-                      <span className="flex items-center justify-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          className="h-4 w-4 mr-2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                          />
-                        </svg>
-                        Tools
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    className="w-48 ring-1 ring-gray-700 hover:text-gray-100 bg-gray-800 hover:bg-gray-700 hover:ring-gray-700 hover:ring-1 hover:ring-offset-1"
-                    align="start"
-                  >
-                    <DropdownMenuItem asChild>
-                      <Link href="/recipes" className="cursor-pointer">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          className="h-4 w-4 mr-2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                          />
-                        </svg>
-                        Recipes
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/base-values" className="cursor-pointer">
-                        <Table className="h-4 w-4 mr-2" />
-                        Base Values
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button
-                  variant="ghost"
-                  className="flex-1 hover:bg-gray-700/50 rounded-none rounded-tr-lg ml-auto"
-                  onClick={() => setIsSettingsPaneVisible(true)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Button>
-              </div>
-            </div>
+          <Card className="bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto transition-all duration-300 hover:shadow-xl rounded-t-none -mt-px border-t-0">
+            {/* App-specific toolbar removed; now in global nav */}
 
             {/* Title and Version Info */}
             <div className="pt-2">

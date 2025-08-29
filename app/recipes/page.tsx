@@ -3,7 +3,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -12,7 +11,7 @@ import {
 } from "@/components/ui/card";
 
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Package, CheckCircle2, Clock } from "lucide-react";
+import { Package, CheckCircle2, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 // Types
@@ -168,15 +167,9 @@ const tarkovRecipes: Recipe[] = [
 export default function Page() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const searchRef = useRef<HTMLInputElement | null>(null);
-  const router = useRouter();
+  // No local routing needed; global nav handles navigation
 
-  function handleBack() {
-    if (window.history.length > 2) {
-      router.back();
-    } else {
-      router.push("/");
-    }
-  }
+  // Global nav provides navigation; remove local back affordance
 
   const filteredItems = tarkovRecipes.filter((item) => {
     const searchLower = searchQuery.toLowerCase();
@@ -274,23 +267,13 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-my_bg_image bg-no-repeat bg-cover text-gray-100 p-4">
-      <Card className="bg-gray-800/80 border-gray-700 text-secondary shadow-lg h-[90vh] w-full max-w-3xl mx-auto flex flex-col">
-        <div className="sticky top-0 z-10 bg-gray-800/95 border-b border-gray-700 px-6 pt-6 pb-4 rounded-t-lg backdrop-blur">
+    <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-4 pb-4 pt-0 sm:pt-1 overflow-auto -mt-px flex items-center justify-center">
+      <Card className="bg-gray-800/95 backdrop-blur-sm border-gray-700 text-secondary shadow-lg w-full max-w-2xl mx-auto flex flex-col rounded-t-none border-t-0">
+        <div className="sticky top-0 z-10 bg-gray-800/95 border-b border-gray-700 px-6 pt-6 pb-4 rounded-t-none backdrop-blur">
           <CardHeader className="p-0 mb-4">
-            <div className="flex items-center justify-between">
-              <button
-                aria-label="Go back"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-700 bg-gray-800/60 text-gray-200 shadow-sm backdrop-blur transition-colors hover:border-gray-600 hover:bg-gray-700/70"
-                onClick={handleBack}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-              <h1 className="select-none text-center text-2xl sm:text-3xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-orange-300 to-yellow-300 drop-shadow">
-                Recipes
-              </h1>
-              <span className="w-9" aria-hidden />
-            </div>
+            <h1 className="text-center text-2xl sm:text-3xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-orange-300 to-yellow-300 drop-shadow">
+              Recipes
+            </h1>
           </CardHeader>
           <div className="relative">
             <Input

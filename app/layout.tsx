@@ -10,6 +10,7 @@ import { PostHogProvider } from "@/components/PostHogProvider";
 import { ChatbotWidget } from "@/components/ai-chatbot/chatbot-widget";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { NotesWidget } from "@/components/notes-widget";
+import { SiteNav } from "@/components/site-nav";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -126,6 +127,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {/* Background color */}
               <div className="fixed inset-0 -z-10 bg-[#101720]" />
     
+              {/* Global Nav */}
+              <SiteNav />
+
               {/* Content */}
               <div className="relative z-10">{children}</div>
     

@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ArrowLeft,
   ArrowUp,
   ArrowDown,
   Loader2,
@@ -548,18 +547,10 @@ export default function ItemsTablePage() {
   );
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto -mt-px">
       {/* Header Section */}
-      {/* Top bar with back button */}
-      <div className="flex items-center gap-2 mb-6">
-        <button
-          className="p-2 text-white bg-muted hover:bg-muted-foreground rounded"
-          onClick={() => window.location.assign("/")}
-          aria-label="Back to home"
-        >
-          <ArrowLeft className="h-6 w-6" />
-        </button>
-        <h1 className="text-2xl font-bold tracking-tight ml-2">
+      <div className="mb-6 -mt-px">
+        <h1 className="text-center text-2xl sm:text-3xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-orange-300 to-yellow-300 drop-shadow">
           Item Base Values
         </h1>
       </div>

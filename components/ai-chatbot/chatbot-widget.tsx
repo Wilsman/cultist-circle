@@ -295,7 +295,7 @@ export function ChatbotWidget({ className }: { className?: string }) {
   }, [isOpen]);
 
   const containerClasses = useMemo(
-    () => cn("fixed bottom-4 right-4 z-50", className),
+    () => cn("fixed right-4 z-50 bottom-4", className),
     [className]
   );
 
@@ -314,7 +314,7 @@ export function ChatbotWidget({ className }: { className?: string }) {
           aria-label="Open AI helper"
         >
           <MessageCircleIcon className="size-4" />
-          <span className="text-sm font-medium">Help</span>
+          <span className="text-sm font-medium hidden sm:inline">Help</span>
         </button>
       )}
 

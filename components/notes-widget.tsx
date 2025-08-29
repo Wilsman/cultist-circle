@@ -54,6 +54,7 @@ export function NotesWidget(): JSX.Element {
     }
   }, []);
 
+
   // Animate panel on open
   useEffect(() => {
     if (isOpen) {
@@ -169,7 +170,7 @@ export function NotesWidget(): JSX.Element {
                 }}
               >
                 <StickyNote aria-hidden className="size-4" />
-                <span className="text-sm font-medium">Notes</span>
+                <span className="text-sm font-medium hidden sm:inline">Notes</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">Sticky Notes</TooltipContent>
