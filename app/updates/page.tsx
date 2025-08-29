@@ -19,10 +19,17 @@ function formatDate(iso: string) {
 }
 
 function groupHighlights(entry: ChangelogEntry) {
-  const normalize = (s: string) => s.replace(/^\s*(Feature:|Fix:|Style:|New:|Perf:|Chore:)\s*/i, "").trim();
-  const features = (entry as any).features ?? entry.highlights?.filter((h) => /^\s*(Feature:|New:)/i.test(h)).map(normalize) ?? [];
-  const fixes = (entry as any).fixes ?? entry.highlights?.filter((h) => /^\s*Fix:/i.test(h)).map(normalize) ?? [];
-  const style = (entry as any).style ?? entry.highlights?.filter((h) => /^\s*Style:/i.test(h)).map(normalize) ?? [];
+  const normalize = (s: string) =>
+    s.replace(/^\s*(Feature:|Fix:|Style:|New:|Perf:|Chore:)\s*/i, "").trim();
+
+  const hl = entry.highlights ?? [];
+  const derivedFeatures = hl.filter((h) => /^\s*(Feature:|New:)/i.test(h)).map(normalize);
+  const derivedFixes = hl.filter((h) => /^\s*Fix:/i.test(h)).map(normalize);
+  const derivedStyle = hl.filter((h) => /^\s*Style:/i.test(h)).map(normalize);
+
+  const features = entry.features ?? derivedFeatures;
+  const fixes = entry.fixes ?? derivedFixes;
+  const style = entry.style ?? derivedStyle;
   return { features, fixes, style };
 }
 
