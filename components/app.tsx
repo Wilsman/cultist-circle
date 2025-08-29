@@ -48,9 +48,9 @@ import { toast as sonnerToast } from "sonner";
 import ThresholdProgress from "@/components/threshold-progress";
 import NextItemHints from "@/components/next-item-hints";
 import ShareCardButton from "@/components/share-card-button";
+import { CURRENT_VERSION } from "@/config/changelog";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 
-export const CURRENT_VERSION = "2.1.1"; //* Increment this when you want to trigger a cache clear
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";

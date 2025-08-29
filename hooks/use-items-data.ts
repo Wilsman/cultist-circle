@@ -5,9 +5,7 @@ import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
 import { fetchTarkovData, CACHE_TTL } from "@/hooks/use-tarkov-api";
 import { toast as sonnerToast } from "sonner";
 import { useLanguage } from "@/contexts/language-context";
-
-// Single version for the combined data approach
-const CURRENT_VERSION = "2.1.1"; // New version for combined data approach
+import { CURRENT_VERSION } from "@/config/changelog";
 
 // Create a single persistence middleware for the combined data
 // The middleware handles localStorage quota errors and clears old cache when needed

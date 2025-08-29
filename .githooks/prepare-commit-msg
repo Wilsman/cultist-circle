@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Inject current app version into commit messages if missing.
+# Works with Conventional Commits while appending a trailing [vX.Y.Z].
+
+set -euo pipefail
+
+MSG_FILE="$1"
+SOURCE="${2-}"
+
+# Skip for merge commits to avoid polluting merge messages (optional)
+if [[ "${SOURCE}" == "merge" ]]; then
+  exit 0
+fi
+
+# Try to read version from config/changelog.ts
+VERSION=""
+if [[ -f "config/changelog.ts" ]]; then
+  VERSION=$(grep -Eo 'export const CURRENT_VERSION\s*=\s*"[^"]+"' config/changelog.ts | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  if [[ -z "$VERSION" ]]; then
+    VERSION=$(grep -Eo 'version:\s*"[^"]+"' config/changelog.ts | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  fi
+fi
+
+if [[ -z "$VERSION" ]]; then
+  # As a last resort, do nothing
+  exit 0
+fi
+
+# If the message already contains the version, do nothing
+if grep -q -E "\b${VERSION}\b" "$MSG_FILE"; then
+  exit 0
+fi
+
+# Append version marker on a new line to keep titles clean
+printf "\n[v%s]\n" "$VERSION" >> "$MSG_FILE"
+
+exit 0
+

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CURRENT_VERSION } from "@/components/app";
+import { CURRENT_VERSION } from "@/config/changelog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
