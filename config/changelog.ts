@@ -1,7 +1,13 @@
 export type ChangelogEntry = {
   version: string;
   date: string; // ISO date (YYYY-MM-DD)
-  highlights: string[];
+  // Legacy flat list; still supported by the updates page
+  highlights?: string[];
+  // New grouped fields (optional)
+  features?: string[];
+  fixes?: string[];
+  style?: string[];
+  // Additional sections
   upcoming?: string[];
   knownIssues?: string[];
 };

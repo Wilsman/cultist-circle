@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CHANGELOG, CURRENT_VERSION, KNOWN_ISSUES } from "@/config/changelog";
+import { CHANGELOG, CURRENT_VERSION, KNOWN_ISSUES, type ChangelogEntry } from "@/config/changelog";
 
 export const metadata = {
   title: "What’s New | Cultist Circle",
@@ -16,6 +16,14 @@ function formatDate(iso: string) {
   } catch {
     return iso;
   }
+}
+
+function groupHighlights(entry: ChangelogEntry) {
+  const normalize = (s: string) => s.replace(/^\s*(Feature:|Fix:|Style:|New:|Perf:|Chore:)\s*/i, "").trim();
+  const features = (entry as any).features ?? entry.highlights?.filter((h) => /^\s*(Feature:|New:)/i.test(h)).map(normalize) ?? [];
+  const fixes = (entry as any).fixes ?? entry.highlights?.filter((h) => /^\s*Fix:/i.test(h)).map(normalize) ?? [];
+  const style = (entry as any).style ?? entry.highlights?.filter((h) => /^\s*Style:/i.test(h)).map(normalize) ?? [];
+  return { features, fixes, style };
 }
 
 export default function UpdatesPage() {
@@ -59,7 +67,9 @@ export default function UpdatesPage() {
       ) : null}
 
       <div className="space-y-8">
-        {CHANGELOG.map((entry) => (
+        {CHANGELOG.map((entry) => {
+          const { features, fixes, style } = groupHighlights(entry);
+          return (
           <article
             key={entry.version}
             className="rounded-2xl border border-slate-700/60 bg-slate-900/40 backdrop-blur-sm p-5"
@@ -73,22 +83,56 @@ export default function UpdatesPage() {
               </time>
             </header>
 
-            {entry.highlights?.length ? (
+            {features.length > 0 && (
               <section className="mb-4">
-                <h3 className="mb-2 text-sm font-semibold text-yellow-300 flex items-center gap-2">
+                <h3 className="mb-2 text-sm font-semibold text-emerald-300 flex items-center gap-2">
                   <span>✨</span>
-                  <span>Highlights</span>
+                  <span>Features</span>
                 </h3>
                 <ul className="text-sm text-slate-200 space-y-2">
-                  {entry.highlights.map((h, i) => (
+                  {features.map((h, i) => (
                     <li key={i} className="flex gap-2">
-                      <span className="text-yellow-400">•</span>
+                      <span className="text-emerald-300">•</span>
                       <span>{h}</span>
                     </li>
                   ))}
                 </ul>
               </section>
-            ) : null}
+            )}
+
+            {fixes.length > 0 && (
+              <section className="mb-4">
+                <h3 className="mb-2 text-sm font-semibold text-amber-300 flex items-center gap-2">
+                  <span>🛠️</span>
+                  <span>Fixes</span>
+                </h3>
+                <ul className="text-sm text-slate-200 space-y-2">
+                  {fixes.map((h, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-amber-300">•</span>
+                      <span>{h}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {style.length > 0 && (
+              <section className="mb-4">
+                <h3 className="mb-2 text-sm font-semibold text-sky-300 flex items-center gap-2">
+                  <span>🎨</span>
+                  <span>Style</span>
+                </h3>
+                <ul className="text-sm text-slate-200 space-y-2">
+                  {style.map((h, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-sky-300">•</span>
+                      <span>{h}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {entry.upcoming?.length ? (
               <section className="mb-4">
@@ -124,7 +168,8 @@ export default function UpdatesPage() {
               </section>
             ) : null}
           </article>
-        ))}
+          );
+        })}
 
         <p className="text-center text-sm text-pink-300/90">
           Thanks for all the feedback and support! ❤️
