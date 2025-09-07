@@ -346,7 +346,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               className="w-10 h-10 object-contain rounded mr-2"
             />
           )}
-          <div className="flex-1 flex flex-col text-xs">
+          <div className="flex-1 min-w-0 flex flex-col text-xs">
             <span className="truncate font-semibold text-sm">{item.name}</span>
             <div className="text-gray-400 flex flex-wrap items-center gap-2">
               {/* Base value chip */}
@@ -467,7 +467,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         {/* SELECTED ITEM CARD */}
         {selectedItem && (
           <div
-            className={`border p-1 mb-0.5 rounded-md bg-gray-900 ${
+            className={`border p-1 mb-0.5 rounded-md bg-gray-900 overflow-hidden ${
               isPinned ? "border-yellow-400" : "border-gray-600"
             }`}
             >
@@ -483,54 +483,34 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               </div>
 
               {/* RIGHT SIDE (All info and buttons) */}
-              <div className="flex-1 flex flex-col p-2 space-y-2">
+              <div className="flex-1 min-w-0 flex flex-col p-2 space-y-2">
                 {/* Top row: name + compact action toolbar */}
-                <div className="flex items-center justify-between">
+                <div className="grid w-full grid-cols-[1fr_auto] items-center gap-2">
                   {/* Item name */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      {selectedItem.link ? (
-                        <a
-                          href={selectedItem.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-teal-400 font-semibold text-xs sm:text-sm truncate hover:underline"
-                          style={{
-                            maxWidth: "calc(100vw - 2rem)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {window.innerWidth < 640
-                            ? `${selectedItem.name.slice(0, 20)}...`
-                            : selectedItem.name.length > 42
-                            ? `${selectedItem.name.slice(0, 42)}...`
-                            : selectedItem.name}
-                        </a>
-                      ) : (
-                        <span
-                          className="text-teal-400 font-semibold text-xs sm:text-sm truncate"
-                          style={{
-                            maxWidth: "calc(100vw - 2rem)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {window.innerWidth < 640
-                            ? `${selectedItem.name.slice(0, 20)}...`
-                            : selectedItem.name.length > 42
-                            ? `${selectedItem.name.slice(0, 42)}...`
-                            : selectedItem.name}
-                        </span>
-                      )}
-                    </TooltipTrigger>
-                    <TooltipContent>{selectedItem.name}</TooltipContent>
-                  </Tooltip>
+                  <div className="min-w-0">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {selectedItem.link ? (
+                          <a
+                            href={selectedItem.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-teal-400 font-semibold text-xs sm:text-sm truncate hover:underline"
+                          >
+                            {selectedItem.name}
+                          </a>
+                        ) : (
+                          <span className="block text-teal-400 font-semibold text-xs sm:text-sm truncate">
+                            {selectedItem.name}
+                          </span>
+                        )}
+                      </TooltipTrigger>
+                      <TooltipContent>{selectedItem.name}</TooltipContent>
+                    </Tooltip>
+                  </div>
 
                   {/* Actions toolbar */}
-                  <div className="ml-2 flex items-center rounded-full border border-gray-700/60 bg-gray-800/50 px-1.5 py-0.5 shadow-sm">
+                  <div className="ml-2 shrink-0 flex items-center rounded-full border border-gray-700/60 bg-gray-800/50 px-1.5 py-0.5 shadow-sm">
                     {/* Copy */}
                     <Tooltip>
                       <TooltipTrigger asChild>

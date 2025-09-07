@@ -771,6 +771,21 @@ function AppContent() {
 
   const isThresholdMet: boolean = total >= threshold;
 
+  // Expected outcome text based on current total base value
+  function getExpectedOutcome(val: number): { short: string; full: string } {
+    if (val >= 400_000) {
+      return {
+        short: `quest/hideout items or high value items`,
+        full:
+          "quest/hideout items or high value items",
+      };
+    }
+    if (val >= 350_001) {
+      return { short: "High value items", full: "High value items" };
+    }
+    return { short: "Normal value items", full: "Normal value item" };
+  }
+
   // Show hint pills only when at least one item is selected AND threshold not met, or when all empty
   const showHintPills = useMemo(
     () => (selectedItems.some(Boolean) && total < threshold) || selectedItems.every((it) => !it),
@@ -1663,36 +1678,50 @@ function AppContent() {
               {/* Sacrifice + Flea costs (revamped) */}
               <div id="sacrifice-value" className="mt-6 w-full">
                 <div className="mx-auto max-w-2xl rounded-2xl bg-slate-700/40 border border-slate-600/30 backdrop-blur-sm px-4 py-4">
-                  <h2 className="text-center text-2xl md:text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
                     Sacrifice BaseValue Total
                   </h2>
                   {loading ? (
                     <Skeleton className="h-20 w-4/5 mx-auto" />
                   ) : (
                     <>
-                      <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
-                        <div className="text-center">
-                          <div className="text-4xl md:text-5xl font-extrabold text-green-500">
-                            ₽{total.toLocaleString()}
+                      {/* Primary summary layout */}
+                      <div className="mt-1">
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-6">
+                          {/* Left: total, base text, threshold, est. cost */}
+                          <div className="flex-1">
+                            <div className="text-5xl md:text-6xl font-extrabold text-green-500 leading-tight">
+                              ₽{total.toLocaleString()}
+                            </div>
+                            <div className="mt-1 text-xs md:text-sm text-gray-400">
+                              {itemBonus > 0 ? (
+                                <>
+                                  Base: ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} + {itemBonus}% bonus
+                                </>
+                              ) : (
+                                <>Current total basevalue</>
+                              )}
+                            </div>
+                            <div className="mt-1 text-[11px] md:text-xs">
+                              {isThresholdMet ? (
+                                <span className="text-green-400">Threshold Met</span>
+                              ) : (
+                                <span className="text-red-400">Remaining to threshold ₽{(threshold - total).toLocaleString()}</span>
+                              )}
+                            </div>
+                            <div className="mt-2">
+                              <div className="text-[11px] md:text-xs uppercase tracking-wide text-gray-400">EST. COST</div>
+                              <div className={`text-base md:text-lg font-semibold ${Object.keys(overriddenPrices).length > 0 ? "text-white" : "text-gray-200"}`}>
+                                ₽{totalFleaCost?.toLocaleString()}
+                              </div>
+                            </div>
                           </div>
-                          {itemBonus > 0 && (
-                            <div className="text-xs md:text-sm text-gray-400 mt-1">
-                              (Base: ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} + {itemBonus}% bonus)
-                            </div>
-                          )}
-                          {!isThresholdMet && (
-                            <div className="text-red-400 mt-1 text-sm md:text-base">
-                              ₽{(threshold - total).toLocaleString()} needed to meet threshold
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-center">
-                          <div className="rounded-xl bg-slate-800/50 border border-slate-700 px-3 py-3 inline-block">
-                            <div className="text-[11px] md:text-xs uppercase tracking-wide text-gray-400">
-                              Total Cost ≈
-                            </div>
-                            <div className={`text-2xl font-semibold ${Object.keys(overriddenPrices).length > 0 ? "text-white" : "text-gray-200"}`}>
-                              ₽{totalFleaCost?.toLocaleString()}
+
+                          {/* Right: expected rewards card */}
+                          <div className="md:ml-2 rounded-xl bg-slate-800/30 border border-slate-700/70 px-4 py-3 w-full md:w-auto md:max-w-xs">
+                            <div className="text-[11px] md:text-xs uppercase tracking-wide text-gray-400">EXPECTED REWARDS</div>
+                            <div className="text-sm md:text-base text-slate-200" title={getExpectedOutcome(total).full}>
+                              {getExpectedOutcome(total).short}
                             </div>
                           </div>
                         </div>
