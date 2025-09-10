@@ -1413,7 +1413,7 @@ function AppContent() {
             </div>
 
             {/* Combined compact alerts */}
-            <TopAlerts isPVE={isPVE} />
+            <TopAlerts />
 
             <CardContent className="p-2">
               {/* Unified controls */}
