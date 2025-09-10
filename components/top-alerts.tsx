@@ -1,13 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, BadgeCheck, ChevronDown } from "lucide-react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
 
-interface TopAlertsProps {
-  isPVE: boolean;
-}
+interface TopAlertsProps {}
 
-export function TopAlerts({ isPVE }: TopAlertsProps) {
+export function TopAlerts({}: TopAlertsProps) {
   return (
     <div className="flex items-center justify-center px-3 sm:px-4 md:px-8">
       <Alert
@@ -33,54 +31,46 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
 
         {/* Compact header row(s) */}
         <div className="flex flex-col gap-1 px-2.5 sm:px-3.5 pt-2">
-          {/* New special task announcement (always visible, top-most) */}
-          <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/20">
-              🔥
-            </span>
-            <span className="truncate font-semibold">
-              New: Friend from Norvinsk – Part 5 recipe
-            </span>
-            <Link
-              href="/recipes"
-              className="ml-auto inline-flex items-center gap-1 rounded-full border border-slate-300/40 dark:border-slate-700/40 bg-white/50 dark:bg-slate-900/30 px-2 py-0.5 text-[10px] text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-900/50 transition-colors"
-            >
-              View
-            </Link>
-          </div>
-
-          {!isPVE && (
-            <div className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-1.5 text-[11px] sm:text-[12px] text-red-800 dark:text-red-200 ring-1 ring-red-500/25">
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-red-500/15 text-red-600 dark:text-red-300 ring-1 ring-red-500/20">
-                <AlertTriangle className="h-3 w-3" />
+          {/* New special task announcement (hidden) */}
+          {false && (
+            <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/20">
+                🔥
               </span>
-              <span className="font-semibold truncate">
-                PVP Flea is back (35+). Prices coming soon. Trader prices still available.
+              <span className="truncate font-semibold">
+                Weapon base values can be found in the{" "}
+                <Link
+                  href="/base-values"
+                  className="underline hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
+                >
+                  Base Values lookup
+                </Link>{" "}
+                - search by weapon name or use &quot;&lt;weapon&gt;
+                default&quot; for trader prices. Values may vary; updates are
+                ongoing.
               </span>
             </div>
           )}
 
-          {/* Labyrinth figurines tip in header */}
-          <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-            <Image
-              src="https://assets.tarkov.dev/679b9d43597ba2ed120c3d44-icon.webp"
-              alt="Labyrinth figurine"
-              width={32}
-              height={32}
-              className="rounded"
-            />
-            <div className="min-w-0 flex flex-col">
-              <span className="truncate font-semibold">
-                You can get Labyrinth figurines from the 6-hour rituals
+          {/* Combined Base Values and Settings tip */}
+          <div className="flex items-start gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
+            <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <span className="font-semibold leading-tight text-red-800 dark:text-red-200">
+                We are still working on finding the correct multiplier for Weapon base values, please use the {" "}
+                <Link
+                  href="/base-values"
+                  className="underline hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
+                >
+                  Base Values lookup
+                </Link>{" "}
+                page. To display weapons in the calculator, go to Settings → Excluded
+                Categories and uncheck &quot;Weapon&quot;.
               </span>
-              <span className="text-[10px] leading-tight text-slate-600 dark:text-slate-400">
-                Might require having the prestige task New Beginning active
+              <span className="block text-[10px] leading-tight text-red-600 dark:text-red-400 mt-0.5">
+                Caution: Weapon base values are higher than shown in the app, we are working on finding the correct multiplier for weapons.
               </span>
             </div>
-            <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-300">
-              <BadgeCheck className="h-3.5 w-3.5" />
-              Confirmed
-            </span>
           </div>
           {/* First combo preview (always visible) */}
           <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
@@ -112,7 +102,8 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
           <summary className="flex items-center justify-between cursor-pointer list-none p-2 sm:p-2.5">
             <div className="flex items-center gap-2 min-w-0">
               <span className="hidden sm:inline text-[10px] font-medium text-slate-500/90 ml-1 truncate">
-                Expand to view most popular sacrifices — found by our amazing community
+                Expand to view most popular sacrifices — found by our amazing
+                community
               </span>
             </div>
             <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 group-open:rotate-180" />
@@ -206,9 +197,7 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
                       height={32}
                       className="rounded"
                     />
-                    <span className="font-semibold">
-                      2× MP5 SD
-                    </span>
+                    <span className="font-semibold">2× MP5 SD</span>
                     <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
                       <Image
                         src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
@@ -242,3 +231,4 @@ export function TopAlerts({ isPVE }: TopAlertsProps) {
 }
 
 export default TopAlerts;
+
