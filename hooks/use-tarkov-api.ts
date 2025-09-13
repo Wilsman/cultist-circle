@@ -262,6 +262,7 @@ export interface MinimalItem {
     vendor: {
       normalizedName: string;
       minTraderLevel?: number;
+      buyLimit?: number;
     };
   }[];
 }
@@ -310,6 +311,7 @@ export async function fetchMinimalTarkovData(language: string = 'en'): Promise<{
             normalizedName
             ... on TraderOffer {
               minTraderLevel
+              buyLimit
             }
           }
         }
@@ -337,6 +339,7 @@ export async function fetchMinimalTarkovData(language: string = 'en'): Promise<{
             normalizedName
             ... on TraderOffer {
               minTraderLevel
+              buyLimit
             }
           }
         }

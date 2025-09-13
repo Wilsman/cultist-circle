@@ -57,18 +57,20 @@ export function TopAlerts({}: TopAlertsProps) {
             <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
             <div className="min-w-0">
               <span className="font-semibold leading-tight text-red-800 dark:text-red-200">
-                We are still working on finding the correct multiplier for Weapon base values, please use the {" "}
+                We are still working on finding the correct multiplier for
+                Weapon base values, please use the{" "}
                 <Link
                   href="/base-values"
                   className="underline hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
                 >
                   Base Values lookup
                 </Link>{" "}
-                page. To display weapons in the calculator, go to Settings → Excluded
-                Categories and uncheck &quot;Weapon&quot;.
+                page. To display weapons in the calculator, go to Settings →
+                Excluded Categories and uncheck &quot;Weapon&quot;.
               </span>
               <span className="block text-[10px] leading-tight text-red-600 dark:text-red-400 mt-0.5">
-                Caution: Weapon base values are higher than shown in the app, we are working on finding the correct multiplier for weapons.
+                Caution: Weapon base values are higher than shown in the app, we
+                are working on finding the correct multiplier for weapons.
               </span>
             </div>
           </div>
@@ -191,13 +193,24 @@ export function TopAlerts({}: TopAlertsProps) {
 
                   <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
                     <Image
-                      src="https://assets.tarkov.dev/59411abb86f77478f702b5d2-icon.webp"
-                      alt="HK MP5 9x19 submachine gun (Navy 3 Round Burst) SD"
+                        src="https://assets.tarkov.dev/5c94bbff86f7747ee735c08f-icon.webp"
+                      alt="Labs access"
                       width={32}
                       height={32}
                       className="rounded"
                     />
-                    <span className="font-semibold">2× MP5 SD</span>
+                    <span className="font-semibold">
+                      1× Labs Access
+                    </span>
+                    <span className="opacity-60">➡️</span>
+                    <Image
+                      src="https://assets.tarkov.dev/6193e5f3aa34a3034236bdb3-icon.webp"
+                      alt="HK G28 Patrol"
+                      width={32}
+                      height={32}
+                      className="rounded"
+                      />
+                    <span className="font-semibold">1× HK G28 Patrol</span>
                     <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
                       <Image
                         src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
@@ -205,11 +218,11 @@ export function TopAlerts({}: TopAlertsProps) {
                         width={14}
                         height={14}
                         className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
-                      />
-                      <span className="font-medium">LL2</span>
+                        />
+                      <span className="font-medium">LL3</span>
                     </span>
                     <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
-                      Cheap 14h(only)
+                      (6h & 14h)
                     </span>
                   </div>
                 </AlertDescription>
@@ -231,4 +244,3 @@ export function TopAlerts({}: TopAlertsProps) {
 }
 
 export default TopAlerts;
-

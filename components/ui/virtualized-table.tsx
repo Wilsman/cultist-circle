@@ -25,7 +25,7 @@ interface VirtualizedTableProps {
   sortKey: string;
   sortDir: "asc" | "desc";
   onHeaderSort?: (
-    sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice" | "traderPrice" | "buyPrice"
+    sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice" | "traderSellPrice" | "traderBuyPrice" | "buyLimit"
   ) => void;
   onToggleFavorite?: (itemId: string) => void;
   isFavorite?: (itemId: string) => boolean;
@@ -220,6 +220,9 @@ export function VirtualizedTable({
               "-"
             )}
           </Cell>
+          <Cell className="text-muted-foreground text-right w-[120px]">
+            {bestBuyPrice?.vendor?.buyLimit ? bestBuyPrice.vendor.buyLimit.toLocaleString() : '∞'}
+          </Cell>
         </div>
       );
     },
@@ -267,17 +270,24 @@ export function VirtualizedTable({
         </div>
         <div
           className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => onHeaderSort?.("traderPrice")}
+          onClick={() => onHeaderSort?.("traderSellPrice")}
         >
           Sell-to-trader Price{" "}
-          {sortKey === "traderPrice" && (sortDir === "asc" ? "↑" : "↓")}
+          {sortKey === "traderSellPrice" && (sortDir === "asc" ? "↑" : "↓")}
         </div>
         <div
           className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => onHeaderSort?.("buyPrice")}
+          onClick={() => onHeaderSort?.("traderBuyPrice")}
         >
           Buy From Traders{" "}
-          {sortKey === "buyPrice" && (sortDir === "asc" ? "↑" : "↓")}
+          {sortKey === "traderBuyPrice" && (sortDir === "asc" ? "↑" : "↓")}
+        </div>
+        <div
+          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => onHeaderSort?.("buyLimit")}
+        >
+          Buy Limit{" "}
+          {sortKey === "buyLimit" && (sortDir === "asc" ? "↑" : "↓")}
         </div>
       </div>
       <List

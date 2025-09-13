@@ -13,6 +13,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Package, CheckCircle2, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { recipeIconMap } from "@/data/recipe-icons";
+import Image from "next/image";
 
 // Types
 interface Recipe {
@@ -210,6 +212,39 @@ export default function Page() {
     );
   }
 
+  // ItemBadge component with large external icon
+  function ItemBadge({ itemName, isOutput = false }: { itemName: string; isOutput?: boolean }) {
+    const iconUrl = recipeIconMap[itemName];
+    
+    return (
+      <div className="flex items-center gap-3 lg:gap-4 w-full">
+        {iconUrl ? (
+          <Image 
+            src={iconUrl} 
+            alt={itemName} 
+            width={64} 
+            height={64} 
+            className="rounded-lg flex-shrink-0 bg-gray-900/50 p-2 w-12 h-12 lg:w-16 lg:h-16"
+            unoptimized
+          />
+        ) : (
+          <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg bg-gray-900/50 flex-shrink-0" />
+        )}
+        <Badge 
+          variant="secondary" 
+          title={itemName} 
+          className={`inline-flex items-center flex-1 truncate rounded-full border py-1.5 px-3 lg:py-2 lg:px-4 ${
+            isOutput 
+              ? "bg-green-900/40 text-green-300 border-green-800/60" 
+              : "bg-gray-800/70 text-gray-100 border-gray-600"
+          }`}
+        >
+          <span className="truncate text-sm lg:text-base">{itemName}</span>
+        </Badge>
+      </div>
+    );
+  }
+
   // RecipeCard subcomponent
   function RecipeCard({ recipe }: { recipe: Recipe }) {
     // Normalize outputs: split any comma-separated strings into individual items
@@ -231,9 +266,7 @@ export default function Page() {
             </div>
             <div className="flex flex-col gap-2">
               {recipe.requiredItems.map((ing, idx) => (
-                <Badge key={idx} variant="secondary" title={ing} className="inline-flex w-full max-w-full truncate rounded-full bg-gray-800/70 text-gray-100 border border-gray-600">
-                  <span className="truncate">{ ing }</span>
-                </Badge>
+                <ItemBadge key={idx} itemName={ing} />
               ))}
             </div>
           </div>
@@ -255,9 +288,7 @@ export default function Page() {
             </div>
             <div className="flex flex-col gap-2">
               {outputs.map((out, idx) => (
-                <Badge key={`${out}-${idx}`} title={out} className="inline-flex w-full max-w-full truncate rounded-full bg-green-900/40 text-green-300 border border-green-800/60">
-                  <span className="truncate">{ out }</span>
-                </Badge>
+                <ItemBadge key={`${out}-${idx}`} itemName={out} isOutput={true} />
               ))}
             </div>
           </div>
@@ -268,7 +299,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-4 pb-4 pt-0 sm:pt-1 overflow-auto -mt-px flex items-center justify-center">
-      <Card className="bg-gray-800/95 backdrop-blur-sm border-gray-700 text-secondary shadow-lg w-full max-w-2xl mx-auto flex flex-col rounded-t-none border-t-0">
+      <Card className="bg-gray-800/95 backdrop-blur-sm border-gray-700 text-secondary shadow-lg w-full max-w-2xl lg:max-w-5xl mx-auto flex flex-col rounded-t-none border-t-0">
         <div className="sticky top-0 z-10 bg-gray-800/95 border-b border-gray-700 px-6 pt-6 pb-4 rounded-t-none backdrop-blur">
           <CardHeader className="p-0 mb-4">
             <h1 className="text-center text-2xl sm:text-3xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-orange-300 to-yellow-300 drop-shadow">

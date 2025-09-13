@@ -1375,7 +1375,7 @@ function AppContent() {
     <>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-4 pb-4 pt-0 sm:pt-1 overflow-auto">
         <div className="min-h-screen flex items-center justify-center">
-          <Card className="bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl mx-auto transition-all duration-300 hover:shadow-xl rounded-t-none -mt-px border-t-0">
+          <Card className="bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl lg:max-w-5xl mx-auto transition-all duration-300 hover:shadow-xl rounded-t-none -mt-px border-t-0">
             {/* App-specific toolbar removed; now in global nav */}
 
             {/* Title and Version Info */}
@@ -1677,7 +1677,7 @@ function AppContent() {
 
               {/* Sacrifice + Flea costs (revamped) */}
               <div id="sacrifice-value" className="mt-6 w-full">
-                <div className="mx-auto max-w-2xl rounded-2xl bg-slate-700/40 border border-slate-600/30 backdrop-blur-sm px-4 py-4">
+                <div className="mx-auto max-w-2xl lg:max-w-5xl rounded-2xl bg-slate-700/40 border border-slate-600/30 backdrop-blur-sm px-4 py-4">
                   <h2 className="text-2xl md:text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
                     Sacrifice BaseValue Total
                   </h2>
@@ -1742,7 +1742,7 @@ function AppContent() {
                   )}
                 </div>
                 <footer className="mt-3 text-center text-gray-300 text-[12px] md:text-sm w-full">
-                  <div className="mx-auto max-w-2xl rounded-full bg-slate-700/30 border border-slate-600/30 backdrop-blur-sm px-3 py-2">
+                  <div className="mx-auto max-w-2xl lg:max-w-5xl rounded-full bg-slate-700/30 border border-slate-600/30 backdrop-blur-sm px-3 py-2">
                     <span>Prices provided by </span>
                     <a
                       href="https://tarkov.dev"

@@ -52,8 +52,9 @@ interface FilterState {
     | "basePrice"
     | "lastLowPrice"
     | "avg24hPrice"
-    | "traderPrice"
-    | "buyPrice"
+    | "traderSellPrice"
+    | "traderBuyPrice"
+    | "buyLimit"
     | "bestValue"; // Add name/shortName back
   sortDir: "asc" | "desc";
 }
@@ -175,8 +176,10 @@ export default function ItemsTablePage() {
         | "basePrice"
         | "lastLowPrice"
         | "avg24hPrice"
-        | "traderPrice"
-        | "buyPrice"
+        | "traderSellPrice"
+        | "traderBuyPrice"
+        | "buyLimit"
+        | "bestValue"
     ) => {
       // Use startTransition to mark UI updates as non-urgent
       startTransition(() => {
@@ -216,6 +219,7 @@ export default function ItemsTablePage() {
       "Buy from Trader",
       "Buy from Trader Name",
       "Buy from Trader Level",
+      "Buy Limit",
       "Link",
     ];
 
@@ -252,6 +256,7 @@ export default function ItemsTablePage() {
         const bestBuyPrice = bestBuyOffer ? bestBuyOffer.priceRUB : 0;
         const bestBuyTraderName = bestBuyOffer?.vendor?.normalizedName || "";
         const bestBuyTraderLevel = bestBuyOffer?.vendor?.minTraderLevel || "";
+        const bestBuyLimit = bestBuyOffer?.vendor?.buyLimit;
 
         // Escape categories properly
         const categories = item.categories?.map((c) => c.name).join(", ") || "";
@@ -267,6 +272,7 @@ export default function ItemsTablePage() {
           bestBuyPrice === Infinity ? 0 : bestBuyPrice,
           `"${bestBuyTraderName.replace(/"/g, '""')}"`,
           bestBuyTraderLevel,
+          bestBuyLimit === undefined ? 'N/A' : (bestBuyLimit === null ? '∞' : bestBuyLimit),
           `"${(item.link || "").replace(/"/g, '""')}"`,
         ].join(",");
       }),
@@ -408,9 +414,9 @@ export default function ItemsTablePage() {
         return filter.sortDir === "desc" ? bVal - aVal : aVal - bVal; // Best value is always desc
       });
     } else {
-      // Precompute best trader prices if we're sorting by traderPrice
-      const bestPrices =
-        filter.sort === "traderPrice"
+      // Precompute best trader sell prices if we're sorting by traderSellPrice
+      const bestSellPrices =
+        filter.sort === "traderSellPrice"
           ? new Map<string, number>(
               filteredItems.map((item) => {
                 let bestPrice = 0;
@@ -418,8 +424,7 @@ export default function ItemsTablePage() {
                   for (const offer of item.sellFor) {
                     if (
                       offer?.vendor?.normalizedName &&
-                      offer.vendor.normalizedName.toLowerCase() !==
-                        "flea-market" &&
+                      offer.vendor.normalizedName.toLowerCase() !== "flea-market" &&
                       offer.priceRUB &&
                       offer.priceRUB > bestPrice
                     ) {
@@ -432,42 +437,51 @@ export default function ItemsTablePage() {
             )
           : null;
 
-      // Precompute best buy prices if we're sorting by buyPrice
+      // Precompute best buy prices if we're sorting by traderBuyPrice or buyLimit
       const bestBuyPrices =
-        filter.sort === "buyPrice"
-          ? new Map<string, number>(
+        filter.sort === "traderBuyPrice" || filter.sort === "buyLimit"
+          ? new Map<string, { price: number; limit: number }>(
               filteredItems.map((item) => {
                 let bestPrice = 0;
+                let buyLimit = 0;
                 if (item.buyFor?.length) {
                   for (const offer of item.buyFor) {
                     if (
-                      (offer?.vendor?.normalizedName &&
-                        offer.vendor.normalizedName.toLowerCase() !==
-                          "flea-market" &&
-                        offer.priceRUB &&
-                        offer.priceRUB < bestPrice) ||
-                      bestPrice === 0
+                      offer?.vendor?.normalizedName &&
+                      offer.vendor.normalizedName.toLowerCase() !== "flea-market" &&
+                      offer.priceRUB &&
+                      (offer.priceRUB < bestPrice || bestPrice === 0)
                     ) {
                       bestPrice = offer.priceRUB;
+                      buyLimit = offer.vendor.buyLimit || 0;
                     }
                   }
                 }
-                return [item.id, bestPrice];
+                return [item.id, { price: bestPrice, limit: buyLimit }];
               })
             )
           : null;
 
       // Handle header sorting (name, shortName, prices)
       filteredItems = [...filteredItems].sort((a, b) => {
-        if (filter.sort === "traderPrice" && bestPrices) {
-          const aPrice = bestPrices.get(a.id) || 0;
-          const bPrice = bestPrices.get(b.id) || 0;
+        if (filter.sort === "traderSellPrice" && bestSellPrices) {
+          const aPrice = bestSellPrices.get(a.id) || 0;
+          const bPrice = bestSellPrices.get(b.id) || 0;
           return filter.sortDir === "desc" ? bPrice - aPrice : aPrice - bPrice;
         }
-        if (filter.sort === "buyPrice" && bestBuyPrices) {
-          const aPrice = bestBuyPrices.get(a.id) || 0;
-          const bPrice = bestBuyPrices.get(b.id) || 0;
-          return filter.sortDir === "desc" ? bPrice - aPrice : aPrice - bPrice;
+        if (filter.sort === "traderBuyPrice" && bestBuyPrices) {
+          const aData = bestBuyPrices.get(a.id) || { price: 0 };
+          const bData = bestBuyPrices.get(b.id) || { price: 0 };
+          return filter.sortDir === "desc" 
+            ? bData.price - aData.price 
+            : aData.price - bData.price;
+        }
+        if (filter.sort === "buyLimit" && bestBuyPrices) {
+          const aData = bestBuyPrices.get(a.id) || { limit: 0 };
+          const bData = bestBuyPrices.get(b.id) || { limit: 0 };
+          return filter.sortDir === "desc" 
+            ? bData.limit - aData.limit 
+            : aData.limit - bData.limit;
         }
         const sortKey = filter.sort as
           | "name"
@@ -750,8 +764,9 @@ export default function ItemsTablePage() {
                         | "basePrice"
                         | "lastLowPrice"
                         | "avg24hPrice"
-                        | "traderPrice"
-                        | "buyPrice"
+                        | "traderSellPrice"
+                        | "traderBuyPrice"
+                        | "buyLimit"
                         | "bestValue",
                       sortDir:
                         value === "name" || value === "shortName"
@@ -768,8 +783,9 @@ export default function ItemsTablePage() {
                   <SelectItem value="basePrice">Base Price</SelectItem>
                   <SelectItem value="lastLowPrice">Last Low Price</SelectItem>
                   <SelectItem value="avg24hPrice">24h Avg Price</SelectItem>
-                  <SelectItem value="traderPrice">Sell to Trader</SelectItem>
-                  <SelectItem value="buyPrice">Buy from Trader</SelectItem>
+                  <SelectItem value="traderSellPrice">Sell to Trader</SelectItem>
+                  <SelectItem value="traderBuyPrice">Buy from Trader</SelectItem>
+                  <SelectItem value="buyLimit">Buy Limit</SelectItem>
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="shortName">Short Name</SelectItem>
                   <SelectItem value="bestValue">Best Value</SelectItem>

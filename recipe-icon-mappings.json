@@ -1,0 +1,415 @@
+[
+  {
+    "itemName": "Soap",
+    "cleanName": "Soap",
+    "iconUrl": "https://assets.tarkov.dev/5c13cd2486f774072c757944-icon.webp",
+    "matchScore": 2.2204460492503175e-16,
+    "matchedApiName": "Soap"
+  },
+  {
+    "itemName": "Awl",
+    "cleanName": "Awl",
+    "iconUrl": "https://assets.tarkov.dev/62a0a098de7ac8199358053b-icon.webp",
+    "matchScore": 2.2204460492503175e-16,
+    "matchedApiName": "Awl"
+  },
+  {
+    "itemName": "Scav Vest",
+    "cleanName": "Scav Vest",
+    "iconUrl": "https://assets.tarkov.dev/572b7adb24597762ae139821-icon.webp",
+    "matchScore": 8.569061098350972e-12,
+    "matchedApiName": "Scav Vest"
+  },
+  {
+    "itemName": "1x WD-40 (400ml)",
+    "cleanName": "WD-40 (400ml)",
+    "iconUrl": "https://assets.tarkov.dev/590c5c9f86f77477c91c36e7-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "WD-40 (400ml)"
+  },
+  {
+    "itemName": "WD-40 (100ml)",
+    "cleanName": "WD-40 (100ml)",
+    "iconUrl": "https://assets.tarkov.dev/590c5bbd86f774785762df04-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "WD-40 (100ml)"
+  },
+  {
+    "itemName": "Fleece fabric",
+    "cleanName": "Fleece fabric",
+    "iconUrl": "https://assets.tarkov.dev/5e2af47786f7746d404f3aaa-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Fleece fabric"
+  },
+  {
+    "itemName": "1x Nailhead figurine",
+    "cleanName": "Nailhead figurine",
+    "iconUrl": "https://assets.tarkov.dev/679b9cce4e4ed4b3b40ae5c5-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Nailhead figurine"
+  },
+  {
+    "itemName": "1x Xenoalien figurine",
+    "cleanName": "Xenoalien figurine",
+    "iconUrl": "https://assets.tarkov.dev/679b9d55708cfcb2060b9ae3-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Xenoalien figurine"
+  },
+  {
+    "itemName": "Medical bloodset",
+    "cleanName": "Medical bloodset",
+    "iconUrl": "https://assets.tarkov.dev/5b4335ba86f7744d2837a264-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Medical bloodset"
+  },
+  {
+    "itemName": "Cultist figurine ×1",
+    "cleanName": "Cultist figurine",
+    "iconUrl": "https://assets.tarkov.dev/655c669103999d3c810c025b-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Cultist figurine"
+  },
+  {
+    "itemName": "Cultist figurine ×5",
+    "cleanName": "Cultist figurine",
+    "iconUrl": "https://assets.tarkov.dev/655c669103999d3c810c025b-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Cultist figurine"
+  },
+  {
+    "itemName": "Cultist knife",
+    "cleanName": "Cultist knife",
+    "iconUrl": "https://assets.tarkov.dev/5fc64ea372b0dd78d51159dc-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Cultist knife"
+  },
+  {
+    "itemName": "Killa figurine",
+    "cleanName": "Killa figurine",
+    "iconUrl": "https://assets.tarkov.dev/66572c82ad599021091c6118-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Killa figurine"
+  },
+  {
+    "itemName": "Tagilla figurine",
+    "cleanName": "Tagilla figurine",
+    "iconUrl": "https://assets.tarkov.dev/66572cbdad599021091c611a-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Tagilla figurine"
+  },
+  {
+    "itemName": "Reshala figurine",
+    "cleanName": "Reshala figurine",
+    "iconUrl": "https://assets.tarkov.dev/66572be36a723f7f005a066e-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Reshala figurine"
+  },
+  {
+    "itemName": "Den figurine",
+    "cleanName": "Den figurine",
+    "iconUrl": "https://assets.tarkov.dev/66572b8d80b1cd4b6a67847f-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Den figurine"
+  },
+  {
+    "itemName": "Scav figurine",
+    "cleanName": "Scav figurine",
+    "iconUrl": "https://assets.tarkov.dev/655c673673a43e23e857aebd-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Scav figurine"
+  },
+  {
+    "itemName": "Scav backpack",
+    "cleanName": "Scav backpack",
+    "iconUrl": "https://assets.tarkov.dev/56e335e4d2720b6c058b456d-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Scav backpack"
+  },
+  {
+    "itemName": "Ryzhy figurine",
+    "cleanName": "Ryzhy figurine",
+    "iconUrl": "https://assets.tarkov.dev/655c67782a1356436041c9c5-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Ryzhy figurine"
+  },
+  {
+    "itemName": "Light bulb ×2",
+    "cleanName": "Light bulb",
+    "iconUrl": "https://assets.tarkov.dev/5d1b392c86f77425243e98fe-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Light bulb"
+  },
+  {
+    "itemName": "Physical Bitcoin",
+    "cleanName": "Physical Bitcoin",
+    "iconUrl": "https://assets.tarkov.dev/59faff1d86f7746c51718c9c-icon.webp",
+    "matchScore": 1.7908254909544252e-8,
+    "matchedApiName": "Physical Bitcoin"
+  },
+  {
+    "itemName": "1x Pointy guy figurine",
+    "cleanName": "Pointy guy figurine",
+    "iconUrl": "https://assets.tarkov.dev/679b9d6390622daf9708da76-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Pointy guy figurine"
+  },
+  {
+    "itemName": "1x Petya Crooker figurine",
+    "cleanName": "Petya Crooker figurine",
+    "iconUrl": "https://assets.tarkov.dev/679b9d43597ba2ed120c3d44-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Petya Crooker figurine"
+  },
+  {
+    "itemName": "1x Count Bloodsucker figurine",
+    "cleanName": "Count Bloodsucker figurine",
+    "iconUrl": "https://assets.tarkov.dev/679b9d4b3374fb14f40efe6d-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Count Bloodsucker figurine"
+  },
+  {
+    "itemName": "Pack of nails",
+    "cleanName": "Pack of nails",
+    "iconUrl": "https://assets.tarkov.dev/590c31c586f774245e3141b2-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Pack of nails"
+  },
+  {
+    "itemName": "Xenomorph sealing foam",
+    "cleanName": "Xenomorph sealing foam",
+    "iconUrl": "https://assets.tarkov.dev/590c346786f77423e50ed342-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Xenomorph sealing foam"
+  },
+  {
+    "itemName": "Secure container Kappa",
+    "cleanName": "Secure container Kappa",
+    "iconUrl": "https://assets.tarkov.dev/5c093ca986f7740a1867ab12-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Secure container Kappa"
+  },
+  {
+    "itemName": "Spooky skull mask",
+    "cleanName": "Spooky skull mask",
+    "iconUrl": "https://assets.tarkov.dev/62a5c333ec21e50cad3b5dc6-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Spooky skull mask"
+  },
+  {
+    "itemName": "Deadlyslob's beard oil",
+    "cleanName": "Deadlyslob's beard oil",
+    "iconUrl": "https://assets.tarkov.dev/5bc9b9ecd4351e3bac122519-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Deadlyslob's beard oil"
+  },
+  {
+    "itemName": "Baddie's red beard",
+    "cleanName": "Baddie's red beard",
+    "iconUrl": "https://assets.tarkov.dev/62a09dd4621468534a797ac7-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Baddie's red beard"
+  },
+  {
+    "itemName": "Politician Mutkevich figurine",
+    "cleanName": "Politician Mutkevich figurine",
+    "iconUrl": "https://assets.tarkov.dev/655c66e40b2de553b618d4b8-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Politician Mutkevich figurine"
+  },
+  {
+    "itemName": "Obdolbos cocktail injector",
+    "cleanName": "Obdolbos cocktail injector",
+    "iconUrl": "https://assets.tarkov.dev/5ed5166ad380ab312177c100-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Obdolbos cocktail injector"
+  },
+  {
+    "itemName": "Pack of sugar",
+    "cleanName": "Pack of sugar",
+    "iconUrl": "https://assets.tarkov.dev/59e3577886f774176a362503-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Pack of sugar"
+  },
+  {
+    "itemName": "BEAR operative figurine",
+    "cleanName": "BEAR operative figurine",
+    "iconUrl": "https://assets.tarkov.dev/655c652d60d0ac437100fed7-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "BEAR operative figurine"
+  },
+  {
+    "itemName": "Grizzly medical kit",
+    "cleanName": "Grizzly medical kit",
+    "iconUrl": "https://assets.tarkov.dev/590c657e86f77412b013051d-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Grizzly medical kit"
+  },
+  {
+    "itemName": "USEC operative figurine",
+    "cleanName": "USEC operative figurine",
+    "iconUrl": "https://assets.tarkov.dev/655c663a6689c676ce57af85-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "USEC operative figurine"
+  },
+  {
+    "itemName": "Relaxation room key",
+    "cleanName": "Relaxation room key",
+    "iconUrl": "https://assets.tarkov.dev/6582dbf0b8d7830efc45016f-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Relaxation room key"
+  },
+  {
+    "itemName": "Dundukk sport sunglasses",
+    "cleanName": "Dundukk sport sunglasses",
+    "iconUrl": "https://assets.tarkov.dev/5aa2b986e5b5b00014028f4c-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Dundukk sport sunglasses"
+  },
+  {
+    "itemName": "Axel parrot figurine",
+    "cleanName": "Axel parrot figurine",
+    "iconUrl": "https://assets.tarkov.dev/62a091170b9d3c46de5b6cf2-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Axel parrot figurine"
+  },
+  {
+    "itemName": "Zarya stun grenade",
+    "cleanName": "Zarya stun grenade",
+    "iconUrl": "https://assets.tarkov.dev/5a0c27731526d80618476ac4-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "Zarya stun grenade"
+  },
+  {
+    "itemName": "GreenBat lithium battery ×2",
+    "cleanName": "GreenBat lithium battery",
+    "iconUrl": "https://assets.tarkov.dev/5e2aedd986f7746d404f3aa4-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "GreenBat lithium battery"
+  },
+  {
+    "itemName": "LEDX Skin Transilluminator",
+    "cleanName": "LEDX Skin Transilluminator",
+    "iconUrl": "https://assets.tarkov.dev/5c0530ee86f774697952d952-icon.webp",
+    "matchScore": 4.7591260435696324e-7,
+    "matchedApiName": "LEDX Skin Transilluminator"
+  },
+  {
+    "itemName": "1x Bottle of water (0.6L)",
+    "cleanName": "Bottle of water (0.6L)",
+    "iconUrl": "https://assets.tarkov.dev/5448fee04bdc2dbc018b4567-icon.webp",
+    "matchScore": 0.0000033208868533940307,
+    "matchedApiName": "Bottle of water (0.6L)"
+  },
+  {
+    "itemName": "Secure container Kappa (Desecrated)",
+    "cleanName": "Secure container Kappa (Desecrated)",
+    "iconUrl": "https://assets.tarkov.dev/676008db84e242067d0dc4c9-icon.webp",
+    "matchScore": 0.0000033208868533940307,
+    "matchedApiName": "Secure container Kappa (Desecrated)"
+  },
+  {
+    "itemName": "Tagilla's welding mask \"Gorilla\"",
+    "cleanName": "Tagilla's welding mask \"Gorilla\"",
+    "iconUrl": "https://assets.tarkov.dev/60a7ad3a0c5cb24b0134664a-icon.webp",
+    "matchScore": 0.0000033208868533940307,
+    "matchedApiName": "Tagilla's welding mask \"Gorilla\""
+  },
+  {
+    "itemName": "Tagilla's welding mask \"UBEY\"",
+    "cleanName": "Tagilla's welding mask \"UBEY\"",
+    "iconUrl": "https://assets.tarkov.dev/60a7ad2a2198820d95707a2e-icon.webp",
+    "matchScore": 0.0000033208868533940307,
+    "matchedApiName": "Tagilla's welding mask \"UBEY\""
+  },
+  {
+    "itemName": "Bottle of Tarkovskaya vodka ×3",
+    "cleanName": "Bottle of Tarkovskaya vodka",
+    "iconUrl": "https://assets.tarkov.dev/5d40407c86f774318526545a-icon.webp",
+    "matchScore": 0.0000033208868533940307,
+    "matchedApiName": "Bottle of Tarkovskaya vodka"
+  },
+  {
+    "itemName": "Tetriz portable game console ×2",
+    "cleanName": "Tetriz portable game console",
+    "iconUrl": "https://assets.tarkov.dev/5c12620d86f7743f8b198b72-icon.webp",
+    "matchScore": 0.0000033208868533940307,
+    "matchedApiName": "Tetriz portable game console"
+  },
+  {
+    "itemName": "TerraGroup \"Blue Folders\" materials",
+    "cleanName": "TerraGroup \"Blue Folders\" materials",
+    "iconUrl": "https://assets.tarkov.dev/6389c8c5dbfd5e4b95197e6b-icon.webp",
+    "matchScore": 0.0000033208868533940307,
+    "matchedApiName": "TerraGroup \"Blue Folders\" materials"
+  },
+  {
+    "itemName": "Tagilla's welding mask \"ZABEY\" (Replica)",
+    "cleanName": "Tagilla's welding mask \"ZABEY\" (Replica)",
+    "iconUrl": "https://assets.tarkov.dev/67ea616a74f765cefd009fb7-icon.webp",
+    "matchScore": 0.000012647396864175558,
+    "matchedApiName": "Tagilla's welding mask \"ZABEY\" (Replica)"
+  },
+  {
+    "itemName": "Maska-1SCh bulletproof helmet (Killa Edition)",
+    "cleanName": "Maska-1SCh bulletproof helmet (Killa Edition)",
+    "iconUrl": "https://assets.tarkov.dev/5c0e874186f7745dc7616606-icon.webp",
+    "matchScore": 0.000012647396864175558,
+    "matchedApiName": "Maska-1SCh bulletproof helmet (Killa Edition)"
+  },
+  {
+    "itemName": "Maska-1SCh face shield (Killa Edition)",
+    "cleanName": "Maska-1SCh face shield (Killa Edition)",
+    "iconUrl": "https://assets.tarkov.dev/5c0e842486f77443a74d2976-icon.webp",
+    "matchScore": 0.000012647396864175558,
+    "matchedApiName": "Maska-1SCh face shield (Killa Edition)"
+  },
+  {
+    "itemName": "TT-33 7.62x25 TT pistol (Golden)",
+    "cleanName": "TT-33 7.62x25 TT pistol (Golden)",
+    "iconUrl": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-icon.webp",
+    "matchScore": 0.000012647396864175558,
+    "matchedApiName": "TT-33 7.62x25 TT pistol (Golden)"
+  },
+  {
+    "itemName": "Bottle of Fierce Hatchling moonshine",
+    "cleanName": "Bottle of Fierce Hatchling moonshine",
+    "iconUrl": "https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp",
+    "matchScore": 0.000012647396864175558,
+    "matchedApiName": "Bottle of Fierce Hatchling moonshine"
+  },
+  {
+    "itemName": "HighCom Trooper TFO body armor (MultiCam)",
+    "cleanName": "HighCom Trooper TFO body armor (MultiCam)",
+    "iconUrl": "https://assets.tarkov.dev/5c0e655586f774045612eeb2-icon.webp",
+    "matchScore": 0.00003383321966092308,
+    "matchedApiName": "HighCom Trooper TFO body armor (MultiCam)"
+  },
+  {
+    "itemName": "Video cassette with the Cyborg Killer movie",
+    "cleanName": "Video cassette with the Cyborg Killer movie",
+    "iconUrl": "https://assets.tarkov.dev/62a09e974f842e1bd12da3f0-icon.webp",
+    "matchScore": 0.0000721220534925291,
+    "matchedApiName": "Video cassette with the Cyborg Killer movie"
+  },
+  {
+    "itemName": "Rusty bloody key",
+    "cleanName": "Rusty bloody key",
+    "iconUrl": "https://assets.tarkov.dev/64d4b23dc1b37504b41ac2b6-icon.webp",
+    "matchScore": 0.43175955182785375,
+    "matchedApiName": "Rusted bloody key"
+  },
+  {
+    "itemName": "Secure container Gamma (The Unheard Edition)",
+    "cleanName": "Secure container Gamma (The Unheard Edition)",
+    "iconUrl": "https://assets.tarkov.dev/5857a8bc2459772bad15db29-icon.webp",
+    "matchScore": 0.8435567344120021,
+    "matchedApiName": "Secure container Gamma"
+  },
+  {
+    "itemName": "Secure container Gamma (Edge of Darkness Edition)",
+    "cleanName": "Secure container Gamma (Edge of Darkness Edition)",
+    "iconUrl": "https://assets.tarkov.dev/5857a8bc2459772bad15db29-icon.webp",
+    "matchScore": 0.8435567344120021,
+    "matchedApiName": "Secure container Gamma"
+  }
+]
