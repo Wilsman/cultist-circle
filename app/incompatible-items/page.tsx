@@ -31,7 +31,7 @@ export default function IncompatibleItemsPage() {
           <h1 className="text-3xl font-bold">Incompatible Items</h1>
         </div>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Items that cannot be used in the Cultist Circle ritual. These items are automatically excluded from calculations.
+          Items that cannot be used in the Cultist Circle. These items are automatically excluded from calculations.
         </p>
       </div>
 
@@ -62,23 +62,6 @@ export default function IncompatibleItemsPage() {
           className="pl-10 h-12 text-lg"
         />
       </div>
-
-      {/* Info Card */}
-      <Card className="mb-6 border-blue-500/20 bg-blue-500/5">
-        <CardContent className="pt-4">
-          <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-            <div className="text-sm">
-              <p className="font-medium text-blue-500 mb-1">Why are these items excluded?</p>
-              <p className="text-muted-foreground">
-                These items are either too valuable, quest-specific, or have special properties that make them 
-                incompatible with the Cultist Circle ritual mechanics. Using compatible items ensures better 
-                ritual outcomes and prevents wasting rare resources.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Results */}
       {filteredItems.length === 0 ? (
