@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, AlertTriangle, Package, Info } from "lucide-react";
+import { Search, AlertTriangle, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";

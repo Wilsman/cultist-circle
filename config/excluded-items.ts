@@ -90,4 +90,5 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Last Breath poster",
   "Sealed weapon case",
   "Key case",
+  "Thumb drive with military data"
 ]);
