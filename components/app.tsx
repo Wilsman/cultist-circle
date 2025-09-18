@@ -50,6 +50,7 @@ import NextItemHints from "@/components/next-item-hints";
 import ShareCardButton from "@/components/share-card-button";
 import { CURRENT_VERSION } from "@/config/changelog";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
+import { IncompatibleItemsNotice } from "@/components/incompatible-items-notice";
 
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
@@ -1437,6 +1438,9 @@ function AppContent() {
                   handleAutoPick={handleAutoPick}
                 />
               </div>
+
+              {/* Incompatible Items Notice */}
+              <IncompatibleItemsNotice />
 
               <ShareCodeDialog
                 selectedItems={selectedItems}
