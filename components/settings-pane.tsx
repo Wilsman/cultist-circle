@@ -350,29 +350,28 @@ export default function SettingsPane({
               </div>
 
               {/* Market Offer Count Filter Section (General Tab) */}
-              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4 opacity-50">
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <Filter className="h-5 w-5 text-purple-400" />
-                    <span className="text-lg font-semibold">Exclude Low Offer Count Items</span>
+                    <span className="text-lg font-semibold text-gray-500">Exclude Low Offer Count Items</span>
                     <Badge
                       variant="outline"
-                      className="text-yellow-300 border-gray-600 rounded-full animate-pulse"
+                      className="text-gray-500 border-gray-600 rounded-full"
                     >
-                      New
+                      Disabled
                     </Badge>
                   </div>
                   <Switch
                     id="use-last-offer-count-filter"
-                    checked={currentUseLastOfferCountFilter}
-                    onCheckedChange={setCurrentUseLastOfferCountFilter}
-                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-600"
+                    checked={false}
+                    disabled={true}
+                    className="data-[state=checked]:bg-gray-500 data-[state=unchecked]:bg-gray-600 opacity-50 cursor-not-allowed"
                   />
                 </div>
-                <p className="text-sm text-gray-400">
-                  If enabled, items with fewer than 5 offers on the Flea Market
-                  will be excluded from calculations. This helps avoid using items
-                  with artificially inflated prices due to low availability.
+                <p className="text-sm text-gray-500">
+                  This feature is temporarily disabled. Items with fewer than 5 offers on the Flea Market
+                  will not be excluded from calculations.
                 </p>
               </div>
 

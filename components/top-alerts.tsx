@@ -31,6 +31,21 @@ export function TopAlerts({}: TopAlertsProps) {
 
         {/* Compact header row(s) */}
         <div className="flex flex-col gap-1 px-2.5 sm:px-3.5 pt-2">
+          {/* PVP Flea Prices Back Announcement */}
+          <div className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-50/80 to-green-50/80 dark:from-emerald-950/40 dark:to-green-950/40 px-3 py-1.5 text-[11px] sm:text-[12px] text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-500/20 dark:ring-emerald-400/20">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-1 ring-emerald-500/20">
+              🎉
+            </span>
+            <span className="truncate font-semibold whitespace-pre-wrap">
+              <span className="text-emerald-700 dark:text-emerald-300">
+                Great news! PVP flea market prices are now back in the app.
+                <br />
+                Switch to PVP mode and make sure to switch back to Flea Market
+                Prices in the settings.
+              </span>
+            </span>
+          </div>
+
           {/* New special task announcement (hidden) */}
           {false && (
             <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">

@@ -1,45 +1,30 @@
 import Link from "next/link";
-import { CHANGELOG, CURRENT_VERSION, KNOWN_ISSUES, type ChangelogEntry } from "@/config/changelog";
+import { CURRENT_VERSION, LAST_UPDATED } from "@/config/changelog";
 
 export const metadata = {
-  title: "What’s New | Cultist Circle",
-  description: "Latest changes, fixes, and upcoming features.",
+  title: "Version Info | Cultist Circle",
+  description: "Current version and update information.",
 };
 
-function formatDate(iso: string) {
+function formatDate(dateString: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, {
       year: "numeric",
-      month: "short",
+      month: "long",
       day: "numeric",
     });
   } catch {
-    return iso;
+    return dateString;
   }
 }
 
-function groupHighlights(entry: ChangelogEntry) {
-  const normalize = (s: string) =>
-    s.replace(/^\s*(Feature:|Fix:|Style:|New:|Perf:|Chore:)\s*/i, "").trim();
-
-  const hl = entry.highlights ?? [];
-  const derivedFeatures = hl.filter((h) => /^\s*(Feature:|New:)/i.test(h)).map(normalize);
-  const derivedFixes = hl.filter((h) => /^\s*Fix:/i.test(h)).map(normalize);
-  const derivedStyle = hl.filter((h) => /^\s*Style:/i.test(h)).map(normalize);
-
-  const features = entry.features ?? derivedFeatures;
-  const fixes = entry.fixes ?? derivedFixes;
-  const style = entry.style ?? derivedStyle;
-  return { features, fixes, style };
-}
-
 export default function UpdatesPage() {
-  const knownIssues = KNOWN_ISSUES;
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <header className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-100 via-white to-slate-100">
-          What’s New
+          Version Info
         </h1>
         <Link
           href="/"
@@ -49,136 +34,27 @@ export default function UpdatesPage() {
         </Link>
       </header>
 
-      <section className="mb-6">
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs text-slate-200">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          Current Release: v{CURRENT_VERSION}
+      <div className="rounded-2xl border border-slate-700/60 bg-slate-900/40 backdrop-blur-sm p-8 text-center">
+        <div className="mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/60 px-4 py-2 text-lg text-slate-200">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Current Version: v{CURRENT_VERSION}
+          </div>
         </div>
-      </section>
+        
+        <p className="text-slate-400 mb-6">
+          Last updated: {formatDate(LAST_UPDATED)}
+        </p>
 
-      {knownIssues.length ? (
-        <section className="mb-10 rounded-2xl border border-rose-700/50 bg-rose-900/10 p-5">
-          <h2 className="mb-3 text-base font-semibold text-rose-300 flex items-center gap-2">
-            <span>🚨</span>
-            <span>Known Issues</span>
-          </h2>
-          <ul className="text-sm text-slate-200 space-y-2">
-            {knownIssues.map((k, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-rose-300">•</span>
-                <span>{k}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+        <div className="text-sm text-slate-500">
+          <p>
+            This application is actively maintained and updated regularly.
+          </p>
+        </div>
+      </div>
 
-      <div className="space-y-8">
-        {CHANGELOG.map((entry) => {
-          const { features, fixes, style } = groupHighlights(entry);
-          return (
-          <article
-            key={entry.version}
-            className="rounded-2xl border border-slate-700/60 bg-slate-900/40 backdrop-blur-sm p-5"
-          >
-            <header className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-100">
-                v{entry.version}
-              </h2>
-              <time className="text-xs text-slate-400">
-                {formatDate(entry.date)}
-              </time>
-            </header>
-
-            {features.length > 0 && (
-              <section className="mb-4">
-                <h3 className="mb-2 text-sm font-semibold text-emerald-300 flex items-center gap-2">
-                  <span>✨</span>
-                  <span>Features</span>
-                </h3>
-                <ul className="text-sm text-slate-200 space-y-2">
-                  {features.map((h, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="text-emerald-300">•</span>
-                      <span>{h}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {fixes.length > 0 && (
-              <section className="mb-4">
-                <h3 className="mb-2 text-sm font-semibold text-amber-300 flex items-center gap-2">
-                  <span>🛠️</span>
-                  <span>Fixes</span>
-                </h3>
-                <ul className="text-sm text-slate-200 space-y-2">
-                  {fixes.map((h, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="text-amber-300">•</span>
-                      <span>{h}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {style.length > 0 && (
-              <section className="mb-4">
-                <h3 className="mb-2 text-sm font-semibold text-sky-300 flex items-center gap-2">
-                  <span>🎨</span>
-                  <span>Style</span>
-                </h3>
-                <ul className="text-sm text-slate-200 space-y-2">
-                  {style.map((h, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="text-sky-300">•</span>
-                      <span>{h}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {entry.upcoming?.length ? (
-              <section className="mb-4">
-                <h3 className="mb-2 text-sm font-semibold text-sky-300 flex items-center gap-2">
-                  <span>🚀</span>
-                  <span>Upcoming</span>
-                </h3>
-                <ul className="text-sm text-slate-200 space-y-2">
-                  {entry.upcoming.map((u, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="text-sky-300">•</span>
-                      <span>{u}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-
-            {entry.knownIssues?.length ? (
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-rose-300 flex items-center gap-2">
-                  <span>🚨</span>
-                  <span>Known Issues</span>
-                </h3>
-                <ul className="text-sm text-slate-200 space-y-2">
-                  {entry.knownIssues.map((k, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="text-rose-300">•</span>
-                      <span>{k}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-          </article>
-          );
-        })}
-
-        <p className="text-center text-sm text-pink-300/90">
+      <div className="mt-8 text-center">
+        <p className="text-sm text-pink-300/90">
           Thanks for all the feedback and support! ❤️
         </p>
       </div>

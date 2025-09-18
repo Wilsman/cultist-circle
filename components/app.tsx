@@ -148,7 +148,7 @@ function AppContent() {
           return saved === "true";
         }
       }
-      return true; // Default to true
+      return false; // Default to false (temporarily disabled)
     });
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
     new Set()

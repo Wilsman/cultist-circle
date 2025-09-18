@@ -1,12 +1,26 @@
 "use client";
 
-import Link from "next/link";
+import { LAST_UPDATED } from "@/config/changelog";
 
 interface VersionInfoProps {
   version: string;
 }
 
-// Minimal inline badge + link to the full updates page
+// Format date from YYYY-MM-DD to a readable format
+function formatDate(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return dateString;
+  }
+}
+
+// Minimal inline badge with version and last updated date
 export function VersionInfo({ version }: VersionInfoProps) {
   return (
     <div className="inline-flex items-center gap-3 justify-center">
@@ -14,12 +28,9 @@ export function VersionInfo({ version }: VersionInfoProps) {
         <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-400" />
         v{version}
       </span>
-      <Link
-        href="/updates"
-        className="text-xs text-sky-300 hover:text-sky-200 underline underline-offset-4 decoration-dotted"
-      >
-        Changelog
-      </Link>
+      <span className="text-xs text-slate-400">
+        Last updated: {formatDate(LAST_UPDATED)}
+      </span>
     </div>
   );
 }

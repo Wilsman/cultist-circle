@@ -19,7 +19,7 @@ interface ToastNotificationsState {
 }
 
 const NOTIFICATIONS_STORAGE_KEY = "cultist_toast_notifications";
-const CURRENT_APP_VERSION = "2.1.1";
+const CURRENT_APP_VERSION = "2.1.2";
 
 // NextItemHints explanation notification
 const NEXT_ITEM_HINTS_NOTIFICATION: Notification = {
@@ -31,8 +31,18 @@ const NEXT_ITEM_HINTS_NOTIFICATION: Notification = {
   createdAt: new Date().toISOString(),
 };
 
-// Collection of all available notifications
-const AVAILABLE_NOTIFICATIONS = [NEXT_ITEM_HINTS_NOTIFICATION];
+// PVP Flea Market prices notification
+const PVP_FLEA_MARKET_NOTIFICATION: Notification = {
+  id: "pvp-flea-market-online",
+  title: "🛒 PVP Flea Market Online",
+  description: `PVP Flea Market prices are back online and can be used now! Make sure to have the correct prices set in the settings for accurate calculations.`,
+  version: CURRENT_APP_VERSION,
+  type: "info",
+  createdAt: new Date().toISOString(),
+};
+
+// Collection of all available notifications (ordered by priority)
+const AVAILABLE_NOTIFICATIONS = [NEXT_ITEM_HINTS_NOTIFICATION, PVP_FLEA_MARKET_NOTIFICATION];
 
 export function useToastNotifications() {
   const [state, setState] = useState<ToastNotificationsState>({
@@ -94,6 +104,20 @@ export function useToastNotifications() {
   }, [state]);
 
   const dismissNotification = useCallback((notificationId: string) => {
+    // Save individual dismissed notification to localStorage
+    const dismissedNotificationsKey = "cultist_dismissed_notifications";
+    const currentDismissed = JSON.parse(
+      localStorage.getItem(dismissedNotificationsKey) || "[]"
+    );
+    
+    if (!currentDismissed.includes(notificationId)) {
+      const updatedDismissed = [...currentDismissed, notificationId];
+      localStorage.setItem(
+        dismissedNotificationsKey,
+        JSON.stringify(updatedDismissed)
+      );
+    }
+
     setState((prev) => ({
       ...prev,
       dismissedNotifications: new Set([
@@ -146,37 +170,54 @@ export function useToastNotifications() {
     showNotification(NEXT_ITEM_HINTS_NOTIFICATION);
   }, [showNotification]);
 
+  const showPvpFleaMarketNotification = useCallback(() => {
+    showNotification(PVP_FLEA_MARKET_NOTIFICATION);
+  }, [showNotification]);
+
   // Auto-show notifications on app load (for new users or new versions)
   const triggerNewNotifications = useCallback(() => {
+    // Get individual dismissed notifications from localStorage
+    const dismissedNotificationsKey = "cultist_dismissed_notifications";
+    const dismissedFromStorage = JSON.parse(
+      localStorage.getItem(dismissedNotificationsKey) || "[]"
+    );
+
     // Prevent multiple triggers in same session
     const hasTriggered = sessionStorage.getItem("notification_triggered");
     if (hasTriggered) return;
 
-    // Check for notifications that haven't been shown yet
-    for (const notification of AVAILABLE_NOTIFICATIONS) {
-      // For new features, show them if:
-      // 1. Haven't been dismissed (past dismissal)
-      // 2. Haven't been shown (this session/app load)
-      // 3. Version matches current (so old versions don't repeatedly show)
-      if (
-        !state.dismissedNotifications.has(notification.id) &&
-        !state.shownNotifications.has(notification.id) &&
-        notification.version === CURRENT_APP_VERSION
-      ) {
-        // Small delay to let the app finish loading
-        setTimeout(() => {
+    // Find all notifications that should be shown
+    const notificationsToShow = AVAILABLE_NOTIFICATIONS.filter(notification =>
+      !dismissedFromStorage.includes(notification.id) &&
+      !state.shownNotifications.has(notification.id) &&
+      notification.version === CURRENT_APP_VERSION
+    );
+
+    if (notificationsToShow.length === 0) return;
+
+    // Show all applicable notifications with staggered timing
+    notificationsToShow.forEach((notification, index) => {
+      setTimeout(() => {
+        // Double-check before showing (in case state changed during timeout)
+        const currentDismissed = JSON.parse(
+          localStorage.getItem(dismissedNotificationsKey) || "[]"
+        );
+        if (
+          !currentDismissed.includes(notification.id) &&
+          !state.shownNotifications.has(notification.id)
+        ) {
           showNotification(notification);
-          // Mark as triggered to prevent future triggers in same session
-          sessionStorage.setItem("notification_triggered", "true");
-        }, 3000); // Wait 3 seconds after data loads
-        break; // Only show one notification at a time
-      }
-    }
+        }
+      }, 3000 + (index * 1000)); // Stagger by 1 second each
+    });
+
+    // Mark as triggered to prevent future triggers in same session
+    sessionStorage.setItem("notification_triggered", "true");
   }, [
-    state.dismissedNotifications,
     state.shownNotifications,
     showNotification,
   ]);
+
 
   // Reset all notifications (useful for testing or manual reset)
   const resetNotifications = useCallback(() => {
@@ -186,12 +227,15 @@ export function useToastNotifications() {
       currentVersion: CURRENT_APP_VERSION,
     });
     localStorage.removeItem(NOTIFICATIONS_STORAGE_KEY);
+    localStorage.removeItem("cultist_dismissed_notifications");
+    sessionStorage.removeItem("notification_triggered");
   }, []);
 
   return {
     showNotification,
     dismissNotification,
     showNextItemHintsExplanation,
+    showPvpFleaMarketNotification,
     triggerNewNotifications,
     resetNotifications,
     // Utility functions
