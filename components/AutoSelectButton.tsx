@@ -61,7 +61,7 @@ function AutoSelectButtonImpl({
               handleAutoPick();
             }}
             disabled={isCalculating}
-            className={`${baseClasses} bg-gradient-to-r from-slate-700/90 to-slate-700/80 hover:from-slate-700 hover:to-slate-800`}
+            className={`${baseClasses} bg-gradient-to-r from-slate-700/90 to-slate-700/80 hover:from-slate-700 hover:to-slate-800 border-white/30 hover:border-yellow-500/30 transition-colors duration-200`}
           >
             {hasAutoSelected ? (
               <>

@@ -3,7 +3,7 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   // Ammunition and explosives
   "26x75 mm flares cartridges",
   "40x46mm grenade",
-  "40mm VOG-25 grenade",
+  // "40mm VOG-25 grenade", // now working
 
   // Currency and valuables
   "Roubles",
@@ -76,7 +76,7 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Small Christmas gift",
 
   // Headgear
-  "Wilcox Skull Lock head mount PVS-14",
+  // "Wilcox Skull Lock head mount PVS-14", // now working
 
   // Additional excluded items
   "Key 01",
