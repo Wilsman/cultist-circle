@@ -379,12 +379,15 @@ export default function Page() {
 
     const processedOutputs = processOutputs();
     const outputCount = processedOutputs.reduce((count, output) => {
-      return (
-        count +
-        (output.type === "normal"
-          ? 1
-          : (output.content as { items: string[] }).items.length)
-      );
+      if (output.type === "normal") {
+        return count + 1;
+      } else {
+        const content = output.content as { items: string[]; explanation: string };
+        // If explanation indicates you get 1 item (OR logic), count as 1
+        // If explanation indicates you get 2 items (AND/OR logic), count as items length
+        const isOrLogic = content.explanation.includes("You get 1 item");
+        return count + (isOrLogic ? 1 : content.items.length);
+      }
     }, 0);
 
     return (
