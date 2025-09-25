@@ -13,6 +13,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Package, CheckCircle2, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { recipeIconMap } from "@/data/recipe-icons";
 import Image from "next/image";
 
@@ -20,7 +26,9 @@ import Image from "next/image";
 interface Recipe {
   requiredItems: string[];
   craftingTime: string;
-  producedItems: string[];
+  producedItems:
+    | string[]
+    | { type: "multiple_possible"; items: string[]; explanation: string }[];
   isNew?: boolean;
 }
 
@@ -38,9 +46,15 @@ const tarkovRecipes: Recipe[] = [
     producedItems: ["Fleece fabric"],
   },
   {
-    requiredItems: ["1x Nailhead figurine", "1x Xenoalien figurine", "1x Pointy guy figurine", "1x Petya Crooker figurine", "1x Count Bloodsucker figurine"],
+    requiredItems: [
+      "1x Nailhead figurine",
+      "1x Xenoalien figurine",
+      "1x Pointy guy figurine",
+      "1x Petya Crooker figurine",
+      "1x Count Bloodsucker figurine",
+    ],
     craftingTime: "66 mins",
-    producedItems: ["Tagilla's welding mask \"ZABEY\" (Replica)"],
+    producedItems: ['Tagilla\'s welding mask "ZABEY" (Replica)'],
   },
   {
     requiredItems: ["1x Nailhead figurine"],
@@ -98,7 +112,11 @@ const tarkovRecipes: Recipe[] = [
     requiredItems: ["Tagilla figurine"],
     craftingTime: "66 mins",
     producedItems: [
-      'Tagilla\'s welding mask "Gorilla", Tagilla\'s welding mask "UBEY"',
+      {
+        type: "multiple_possible",
+        items: ['Tagilla\'s welding mask "Gorilla"', 'Tagilla\'s welding mask "UBEY"'],
+        explanation: "You get 1 item. Either Gorilla mask or UBEY mask (random)"
+      },
     ],
   },
   {
@@ -109,7 +127,14 @@ const tarkovRecipes: Recipe[] = [
   {
     requiredItems: ["Den figurine"],
     craftingTime: "66 mins",
-    producedItems: ["Deadlyslob's beard oil, Baddie's red beard"],
+    producedItems: [
+      {
+        type: "multiple_possible",
+        items: ["Deadlyslob's beard oil", "Baddie's red beard"],
+        explanation:
+          "You always get 2 items. Possible combinations: oil + beard, oil + oil, or beard + beard",
+      },
+    ],
   },
   {
     requiredItems: ["Politician Mutkevich figurine"],
@@ -119,7 +144,14 @@ const tarkovRecipes: Recipe[] = [
   {
     requiredItems: ["Scav figurine"],
     craftingTime: "66 mins",
-    producedItems: ["Scav backpack, Scav Vest"],
+    producedItems: [
+      {
+        type: "multiple_possible",
+        items: ["Scav backpack", "Scav Vest"],
+        explanation:
+          "You always get 2 items. Possible combinations: backpack + vest, backpack + backpack, or vest + vest",
+      },
+    ],
   },
   {
     requiredItems: ["Ryzhy figurine"],
@@ -180,10 +212,17 @@ export default function Page() {
       item.requiredItems.some((input) =>
         input.toLowerCase().includes(searchLower)
       ) ||
-      // Search in outputs
-      item.producedItems.some((output) =>
-        output.toLowerCase().includes(searchLower)
-      )
+      // Search in outputs (handle both old and new format)
+      item.producedItems.some((output) => {
+        if (typeof output === "string") {
+          return output.toLowerCase().includes(searchLower);
+        } else {
+          // New format: search in items array
+          return output.items.some((outputItem) =>
+            outputItem.toLowerCase().includes(searchLower)
+          );
+        }
+      })
     );
   });
 
@@ -191,8 +230,10 @@ export default function Page() {
   useEffect(function registerSlashToFocus() {
     function onKeyDown(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-      const composing = (e as KeyboardEvent & { isComposing?: boolean }).isComposing === true;
-      const isTyping = tag === "input" || tag === "textarea" || tag === "select" || composing;
+      const composing =
+        (e as KeyboardEvent & { isComposing?: boolean }).isComposing === true;
+      const isTyping =
+        tag === "input" || tag === "textarea" || tag === "select" || composing;
       if (isTyping) return;
       if (e.key === "/") {
         e.preventDefault();
@@ -213,29 +254,35 @@ export default function Page() {
   }
 
   // ItemBadge component with large external icon
-  function ItemBadge({ itemName, isOutput = false }: { itemName: string; isOutput?: boolean }) {
+  function ItemBadge({
+    itemName,
+    isOutput = false,
+  }: {
+    itemName: string;
+    isOutput?: boolean;
+  }) {
     const iconUrl = recipeIconMap[itemName];
-    
+
     return (
       <div className="flex items-center gap-3 lg:gap-4 w-full">
         {iconUrl ? (
-          <Image 
-            src={iconUrl} 
-            alt={itemName} 
-            width={64} 
-            height={64} 
+          <Image
+            src={iconUrl}
+            alt={itemName}
+            width={64}
+            height={64}
             className="rounded-lg flex-shrink-0 bg-gray-900/50 p-2 w-12 h-12 lg:w-16 lg:h-16"
             unoptimized
           />
         ) : (
           <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg bg-gray-900/50 flex-shrink-0" />
         )}
-        <Badge 
-          variant="secondary" 
-          title={itemName} 
+        <Badge
+          variant="secondary"
+          title={itemName}
           className={`inline-flex items-center flex-1 truncate rounded-full border py-1.5 px-3 lg:py-2 lg:px-4 ${
-            isOutput 
-              ? "bg-green-900/40 text-green-300 border-green-800/60" 
+            isOutput
+              ? "bg-green-900/40 text-green-300 border-green-800/60"
               : "bg-gray-800/70 text-gray-100 border-gray-600"
           }`}
         >
@@ -245,13 +292,100 @@ export default function Page() {
     );
   }
 
+  // MultipleOutputBadge component for recipes with multiple possible outputs
+  function MultipleOutputBadge({ items, explanation }: { items: string[]; explanation: string }) {
+    return (
+      <div className="flex flex-col gap-2">
+        {items.map((item, idx) => (
+          <div key={idx}>
+            <div className="flex items-center gap-3 lg:gap-4 w-full">
+              {/* Use the same icon logic as ItemBadge */}
+              {(() => {
+                const iconUrl = recipeIconMap[item];
+                return iconUrl ? (
+                  <Image
+                    src={iconUrl}
+                    alt={item}
+                    width={64}
+                    height={64}
+                    className="rounded-lg flex-shrink-0 bg-gray-900/50 p-2 w-12 h-12 lg:w-16 lg:h-16"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg bg-gray-900/50 flex-shrink-0" />
+                );
+              })()}
+              <Badge
+                variant="secondary"
+                title={item}
+                className="bg-green-900/40 text-green-300 border-green-800/60 rounded-full border py-1.5 px-3 lg:py-2 lg:px-4 flex-1"
+              >
+                <span className="truncate text-sm lg:text-base">{item}</span>
+              </Badge>
+            </div>
+            {/* Add "and/or" or "or" between items (not after the last item) */}
+            {idx < items.length - 1 && (
+              <div className="flex items-center justify-center my-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-xs text-gray-400 bg-gray-800/60 px-3 py-1.5 rounded-full border border-gray-700 hover:bg-gray-700/60 hover:text-gray-300 transition-colors">
+                        {explanation.includes("You always get 2 items") ? "and/or" : "or"}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p className="text-xs">{explanation}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   // RecipeCard subcomponent
   function RecipeCard({ recipe }: { recipe: Recipe }) {
-    // Normalize outputs: split any comma-separated strings into individual items
-    const outputs = recipe.producedItems
-      .flatMap((s) => s.split(","))
-      .map((s) => s.trim())
-      .filter(Boolean);
+    // Handle both old format (string[]) and new format with multiple possible outputs
+    const processOutputs = () => {
+      const outputs: Array<{
+        type: "normal" | "multiple_possible";
+        content: string | { items: string[]; explanation: string };
+      }> = [];
+
+      recipe.producedItems.forEach((item) => {
+        if (typeof item === "string") {
+          // Old format: split comma-separated strings into individual items
+          const splitItems = item
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          splitItems.forEach((splitItem) => {
+            outputs.push({ type: "normal", content: splitItem });
+          });
+        } else {
+          // New format: multiple possible outputs
+          outputs.push({
+            type: "multiple_possible",
+            content: { items: item.items, explanation: item.explanation },
+          });
+        }
+      });
+
+      return outputs;
+    };
+
+    const processedOutputs = processOutputs();
+    const outputCount = processedOutputs.reduce((count, output) => {
+      return (
+        count +
+        (output.type === "normal"
+          ? 1
+          : (output.content as { items: string[] }).items.length)
+      );
+    }, 0);
 
     return (
       <div className="relative rounded-2xl border border-gray-700/70 bg-gray-700/50 p-4 backdrop-blur transition-colors hover:bg-gray-700/70">
@@ -262,7 +396,9 @@ export default function Page() {
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-orange-300">
               <Package className="h-3.5 w-3.5 opacity-90" aria-hidden />
               <span>Input</span>
-              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">{recipe.requiredItems.length}</span>
+              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">
+                {recipe.requiredItems.length}
+              </span>
             </div>
             <div className="flex flex-col gap-2">
               {recipe.requiredItems.map((ing, idx) => (
@@ -272,7 +408,10 @@ export default function Page() {
           </div>
 
           {/* Time */}
-          <div className="sm:border-x sm:border-gray-700 sm:px-4 grid place-items-center" aria-label={`Crafting time ${recipe.craftingTime}`}>
+          <div
+            className="sm:border-x sm:border-gray-700 sm:px-4 grid place-items-center"
+            aria-label={`Crafting time ${recipe.craftingTime}`}
+          >
             <div className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-900/60 px-3 py-1 text-[11px] font-medium text-gray-100 tracking-wide">
               <Clock className="h-3.5 w-3.5" aria-hidden />
               <span className="font-mono">{recipe.craftingTime}</span>
@@ -284,12 +423,34 @@ export default function Page() {
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-orange-300">
               <CheckCircle2 className="h-3.5 w-3.5 opacity-90" aria-hidden />
               <span>Output</span>
-              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">{outputs.length}</span>
+              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">
+                {outputCount}
+              </span>
             </div>
             <div className="flex flex-col gap-2">
-              {outputs.map((out, idx) => (
-                <ItemBadge key={`${out}-${idx}`} itemName={out} isOutput={true} />
-              ))}
+              {processedOutputs.map((output, idx) => {
+                if (output.type === "normal") {
+                  return (
+                    <ItemBadge
+                      key={`${output.content}-${idx}`}
+                      itemName={output.content as string}
+                      isOutput={true}
+                    />
+                  );
+                } else {
+                  const content = output.content as {
+                    items: string[];
+                    explanation: string;
+                  };
+                  return (
+                    <MultipleOutputBadge
+                      key={`multiple-${idx}`}
+                      items={content.items}
+                      explanation={content.explanation}
+                    />
+                  );
+                }
+              })}
             </div>
           </div>
         </div>
@@ -325,23 +486,32 @@ export default function Page() {
               </button>
             )}
           </div>
-          <div className="mt-2 text-center text-xs text-gray-400">Tip: Try keywords like <span className="text-gray-300">WD-40</span> or <span className="text-gray-300">mask</span>.</div>
-          <div className="mt-1 text-center text-[11px] text-gray-500">{filteredItems.length} result{filteredItems.length === 1 ? "" : "s"}</div>
+          <div className="mt-2 text-center text-xs text-gray-400">
+            Tip: Try keywords like <span className="text-gray-300">WD-40</span>{" "}
+            or <span className="text-gray-300">mask</span>.
+          </div>
+          <div className="mt-1 text-center text-[11px] text-gray-500">
+            {filteredItems.length} result{filteredItems.length === 1 ? "" : "s"}
+          </div>
         </div>
         <CardContent className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Special Task</div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+            Special Task
+          </div>
           <div className="relative mb-6 rounded-2xl border border-gray-700/70 bg-gray-700/50 p-4 backdrop-blur">
             <NewBadge />
             <div className="mb-2 text-xl font-semibold text-red-400">
               🔥 Friend from Norvinsk – Part 5 🔥
             </div>
             <p className="mb-3 text-sm text-gray-200">
-              📜 &quot;Diary. Circle. Location: you know where. Add: flammable.&quot; — Use the
-              cultist circle for this task.
+              📜 &quot;Diary. Circle. Location: you know where. Add:
+              flammable.&quot; — Use the cultist circle for this task.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl bg-gray-800/40 p-2.5 sm:p-3 ring-1 ring-gray-700/70">
-                <div className="mb-1 text-sm font-medium text-green-400">✅ Confirmed working (66s timer)</div>
+                <div className="mb-1 text-sm font-medium text-green-400">
+                  ✅ Confirmed working (66s timer)
+                </div>
                 <ul className="list-disc pl-5 text-sm text-gray-100">
                   <li>Expeditionary Fuel Tank</li>
                   <li>Zibbo</li>
@@ -349,7 +519,9 @@ export default function Page() {
                 </ul>
               </div>
               <div className="rounded-xl bg-gray-800/40 p-2.5 sm:p-3 ring-1 ring-gray-700/70">
-                <div className="mb-1 text-sm font-medium text-red-400">❌ Tested but did NOT work (8h timer)</div>
+                <div className="mb-1 text-sm font-medium text-red-400">
+                  ❌ Tested but did NOT work (8h timer)
+                </div>
                 <ul className="list-disc pl-5 text-sm text-gray-100">
                   <li>(Task) Diary</li>
                   <li>Dry Fuel</li>
