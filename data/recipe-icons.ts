@@ -28,7 +28,7 @@ export const recipeIconMap: Record<string, string> = {
   "Pack of nails": "https://assets.tarkov.dev/590c31c586f774245e3141b2-icon.webp",
   "Xenomorph sealing foam": "https://assets.tarkov.dev/590c346786f77423e50ed342-icon.webp",
   "Secure container Kappa": "https://assets.tarkov.dev/5c093ca986f7740a1867ab12-icon.webp",
-  "Spooky skull mask": "https://assets.tarkov.dev/62a5c333ec21e50cad3b5dc6-icon.webp",
+  "Spooky skull mask": "https://assets.tarkov.dev/635267ab3c89e2112001f826-icon.webp",
   "Deadlyslob's beard oil": "https://assets.tarkov.dev/5bc9b9ecd4351e3bac122519-icon.webp",
   "Baddie's red beard": "https://assets.tarkov.dev/62a09dd4621468534a797ac7-icon.webp",
   "Politician Mutkevich figurine": "https://assets.tarkov.dev/655c66e40b2de553b618d4b8-icon.webp",
