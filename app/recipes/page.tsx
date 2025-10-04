@@ -169,6 +169,16 @@ const tarkovRecipes: Recipe[] = [
     producedItems: ["HighCom Trooper TFO body armor (MultiCam)"],
   },
   {
+    requiredItems: ["Mr Kerman's cat hologram"],
+    craftingTime: "66 mins",
+    producedItems: ["Mr Kerman's cat hologram", "TerraGroup Labs access keycard"],
+  },
+  {
+    requiredItems: ["Ded Moroz figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["Santa's Bag"],
+  },
+  {
     requiredItems: ["Relaxation room key"],
     craftingTime: "66 mins",
     producedItems: ["Bottle of Fierce Hatchling moonshine"],
