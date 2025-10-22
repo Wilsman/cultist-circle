@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
-import TopAlerts from "./top-alerts";
+import { NotificationPanel } from "./notification-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
@@ -787,6 +787,18 @@ function AppContent() {
     return { short: "Normal value items", full: "Normal value item" };
   }
 
+  // Expected timer based on current total base value
+  function getExpectedTimer(val: number): string {
+    if (val >= 400_000) return "6h/14h";
+    if (val >= 350_001) return "14h";
+    if (val >= 350_000) return "12h";
+    if (val >= 200_000) return "8h";
+    if (val >= 100_000) return "5h";
+    if (val >= 50_000) return "4h";
+    if (val >= 25_000) return "3h";
+    return "2h";
+  }
+
   // Show hint pills only when at least one item is selected AND threshold not met, or when all empty
   const showHintPills = useMemo(
     () => (selectedItems.some(Boolean) && total < threshold) || selectedItems.every((it) => !it),
@@ -1374,168 +1386,126 @@ function AppContent() {
   // Update the refresh button UI
   return (
     <>
-      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-4 pb-4 pt-0 sm:pt-1 overflow-auto">
-        <div className="min-h-screen flex items-center justify-center">
-          <Card className="bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-lg max-h-fit overflow-auto py-8 px-6 relative w-full max-w-2xl lg:max-w-5xl mx-auto transition-all duration-300 hover:shadow-xl rounded-t-none -mt-px border-t-0">
-            {/* App-specific toolbar removed; now in global nav */}
-
-            {/* Title and Version Info */}
-            <div className="pt-2">
-              <h1 className="sm:text-3xl text-xl font-bold mb-4 text-center text-red-500 text-nowrap flex items-center justify-center w-full">
+      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto flex items-center justify-center">
+          <div className="w-full max-w-3xl mx-auto space-y-3 py-4">
+            {/* Header Section - Minimal */}
+            <div className="text-center space-y-3">
+              <h1 className="flex items-center justify-center">
                 <Image
                   src="https://assets.cultistcircle.com/Cultist-Calulator.webp"
-                  alt="Cultist calculator logo"
-                  width={400}
-                  height={128}
+                  alt="Cultist Circle Calculator"
+                  width={640}
+                  height={204}
                   priority={true}
+                  className="w-auto h-32 sm:h-40"
                 />
               </h1>
-            </div>
-            
-            <div className="flex items-center justify-center pb-4">
-              <a
-                href="https://discord.com/invite/3dFmr5qaJK"
-                rel="nofollow"
-                target="_blank"
-                className="flex items-center"
+              <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
+                <VersionInfo version={CURRENT_VERSION} />
+                <span>•</span>
+                <a
+                  href="https://discord.com/invite/3dFmr5qaJK"
+                  rel="nofollow"
+                  target="_blank"
+                  className="hover:text-slate-200 transition-colors"
                 >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://img.shields.io/discord/1298971881776611470?color=7289DA&label=Discord&logo=discord&logoColor=white"
-                  alt="Discord"
-                  style={{ maxWidth: "100%" }}
-                  className="h-6"
-                />
-              </a>
-            </div>
-            
-            <div className="text-center text-gray-400 text-sm mb-4">
-              <VersionInfo version={CURRENT_VERSION} />
+                  Join Discord
+                </a>
+              </div>
             </div>
 
-            {/* Combined compact alerts */}
-            <TopAlerts />
+            {/* Notification Panel - Collapsible */}
+            <NotificationPanel />
 
-            <CardContent className="p-2">
-              {/* Unified controls */}
-              <div className="mt-1 flex items-center justify-center">
-                <ModeThreshold
-                  isPVE={isPVE}
-                  onModeToggle={handleModeToggle}
-                  threshold={threshold}
-                  onThresholdChange={handleThresholdChange}
+            {/* Main Calculator Card */}
+            <Card className="bg-slate-800/60 backdrop-blur-md border-slate-700/40 shadow-xl overflow-hidden">
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                {/* Controls Section - Clean & Focused */}
+                <div className="space-y-2.5">
+                  {/* Primary Controls Row */}
+                  <div className="flex items-center justify-center gap-2">
+                    <ModeThreshold
+                      isPVE={isPVE}
+                      onModeToggle={handleModeToggle}
+                      threshold={threshold}
+                      onThresholdChange={handleThresholdChange}
+                    />
+                    <ItemSocket onBonusChange={setItemBonus} />
+                  </div>
+                  
+                  {/* Hero Auto Select Button */}
+                  <AutoSelectButton
+                    isCalculating={isCalculating}
+                    hasAutoSelected={hasAutoSelected}
+                    handleAutoPick={handleAutoPick}
+                  />
+                </div>
+
+                {/* Placement Preview Modal */}
+                <PlacementPreviewModal
+                  open={previewModalOpen}
+                  onOpenChange={setPreviewModalOpen}
+                  fitDebug={fitDebug}
+                  selectedItems={selectedItems}
                 />
-              </div>
-              <div className="mt-2 flex items-center justify-center">
-                <ItemSocket onBonusChange={setItemBonus} />
-              </div>
 
-              {/* Auto select button with loading animation */}
-              <div className="mt-4 transition-all duration-300">
-                <AutoSelectButton
-                  isCalculating={isCalculating}
-                  hasAutoSelected={hasAutoSelected}
-                  handleAutoPick={handleAutoPick}
-                />
-              </div>
-
-              {/* Incompatible Items Notice */}
-              <IncompatibleItemsNotice />
-
-              <ShareCodeDialog
-                selectedItems={selectedItems}
-                isPVE={isPVE}
-                rawItemsData={rawItemsData}
-                onItemsLoaded={(items, newIsPVE) => {
-                  setSelectedItems(items);
-                  if (newIsPVE !== null) {
-                    setIsPVE(newIsPVE);
-                  }
-                }}
-              />
-              {/* Placement Preview Button/Modal */}
-              <PlacementPreviewModal
-                open={previewModalOpen}
-                onOpenChange={setPreviewModalOpen}
-                fitDebug={fitDebug}
-                selectedItems={selectedItems}
-              />
-              {/* show alert if items do not fit in the 9x6 box */}
-              {!itemsFitInBox && (
-                <div className="mt-2 mb-2 text-center w-full">
-                  <Alert className="border-red-500/50 bg-red-900/20 text-white animate-pulse">
-                    <AlertTitle className="flex items-center justify-center gap-2 text-xl font-bold bg-red-600/30 border border-red-500/80 rounded-md p-2">
-                      <span className="text-2xl">❌</span>
-                      <span>ITEMS DO NOT FIT!</span>
-                      <span className="text-2xl">❌</span>
+                {/* Items Don't Fit Warning */}
+                {!itemsFitInBox && (
+                  <Alert className="border-red-500/40 bg-red-950/30 backdrop-blur-sm">
+                    <AlertTitle className="flex items-center gap-2 text-base font-bold text-red-200">
+                      <span className="text-xl">⚠️</span>
+                      <span>Items Don&apos;t Fit in Circle</span>
                     </AlertTitle>
-                    <AlertDescription className="mt-3 space-y-3">
-                      <div className="text-left bg-gray-800/50 border border-gray-700 rounded-md p-3">
-                        <p className="font-semibold mb-2 text-yellow-400">The following items could not be placed:</p>
-                        <ul className="space-y-1 list-disc list-inside">
-                          {selectedItems.filter(Boolean).map((item, idx) => (
-                            <li key={`${item?.id ?? "no-id"}-${idx}`}>
-                              {item?.name} -{" "}
-                              <span className="font-mono">{item?.width ?? "?"}w × {item?.height ?? "?"}h</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <p className="font-bold text-lg text-yellow-300">
+                    <AlertDescription className="mt-2 space-y-2 text-sm">
+                      <p className="text-red-300/90">
                         The selected items cannot be arranged in the Cultist Circle box (9×6).
                       </p>
-
                       <PlacementPreviewInline
                         fitDebug={fitDebug}
                         selectedItems={selectedItems}
                       />
                     </AlertDescription>
                   </Alert>
-                </div>
-              )}
-              {/* Item Selection Components with improved loading states */}
-              <div className="w-full">
-                <div id="search-items" className="space-y-0">
+                )}
+
+                {/* Item Selection Area */}
+                <div className="space-y-1" id="search-items">
                   {loading ? (
-                    <div className="space-y-0">
+                    <div className="space-y-1">
                       {Array(5)
                         .fill(0)
                         .map((_, index) => (
-                          <div
+                          <Skeleton
                             key={`skeleton-${index}`}
-                            className="animate-pulse"
-                            style={{ animationDelay: `${index * 100}ms` }}
-                          >
-                            <Skeleton className="h-10 w-full bg-gray-700/50" />
-                          </div>
+                            className="h-12 w-full bg-slate-700/30 rounded-lg"
+                          />
                         ))}
                     </div>
                   ) : hasError ? (
-                    <div className="text-red-500 text-center p-4">
+                    <div className="text-red-400 text-center p-6 text-sm">
                       Failed to load items. Please refresh the page.
                     </div>
                   ) : rawItemsData.length === 0 ? (
-                    <div className="text-gray-400 text-center p-4 flex flex-col items-center space-y-2">
+                    <div className="text-slate-400 text-center p-6 flex flex-col items-center space-y-2">
                       {needsManualRetry ? (
                         <>
-                          <AlertCircle className="h-8 w-8 text-amber-500" />
-                          <span>Failed to fetch items after multiple attempts.</span>
+                          <AlertCircle className="h-6 w-6 text-amber-400" />
+                          <span className="text-sm">Failed to fetch items</span>
                           <Button 
                             onClick={() => {
                               resetRetryCount();
                               mutate();
                             }}
+                            size="sm"
                             variant="outline"
-                            className="mt-2"
                           >
                             Try Again
                           </Button>
                         </>
                       ) : (
                         <>
-                          <Loader2 className="animate-spin h-8 w-8 text-gray-500" />
-                          <span>Fetching items, please wait...</span>
+                          <Loader2 className="animate-spin h-6 w-6 text-slate-500" />
+                          <span className="text-sm">Loading items...</span>
                         </>
                       )}
                     </div>
@@ -1609,131 +1579,131 @@ function AppContent() {
                     ))
                   )}
                 </div>
-              </div>
-              {/* Preview / Clear / Reset Buttons */}
-              <div className="flex space-x-2 mt-2">
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setPreviewModalOpen(true)}
-                      className="inline-flex w-1/4"
-                    >
-                      <Button
-                        variant="secondary"
-                        className="rounded bg-green-700 hover:bg-green-600 text-white w-full"
-                      >
-                        Preview
-                      </Button>
-                    </span>
-                {/* Clear Selected Items Button */}
-                    <span
-                      role="button"
-                      tabIndex={isClearButtonDisabled ? -1 : 0}
-                      aria-disabled={isClearButtonDisabled}
-                      onClick={() => {
-                        if (!isClearButtonDisabled) clearItemFields()
-                      }}
-                      className={`inline-flex w-2/4 ${
-                        isClearButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      <Button
-                        id="clear-item-fields"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-full rounded transition-all duration-300 active:scale-95`}
-                        disabled={isClearButtonDisabled}
-                      >
-                        <span className="hidden sm:inline">Clear Selected Items</span>
-                        <span className="sm:hidden">Clear Selected</span>
-                      </Button>
-                    </span>
-                {/* Reset Overrides Button */}
-                    <span
-                      role="button"
-                      tabIndex={isResetOverridesButtonDisabled ? -1 : 0}
-                      aria-disabled={isResetOverridesButtonDisabled}
-                      onClick={() => {
-                        if (!isResetOverridesButtonDisabled) resetOverridesAndExclusions()
-                      }}
-                      className={`inline-flex w-1/4 ${
-                        isResetOverridesButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      <Button
-                        id="reset-overrides"
-                        className={`bg-red-500 hover:bg-red-600 text-white w-full rounded transition-all duration-300 active:scale-95`}
-                        disabled={isResetOverridesButtonDisabled}
-                      >
-                        <span className="hidden sm:inline">Reset Overrides</span>
-                        <span className="sm:hidden">Reset</span>
-                      </Button>
-                    </span>
-              </div>
 
-              {/* Status text with improved styling */}
-              <div className="text-center text-sm text-gray-400 mt-4 p-2 rounded-md bg-gray-700/30">
-                <span className="font-medium">
-                  {Object.keys(overriddenPrices).length}
-                </span>{" "}
-                overrides and{" "}
-                <span className="font-medium">{excludedItems.size}</span>{" "}
-                exclusions currently active
-              </div>
+                {/* Action Buttons - Clean Row */}
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    onClick={() => setPreviewModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    id="clear-item-fields"
+                    onClick={clearItemFields}
+                    disabled={isClearButtonDisabled}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    id="reset-overrides"
+                    onClick={resetOverridesAndExclusions}
+                    disabled={isResetOverridesButtonDisabled}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Reset
+                  </Button>
+                </div>
 
-              {/* Sacrifice + Flea costs (revamped) */}
-              <div id="sacrifice-value" className="mt-6 w-full">
-                <div className="mx-auto max-w-2xl lg:max-w-5xl rounded-2xl bg-slate-700/40 border border-slate-600/30 backdrop-blur-sm px-4 py-4">
-                  <h2 className="text-2xl md:text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-gradient">
-                    Sacrifice BaseValue Total
-                  </h2>
+                {/* Utility Bar - Share, Status & Info */}
+                <div className="space-y-1.5">
+                  {/* Share Code - Expandable */}
+                  <div className="flex items-center justify-center">
+                    <ShareCodeDialog
+                      selectedItems={selectedItems}
+                      isPVE={isPVE}
+                      rawItemsData={rawItemsData}
+                      onItemsLoaded={(items, newIsPVE) => {
+                        setSelectedItems(items);
+                        if (newIsPVE !== null) {
+                          setIsPVE(newIsPVE);
+                        }
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Status Pills Row */}
+                  {(Object.keys(overriddenPrices).length > 0 || excludedItems.size > 0) && (
+                    <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+                      <div className="text-slate-400 px-3 py-1.5 rounded-full bg-slate-900/30">
+                        {Object.keys(overriddenPrices).length > 0 && (
+                          <span>{Object.keys(overriddenPrices).length} override{Object.keys(overriddenPrices).length !== 1 ? 's' : ''}</span>
+                        )}
+                        {Object.keys(overriddenPrices).length > 0 && excludedItems.size > 0 && (
+                          <span className="mx-1.5">•</span>
+                        )}
+                        {excludedItems.size > 0 && (
+                          <span>{excludedItems.size} exclusion{excludedItems.size !== 1 ? 's' : ''}</span>
+                        )}
+                      </div>
+                      <IncompatibleItemsNotice />
+                    </div>
+                  )}
+                </div>
+
+                {/* Summary Section - Ultra Minimal */}
+                <div id="sacrifice-value" className="space-y-4">
                   {loading ? (
-                    <Skeleton className="h-20 w-4/5 mx-auto" />
+                    <Skeleton className="h-40 w-full bg-slate-700/20 rounded-xl" />
                   ) : (
                     <>
-                      {/* Primary summary layout */}
-                      <div className="mt-1">
-                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-6">
-                          {/* Left: total, base text, threshold, est. cost */}
-                          <div className="flex-1">
-                            <div className="text-5xl md:text-6xl font-extrabold text-green-500 leading-tight">
-                              ₽{total.toLocaleString()}
-                            </div>
-                            <div className="mt-1 text-xs md:text-sm text-gray-400">
-                              {itemBonus > 0 ? (
-                                <>
-                                  Base: ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} + {itemBonus}% bonus
-                                </>
-                              ) : (
-                                <>Current total basevalue</>
-                              )}
-                            </div>
-                            <div className="mt-1 text-[11px] md:text-xs">
-                              {isThresholdMet ? (
-                                <span className="text-green-400">Threshold Met</span>
-                              ) : (
-                                <span className="text-red-400">Remaining to threshold ₽{(threshold - total).toLocaleString()}</span>
-                              )}
-                            </div>
-                            <div className="mt-2">
-                              <div className="text-[11px] md:text-xs uppercase tracking-wide text-gray-400">EST. COST</div>
-                              <div className={`text-base md:text-lg font-semibold ${Object.keys(overriddenPrices).length > 0 ? "text-white" : "text-gray-200"}`}>
-                                ₽{totalFleaCost?.toLocaleString()}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Right: expected rewards card */}
-                          <div className="md:ml-2 rounded-xl bg-slate-800/30 border border-slate-700/70 px-4 py-3 w-full md:w-auto md:max-w-xs">
-                            <div className="text-[11px] md:text-xs uppercase tracking-wide text-gray-400">EXPECTED REWARDS</div>
-                            <div className="text-sm md:text-base text-slate-200" title={getExpectedOutcome(total).full}>
-                              {getExpectedOutcome(total).short}
-                            </div>
-                          </div>
+                      {/* Base Value - Hero Display */}
+                      <div className="text-center space-y-0.5">
+                        <div className="text-5xl sm:text-6xl font-bold text-emerald-400 tracking-tight">
+                          ₽{total.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-slate-400">
+                          {itemBonus > 0 ? (
+                            <span>Base ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} +{itemBonus}%</span>
+                          ) : (
+                            <span>Total Base Value</span>
+                          )}
                         </div>
                       </div>
-                      <div className="mt-4">
-                        <ThresholdProgress total={Math.floor(total)} />
+
+                      {/* Status Indicator */}
+                      <div className="flex justify-center">
+                        {isThresholdMet ? (
+                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                            <span className="text-emerald-400 text-sm font-medium">✓ Threshold Met</span>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20">
+                            <span className="text-amber-400 text-sm font-medium">Need ₽{(threshold - total).toLocaleString()}</span>
+                          </div>
+                        )}
                       </div>
-                      <div className="mt-4 flex justify-center">
+
+                      {/* Progress Bar */}
+                      <ThresholdProgress total={Math.floor(total)} />
+
+                      {/* Info Row - Minimal */}
+                      <div className="flex items-center justify-center gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="text-xs text-slate-500 mb-0.5">Timer</div>
+                          <div className="font-semibold text-slate-300">{getExpectedTimer(total)}</div>
+                        </div>
+                        <div className="h-8 w-px bg-slate-700/50"></div>
+                        <div className="text-center">
+                          <div className="text-xs text-slate-500 mb-0.5">Cost</div>
+                          <div className="font-semibold text-slate-300">₽{totalFleaCost?.toLocaleString()}</div>
+                        </div>
+                        <div className="h-8 w-px bg-slate-700/50"></div>
+                        <div className="text-center">
+                          <div className="text-xs text-slate-500 mb-0.5">Reward</div>
+                          <div className="font-semibold text-slate-300 text-xs leading-tight">{getExpectedOutcome(total).short}</div>
+                        </div>
+                      </div>
+
+                      {/* Share Button */}
+                      <div className="flex justify-center">
                         <ShareCardButton
                           items={selectedItems}
                           total={Math.floor(total)}
@@ -1745,63 +1715,59 @@ function AppContent() {
                     </>
                   )}
                 </div>
-                <footer className="mt-3 text-center text-gray-300 text-[12px] md:text-sm w-full">
-                  <div className="mx-auto max-w-2xl lg:max-w-5xl rounded-full bg-slate-700/30 border border-slate-600/30 backdrop-blur-sm px-3 py-2">
-                    <span>Prices provided by </span>
-                    <a
-                      href="https://tarkov.dev"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300"
-                    >
-                      Tarkov.dev
-                    </a>
-                    <span className="mx-2">·</span>
-                    <span>Research provided by </span>
-                    <a
-                      href="https://bio.link/verybadscav"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300"
-                    >
-                      VeryBadSCAV
-                    </a>
-                    <span className="mx-2">·</span>
-                    <span>Made by Wilsman77</span>
-                  </div>
-                  <div className="flex justify-center mt-3 gap-3 sm:gap-4">
-                    <a
-                      href="https://www.buymeacoffee.com/wilsman77"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="Buy me a coffee"
-                      title="Buy me a coffee"
-                      className="inline-flex items-center"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-                        alt="Buy Me a Coffee"
-                        width="180"
-                        height="36"
-                        loading="lazy"
-                        decoding="async"
-                        className="h-9 w-auto select-none"
-                      />
-                    </a>
-                    <Button
-                      onClick={() => setIsFeedbackFormVisible(true)}
-                      aria-label="Open feedback form"
-                      className="h-9 px-4 rounded-full bg-red-800/60 hover:bg-red-800/80 text-slate-100 border border-slate-600/30 shadow-sm backdrop-blur-sm"
-                    >
-                      Feedback
-                    </Button>
-                  </div>
-                </footer>
+              </CardContent>
+            </Card>
+
+            {/* Footer - Minimal */}
+            <div className="text-center space-y-2">
+              <div className="text-xs text-slate-400">
+                <span>Data by </span>
+                <a
+                  href="https://tarkov.dev"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-300 hover:text-white transition-colors"
+                >
+                  Tarkov.dev
+                </a>
+                <span className="mx-2">•</span>
+                <span>Research by </span>
+                <a
+                  href="https://bio.link/verybadscav"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-300 hover:text-white transition-colors"
+                >
+                  VeryBadSCAV
+                </a>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="flex justify-center gap-3">
+                <a
+                  href="https://www.buymeacoffee.com/wilsman77"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Buy me a coffee"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+                    alt="Buy Me a Coffee"
+                    width="140"
+                    height="32"
+                    loading="lazy"
+                    className="h-8 w-auto"
+                  />
+                </a>
+                <Button
+                  onClick={() => setIsFeedbackFormVisible(true)}
+                  size="sm"
+                  variant="outline"
+                >
+                  Feedback
+                </Button>
+              </div>
+            </div>
+          </div>
       </div>
       <div className="background-credit">Background by Zombiee</div>
 

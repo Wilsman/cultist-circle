@@ -9,9 +9,6 @@ interface AutoSelectButtonProps {
   handleAutoPick: () => void;
 }
 
-const baseClasses =
-  "relative overflow-hidden w-full md:max-w-[320px] lg:max-w-[360px] h-11 px-5 rounded-full border border-slate-600/30 backdrop-blur-sm text-slate-100 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30";
-
 function AutoSelectButtonImpl({
   isCalculating,
   hasAutoSelected,
@@ -23,25 +20,10 @@ function AutoSelectButtonImpl({
         <Button
           id="auto-select"
           disabled
-          className={`${baseClasses} bg-gradient-to-r from-slate-700/90 via-slate-800/90 to-slate-700/90 cursor-wait`}
+          className="w-full h-12 rounded-2xl bg-slate-800/60 border border-slate-700/40 text-slate-300 cursor-wait text-base"
         >
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.25),transparent)] bg-[length:200%_100%] animate-[shimmer_2.2s_linear_infinite]"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -inset-6 rounded-full bg-slate-500/20 blur-2xl animate-pulse"
-          />
-          <span className="relative z-10 inline-flex items-center">
-            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-            <span className="font-medium">Calculating</span>
-            <span className="ml-1 flex gap-1">
-              <span className="w-1.5 h-1.5 bg-white/80 rounded-full animate-bounce" />
-              <span className="w-1.5 h-1.5 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-1.5 h-1.5 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-            </span>
-          </span>
+          <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+          <span className="font-semibold">Calculating...</span>
         </Button>
       </div>
     );
@@ -49,32 +31,31 @@ function AutoSelectButtonImpl({
 
   return (
     <div className="flex justify-center items-center w-full">
-          {/* Use Shadcn Button for consistency with theme */}
-          <Button
-            id="auto-select"
-            type="button"
-            onClick={() => {
-              // Blur any focused element (e.g., inputs/tooltips) to ensure
-              // portal-based UI (Radix Tooltip/Popover) closes before rerender.
-              const ae = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement | null;
-              if (ae && typeof ae.blur === 'function') ae.blur();
-              handleAutoPick();
-            }}
-            disabled={isCalculating}
-            className={`${baseClasses} bg-gradient-to-r from-slate-700/90 to-slate-700/80 hover:from-slate-700 hover:to-slate-800 border-white/30 hover:border-yellow-500/30 transition-colors duration-200`}
-          >
-            {hasAutoSelected ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Re-roll
-              </>
-            ) : (
-              <>
-                <Dices className="mr-2 h-4 w-4" />
-                Select Optimal
-              </>
-            )}
-          </Button>
+      <Button
+        id="auto-select"
+        type="button"
+        onClick={() => {
+          // Blur any focused element (e.g., inputs/tooltips) to ensure
+          // portal-based UI (Radix Tooltip/Popover) closes before rerender.
+          const ae = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement | null;
+          if (ae && typeof ae.blur === 'function') ae.blur();
+          handleAutoPick();
+        }}
+        disabled={isCalculating}
+        className="relative w-full h-12 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-400 hover:text-emerald-300 transition-all duration-200 font-semibold text-base shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
+      >
+        {hasAutoSelected ? (
+          <>
+            <RefreshCw className="mr-2 h-5 w-5" />
+            Re-roll Selection
+          </>
+        ) : (
+          <>
+            <Dices className="mr-2 h-5 w-5" />
+            Auto Select Items
+          </>
+        )}
+      </Button>
     </div>
   );
 }

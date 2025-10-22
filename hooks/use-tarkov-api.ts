@@ -119,13 +119,25 @@ export async function fetchCombinedTarkovData(language: string = 'en'): Promise<
 
     const { data, errors } = await response.json() as GraphQLResponse;
     
-    if (errors) {
-      console.error('GraphQL errors:', errors);
-      throw new Error(`GraphQL errors: ${errors.map(e => e.message).join(', ')}`);
-    }
-    
+    // Check if we have valid data first
     if (!data?.pvpItems || !data?.pveItems) {
       throw new Error('Missing data in API response');
+    }
+    
+    // Only throw on errors if they're critical (not just translation warnings)
+    if (errors && errors.length > 0) {
+      // Check if all errors are translation-related (non-critical)
+      const hasNonTranslationErrors = errors.some(
+        e => !e.message.includes('Missing translation for key')
+      );
+      
+      if (hasNonTranslationErrors) {
+        console.error('GraphQL errors:', errors);
+        throw new Error(`GraphQL errors: ${errors.map(e => e.message).join(', ')}`);
+      } else {
+        // Just log translation warnings, don't fail the request
+        console.warn(`⚠️ Translation warnings (${errors.length} items missing translations for language: ${language})`);
+      }
     }
 
     // Transform the data for both modes
@@ -366,14 +378,23 @@ export async function fetchMinimalTarkovData(language: string = 'en'): Promise<{
 
     const result: FetchMinimalTarkovGraphQLResponse = await response.json();
 
-    if (result.errors) {
-      console.error('❌ GraphQL errors on minimal fetch:', result.errors);
-      throw new Error(`GraphQL error: ${result.errors.map(e => e.message).join(', ')}`);
-    }
-
     if (!result.data || !result.data.pvpItems || !result.data.pveItems) {
       console.error('❌ No data in GraphQL response for minimal fetch');
       throw new Error('No data returned from Tarkov API for minimal fetch');
+    }
+
+    // Only throw on errors if they're critical (not just translation warnings)
+    if (result.errors && result.errors.length > 0) {
+      const hasNonTranslationErrors = result.errors.some(
+        e => !e.message.includes('Missing translation for key')
+      );
+      
+      if (hasNonTranslationErrors) {
+        console.error('❌ GraphQL errors on minimal fetch:', result.errors);
+        throw new Error(`GraphQL error: ${result.errors.map(e => e.message).join(', ')}`);
+      } else {
+        console.warn(`⚠️ Translation warnings in minimal fetch (${result.errors.length} items missing translations for language: ${language})`);
+      }
     }
 
     const endTime = Date.now();

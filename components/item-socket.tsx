@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
-  QuestionMarkCircledIcon,
 } from "@radix-ui/react-icons";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -86,76 +85,52 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
   }, [totalBonus, onBonusChange]);
 
   return (
-    <div className="flex flex-col items-center text-center w-full relative">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="text-gray-200 hover:bg-slate-700/60 relative h-9 px-3 rounded-full bg-slate-700/50 border border-slate-600/30 backdrop-blur-sm"
-      >
-        <div className="flex items-center gap-1.5">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  className="inline-flex cursor-help"
-                  tabIndex={0}
-                  aria-label="Item socket bonuses help"
-                >
-                  <QuestionMarkCircledIcon className="w-4 h-4 text-gray-400 hover:text-gray-300" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent
-                side="top"
-                className="max-w-[340px] p-3 text-left space-y-2 bg-slate-800 text-gray-100 border border-slate-700 rounded-md shadow-lg"
-              >
-                <div>
-                  <p className="font-semibold mb-1">Bonuses</p>
-                  <ul className="space-y-1 list-disc pl-4 text-xs">
-                    <li>
-                      Sacrificing a Sacred Amulet increases the Gift&apos;s value by 15%
-                    </li>
-                    <li>
-                      The Hideout Management skill increases the bonus of Sacred Amulet
-                    </li>
-                  </ul>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <span className="text-xs">Bonus Settings</span>
-          {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
-
-          {/* Show indicator next to text when collapsed */}
-          {!isExpanded && (
-            <div className="flex items-center gap-1 ml-1.5">
-              <div className="w-6 h-6 flex items-center justify-center bg-gray-800 rounded-md border border-gray-700">
-                {selectedItem ? (
-                  <div className="w-5 h-5 flex items-center justify-center">
-                    {typeof selectedItem.icon === "string" ? (
+    <div className="flex flex-col items-center text-center relative">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-gray-200 hover:bg-slate-700/60 relative h-9 px-2 rounded-full bg-slate-700/50 border border-slate-600/30 backdrop-blur-sm"
+            >
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 flex items-center justify-center">
+                  {selectedItem ? (
+                    typeof selectedItem.icon === "string" ? (
                       <Image src={selectedItem.icon} alt={selectedItem.name} width={20} height={20} />
                     ) : (
                       selectedItem.icon
-                    )}
-                  </div>
+                    )
+                  ) : (
+                    <DiamondPlus className="w-4 h-4 text-slate-400" />
+                  )}
+                </div>
+                <span
+                  className={`text-xs font-mono min-w-[32px] ${
+                    totalBonus > 0 ? "text-emerald-400" : "text-slate-400"
+                  }`}
+                >
+                  {totalBonus > 0 ? `+${totalBonus}%` : "0%"}
+                </span>
+                {isExpanded ? (
+                  <ChevronUpIcon className="w-3 h-3 text-slate-400" />
                 ) : (
-                  <span className="flex items-center justify-center w-6 h-6">
-                    <DiamondPlus className="w-4 h-4" />
-                  </span>
+                  <ChevronDownIcon className="w-3 h-3 text-slate-400" />
                 )}
               </div>
-              <span
-                className={`text-[11px] font-mono ${
-                  totalBonus > 0 ? "text-blue-300" : "text-gray-400"
-                }`}
-              >
-                {totalBonus > 0 ? `+${totalBonus}%` : `${totalBonus}%`}
-              </span>
-            </div>
-          )}
-        </div>
-      </Button>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="top"
+            className="max-w-[280px] p-2 text-left bg-slate-800 text-gray-100 border border-slate-700 rounded-md shadow-lg"
+          >
+            <p className="text-xs font-semibold mb-1">Bonus Settings</p>
+            <p className="text-xs text-slate-300">Sacred Amulet increases Gift value by 15% (+Hideout skill)</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       <div
         className={`

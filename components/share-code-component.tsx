@@ -129,43 +129,49 @@ export function ShareCodeDialog({
   };
 
   return (
-    <div className="w-full flex">
+    <div className="w-full max-w-2xl">
       <HorizontalAccordion
         isOpen={isOpen}
         onToggle={() => setIsOpen(!isOpen)}
         trigger={
-          <div className="flex items-center gap-2 text-sm font-medium hover:text-blue-500 transition-colors">
-            <ShareIcon className="h-4 w-4" />
-            <span>Share Code</span>
-            <ChevronRight className="h-4 w-4" />
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-3 rounded-full bg-slate-700/30 hover:bg-slate-700/50 border border-slate-600/30 text-slate-300 hover:text-slate-200 transition-all"
+          >
+            <ShareIcon className="h-3.5 w-3.5 mr-1.5" />
+            <span className="text-xs">Share Code</span>
+            <ChevronRight className={`h-3.5 w-3.5 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+          </Button>
         }
       >
-        <div className="flex items-center space-x-2 w-full">
+        <div className="flex items-center gap-2 w-full">
           <Input
             value={currentCode}
             readOnly
-            className="flex-1 bg-muted text-muted-foreground font-mono text-sm"
+            className="flex-1 h-8 bg-slate-800/60 border-slate-700/40 text-slate-300 font-mono text-xs"
             placeholder="No items selected"
           />
           <Button
             onClick={handleCopyCode}
-            size="icon"
+            size="sm"
             variant="outline"
             disabled={isLoading || !currentCode}
+            className="h-8 px-3"
             title="Copy to clipboard"
           >
-            <CopyIcon className="h-4 w-4" />
+            <CopyIcon className="h-3.5 w-3.5 mr-1" />
+            <span className="text-xs">Copy</span>
           </Button>
           <Button
             onClick={handleLoadFromClipboard}
-            variant="secondary"
-            className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white"
+            size="sm"
+            className="h-8 px-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400"
             disabled={isLoading}
             title="Load from clipboard"
           >
-            <ClipboardIcon className="h-4 w-4" />
-            Load
+            <ClipboardIcon className="h-3.5 w-3.5 mr-1" />
+            <span className="text-xs">Load</span>
           </Button>
         </div>
       </HorizontalAccordion>
