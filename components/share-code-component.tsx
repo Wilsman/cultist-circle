@@ -7,43 +7,6 @@ import { toast as sonnerToast } from "sonner";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { loadItemsFromCode, generateShareableCode } from "@/lib/share-utils";
 import { ClipboardIcon, CopyIcon, ShareIcon, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-// Custom horizontal accordion component
-const HorizontalAccordion = ({
-  isOpen,
-  onToggle,
-  trigger,
-  children,
-}: {
-  isOpen: boolean;
-  onToggle: () => void;
-  trigger: React.ReactNode;
-  children: React.ReactNode;
-}) => {
-  return (
-    <div className="relative flex items-center w-full">
-      <div
-        className="flex items-center cursor-pointer"
-        onClick={onToggle}
-        role="button"
-        tabIndex={0}
-        aria-expanded={isOpen}
-      >
-        {trigger}
-      </div>
-      <div
-        className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out flex-1",
-          isOpen ? "max-w-full opacity-100 ml-2" : "max-w-0 opacity-0"
-        )}
-      >
-        {children}
-      </div>
-    </div>
-  );
-};
-
 interface ShareCodeDialogProps {
   selectedItems: (SimplifiedItem | null)[];
   isPVE: boolean;
@@ -129,27 +92,24 @@ export function ShareCodeDialog({
   };
 
   return (
-    <div className="w-full max-w-2xl">
-      <HorizontalAccordion
-        isOpen={isOpen}
-        onToggle={() => setIsOpen(!isOpen)}
-        trigger={
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-3 rounded-full bg-slate-700/30 hover:bg-slate-700/50 border border-slate-600/30 text-slate-300 hover:text-slate-200 transition-all"
-          >
-            <ShareIcon className="h-3.5 w-3.5 mr-1.5" />
-            <span className="text-xs">Share Code</span>
-            <ChevronRight className={`h-3.5 w-3.5 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
-          </Button>
-        }
+    <div className="flex items-center gap-2">
+      <Button
+        variant="secondary"
+        size="sm"
+        className="rounded-full border border-slate-600/40"
+        onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-2 w-full">
+        <ShareIcon className="mr-1 h-4 w-4" />
+        Share Code
+        <ChevronRight className={`h-3.5 w-3.5 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+      </Button>
+      
+      {isOpen && (
+        <div className="flex items-center gap-2 animate-in slide-in-from-left-2 duration-200">
           <Input
             value={currentCode}
             readOnly
-            className="flex-1 h-8 bg-slate-800/60 border-slate-700/40 text-slate-300 font-mono text-xs"
+            className="w-48 h-8 bg-slate-800/60 border-slate-700/40 text-slate-300 font-mono text-xs"
             placeholder="No items selected"
           />
           <Button
@@ -157,24 +117,24 @@ export function ShareCodeDialog({
             size="sm"
             variant="outline"
             disabled={isLoading || !currentCode}
-            className="h-8 px-3"
+            className="h-8 px-3 rounded-full"
             title="Copy to clipboard"
           >
             <CopyIcon className="h-3.5 w-3.5 mr-1" />
-            <span className="text-xs">Copy</span>
+            Copy
           </Button>
           <Button
             onClick={handleLoadFromClipboard}
             size="sm"
-            className="h-8 px-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400"
+            className="h-8 px-3 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400"
             disabled={isLoading}
             title="Load from clipboard"
           >
             <ClipboardIcon className="h-3.5 w-3.5 mr-1" />
-            <span className="text-xs">Load</span>
+            Load
           </Button>
         </div>
-      </HorizontalAccordion>
+      )}
     </div>
   );
 }

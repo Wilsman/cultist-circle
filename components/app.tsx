@@ -1612,104 +1612,94 @@ function AppContent() {
                   </Button>
                 </div>
 
-                {/* Utility Bar - Share, Status & Info */}
-                <div className="space-y-1.5">
-                  {/* Share Code - Expandable */}
-                  <div className="flex items-center justify-center">
-                    <ShareCodeDialog
-                      selectedItems={selectedItems}
-                      isPVE={isPVE}
-                      rawItemsData={rawItemsData}
-                      onItemsLoaded={(items, newIsPVE) => {
-                        setSelectedItems(items);
-                        if (newIsPVE !== null) {
-                          setIsPVE(newIsPVE);
-                        }
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Status Pills Row */}
-                  {(Object.keys(overriddenPrices).length > 0 || excludedItems.size > 0) && (
-                    <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-                      <div className="text-slate-400 px-3 py-1.5 rounded-full bg-slate-900/30">
-                        {Object.keys(overriddenPrices).length > 0 && (
-                          <span>{Object.keys(overriddenPrices).length} override{Object.keys(overriddenPrices).length !== 1 ? 's' : ''}</span>
-                        )}
-                        {Object.keys(overriddenPrices).length > 0 && excludedItems.size > 0 && (
-                          <span className="mx-1.5">•</span>
-                        )}
-                        {excludedItems.size > 0 && (
-                          <span>{excludedItems.size} exclusion{excludedItems.size !== 1 ? 's' : ''}</span>
-                        )}
-                      </div>
-                      <IncompatibleItemsNotice />
-                    </div>
-                  )}
-                </div>
-
-                {/* Summary Section - Ultra Minimal */}
-                <div id="sacrifice-value" className="space-y-4">
+                {/* Summary Section - Compact Horizontal Layout */}
+                <div id="sacrifice-value" className="space-y-3">
                   {loading ? (
-                    <Skeleton className="h-40 w-full bg-slate-700/20 rounded-xl" />
+                    <Skeleton className="h-32 w-full bg-slate-700/20 rounded-xl" />
                   ) : (
                     <>
-                      {/* Base Value - Hero Display */}
-                      <div className="text-center space-y-0.5">
-                        <div className="text-5xl sm:text-6xl font-bold text-emerald-400 tracking-tight">
-                          ₽{total.toLocaleString()}
+                      {/* Compact Summary Header - Single Line */}
+                      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm px-2">
+                        {/* Total Base Value */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-2xl font-bold text-emerald-400">₽{total.toLocaleString()}</span>
+                          <span className="text-xs text-slate-500">Total Base Value</span>
                         </div>
-                        <div className="text-sm text-slate-400">
-                          {itemBonus > 0 ? (
-                            <span>Base ₽{Math.round(total / (1 + itemBonus / 100)).toLocaleString()} +{itemBonus}%</span>
-                          ) : (
-                            <span>Total Base Value</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Status Indicator */}
-                      <div className="flex justify-center">
+                        
+                        <span className="text-slate-600">•</span>
+                        
+                        {/* Need/Status */}
                         {isThresholdMet ? (
-                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                            <span className="text-emerald-400 text-sm font-medium">✓ Threshold Met</span>
-                          </div>
+                          <span className="text-emerald-400 font-medium">✓ Threshold Met</span>
                         ) : (
-                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20">
-                            <span className="text-amber-400 text-sm font-medium">Need ₽{(threshold - total).toLocaleString()}</span>
-                          </div>
+                          <span className="text-amber-400 font-medium">Need ₽{(threshold - total).toLocaleString()}</span>
                         )}
+                        
+                        <span className="text-slate-600">•</span>
+                        
+                        {/* Timer */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-slate-500">Timer:</span>
+                          <span className="font-semibold text-slate-300">{getExpectedTimer(total)}</span>
+                        </div>
+                        
+                        <span className="text-slate-600">•</span>
+                        
+                        {/* Cost */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-slate-500">Cost:</span>
+                          <span className="font-semibold text-slate-300">₽{totalFleaCost?.toLocaleString()}</span>
+                        </div>
+                        
+                        <span className="text-slate-600">•</span>
+                        
+                        {/* Reward */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-slate-500">Reward:</span>
+                          <span className="font-semibold text-slate-300 text-xs">{getExpectedOutcome(total).short}</span>
+                        </div>
                       </div>
 
                       {/* Progress Bar */}
-                      <ThresholdProgress total={Math.floor(total)} />
+                      <ThresholdProgress total={Math.floor(total)} threshold={threshold} />
 
-                      {/* Info Row - Minimal */}
-                      <div className="flex items-center justify-center gap-4 text-sm">
-                        <div className="text-center">
-                          <div className="text-xs text-slate-500 mb-0.5">Timer</div>
-                          <div className="font-semibold text-slate-300">{getExpectedTimer(total)}</div>
+                      {/* Simplified Alert Row */}
+                      {(Object.keys(overriddenPrices).length > 0 || excludedItems.size > 0) && (
+                        <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+                          {Object.keys(overriddenPrices).length > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                              ⚠ {Object.keys(overriddenPrices).length} override{Object.keys(overriddenPrices).length !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {excludedItems.size > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                              ⚠ {excludedItems.size} exclusion{excludedItems.size !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                          <IncompatibleItemsNotice />
                         </div>
-                        <div className="h-8 w-px bg-slate-700/50"></div>
-                        <div className="text-center">
-                          <div className="text-xs text-slate-500 mb-0.5">Cost</div>
-                          <div className="font-semibold text-slate-300">₽{totalFleaCost?.toLocaleString()}</div>
-                        </div>
-                        <div className="h-8 w-px bg-slate-700/50"></div>
-                        <div className="text-center">
-                          <div className="text-xs text-slate-500 mb-0.5">Reward</div>
-                          <div className="font-semibold text-slate-300 text-xs leading-tight">{getExpectedOutcome(total).short}</div>
-                        </div>
-                      </div>
+                      )}
 
-                      {/* Share Button */}
-                      <div className="flex justify-center">
+                      {/* Action Row - Footer Style */}
+                      <div className="flex items-center justify-center gap-2 pt-2 border-t border-slate-700/30">
                         <ShareCardButton
                           items={selectedItems}
                           total={Math.floor(total)}
                           totalFlea={Math.floor(totalFleaCost || 0)}
                           modeLabel={isPVE ? "PVE" : "PVP"}
                           sacred={itemBonus > 0}
+                          className="rounded-full"
+                        />
+                        <ShareCodeDialog
+                          selectedItems={selectedItems}
+                          isPVE={isPVE}
+                          rawItemsData={rawItemsData}
+                          onItemsLoaded={(items, newIsPVE) => {
+                            setSelectedItems(items);
+                            if (newIsPVE !== null) {
+                              setIsPVE(newIsPVE);
+                            }
+                          }}
                         />
                       </div>
                     </>

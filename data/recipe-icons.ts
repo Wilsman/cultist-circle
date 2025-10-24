@@ -63,5 +63,6 @@ export const recipeIconMap: Record<string, string> = {
   "Video cassette with the Cyborg Killer movie": "https://assets.tarkov.dev/62a09e974f842e1bd12da3f0-icon.webp",
   "Rusty bloody key": "https://assets.tarkov.dev/64d4b23dc1b37504b41ac2b6-icon.webp",
   "Secure container Gamma (The Unheard Edition)": "https://assets.tarkov.dev/5857a8bc2459772bad15db29-icon.webp",
-  "Secure container Gamma (Edge of Darkness Edition)": "https://assets.tarkov.dev/5857a8bc2459772bad15db29-icon.webp"
+  "Secure container Gamma (Edge of Darkness Edition)": "https://assets.tarkov.dev/5857a8bc2459772bad15db29-icon.webp",
+  "1x Jack-o'-lantern tactical pumpkin helmet": "https://assets.tarkov.dev/59ef13ca86f77445fd0e2483-icon.webp"
 };

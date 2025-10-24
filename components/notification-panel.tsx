@@ -6,13 +6,33 @@ import Link from "next/link";
 
 interface Notification {
   id: string;
-  type: "success" | "warning" | "info";
+  type: "success" | "warning" | "info" | "halloween";
   icon?: string;
   title: string;
   description: string | React.ReactNode;
 }
 
 const NOTIFICATIONS: Notification[] = [
+  {
+    id: "pumpkin-recipe",
+    type: "halloween",
+    icon: "🎃",
+    title: "New Recipe: Jack-o'-lantern Helmet",
+    description: (
+      <>
+        Spooky new recipe added! Trade your Jack-o&apos;-lantern tactical pumpkin helmet for random food and drink items.
+        <br />
+        Check it out in the{" "}
+        <Link
+          href="/recipes"
+          className="underline hover:text-blue-300 transition-colors font-semibold"
+        >
+          Recipes page
+        </Link>
+        {""}.
+      </>
+    ),
+  },
   {
     id: "pvp-flea-back",
     type: "success",
@@ -113,6 +133,8 @@ export function NotificationPanel() {
                     ? "bg-emerald-950/30 border-emerald-500/20"
                     : notification.type === "warning"
                     ? "bg-red-950/30 border-red-500/20"
+                    : notification.type === "halloween"
+                    ? "bg-orange-950/30 border-orange-500/20"
                     : "bg-slate-800/40 border-slate-700/30"
                 }
               `}
@@ -133,6 +155,8 @@ export function NotificationPanel() {
                         ? "text-emerald-200"
                         : notification.type === "warning"
                         ? "text-red-200"
+                        : notification.type === "halloween"
+                        ? "text-orange-200"
                         : "text-slate-200"
                     }`}
                   >
@@ -144,6 +168,8 @@ export function NotificationPanel() {
                         ? "text-emerald-300/90"
                         : notification.type === "warning"
                         ? "text-red-300/90"
+                        : notification.type === "halloween"
+                        ? "text-orange-300/90"
                         : "text-slate-300/90"
                     }`}
                   >
