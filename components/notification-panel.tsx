@@ -34,19 +34,6 @@ const NOTIFICATIONS: Notification[] = [
     ),
   },
   {
-    id: "pvp-flea-back",
-    type: "success",
-    icon: "🎉",
-    title: "PVP Flea Market Online",
-    description: (
-      <>
-        Great news! PVP flea market prices are now back in the app.
-        <br />
-        Switch to PVP mode and make sure to switch back to Flea Market Prices in the settings.
-      </>
-    ),
-  },
-  {
     id: "weapon-values-warning",
     type: "warning",
     title: "Weapon Base Values - Work in Progress",
