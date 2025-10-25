@@ -17,10 +17,10 @@ const NOTIFICATIONS: Notification[] = [
     id: "pumpkin-recipe",
     type: "halloween",
     icon: "🎃",
-    title: "New Recipe: Jack-o'-lantern Helmet",
+    title: "New Recipe: Pumpkin Helmet Recipes",
     description: (
       <>
-        Spooky new recipe added! Trade your Jack-o&apos;-lantern tactical pumpkin helmet for random food and drink items.
+        Spooky new recipe added! Sacrifice  your Jack-o&apos;-lantern tactical pumpkin helmet or Pumpkin with sweets for new rewards.
         <br />
         Check it out in the{" "}
         <Link
