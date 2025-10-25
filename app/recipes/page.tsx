@@ -19,8 +19,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ItemTooltip } from "@/components/ui/item-tooltip";
 import { recipeIconMap } from "@/data/recipe-icons";
 import Image from "next/image";
+import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
 
 // Types
 interface Recipe {
@@ -220,6 +222,14 @@ const tarkovRecipes: Recipe[] = [
 ];
 
 export default function Page() {
+  // Get isPVE from localStorage (same as main app)
+  const [isPVE] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("isPVE") === "true";
+    }
+    return false;
+  });
+  const { getItemByName } = useRecipeItemData(isPVE);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const searchRef = useRef<HTMLInputElement | null>(null);
   // No local routing needed; global nav handles navigation
@@ -283,8 +293,9 @@ export default function Page() {
     isOutput?: boolean;
   }) {
     const iconUrl = recipeIconMap[itemName];
+    const itemData = getItemByName(itemName);
 
-    return (
+    const badgeContent = (
       <div className="flex items-center gap-3 lg:gap-4 w-full">
         {iconUrl ? (
           <Image
@@ -311,31 +322,43 @@ export default function Page() {
         </Badge>
       </div>
     );
+
+    // If we have item data, wrap in tooltip
+    if (itemData) {
+      return (
+        <TooltipProvider>
+          <ItemTooltip item={itemData} iconUrl={iconUrl}>
+            {badgeContent}
+          </ItemTooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return badgeContent;
   }
 
   // MultipleOutputBadge component for recipes with multiple possible outputs
   function MultipleOutputBadge({ items, explanation }: { items: string[]; explanation: string }) {
     return (
       <div className="flex flex-col gap-2">
-        {items.map((item, idx) => (
-          <div key={idx}>
+        {items.map((item, idx) => {
+          const iconUrl = recipeIconMap[item];
+          const itemData = getItemByName(item);
+          
+          const badgeContent = (
             <div className="flex items-center gap-3 lg:gap-4 w-full">
-              {/* Use the same icon logic as ItemBadge */}
-              {(() => {
-                const iconUrl = recipeIconMap[item];
-                return iconUrl ? (
-                  <Image
-                    src={iconUrl}
-                    alt={item}
-                    width={64}
-                    height={64}
-                    className="rounded-lg flex-shrink-0 bg-gray-900/50 p-2 w-12 h-12 lg:w-16 lg:h-16"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg bg-gray-900/50 flex-shrink-0" />
-                );
-              })()}
+              {iconUrl ? (
+                <Image
+                  src={iconUrl}
+                  alt={item}
+                  width={64}
+                  height={64}
+                  className="rounded-lg flex-shrink-0 bg-gray-900/50 p-2 w-12 h-12 lg:w-16 lg:h-16"
+                  unoptimized
+                />
+              ) : (
+                <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg bg-gray-900/50 flex-shrink-0" />
+              )}
               <Badge
                 variant="secondary"
                 title={item}
@@ -344,25 +367,39 @@ export default function Page() {
                 <span className="truncate text-sm lg:text-base">{item}</span>
               </Badge>
             </div>
-            {/* Add "and/or" or "or" between items (not after the last item) */}
-            {idx < items.length - 1 && (
-              <div className="flex items-center justify-center my-2">
+          );
+
+          return (
+            <div key={idx}>
+              {itemData ? (
                 <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="text-xs text-gray-400 bg-gray-800/60 px-3 py-1.5 rounded-full border border-gray-700 hover:bg-gray-700/60 hover:text-gray-300 transition-colors">
-                        {explanation.includes("You always get 2 items") ? "and/or" : "or"}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <p className="text-xs">{explanation}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <ItemTooltip item={itemData} iconUrl={iconUrl}>
+                    {badgeContent}
+                  </ItemTooltip>
                 </TooltipProvider>
-              </div>
-            )}
-          </div>
-        ))}
+              ) : (
+                badgeContent
+              )}
+              {/* Add "and/or" or "or" between items (not after the last item) */}
+              {idx < items.length - 1 && (
+                <div className="flex items-center justify-center my-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button className="text-xs text-gray-400 bg-gray-800/60 px-3 py-1.5 rounded-full border border-gray-700 hover:bg-gray-700/60 hover:text-gray-300 transition-colors">
+                          {explanation.includes("You always get 2 items") ? "and/or" : "or"}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-xs">{explanation}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }

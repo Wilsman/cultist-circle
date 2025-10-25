@@ -5,6 +5,10 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "40x46mm grenade",
   // "40mm VOG-25 grenade", // now working
 
+  // Fuel
+  "Metal fuel tank",
+  "Expeditionary fuel tank",
+
   // Currency and valuables
   "Roubles",
   "Dollars",

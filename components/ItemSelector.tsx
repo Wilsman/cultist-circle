@@ -12,6 +12,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+import { ItemTooltip } from "@/components/ui/item-tooltip";
 import { getRelativeDate } from "@/lib/utils";
 import { toast as sonnerToast } from "sonner";
 
@@ -470,15 +471,17 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
             className={`border p-1 mb-0.5 rounded-md bg-gray-900 overflow-hidden ${
               isPinned ? "border-yellow-400" : "border-gray-600"
             }`}
-            >
+          >
             <div className="flex items-stretch">
               <div className="rounded-l-md overflow-hidden flex items-center justify-center min-w-3 max-w-10 sm:min-w-24 sm:max-w-28">
                 {selectedItem.iconLink && (
-                  <img
-                    src={selectedItem.iconLink}
-                    alt={selectedItem.name}
-                    className="object-contain max-h-20 sm:max-h-24 md:max-h-28"
+                  <ItemTooltip item={selectedItem} iconUrl={selectedItem.iconLink}>
+                    <img
+                      src={selectedItem.iconLink}
+                      alt={selectedItem.name}
+                      className="object-contain max-h-20 sm:max-h-24 md:max-h-28 cursor-help"
                     />
+                  </ItemTooltip>
                 )}
               </div>
 
