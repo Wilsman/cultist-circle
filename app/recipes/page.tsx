@@ -35,9 +35,15 @@ interface Recipe {
 // Escape from Tarkov crafting recipes
 const tarkovRecipes: Recipe[] = [
   {
+    requiredItems: ["1x Pumpkin with sweets"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Jack-o'-lantern tactical pumpkin helmet"],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Jack-o'-lantern tactical pumpkin helmet"],
     craftingTime: "66 mins",
-    producedItems: ["Random food🍴", "Random drink 🍹"],
+    producedItems: ["Random foods🍴", "Random drinks 🍹"],
     isNew: true,
   },
   {

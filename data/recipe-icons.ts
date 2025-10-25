@@ -64,5 +64,8 @@ export const recipeIconMap: Record<string, string> = {
   "Rusty bloody key": "https://assets.tarkov.dev/64d4b23dc1b37504b41ac2b6-icon.webp",
   "Secure container Gamma (The Unheard Edition)": "https://assets.tarkov.dev/5857a8bc2459772bad15db29-icon.webp",
   "Secure container Gamma (Edge of Darkness Edition)": "https://assets.tarkov.dev/5857a8bc2459772bad15db29-icon.webp",
-  "1x Jack-o'-lantern tactical pumpkin helmet": "https://assets.tarkov.dev/59ef13ca86f77445fd0e2483-icon.webp"
+  "1x Jack-o'-lantern tactical pumpkin helmet": "https://assets.tarkov.dev/59ef13ca86f77445fd0e2483-icon.webp",
+  "1x Pumpkin with sweets": "https://assets.tarkov.dev/634959225289190e5e773b3b-icon.webp",
+  "Random foods🍴": "https://assets.tarkov.dev/544fb6cc4bdc2d34748b456e-icon.webp",
+  "Random drinks 🍹": "https://assets.tarkov.dev/57513f9324597720a7128161-icon.webp",
 };
