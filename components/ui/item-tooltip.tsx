@@ -49,25 +49,39 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
           )}
         >
           <div className="p-3 space-y-2">
-            {/* Title - clickable if link exists */}
+            {/* Header with icon and title */}
             <div className="pb-2 border-b border-gray-700/60">
-              {item.link ? (
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-sm text-blue-400 hover:text-blue-300 leading-tight hover:underline"
-                >
-                  {item.name}
-                </a>
-              ) : (
-                <h3 className="font-semibold text-sm text-gray-100 leading-tight">
-                  {item.name}
-                </h3>
-              )}
-              {item.shortName && item.shortName !== item.name && (
-                <p className="text-xs text-gray-400 mt-0.5">{item.shortName}</p>
-              )}
+              <div className="flex items-start gap-3">
+                {/* Item Icon */}
+                {iconUrl && (
+                  <img
+                    src={iconUrl}
+                    alt={item.name}
+                    className="w-12 h-12 rounded-lg bg-gray-800/50 p-1.5 border border-gray-700/50 flex-shrink-0"
+                  />
+                )}
+                
+                {/* Title - clickable if link exists */}
+                <div className="flex-1 min-w-0">
+                  {item.link ? (
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-sm text-blue-400 hover:text-blue-300 leading-tight hover:underline"
+                    >
+                      {item.name}
+                    </a>
+                  ) : (
+                    <h3 className="font-semibold text-sm text-gray-100 leading-tight">
+                      {item.name}
+                    </h3>
+                  )}
+                  {item.shortName && item.shortName !== item.name && (
+                    <p className="text-xs text-gray-400 mt-0.5">{item.shortName}</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* List format - label on left, value on right */}
