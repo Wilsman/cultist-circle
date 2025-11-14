@@ -1388,7 +1388,17 @@ function AppContent() {
   // Update the refresh button UI
   return (
     <>
-      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto flex items-center justify-center">
+      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto">
+        <div className="flex items-start justify-center gap-4 max-w-[1600px] mx-auto">
+          {/* Left Ad Rail - Desktop Only */}
+          <aside className="hidden xl:block w-[160px] flex-shrink-0">
+            <div className="sticky top-4">
+              {/* AdSense will auto-inject side rail ads here */}
+              <div id="left-ad-rail" className="min-h-[600px]" />
+            </div>
+          </aside>
+
+          {/* Main Content */}
           <div className="w-full max-w-3xl mx-auto space-y-3 py-4">
             {/* Header Section - Minimal */}
             <div className="text-center space-y-3">
@@ -1444,7 +1454,7 @@ function AppContent() {
                     />
                     <ItemSocket onBonusChange={setItemBonus} />
                   </div>
-                  
+
                   {/* Hero Auto Select Button */}
                   <AutoSelectButton
                     isCalculating={isCalculating}
@@ -1503,7 +1513,7 @@ function AppContent() {
                         <>
                           <AlertCircle className="h-6 w-6 text-amber-400" />
                           <span className="text-sm">Failed to fetch items</span>
-                          <Button 
+                          <Button
                             onClick={() => {
                               resetRetryCount();
                               mutate();
@@ -1637,34 +1647,34 @@ function AppContent() {
                           <span className="text-2xl font-bold text-emerald-400">₽{total.toLocaleString()}</span>
                           <span className="text-xs text-slate-500">Total Base Value</span>
                         </div>
-                        
+
                         <span className="text-slate-600">•</span>
-                        
+
                         {/* Need/Status */}
                         {isThresholdMet ? (
                           <span className="text-emerald-400 font-medium">✓ Threshold Met</span>
                         ) : (
                           <span className="text-amber-400 font-medium">Need ₽{(threshold - total).toLocaleString()}</span>
                         )}
-                        
+
                         <span className="text-slate-600">•</span>
-                        
+
                         {/* Timer */}
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-slate-500">Timer:</span>
                           <span className="font-semibold text-slate-300">{getExpectedTimer(total)}</span>
                         </div>
-                        
+
                         <span className="text-slate-600">•</span>
-                        
+
                         {/* Cost */}
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-slate-500">Cost:</span>
                           <span className="font-semibold text-slate-300">₽{totalFleaCost?.toLocaleString()}</span>
                         </div>
-                        
+
                         <span className="text-slate-600">•</span>
-                        
+
                         {/* Reward */}
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-slate-500">Reward:</span>
@@ -1770,6 +1780,15 @@ function AppContent() {
               </div>
             </div>
           </div>
+
+          {/* Right Ad Rail - Desktop Only */}
+          <aside className="hidden xl:block w-[160px] flex-shrink-0">
+            <div className="sticky top-4">
+              {/* AdSense will auto-inject side rail ads here */}
+              <div id="right-ad-rail" className="min-h-[600px]" />
+            </div>
+          </aside>
+        </div>
       </div>
       <div className="background-credit">Background by Zombiee</div>
 
