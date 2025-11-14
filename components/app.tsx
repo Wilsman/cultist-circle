@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
+import { MaintenanceNotice } from "./maintenance-notice";
+import { SHOW_MAINTENANCE_NOTICE } from "@/config/maintenance";
 import { NotificationPanel } from "./notification-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
@@ -1402,17 +1404,27 @@ function AppContent() {
               </h1>
               <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
                 <VersionInfo version={CURRENT_VERSION} />
-                <span>•</span>
+              </div>
+              <div className="flex items-center justify-center">
                 <a
                   href="https://discord.com/invite/3dFmr5qaJK"
                   rel="nofollow"
                   target="_blank"
-                  className="hover:text-slate-200 transition-colors"
+                  className="flex items-center"
                 >
-                  Join Discord
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="https://img.shields.io/discord/1298971881776611470?color=7289DA&label=Discord&logo=discord&logoColor=white"
+                    alt="Discord"
+                    style={{ maxWidth: "100%" }}
+                    className="h-5" // Adjusted height to better fit the footer
+                  />
                 </a>
               </div>
             </div>
+
+            {/* Maintenance alert */}
+            {SHOW_MAINTENANCE_NOTICE && <MaintenanceNotice />}
 
             {/* Notification Panel - Collapsible */}
             <NotificationPanel />
