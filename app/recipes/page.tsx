@@ -39,7 +39,7 @@ const tarkovRecipes: Recipe[] = [
   {
     requiredItems: ["1x Augmentin antibiotic pills"],
     craftingTime: "66 mins",
-    producedItems: ["1x RxTG-12 antidote injector"],
+    producedItems: ["1x xTG-12 antidote injector"],
     isNew: true,
   },
   {
