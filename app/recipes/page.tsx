@@ -37,6 +37,12 @@ interface Recipe {
 // Escape from Tarkov crafting recipes
 const tarkovRecipes: Recipe[] = [
   {
+    requiredItems: ["1x Augmentin antibiotic pills"],
+    craftingTime: "66 mins",
+    producedItems: ["Result pending (unknown)"],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Pumpkin with sweets"],
     craftingTime: "66 mins",
     producedItems: ["1x Jack-o'-lantern tactical pumpkin helmet"],
@@ -127,8 +133,12 @@ const tarkovRecipes: Recipe[] = [
     producedItems: [
       {
         type: "multiple_possible",
-        items: ['Tagilla\'s welding mask "Gorilla"', 'Tagilla\'s welding mask "UBEY"'],
-        explanation: "You get 1 item. Either Gorilla mask or UBEY mask (random)"
+        items: [
+          'Tagilla\'s welding mask "Gorilla"',
+          'Tagilla\'s welding mask "UBEY"',
+        ],
+        explanation:
+          "You get 1 item. Either Gorilla mask or UBEY mask (random)",
       },
     ],
   },
@@ -184,7 +194,10 @@ const tarkovRecipes: Recipe[] = [
   {
     requiredItems: ["Mr Kerman's cat hologram"],
     craftingTime: "66 mins",
-    producedItems: ["Mr Kerman's cat hologram", "TerraGroup Labs access keycard"],
+    producedItems: [
+      "Mr Kerman's cat hologram",
+      "TerraGroup Labs access keycard",
+    ],
   },
   {
     requiredItems: ["Ded Moroz figurine"],

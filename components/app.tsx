@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import ItemSocket from "@/components/item-socket";
 import { 
   AlertCircle,
@@ -1431,6 +1432,19 @@ function AppContent() {
                   />
                 </a>
               </div>
+              <div className="rounded-2xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-left text-xs text-orange-50 backdrop-blur-sm">
+                <p>
+                  New recipes are being researched. Once confirmed they will be
+                  listed on the
+                  <Link
+                    href="/recipes"
+                    className="underline hover:text-orange-200 ml-1 font-semibold"
+                  >
+                    recipes page
+                  </Link>
+                  . Latest: 1x Augmentin antibiotic pills = 66mins
+                </p>
+              </div>
             </div>
 
             {/* Maintenance alert */}
@@ -1480,7 +1494,8 @@ function AppContent() {
                     </AlertTitle>
                     <AlertDescription className="mt-2 space-y-2 text-sm">
                       <p className="text-red-300/90">
-                        The selected items cannot be arranged in the Cultist Circle box (9×6).
+                        The selected items cannot be arranged in the Cultist
+                        Circle box (9×6).
                       </p>
                       <PlacementPreviewInline
                         fitDebug={fitDebug}
@@ -1572,27 +1587,43 @@ function AppContent() {
                               traderLevels={traderLevels}
                             />
                           </Suspense>
-                          {showHintPills && !item && nextItemSuggestions[index] && nextItemSuggestions[index].length > 0 && (
-                            index === selectedItems.findIndex((it) => !it) ||
-                            (selectedItems.every((it) => !it) && index === 0)
-                          ) ? (
+                          {showHintPills &&
+                          !item &&
+                          nextItemSuggestions[index] &&
+                          nextItemSuggestions[index].length > 0 &&
+                          (index === selectedItems.findIndex((it) => !it) ||
+                            (selectedItems.every((it) => !it) &&
+                              index === 0)) ? (
                             <NextItemHints
                               items={
                                 selectedItems.every((it) => !it) && index === 0
                                   ? (() => {
                                       const divisorOptions = [5, 4, 3, 2];
-                                      let filteredSuggestions: SimplifiedItem[] = [];
+                                      let filteredSuggestions: SimplifiedItem[] =
+                                        [];
                                       for (const divisor of divisorOptions) {
-                                        filteredSuggestions = nextItemSuggestions[index].filter((it) => it.basePrice >= threshold / divisor);
-                                        if (filteredSuggestions.length >= 3) break;
+                                        filteredSuggestions =
+                                          nextItemSuggestions[index].filter(
+                                            (it) =>
+                                              it.basePrice >=
+                                              threshold / divisor
+                                          );
+                                        if (filteredSuggestions.length >= 3)
+                                          break;
                                       }
                                       return filteredSuggestions
-                                        .sort((a, b) => (getEffectivePrice(a) ?? 0) - (getEffectivePrice(b) ?? 0))
+                                        .sort(
+                                          (a, b) =>
+                                            (getEffectivePrice(a) ?? 0) -
+                                            (getEffectivePrice(b) ?? 0)
+                                        )
                                         .slice(0, 3);
                                     })()
                                   : nextItemSuggestions[index]
                               }
-                              prevItem={index > 0 ? selectedItems[index - 1] : null}
+                              prevItem={
+                                index > 0 ? selectedItems[index - 1] : null
+                              }
                               onPick={(it) => updateSelectedItem(it, index)}
                             />
                           ) : null}
@@ -1644,17 +1675,25 @@ function AppContent() {
                       <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm px-2">
                         {/* Total Base Value */}
                         <div className="flex items-center gap-1.5">
-                          <span className="text-2xl font-bold text-emerald-400">₽{total.toLocaleString()}</span>
-                          <span className="text-xs text-slate-500">Total Base Value</span>
+                          <span className="text-2xl font-bold text-emerald-400">
+                            ₽{total.toLocaleString()}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            Total Base Value
+                          </span>
                         </div>
 
                         <span className="text-slate-600">•</span>
 
                         {/* Need/Status */}
                         {isThresholdMet ? (
-                          <span className="text-emerald-400 font-medium">✓ Threshold Met</span>
+                          <span className="text-emerald-400 font-medium">
+                            ✓ Threshold Met
+                          </span>
                         ) : (
-                          <span className="text-amber-400 font-medium">Need ₽{(threshold - total).toLocaleString()}</span>
+                          <span className="text-amber-400 font-medium">
+                            Need ₽{(threshold - total).toLocaleString()}
+                          </span>
                         )}
 
                         <span className="text-slate-600">•</span>
@@ -1662,7 +1701,9 @@ function AppContent() {
                         {/* Timer */}
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-slate-500">Timer:</span>
-                          <span className="font-semibold text-slate-300">{getExpectedTimer(total)}</span>
+                          <span className="font-semibold text-slate-300">
+                            {getExpectedTimer(total)}
+                          </span>
                         </div>
 
                         <span className="text-slate-600">•</span>
@@ -1670,32 +1711,46 @@ function AppContent() {
                         {/* Cost */}
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-slate-500">Cost:</span>
-                          <span className="font-semibold text-slate-300">₽{totalFleaCost?.toLocaleString()}</span>
+                          <span className="font-semibold text-slate-300">
+                            ₽{totalFleaCost?.toLocaleString()}
+                          </span>
                         </div>
 
                         <span className="text-slate-600">•</span>
 
                         {/* Reward */}
                         <div className="flex items-center gap-1">
-                          <span className="text-xs text-slate-500">Reward:</span>
-                          <span className="font-semibold text-slate-300 text-xs">{getExpectedOutcome(total).short}</span>
+                          <span className="text-xs text-slate-500">
+                            Reward:
+                          </span>
+                          <span className="font-semibold text-slate-300 text-xs">
+                            {getExpectedOutcome(total).short}
+                          </span>
                         </div>
                       </div>
 
                       {/* Progress Bar */}
-                      <ThresholdProgress total={Math.floor(total)} threshold={threshold} />
+                      <ThresholdProgress
+                        total={Math.floor(total)}
+                        threshold={threshold}
+                      />
 
                       {/* Simplified Alert Row */}
-                      {(Object.keys(overriddenPrices).length > 0 || excludedItems.size > 0) && (
+                      {(Object.keys(overriddenPrices).length > 0 ||
+                        excludedItems.size > 0) && (
                         <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
                           {Object.keys(overriddenPrices).length > 0 && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                              ⚠ {Object.keys(overriddenPrices).length} override{Object.keys(overriddenPrices).length !== 1 ? 's' : ''}
+                              ⚠ {Object.keys(overriddenPrices).length} override
+                              {Object.keys(overriddenPrices).length !== 1
+                                ? "s"
+                                : ""}
                             </span>
                           )}
                           {excludedItems.size > 0 && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                              ⚠ {excludedItems.size} exclusion{excludedItems.size !== 1 ? 's' : ''}
+                              ⚠ {excludedItems.size} exclusion
+                              {excludedItems.size !== 1 ? "s" : ""}
                             </span>
                           )}
                           <IncompatibleItemsNotice />

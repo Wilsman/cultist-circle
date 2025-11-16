@@ -68,4 +68,5 @@ export const recipeIconMap: Record<string, string> = {
   "1x Pumpkin with sweets": "https://assets.tarkov.dev/634959225289190e5e773b3b-icon.webp",
   "Random foods🍴": "https://assets.tarkov.dev/544fb6cc4bdc2d34748b456e-icon.webp",
   "Random drinks 🍹": "https://assets.tarkov.dev/57513f9324597720a7128161-icon.webp",
+  "1x Augmentin antibiotic pills": "https://assets.tarkov.dev/590c695186f7741e566b64a2-icon.webp",
 };
