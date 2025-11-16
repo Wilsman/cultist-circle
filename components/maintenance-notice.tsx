@@ -28,7 +28,7 @@ export function MaintenanceNotice() {
         <div className="flex flex-1 flex-col gap-0.5">
           <p className="text-sm font-semibold text-amber-50">Maintenance Alert</p>
           <p className="text-[11px] uppercase tracking-wider text-amber-200/70">
-            Updated: November 14, 2025
+            Updated: November 16, 2025
           </p>
         </div>
       </div>
