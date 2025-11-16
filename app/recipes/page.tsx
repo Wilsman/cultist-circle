@@ -39,20 +39,18 @@ const tarkovRecipes: Recipe[] = [
   {
     requiredItems: ["1x Augmentin antibiotic pills"],
     craftingTime: "66 mins",
-    producedItems: ["Result pending (unknown)"],
+    producedItems: ["1x RxTG-12 antidote injector"],
     isNew: true,
   },
   {
     requiredItems: ["1x Pumpkin with sweets"],
     craftingTime: "66 mins",
     producedItems: ["1x Jack-o'-lantern tactical pumpkin helmet"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Jack-o'-lantern tactical pumpkin helmet"],
     craftingTime: "66 mins",
     producedItems: ["Random foods🍴", "Random drinks 🍹"],
-    isNew: true,
   },
   {
     requiredItems: ["1x WD-40 (400ml)"],
