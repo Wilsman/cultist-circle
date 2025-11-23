@@ -26,16 +26,27 @@ export function MaintenanceNotice() {
       <div className="flex items-start gap-3">
         <AlertTriangle className="h-5 w-5 text-amber-300 mt-0.5" />
         <div className="flex flex-1 flex-col gap-0.5">
-          <p className="text-sm font-semibold text-amber-50">Maintenance Alert</p>
+          <p className="text-sm font-semibold text-amber-50">
+            Maintenance Alert
+          </p>
           <p className="text-[11px] uppercase tracking-wider text-amber-200/70">
-            Updated: November 16, 2025
+            Updated: November 23, 2025
           </p>
         </div>
       </div>
       <p className="mt-2 text-[12px] text-slate-100/90 leading-relaxed">
-        Escape from Tarkov is currently patching 1.0. The API will take a short moment to
-        stabilize once the servers return, so hold off on relying on fresh data for a little
-        while.
+        The API data may remain outdated for a short time while they still
+        recover from the 1.0 patch rollout, so please be cautious when relying
+        on the latest values. You can also{" "}
+        <button
+          onClick={() =>
+            document.dispatchEvent(new CustomEvent("cc:open-settings"))
+          }
+          className="text-amber-300 hover:text-amber-200 underline underline-offset-2 font-medium transition-colors"
+        >
+          switch to trader prices
+        </button>{" "}
+        in the settings menu. <em>*not all 1.0 items are available yet</em>
       </p>
     </div>
   );

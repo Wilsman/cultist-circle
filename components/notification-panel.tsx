@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ChevronDown, Bell, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
-interface Notification {
+export interface Notification {
   id: string;
   type: "success" | "warning" | "info" | "halloween";
   icon?: string;
@@ -12,24 +12,23 @@ interface Notification {
   description: string | React.ReactNode;
 }
 
-const NOTIFICATIONS: Notification[] = [
+export const NOTIFICATIONS: Notification[] = [
   {
-    id: "pumpkin-recipe",
-    type: "halloween",
-    icon: "🎃",
-    title: "New Recipe: Pumpkin Helmet Recipes",
+    id: "recipe-research",
+    type: "info",
+    icon: "🍳",
+    title: "Cooking Updates",
     description: (
       <>
-        Spooky new recipe added! Sacrifice  your Jack-o&apos;-lantern tactical pumpkin helmet or Pumpkin with sweets for new rewards.
-        <br />
-        Check it out in the{" "}
+        New recipes are being researched. Once confirmed they will be listed on
+        the{" "}
         <Link
           href="/recipes"
           className="underline hover:text-blue-300 transition-colors font-semibold"
         >
           Recipes page
         </Link>
-        {""}.
+        . Latest: 1x Augmentin
       </>
     ),
   },
@@ -39,14 +38,16 @@ const NOTIFICATIONS: Notification[] = [
     title: "Weapon Base Values - Work in Progress",
     description: (
       <>
-        We are still working on finding the correct multiplier for Weapon base values, please use the{" "}
+        We are still working on finding the correct multiplier for Weapon base
+        values, please use the{" "}
         <Link
           href="/base-values"
           className="underline hover:text-amber-300 transition-colors font-semibold"
         >
           Base Values lookup
         </Link>{" "}
-        page. To display weapons in the calculator, go to Settings → Excluded Categories and uncheck &quot;Weapon&quot;.
+        page. To display weapons in the calculator, go to Settings → Excluded
+        Categories and uncheck &quot;Weapon&quot;.
         <span className="block text-xs mt-1 text-red-400">
           Caution: Weapon base values are higher than shown in the app.
         </span>
@@ -54,6 +55,69 @@ const NOTIFICATIONS: Notification[] = [
     ),
   },
 ];
+
+export function NotificationCard({
+  notification,
+}: {
+  notification: Notification;
+}) {
+  return (
+    <div
+      className={`
+        rounded-xl px-4 py-3 backdrop-blur-sm
+        border transition-all duration-200
+        ${
+          notification.type === "success"
+            ? "bg-emerald-950/30 border-emerald-500/20"
+            : notification.type === "warning"
+            ? "bg-red-950/30 border-red-500/20"
+            : notification.type === "halloween"
+            ? "bg-orange-950/30 border-orange-500/20"
+            : "bg-slate-800/40 border-slate-700/30"
+        }
+      `}
+    >
+      <div className="flex items-start gap-3">
+        {notification.icon && (
+          <span className="text-lg mt-0.5 flex-shrink-0">
+            {notification.icon}
+          </span>
+        )}
+        {notification.type === "warning" && !notification.icon && (
+          <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <h3
+            className={`text-sm font-semibold mb-1 ${
+              notification.type === "success"
+                ? "text-emerald-200"
+                : notification.type === "warning"
+                ? "text-red-200"
+                : notification.type === "halloween"
+                ? "text-orange-200"
+                : "text-slate-200"
+            }`}
+          >
+            {notification.title}
+          </h3>
+          <div
+            className={`text-xs leading-relaxed ${
+              notification.type === "success"
+                ? "text-emerald-300/90"
+                : notification.type === "warning"
+                ? "text-red-300/90"
+                : notification.type === "halloween"
+                ? "text-orange-300/90"
+                : "text-slate-300/90"
+            }`}
+          >
+            {notification.description}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function NotificationPanel() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -65,7 +129,9 @@ export function NotificationPanel() {
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full group"
         aria-expanded={isExpanded}
-        aria-label={isExpanded ? "Collapse notifications" : "Expand notifications"}
+        aria-label={
+          isExpanded ? "Collapse notifications" : "Expand notifications"
+        }
       >
         <div
           className={`
@@ -110,61 +176,10 @@ export function NotificationPanel() {
       >
         <div className="space-y-2">
           {NOTIFICATIONS.map((notification) => (
-            <div
+            <NotificationCard
               key={notification.id}
-              className={`
-                rounded-xl px-4 py-3 backdrop-blur-sm
-                border transition-all duration-200
-                ${
-                  notification.type === "success"
-                    ? "bg-emerald-950/30 border-emerald-500/20"
-                    : notification.type === "warning"
-                    ? "bg-red-950/30 border-red-500/20"
-                    : notification.type === "halloween"
-                    ? "bg-orange-950/30 border-orange-500/20"
-                    : "bg-slate-800/40 border-slate-700/30"
-                }
-              `}
-            >
-              <div className="flex items-start gap-3">
-                {notification.icon && (
-                  <span className="text-lg mt-0.5 flex-shrink-0">
-                    {notification.icon}
-                  </span>
-                )}
-                {notification.type === "warning" && !notification.icon && (
-                  <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3
-                    className={`text-sm font-semibold mb-1 ${
-                      notification.type === "success"
-                        ? "text-emerald-200"
-                        : notification.type === "warning"
-                        ? "text-red-200"
-                        : notification.type === "halloween"
-                        ? "text-orange-200"
-                        : "text-slate-200"
-                    }`}
-                  >
-                    {notification.title}
-                  </h3>
-                  <div
-                    className={`text-xs leading-relaxed ${
-                      notification.type === "success"
-                        ? "text-emerald-300/90"
-                        : notification.type === "warning"
-                        ? "text-red-300/90"
-                        : notification.type === "halloween"
-                        ? "text-orange-300/90"
-                        : "text-slate-300/90"
-                    }`}
-                  >
-                    {notification.description}
-                  </div>
-                </div>
-              </div>
-            </div>
+              notification={notification}
+            />
           ))}
         </div>
       </div>

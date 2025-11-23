@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import Link from "next/link";
+// import Link from "next/link";
 import ItemSocket from "@/components/item-socket";
 import { 
   AlertCircle,
@@ -39,9 +39,7 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
-import { MaintenanceNotice } from "./maintenance-notice";
-import { SHOW_MAINTENANCE_NOTICE } from "@/config/maintenance";
-import { NotificationPanel } from "./notification-panel";
+import { InfoDashboard } from "./info-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
@@ -184,7 +182,7 @@ function AppContent() {
     hasError,
     mutate,
     needsManualRetry,
-    resetRetryCount
+    resetRetryCount,
   } = useItemsData(isPVE);
 
   // Initialize toast notifications
@@ -197,7 +195,8 @@ function AppContent() {
   useEffect(() => {
     const checkOnboarding = () => {
       try {
-        const seen = typeof window !== "undefined" &&
+        const seen =
+          typeof window !== "undefined" &&
           window.localStorage.getItem("cc_onboarding_seen_v1");
         setOnboardingComplete(!!seen);
       } catch {
@@ -221,7 +220,9 @@ function AppContent() {
     for (const item of rawItemsData) {
       const cats = item.categories_display ?? [];
       for (const c of cats) {
-        const id = c.id ?? (c.name ? CATEGORY_ID_BY_NAME.get(c.name) ?? undefined : undefined);
+        const id =
+          c.id ??
+          (c.name ? CATEGORY_ID_BY_NAME.get(c.name) ?? undefined : undefined);
         if (!id) continue;
         // Prefer first-seen localized name for this language
         if (!byId.has(id)) byId.set(id, c.name);
@@ -386,7 +387,13 @@ function AppContent() {
   // Auto-trigger notifications after onboarding completion and data load
   useEffect(() => {
     // Only trigger notifications once the app is fully loaded, initialized, AND onboarding is complete
-    if (didInitStateRef.current && !loading && rawItemsData && rawItemsData.length > 0 && onboardingComplete) {
+    if (
+      didInitStateRef.current &&
+      !loading &&
+      rawItemsData &&
+      rawItemsData.length > 0 &&
+      onboardingComplete
+    ) {
       // Delay to let user settle after completing onboarding
       const timeoutId = setTimeout(() => {
         triggerNewNotifications();
@@ -525,11 +532,12 @@ function AppContent() {
     // First filter by excluded categories (by category ID)
     const categoryFiltered = rawItemsData.filter((item: SimplifiedItem) => {
       if (item.name.toLowerCase() === "pestily plague mask") return true; // TEMP FIX
-      const ids = (item.categories && item.categories.length > 0)
-        ? item.categories
-        : (item.categories_display_en ?? [])
-            .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
-            .filter((x): x is string => Boolean(x));
+      const ids =
+        item.categories && item.categories.length > 0
+          ? item.categories
+          : (item.categories_display_en ?? [])
+              .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
+              .filter((x): x is string => Boolean(x));
       return !ids.some((id) => excludedCategories.has(id));
     });
 
@@ -545,7 +553,9 @@ function AppContent() {
             item.englishName,
             item.englishShortName,
           ].filter(Boolean) as string[];
-          return !candidates.some((n) => excludedItemNames.has(n.toLowerCase()));
+          return !candidates.some((n) =>
+            excludedItemNames.has(n.toLowerCase())
+          );
         })
       : categoryFiltered;
 
@@ -600,13 +610,16 @@ function AppContent() {
       if (!item.buyFor || item.buyFor.length === 0) return undefined;
       let best: number | undefined = undefined;
       for (const offer of item.buyFor) {
-        const vendor = offer.vendor?.normalizedName as keyof TraderLevels | undefined;
+        const vendor = offer.vendor?.normalizedName as
+          | keyof TraderLevels
+          | undefined;
         if (!vendor) continue;
         const minLvl = offer.vendor?.minTraderLevel ?? 1;
         const userLvl = traderLevels[vendor];
         if (userLvl && userLvl >= minLvl) {
           if (typeof offer.priceRUB === "number") {
-            if (best === undefined || offer.priceRUB > best) best = offer.priceRUB;
+            if (best === undefined || offer.priceRUB > best)
+              best = offer.priceRUB;
           }
         }
       }
@@ -765,7 +778,9 @@ function AppContent() {
   }, [selectedItems, itemBonus]);
 
   const fleaCosts = useMemo(() => {
-    return selectedItems.map((item) => (item ? getEffectivePrice(item) ?? 0 : 0));
+    return selectedItems.map((item) =>
+      item ? getEffectivePrice(item) ?? 0 : 0
+    );
   }, [selectedItems, getEffectivePrice]);
 
   // Memoized total flea cost
@@ -780,8 +795,7 @@ function AppContent() {
     if (val >= 400_000) {
       return {
         short: `quest/hideout items or high value items`,
-        full:
-          "quest/hideout items or high value items",
+        full: "quest/hideout items or high value items",
       };
     }
     if (val >= 350_001) {
@@ -804,7 +818,9 @@ function AppContent() {
 
   // Show hint pills only when at least one item is selected AND threshold not met, or when all empty
   const showHintPills = useMemo(
-    () => (selectedItems.some(Boolean) && total < threshold) || selectedItems.every((it) => !it),
+    () =>
+      (selectedItems.some(Boolean) && total < threshold) ||
+      selectedItems.every((it) => !it),
     [selectedItems, total, threshold]
   );
 
@@ -819,12 +835,20 @@ function AppContent() {
   const nextItemSuggestions = useMemo(() => {
     const bonusMultiplier = 1 + itemBonus / 100;
     const candidates = items
-      .map((item) => ({ item, price: getEffectivePrice(item) as number, adjBase: item.basePrice * bonusMultiplier }))
-      .filter(({ item, price }) => Number.isFinite(price) && price > 0 && item.basePrice > 0)
+      .map((item) => ({
+        item,
+        price: getEffectivePrice(item) as number,
+        adjBase: item.basePrice * bonusMultiplier,
+      }))
+      .filter(
+        ({ item, price }) =>
+          Number.isFinite(price) && price > 0 && item.basePrice > 0
+      )
       .sort((a, b) => a.price - b.price);
 
     // Deterministic seeded randomness helpers (stable for same selection/threshold/slot)
-    const selKey = selectedItems.map((s) => (s ? s.id : "-")).join("|") + `:${threshold}`;
+    const selKey =
+      selectedItems.map((s) => (s ? s.id : "-")).join("|") + `:${threshold}`;
     function hashString(s: string): number {
       let h = 2166136261 >>> 0; // FNV-1a
       for (let i = 0; i < s.length; i++) {
@@ -835,7 +859,7 @@ function AppContent() {
     }
     function rng(seed: number) {
       return function () {
-        seed += 0x6D2B79F5;
+        seed += 0x6d2b79f5;
         let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
         t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -859,8 +883,10 @@ function AppContent() {
       const plan: typeof candidates = [];
       let acc = 0;
       // Add slight randomness within the top window
-      const windowed = seededShuffle(source.slice(0, Math.min(12, source.length)), hashString(selKey))
-        .concat(source.slice(12));
+      const windowed = seededShuffle(
+        source.slice(0, Math.min(12, source.length)),
+        hashString(selKey)
+      ).concat(source.slice(12));
       for (const c of windowed) {
         if (plan.length >= k) break;
         if (acc >= need) break;
@@ -869,7 +895,9 @@ function AppContent() {
       }
       if (acc < need && source === eligible) {
         // eligible too strict, try again with all candidates but prefer larger base contributors
-        const byBaseDesc = [...candidates].sort((a, b) => b.adjBase - a.adjBase);
+        const byBaseDesc = [...candidates].sort(
+          (a, b) => b.adjBase - a.adjBase
+        );
         plan.length = 0;
         acc = 0;
         for (const c of byBaseDesc) {
@@ -886,12 +914,19 @@ function AppContent() {
 
     return selectedItems.map((slotItem, idx) => {
       if (slotItem) return [] as SimplifiedItem[];
-      const subtotalExSlot = selectedItems.reduce((s, it, i) => (i === idx || !it ? s : s + it.basePrice * bonusMultiplier), 0);
+      const subtotalExSlot = selectedItems.reduce(
+        (s, it, i) =>
+          i === idx || !it ? s : s + it.basePrice * bonusMultiplier,
+        0
+      );
       const need = Math.max(0, threshold - subtotalExSlot);
       if (need <= 0) {
         // Any cheap items ok; pick 3 from top 8 with a seeded shuffle per slot
         const seed = hashString(selKey + `:${idx}`);
-        return seededShuffle(candidates.slice(0, Math.min(8, candidates.length)), seed)
+        return seededShuffle(
+          candidates.slice(0, Math.min(8, candidates.length)),
+          seed
+        )
           .slice(0, 3)
           .map((c) => c.item);
       }
@@ -901,13 +936,15 @@ function AppContent() {
       // Single that meets
       const seedSingle = hashString(selKey + `:single:${idx}`);
       const meetPool = candidates.filter((c) => c.adjBase >= need).slice(0, 5);
-      const single = (meetPool.length > 0
-        ? seededShuffle(meetPool, seedSingle)[0]
-        : undefined)?.item;
+      const single = (
+        meetPool.length > 0 ? seededShuffle(meetPool, seedSingle)[0] : undefined
+      )?.item;
 
       // Multi-pick plan up to remainingSlots items; enforce meaningful per-item contribution when possible
       const perItemMin = Math.ceil(need / remainingSlots);
-      const plan = buildPlan(need, remainingSlots, perItemMin).map((c) => c.item);
+      const plan = buildPlan(need, remainingSlots, perItemMin).map(
+        (c) => c.item
+      );
 
       const out: SimplifiedItem[] = [];
       if (single) out.push(single);
@@ -993,8 +1030,9 @@ function AppContent() {
       // Guardrail: prevent pinning all 5 when threshold is not met (would make auto-select impossible)
       if (newPinnedCount === 5 && total < threshold) {
         sonnerToast.error("Cannot pin all 5 items", {
-          description:
-            `Current total ${Math.floor(total).toLocaleString()} is below threshold ${threshold.toLocaleString()}. Unpin one item or increase item values.`,
+          description: `Current total ${Math.floor(
+            total
+          ).toLocaleString()} is below threshold ${threshold.toLocaleString()}. Unpin one item or increase item values.`,
         });
         return;
       }
@@ -1019,7 +1057,7 @@ function AppContent() {
         .map((item) => ({
           item,
           price: getEffectivePrice(item),
-          efficiency: item.basePrice / ((getEffectivePrice(item) || 1)), // Avoid division by zero
+          efficiency: item.basePrice / (getEffectivePrice(item) || 1), // Avoid division by zero
         }))
         .filter(
           ({ item, price }) =>
@@ -1073,10 +1111,13 @@ function AppContent() {
           [...adjustedItems]
             .filter(
               (it) =>
-                it.basePrice >= remainingThreshold && it.basePrice <= remainingThreshold + window
+                it.basePrice >= remainingThreshold &&
+                it.basePrice <= remainingThreshold + window
             )
             .map((it) => ({ it, price: getEffectivePrice(it) }))
-            .filter(({ price }) => typeof price === "number" && (price as number) > 0)
+            .filter(
+              ({ price }) => typeof price === "number" && (price as number) > 0
+            )
             .sort((a, b) => (a.price as number) - (b.price as number))
             .map(({ it }) => it);
 
@@ -1090,16 +1131,21 @@ function AppContent() {
           return;
         }
 
-        const newSelectedItems: Array<SimplifiedItem | null> = [...selectedItems];
+        const newSelectedItems: Array<SimplifiedItem | null> = [
+          ...selectedItems,
+        ];
         const targetIndex = pinnedItems.findIndex((p) => !p);
-        const currentId = targetIndex !== -1 ? newSelectedItems[targetIndex]?.id : undefined;
+        const currentId =
+          targetIndex !== -1 ? newSelectedItems[targetIndex]?.id : undefined;
         const currentIdxInList = currentId
           ? candidates.findIndex((c) => c.id === currentId)
           : -1;
-        const nextIdx = currentIdxInList >= 0
-          ? (currentIdxInList + 1) % candidates.length
-          : 0;
-        if (targetIndex !== -1) newSelectedItems[targetIndex] = candidates[nextIdx] || candidates[0];
+        const nextIdx =
+          currentIdxInList >= 0
+            ? (currentIdxInList + 1) % candidates.length
+            : 0;
+        if (targetIndex !== -1)
+          newSelectedItems[targetIndex] = candidates[nextIdx] || candidates[0];
 
         // Preserve overridden prices for items that remain selected
         const newOverriddenPrices = { ...overriddenPrices };
@@ -1134,8 +1180,7 @@ function AppContent() {
           });
         } else {
           sonnerToast.error("Auto Select", {
-            description:
-              `Failed to find a valid combo for remaining ${remainingThreshold.toLocaleString()}. Try Trader prices, relax filters, or unpin one item.`,
+            description: `Failed to find a valid combo for remaining ${remainingThreshold.toLocaleString()}. Try Trader prices, relax filters, or unpin one item.`,
           });
         }
         return;
@@ -1378,7 +1423,10 @@ function AppContent() {
     function openSettings() {
       setIsSettingsPaneVisible(true);
     }
-    document.addEventListener("cc:open-settings", openSettings as EventListener);
+    document.addEventListener(
+      "cc:open-settings",
+      openSettings as EventListener
+    );
     return () =>
       document.removeEventListener(
         "cc:open-settings",
@@ -1432,26 +1480,10 @@ function AppContent() {
                   />
                 </a>
               </div>
-              <div className="rounded-2xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-left text-xs text-orange-50 backdrop-blur-sm">
-                <p>
-                  New recipes are being researched. Once confirmed they will be
-                  listed on the
-                  <Link
-                    href="/recipes"
-                    className="underline hover:text-orange-200 ml-1 font-semibold"
-                  >
-                    recipes page
-                  </Link>
-                  . Latest: 1x Augmentin antibiotic pills = 66mins
-                </p>
-              </div>
             </div>
 
-            {/* Maintenance alert */}
-            {SHOW_MAINTENANCE_NOTICE && <MaintenanceNotice />}
-
-            {/* Notification Panel - Collapsible */}
-            <NotificationPanel />
+            {/* Info Dashboard (Alerts, Notifications, Hot Sacrifices) */}
+            <InfoDashboard />
 
             {/* Main Calculator Card */}
             <Card className="bg-slate-800/60 backdrop-blur-md border-slate-700/40 shadow-xl overflow-hidden">
