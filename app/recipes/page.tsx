@@ -115,7 +115,7 @@ const tarkovRecipes: Recipe[] = [
   },
   {
     requiredItems: ["Cultist figurine ×5"],
-    craftingTime: "66 mins",
+    craftingTime: "666 mins",
     producedItems: ["Cultist knife"],
   },
   {
