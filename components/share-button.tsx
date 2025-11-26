@@ -21,11 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 interface ShareButtonProps {
   selectedItems: (SimplifiedItem | null)[];
@@ -85,7 +80,6 @@ export function ShareButton({
 }: ShareButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentCode, setCurrentCode] = useState("");
-  const [loadPopoverOpen, setLoadPopoverOpen] = useState(false);
 
   const modeLabel = isPVE ? "PVE" : "PVP";
   const items = selectedItems;
@@ -187,9 +181,10 @@ __Output__:
 
       if (result.items) {
         onItemsLoaded(result.items, result.isPVE);
-        setLoadPopoverOpen(false);
         sonnerToast("Items Loaded!", {
-          description: `Loaded ${result.items.filter(Boolean).length} items from code.`,
+          description: `Loaded ${
+            result.items.filter(Boolean).length
+          } items from code.`,
         });
       }
     } catch (error) {
