@@ -85,21 +85,23 @@ export function InfoDashboard() {
                       />
                     ))}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setUpdatesExpanded(!updatesExpanded)}
-                className="w-full text-xs font-medium text-slate-300 bg-slate-800/30 hover:bg-slate-800/60 hover:text-slate-200 h-8 border border-slate-700/30 rounded-lg transition-all duration-200"
-              >
-                {updatesExpanded
-                  ? "Show Less"
-                  : `Show ${updatesTotalCount - 1} More`}
-                <ChevronDown
-                  className={`ml-2 h-3 w-3 transition-transform duration-200 ${
-                    updatesExpanded ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
+              <div className="flex justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUpdatesExpanded(!updatesExpanded)}
+                  className="text-[10px] font-medium text-slate-300 bg-slate-800/30 hover:bg-slate-800/60 hover:text-slate-200 h-6 px-3 border border-slate-700/30 rounded-full transition-all duration-200"
+                >
+                  {updatesExpanded
+                    ? "Show Less"
+                    : `Show ${updatesTotalCount - 1} More`}
+                  <ChevronDown
+                    className={`ml-2 h-3 w-3 transition-transform duration-200 ${
+                      updatesExpanded ? "rotate-180" : ""
+                    }`}
+                  />
+                </Button>
+              </div>
             </>
           )}
         </TabsContent>
@@ -125,21 +127,23 @@ export function InfoDashboard() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setRecipesExpanded(!recipesExpanded)}
-                className="w-full text-xs font-medium text-slate-300 bg-slate-800/30 hover:bg-slate-800/60 hover:text-slate-200 h-8 border border-slate-700/30 rounded-lg transition-all duration-200"
-              >
-                {recipesExpanded
-                  ? "Show Less"
-                  : `Show ${recipesTotalCount - 1} More`}
-                <ChevronDown
-                  className={`ml-2 h-3 w-3 transition-transform duration-200 ${
-                    recipesExpanded ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
+              <div className="flex justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRecipesExpanded(!recipesExpanded)}
+                  className="text-[10px] font-medium text-slate-300 bg-slate-800/30 hover:bg-slate-800/60 hover:text-slate-200 h-6 px-3 border border-slate-700/30 rounded-full transition-all duration-200"
+                >
+                  {recipesExpanded
+                    ? "Show Less"
+                    : `Show ${recipesTotalCount - 1} More`}
+                  <ChevronDown
+                    className={`ml-2 h-3 w-3 transition-transform duration-200 ${
+                      recipesExpanded ? "rotate-180" : ""
+                    }`}
+                  />
+                </Button>
+              </div>
             </>
           )}
         </TabsContent>

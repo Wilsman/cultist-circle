@@ -22,7 +22,7 @@ import SettingsPane from "@/components/settings-pane";
 import { ModeThreshold } from "@/components/mode-threshold";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { VersionInfo } from "@/components/version-info";
-import { ShareCodeDialog } from "@/components/share-code-component";
+import { ShareButton } from "@/components/share-button";
 import {
   ALL_ITEM_CATEGORIES,
   DEFAULT_EXCLUDED_CATEGORY_IDS,
@@ -48,7 +48,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast as sonnerToast } from "sonner";
 import ThresholdProgress from "@/components/threshold-progress";
 import NextItemHints from "@/components/next-item-hints";
-import ShareCardButton from "@/components/share-card-button";
+// ShareCardButton and ShareCodeDialog merged into ShareButton
 import { CURRENT_VERSION } from "@/config/changelog";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 import { IncompatibleItemsNotice } from "@/components/incompatible-items-notice";
@@ -1791,18 +1791,13 @@ function AppContent() {
 
                       {/* Action Row - Footer Style */}
                       <div className="flex items-center justify-center gap-2 pt-2 border-t border-slate-700/30">
-                        <ShareCardButton
-                          items={selectedItems}
-                          total={Math.floor(total)}
-                          totalFlea={Math.floor(totalFleaCost || 0)}
-                          modeLabel={isPVE ? "PVE" : "PVP"}
-                          sacred={itemBonus > 0}
-                          className="rounded-full"
-                        />
-                        <ShareCodeDialog
+                        <ShareButton
                           selectedItems={selectedItems}
                           isPVE={isPVE}
                           rawItemsData={rawItemsData}
+                          total={Math.floor(total)}
+                          totalFlea={Math.floor(totalFleaCost || 0)}
+                          sacred={itemBonus > 0}
                           onItemsLoaded={(items, newIsPVE) => {
                             setSelectedItems(items);
                             if (newIsPVE !== null) {
