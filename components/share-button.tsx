@@ -136,9 +136,7 @@ export function ShareButton({
       return;
     }
 
-    const itemsList = filteredItems
-      .map((item) => `- ${item.shortName || item.name}`)
-      .join("\n");
+    const itemsList = filteredItems.map((item) => `- ${item.name}`).join("\n");
     const discordText = `__Input__:
 ||${currentCode}||
 ${itemsList}

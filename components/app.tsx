@@ -1697,6 +1697,42 @@ function AppContent() {
                   </Button>
                 </div>
 
+                {/* Bottom Row: Alerts + Share */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  {/* Left: Alert badges */}
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    {Object.keys(overriddenPrices).length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                        ⚠ {Object.keys(overriddenPrices).length} override
+                        {Object.keys(overriddenPrices).length !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    {excludedItems.size > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                        ⚠ {excludedItems.size} exclusion
+                        {excludedItems.size !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    <IncompatibleItemsNotice />
+                  </div>
+
+                  {/* Right: Share button */}
+                  <ShareButton
+                    selectedItems={selectedItems}
+                    isPVE={isPVE}
+                    rawItemsData={rawItemsData}
+                    total={Math.floor(total)}
+                    totalFlea={Math.floor(totalFleaCost || 0)}
+                    sacred={itemBonus > 0}
+                    onItemsLoaded={(items, newIsPVE) => {
+                      setSelectedItems(items);
+                      if (newIsPVE !== null) {
+                        setIsPVE(newIsPVE);
+                      }
+                    }}
+                  />
+                </div>
+                
                 {/* Summary Section - Compact Horizontal Layout */}
                 <div id="sacrifice-value" className="space-y-3">
                   {loading ? (
@@ -1766,46 +1802,6 @@ function AppContent() {
                         total={Math.floor(total)}
                         threshold={threshold}
                       />
-
-                      {/* Simplified Alert Row */}
-                      {(Object.keys(overriddenPrices).length > 0 ||
-                        excludedItems.size > 0) && (
-                        <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-                          {Object.keys(overriddenPrices).length > 0 && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                              ⚠ {Object.keys(overriddenPrices).length} override
-                              {Object.keys(overriddenPrices).length !== 1
-                                ? "s"
-                                : ""}
-                            </span>
-                          )}
-                          {excludedItems.size > 0 && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                              ⚠ {excludedItems.size} exclusion
-                              {excludedItems.size !== 1 ? "s" : ""}
-                            </span>
-                          )}
-                          <IncompatibleItemsNotice />
-                        </div>
-                      )}
-
-                      {/* Action Row - Footer Style */}
-                      <div className="flex items-center justify-center gap-2 pt-2 border-t border-slate-700/30">
-                        <ShareButton
-                          selectedItems={selectedItems}
-                          isPVE={isPVE}
-                          rawItemsData={rawItemsData}
-                          total={Math.floor(total)}
-                          totalFlea={Math.floor(totalFleaCost || 0)}
-                          sacred={itemBonus > 0}
-                          onItemsLoaded={(items, newIsPVE) => {
-                            setSelectedItems(items);
-                            if (newIsPVE !== null) {
-                              setIsPVE(newIsPVE);
-                            }
-                          }}
-                        />
-                      </div>
                     </>
                   )}
                 </div>
