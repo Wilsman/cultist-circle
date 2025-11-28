@@ -87,7 +87,19 @@ export const CATEGORY_LEVEL_REQUIREMENTS: CategoryLevelRequirement[] = [
  */
 export const ITEM_LEVEL_REQUIREMENTS: ItemLevelRequirement[] = [
   // High-value medical/electronics items
-  { itemName: "LEDX Skin Transilluminator", levelRequirement: 35 },
+  { itemName: "Ledx Skin Transilluminator", levelRequirement: 35 },
+  { itemName: "6-STEN-140-M Military Battery", levelRequirement: 40 },
+  { itemName: "Greenbat Lithium Battery", levelRequirement: 35 },
+  { itemName: "Gunpowder \"Eagle\"", levelRequirement: 30 },
+  { itemName: "Gunpowder \"Hawk\"", levelRequirement: 30 },
+  { itemName: "Graphics Card", levelRequirement: 40 },
+  { itemName: "Military Circuit Board", levelRequirement: 35 },
+  { itemName: "Military Power Filter", levelRequirement: 35 },
+  { itemName: "Phased Array Element", levelRequirement: 40 },
+  { itemName: "Tetriz Portable Game Console", levelRequirement: 35 },
+  { itemName: "Uhf Rfid Reader", levelRequirement: 35 },
+  { itemName: "Vpx Flash Storage Module", levelRequirement: 35 },
+  { itemName: "Virtex Programmable Processor", levelRequirement: 35 },
   
   // Add more individual items as needed:
   // { itemName: "Item Name Here", levelRequirement: XX },
