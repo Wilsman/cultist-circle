@@ -31,6 +31,14 @@ import {
   type ItemCategory,
 } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
+import {
+  PLAYER_LEVEL_KEY,
+  USE_LEVEL_FILTER_KEY,
+  DEFAULT_PLAYER_LEVEL,
+  DEFAULT_USE_LEVEL_FILTER,
+  getInaccessibleCategoriesAtLevel,
+  getItemLevelRequirement,
+} from "@/config/flea-level-requirements";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { doItemsFitInBox } from "../lib/fit-items-in-box";
 import {
@@ -151,6 +159,26 @@ function AppContent() {
       }
       return false; // Default to false (temporarily disabled)
     });
+  // Player level filter state
+  const [useLevelFilter, setUseLevelFilter] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(USE_LEVEL_FILTER_KEY);
+      if (saved !== null) {
+        return saved === "true";
+      }
+    }
+    return DEFAULT_USE_LEVEL_FILTER;
+  });
+  const [playerLevel, setPlayerLevel] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(PLAYER_LEVEL_KEY);
+      const parsed = Number(saved);
+      if (saved && Number.isFinite(parsed) && parsed >= 1 && parsed <= 79) {
+        return parsed;
+      }
+    }
+    return DEFAULT_PLAYER_LEVEL;
+  });
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
     new Set()
   );
@@ -278,6 +306,20 @@ function AppContent() {
       );
     }
   }, [useLastOfferCountFilter]);
+
+  // Save useLevelFilter to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(USE_LEVEL_FILTER_KEY, useLevelFilter.toString());
+    }
+  }, [useLevelFilter]);
+
+  // Save playerLevel to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(PLAYER_LEVEL_KEY, playerLevel.toString());
+    }
+  }, [playerLevel]);
 
   // Handle error state
   useEffect(() => {
@@ -497,7 +539,9 @@ function AppContent() {
         await mutate();
         return;
       },
-      DEFAULT_EXCLUDED_CATEGORY_IDS
+      DEFAULT_EXCLUDED_CATEGORY_IDS,
+      setUseLevelFilter,
+      setPlayerLevel
     );
   }, [
     setSelectedItems,
@@ -541,12 +585,46 @@ function AppContent() {
       return !ids.some((id) => excludedCategories.has(id));
     });
 
+    // Then filter by player level (flea market access)
+    const levelFiltered = useLevelFilter
+      ? categoryFiltered.filter((item: SimplifiedItem) => {
+          // First check individual item requirements (takes priority)
+          const itemNames = [
+            item.englishName,
+            item.name,
+            item.englishShortName,
+            item.shortName,
+          ].filter(Boolean) as string[];
+
+          for (const name of itemNames) {
+            const itemReq = getItemLevelRequirement(name);
+            if (itemReq !== undefined) {
+              // Item has a specific level requirement
+              return playerLevel >= itemReq;
+            }
+          }
+
+          // Fall back to category-level filtering
+          const ids =
+            item.categories && item.categories.length > 0
+              ? item.categories
+              : (item.categories_display_en ?? [])
+                  .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
+                  .filter((x): x is string => Boolean(x));
+          // Get categories that are inaccessible at current level
+          const inaccessibleCategories =
+            getInaccessibleCategoriesAtLevel(playerLevel);
+          // Item passes if none of its categories are inaccessible
+          return !ids.some((id) => inaccessibleCategories.includes(id));
+        })
+      : categoryFiltered;
+
     // Then filter out individually excluded items (case-insensitive, language-agnostic)
     const excludedItemNames = new Set(
       Array.from(excludedItems, (name) => name.toLowerCase())
     );
     const excludedFiltered = excludeIncompatible
-      ? categoryFiltered.filter((item: SimplifiedItem) => {
+      ? levelFiltered.filter((item: SimplifiedItem) => {
           const candidates = [
             item.name,
             item.shortName,
@@ -557,7 +635,7 @@ function AppContent() {
             excludedItemNames.has(n.toLowerCase())
           );
         })
-      : categoryFiltered;
+      : levelFiltered;
 
     // Sorting logic...
     const sortedItems = [...excludedFiltered];
@@ -592,6 +670,8 @@ function AppContent() {
     excludeIncompatible,
     excludedItems,
     loading,
+    useLevelFilter,
+    playerLevel,
   ]);
 
   // Helper: compute effective price for an item given current mode and overrides
@@ -1732,7 +1812,7 @@ function AppContent() {
                     }}
                   />
                 </div>
-                
+
                 {/* Summary Section - Compact Horizontal Layout */}
                 <div id="sacrifice-value" className="space-y-3">
                   {loading ? (
@@ -1894,6 +1974,8 @@ function AppContent() {
               setThreshold(400000);
               setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
               setOverriddenPrices({});
+              setUseLevelFilter(DEFAULT_USE_LEVEL_FILTER);
+              setPlayerLevel(DEFAULT_PLAYER_LEVEL);
 
               sonnerToast("Data Cleared", {
                 description:
@@ -1912,6 +1994,8 @@ function AppContent() {
                 priceMode,
                 traderLevels,
                 useLastOfferCountFilter,
+                useLevelFilter,
+                playerLevel,
               };
               const blob = new Blob([JSON.stringify(data, null, 2)], {
                 type: "application/json",
@@ -1944,6 +2028,10 @@ function AppContent() {
                 if (parsed.traderLevels) setTraderLevels(parsed.traderLevels);
                 if (parsed.useLastOfferCountFilter !== undefined)
                   setUseLastOfferCountFilter(parsed.useLastOfferCountFilter);
+                if (parsed.useLevelFilter !== undefined)
+                  setUseLevelFilter(parsed.useLevelFilter);
+                if (parsed.playerLevel !== undefined)
+                  setPlayerLevel(parsed.playerLevel);
               } catch (e) {
                 console.error("Failed to parse imported data:", e);
               }
@@ -1967,6 +2055,10 @@ function AppContent() {
             onUseLastOfferCountFilterChange={
               handleUseLastOfferCountFilterChange
             }
+            useLevelFilter={useLevelFilter}
+            onUseLevelFilterChange={setUseLevelFilter}
+            playerLevel={playerLevel}
+            onPlayerLevelChange={setPlayerLevel}
           />
         </div>
       )}

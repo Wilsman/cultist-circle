@@ -1,4 +1,5 @@
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
+import { DEFAULT_PLAYER_LEVEL, DEFAULT_USE_LEVEL_FILTER } from "@/config/flea-level-requirements";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { toast as sonnerToast } from "sonner";
 
@@ -16,7 +17,9 @@ export async function resetUserData(
   >,
   setIsPVE: React.Dispatch<React.SetStateAction<boolean>>,
   fetchData: () => Promise<void>,
-  defaultItemCategories: Set<string>
+  defaultItemCategories: Set<string>,
+  setUseLevelFilter?: React.Dispatch<React.SetStateAction<boolean>>,
+  setPlayerLevel?: React.Dispatch<React.SetStateAction<number>>
 ) {
   // Clear local storage
   localStorage.clear();
@@ -43,6 +46,8 @@ export async function resetUserData(
   setThreshold(400000);
   setOverriddenPrices({});
   setIsPVE(false);
+  if (setUseLevelFilter) setUseLevelFilter(DEFAULT_USE_LEVEL_FILTER);
+  if (setPlayerLevel) setPlayerLevel(DEFAULT_PLAYER_LEVEL);
 
   // Fetch fresh data
   await fetchData();

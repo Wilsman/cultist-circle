@@ -72,6 +72,10 @@ interface SettingsPaneProps {
   onClearLocalStorage: () => void;
   useLastOfferCountFilter: boolean;
   onUseLastOfferCountFilterChange: (value: boolean) => void;
+  useLevelFilter: boolean;
+  onUseLevelFilterChange: (value: boolean) => void;
+  playerLevel: number;
+  onPlayerLevelChange: (level: number) => void;
 }
 
 export default function SettingsPane({
@@ -97,12 +101,19 @@ export default function SettingsPane({
   onHardReset,
   useLastOfferCountFilter,
   onUseLastOfferCountFilterChange,
+  useLevelFilter,
+  onUseLevelFilterChange,
+  playerLevel,
+  onPlayerLevelChange,
 }: SettingsPaneProps) {
   const [sortOption, setSortOption] = useState(currentSortOption);
   const [currentFleaPriceType, setCurrentFleaPriceType] =
     useState(fleaPriceType);
-  const [currentPriceMode, setCurrentPriceMode] = useState<"flea" | "trader">(priceMode);
-  const [currentUseLastOfferCountFilter, setCurrentUseLastOfferCountFilter] = useState(useLastOfferCountFilter);
+  const [currentPriceMode, setCurrentPriceMode] = useState<"flea" | "trader">(
+    priceMode
+  );
+  const [currentUseLastOfferCountFilter, setCurrentUseLastOfferCountFilter] =
+    useState(useLastOfferCountFilter);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
@@ -173,7 +184,10 @@ export default function SettingsPane({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="bg-gray-800/95 backdrop-blur-md border-gray-700 text-white max-w-2xl max-h-[90vh] sm:max-h-[85vh] h-full overflow-hidden flex flex-col">
+      <DialogContent
+        onPointerDownOutside={(e) => e.preventDefault()}
+        className="bg-gray-800/95 backdrop-blur-md border-gray-700 text-white max-w-2xl max-h-[90vh] sm:max-h-[85vh] h-full overflow-hidden flex flex-col"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl text-white">
             <SettingsIcon className="h-5 w-5" />
@@ -203,7 +217,9 @@ export default function SettingsPane({
                 <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg font-semibold">Language</span>
-                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">WIP</span>
+                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">
+                      WIP
+                    </span>
                   </div>
                   <div className="w-56">
                     <Select value={language} onValueChange={setLanguage}>
@@ -224,7 +240,9 @@ export default function SettingsPane({
                     </Select>
                   </div>
                   <p className="text-xs text-gray-400 mt-2">
-                  ⚠️ Known issue: the &quot;Excluded Items&quot; list in Settings is still shown in English, but items are still excluded in the app. This setting is work-in-progress.
+                    ⚠️ Known issue: the &quot;Excluded Items&quot; list in
+                    Settings is still shown in English, but items are still
+                    excluded in the app. This setting is work-in-progress.
                   </p>
                 </div>
               )}
@@ -240,31 +258,31 @@ export default function SettingsPane({
                       <SelectValue placeholder="Sort by..." />
                     </SelectTrigger>
                     <SelectContent className="bg-[#232b32] border border-[#e4c15a]/30 text-gray-100">
-                      <SelectItem 
-                        value="az" 
+                      <SelectItem
+                        value="az"
                         className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
                       >
                         Item name: A-Z
                       </SelectItem>
-                      <SelectItem 
+                      <SelectItem
                         value="most-recent"
                         className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
                       >
                         Most recently updated first
                       </SelectItem>
-                      <SelectItem 
+                      <SelectItem
                         value="base-value"
                         className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
                       >
                         Base Value: Low to High
                       </SelectItem>
-                      <SelectItem 
+                      <SelectItem
                         value="base-value-desc"
                         className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
                       >
                         Base Value: High to Low
                       </SelectItem>
-                      <SelectItem 
+                      <SelectItem
                         value="ratio"
                         className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
                       >
@@ -281,12 +299,16 @@ export default function SettingsPane({
                   <div className="flex items-center gap-2">
                     <CandlestickChart className="h-5 w-5 text-yellow-400" />
                     <span className="text-lg font-semibold">Price Mode</span>
-                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">WIP</span>
+                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">
+                      WIP
+                    </span>
                   </div>
                 </div>
                 <RadioGroup
                   value={currentPriceMode}
-                  onValueChange={(v) => setCurrentPriceMode(v as "flea" | "trader")}
+                  onValueChange={(v) =>
+                    setCurrentPriceMode(v as "flea" | "trader")
+                  }
                   className="grid gap-3 sm:grid-cols-2"
                 >
                   <div className="flex items-center space-x-2 rounded-md border border-gray-700 p-3">
@@ -298,17 +320,24 @@ export default function SettingsPane({
                     <Label htmlFor="mode-trader">Trader prices</Label>
                   </div>
                 </RadioGroup>
-                <p className="text-xs text-gray-400 mt-2">⚠️ Traders are currently work-in-progress, known limitations: all quest locked items present.</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  ⚠️ Traders are currently work-in-progress, known limitations:
+                  all quest locked items present.
+                </p>
               </div>
-              
+
               {/* Trader Levels (only when trader mode) */}
               {currentPriceMode === "trader" && (
                 <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <List className="h-5 w-5 text-yellow-400" />
-                      <span className="text-lg font-semibold">Trader Levels</span>
-                      <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">WIP</span>
+                      <span className="text-lg font-semibold">
+                        Trader Levels
+                      </span>
+                      <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">
+                        WIP
+                      </span>
                     </div>
                   </div>
                   <TraderLevelSelector
@@ -323,30 +352,50 @@ export default function SettingsPane({
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <CandlestickChart className="h-5 w-5 text-green-400" />
-                    <span className="text-lg font-semibold">Flea Market Price Basis</span>
-                  <Badge
-                    variant="outline"
-                    className="text-yellow-300 border-gray-600 rounded-full animate-pulse"
-                  >
-                    New
-                  </Badge>
+                    <span className="text-lg font-semibold">
+                      Flea Market Price Basis
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-yellow-300 border-gray-600 rounded-full animate-pulse"
+                    >
+                      New
+                    </Badge>
                   </div>
                 </div>
                 <RadioGroup
                   value={currentFleaPriceType}
-                  onValueChange={(value) => setCurrentFleaPriceType(value as 'lastLowPrice' | 'avg24hPrice')}
+                  onValueChange={(value) =>
+                    setCurrentFleaPriceType(
+                      value as "lastLowPrice" | "avg24hPrice"
+                    )
+                  }
                   className="space-y-2"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="lastLowPrice" id="lastLowPrice" className="text-yellow-300 border-gray-600" />
-                    <Label htmlFor="lastLowPrice" className="text-gray-200">Last Low Price</Label>
+                    <RadioGroupItem
+                      value="lastLowPrice"
+                      id="lastLowPrice"
+                      className="text-yellow-300 border-gray-600"
+                    />
+                    <Label htmlFor="lastLowPrice" className="text-gray-200">
+                      Last Low Price
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="avg24hPrice" id="avg24hPrice" className="text-yellow-300 border-gray-600" />
-                    <Label htmlFor="avg24hPrice" className="text-gray-200">Average 24h Price</Label>
+                    <RadioGroupItem
+                      value="avg24hPrice"
+                      id="avg24hPrice"
+                      className="text-yellow-300 border-gray-600"
+                    />
+                    <Label htmlFor="avg24hPrice" className="text-gray-200">
+                      Average 24h Price
+                    </Label>
                   </div>
                 </RadioGroup>
-                <p className="text-xs text-gray-400 mt-2">Determines which flea market price is used for calculations.</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Determines which flea market price is used for calculations.
+                </p>
               </div>
 
               {/* Market Offer Count Filter Section (General Tab) */}
@@ -354,7 +403,9 @@ export default function SettingsPane({
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <Filter className="h-5 w-5 text-purple-400" />
-                    <span className="text-lg font-semibold text-gray-500">Exclude Low Offer Count Items</span>
+                    <span className="text-lg font-semibold text-gray-500">
+                      Exclude Low Offer Count Items
+                    </span>
                     <Badge
                       variant="outline"
                       className="text-gray-500 border-gray-600 rounded-full"
@@ -370,11 +421,73 @@ export default function SettingsPane({
                   />
                 </div>
                 <p className="text-sm text-gray-500">
-                  This feature is temporarily disabled. Items with fewer than 5 offers on the Flea Market
-                  will not be excluded from calculations.
+                  This feature is temporarily disabled. Items with fewer than 5
+                  offers on the Flea Market will not be excluded from
+                  calculations.
                 </p>
               </div>
 
+              {/* Player Level Filter Section (General Tab) */}
+              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-cyan-400" />
+                    <span className="text-lg font-semibold">
+                      Flea Market Level Filter
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-emerald-300 border-emerald-500/30 rounded-full"
+                    >
+                      New
+                    </Badge>
+                  </div>
+                  <Switch
+                    id="use-level-filter"
+                    checked={useLevelFilter}
+                    onCheckedChange={onUseLevelFilterChange}
+                    className="data-[state=checked]:bg-cyan-500"
+                  />
+                </div>
+                <p className="text-sm text-gray-400 mb-4">
+                  Filter out items from categories that require a higher level
+                  to purchase on the Flea Market. Enter your current PMC level
+                  below.
+                </p>
+                <div className="flex items-center gap-3">
+                  <Label
+                    htmlFor="player-level"
+                    className="text-gray-300 whitespace-nowrap"
+                  >
+                    Your Level:
+                  </Label>
+                  <Input
+                    id="player-level"
+                    type="number"
+                    min={1}
+                    max={79}
+                    value={playerLevel}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val >= 1 && val <= 79) {
+                        onPlayerLevelChange(val);
+                      }
+                    }}
+                    disabled={!useLevelFilter}
+                    className={`w-20 text-center ${
+                      !useLevelFilter ? "opacity-50" : ""
+                    }`}
+                  />
+                  <span className="text-xs text-gray-500">(1-79)</span>
+                </div>
+                {useLevelFilter && playerLevel < 30 && (
+                  <p className="text-xs text-amber-400 mt-3">
+                    ⚠️ At level {playerLevel}, some high-value categories
+                    (Injectors, Keycards, Valuables, Gear components) are
+                    restricted.
+                  </p>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="categories" className="h-full p-1">
@@ -424,9 +537,7 @@ export default function SettingsPane({
                   <div className="">
                     {allCategories
                       .filter((c) =>
-                        c.name
-                          .toLowerCase()
-                          .includes(searchTerm.toLowerCase())
+                        c.name.toLowerCase().includes(searchTerm.toLowerCase())
                       )
                       .sort((a, b) => a.name.localeCompare(b.name))
                       .map((c) => (
@@ -436,9 +547,7 @@ export default function SettingsPane({
                         >
                           <Checkbox
                             checked={excludedCategories.includes(c.id)}
-                            onCheckedChange={() =>
-                              handleCategoryChange(c.id)
-                            }
+                            onCheckedChange={() => handleCategoryChange(c.id)}
                             className="border-gray-500"
                           />
                           <Label className="text-sm">
