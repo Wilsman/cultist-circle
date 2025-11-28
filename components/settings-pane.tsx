@@ -47,6 +47,16 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
 import { useLanguage } from "@/contexts/language-context";
+import {
+  CATEGORY_LEVEL_REQUIREMENTS,
+  ITEM_LEVEL_REQUIREMENTS,
+} from "@/config/flea-level-requirements";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Info } from "lucide-react";
 
 interface SettingsPaneProps {
   isOpen: boolean;
@@ -435,6 +445,73 @@ export default function SettingsPane({
                     <span className="text-lg font-semibold">
                       Flea Market Level Filter
                     </span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="text-gray-400 hover:text-cyan-300 transition-colors">
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        side="bottom"
+                        align="start"
+                        className="w-72 max-h-80 overflow-y-auto bg-slate-900/95 backdrop-blur-sm border-slate-700 rounded-xl shadow-xl p-0"
+                      >
+                        <div className="p-3 space-y-3">
+                          <div>
+                            <p className="text-xs font-semibold text-cyan-300 mb-2">
+                              Categories
+                            </p>
+                            <div className="space-y-1">
+                              {[...CATEGORY_LEVEL_REQUIREMENTS]
+                                .sort(
+                                  (a, b) =>
+                                    a.levelRequirement - b.levelRequirement
+                                )
+                                .map((cat) => (
+                                  <div
+                                    key={cat.categoryId}
+                                    className="flex justify-between text-xs"
+                                  >
+                                    <span className="text-gray-300 truncate mr-2">
+                                      {cat.categoryName}
+                                    </span>
+                                    <span className="text-amber-400 font-mono">
+                                      Lv.{cat.levelRequirement}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                          {ITEM_LEVEL_REQUIREMENTS.length > 0 && (
+                            <div className="border-t border-slate-700 pt-3">
+                              <p className="text-xs font-semibold text-purple-300 mb-2">
+                                Individual Items
+                              </p>
+                              <div className="space-y-1">
+                                {[...ITEM_LEVEL_REQUIREMENTS]
+                                  .sort(
+                                    (a, b) =>
+                                      a.levelRequirement - b.levelRequirement
+                                  )
+                                  .map((item) => (
+                                    <div
+                                      key={item.itemName}
+                                      className="flex justify-between text-xs"
+                                    >
+                                      <span className="text-gray-300 truncate mr-2">
+                                        {item.itemName}
+                                      </span>
+                                      <span className="text-amber-400 font-mono">
+                                        Lv.{item.levelRequirement}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <Badge
                       variant="outline"
                       className="text-emerald-300 border-emerald-500/30 rounded-full"
