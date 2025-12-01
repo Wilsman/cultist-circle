@@ -20,7 +20,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+// Clock icon removed - not used
 
 interface ShareButtonProps {
   selectedItems: (SimplifiedItem | null)[];
@@ -33,16 +35,6 @@ interface ShareButtonProps {
     items: (SimplifiedItem | null)[],
     isPVE: boolean | null
   ) => void;
-}
-
-function getTimerLabel(total: number): string {
-  if (total >= 400_000) return "6/14h";
-  if (total >= 350_000) return "14h";
-  if (total >= 300_000) return "12h";
-  if (total >= 200_000) return "8h";
-  if (total >= 100_000) return "5h";
-  if (total >= 25_000) return "3h";
-  return "2h";
 }
 
 function getThresholdLabel(total: number): string {
@@ -68,6 +60,24 @@ function timerLabel(total: number): string {
   if (total >= 25_000) return "3h";
   return "2h";
 }
+
+function getPredictedTimer(total: number): string {
+  if (total >= 400_000) return "6h or 14h (25%/75%)";
+  if (total >= 350_000) return "14h";
+  if (total >= 300_000) return "12h";
+  if (total >= 200_000) return "8h";
+  if (total >= 100_000) return "5h";
+  if (total >= 25_000) return "3h";
+  return "2h";
+}
+
+type ActualTimer = "6h" | "12h" | "14h";
+
+const TIMER_OPTIONS: { value: ActualTimer; label: string }[] = [
+  { value: "6h", label: "6 hours" },
+  { value: "12h", label: "12 hours" },
+  { value: "14h", label: "14 hours" },
+];
 
 export function ShareButton({
   selectedItems,
@@ -119,7 +129,8 @@ export function ShareButton({
       });
   };
 
-  const handleCopyForDiscord = () => {
+  // Discord copy with timer selection
+  const handleCopyForResults = (actualTimer: ActualTimer) => {
     const filteredItems = selectedItems.filter(
       (item): item is SimplifiedItem => item !== null
     );
@@ -131,24 +142,27 @@ export function ShareButton({
     }
 
     const itemsList = filteredItems.map((item) => `- ${item.name}`).join("\n");
+
     const discordText = `__Input__:
 ||${currentCode}||
 ${itemsList}
 
 **Threshold**: ${getThresholdLabel(total)}
-**Timer**: ${getTimerLabel(total)}
+**Predicted**: ${getPredictedTimer(total)}
+**Actual Timer**: ${actualTimer} ⏱️
 **Mode**: ${isPVE ? "PVE" : "PVP"}
-**Sacred Amulet**: ${sacred ? "yes" : "no"}
+**Sacred Amulet**: ${sacred ? "✅ Yes" : "❌ No"}
 
 __Output__:
-- `;
+- *(edit this when ritual completes)*
+`;
 
     setIsLoading(true);
     navigator.clipboard
       .writeText(discordText)
       .then(() => {
-        sonnerToast("Discord Format Copied!", {
-          description: "Paste into Discord and add your output items.",
+        sonnerToast(`Copied for #results (${actualTimer})`, {
+          description: "Paste into Discord!",
         });
       })
       .catch((err) => {
@@ -384,14 +398,21 @@ __Output__:
             <ImageIcon className="h-4 w-4 mr-2" />
             Copy Image Card
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handleCopyForDiscord}
-            disabled={!hasItems}
-            className="cursor-pointer"
-          >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Copy for Discord
-          </DropdownMenuItem>
+          <DropdownMenuLabel className="text-xs text-slate-400 font-normal px-2">
+            Copy for Discord (select timer):
+          </DropdownMenuLabel>
+          {TIMER_OPTIONS.map((option) => (
+            <DropdownMenuItem
+              key={option.value}
+              onClick={() => handleCopyForResults(option.value)}
+              disabled={!hasItems}
+              className="cursor-pointer"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              {option.label}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator className="bg-slate-700/50" />
           <DropdownMenuItem
             onClick={handleCopyCode}
             disabled={!hasItems}

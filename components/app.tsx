@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Loader2, 
 } from "lucide-react";
+// cn moved to components that need it
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import SettingsPane from "@/components/settings-pane";
@@ -23,6 +24,7 @@ import { ModeThreshold } from "@/components/mode-threshold";
 import { AutoSelectButton } from "@/components/AutoSelectButton";
 import { VersionInfo } from "@/components/version-info";
 import { ShareButton } from "@/components/share-button";
+import { RewardsChart } from "@/components/rewards-chart";
 import {
   ALL_ITEM_CATEGORIES,
   DEFAULT_EXCLUDED_CATEGORY_IDS,
@@ -54,7 +56,6 @@ import { FeedbackForm } from "./feedback-form";
 import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast as sonnerToast } from "sonner";
-import ThresholdProgress from "@/components/threshold-progress";
 import NextItemHints from "@/components/next-item-hints";
 // ShareCardButton and ShareCodeDialog merged into ShareButton
 import { CURRENT_VERSION } from "@/config/changelog";
@@ -870,31 +871,7 @@ function AppContent() {
 
   const isThresholdMet: boolean = total >= threshold;
 
-  // Expected outcome text based on current total base value
-  function getExpectedOutcome(val: number): { short: string; full: string } {
-    if (val >= 400_000) {
-      return {
-        short: `quest/hideout items or high value items`,
-        full: "quest/hideout items or high value items",
-      };
-    }
-    if (val >= 350_001) {
-      return { short: "High value items", full: "High value items" };
-    }
-    return { short: "Normal value items", full: "Normal value item" };
-  }
-
-  // Expected timer based on current total base value
-  function getExpectedTimer(val: number): string {
-    if (val >= 400_000) return "6h/14h";
-    if (val >= 350_001) return "14h";
-    if (val >= 350_000) return "12h";
-    if (val >= 200_000) return "8h";
-    if (val >= 100_000) return "5h";
-    if (val >= 50_000) return "4h";
-    if (val >= 25_000) return "3h";
-    return "2h";
-  }
+  // Timer/outcome info now handled by RewardsChart component
 
   // Show hint pills only when at least one item is selected AND threshold not met, or when all empty
   const showHintPills = useMemo(
@@ -1819,69 +1796,60 @@ function AppContent() {
                     <Skeleton className="h-32 w-full bg-slate-700/20 rounded-xl" />
                   ) : (
                     <>
-                      {/* Compact Summary Header - Single Line */}
-                      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm px-2">
-                        {/* Total Base Value */}
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-2xl font-bold text-emerald-400">
-                            ₽{total.toLocaleString()}
-                          </span>
-                          <span className="text-xs text-slate-500">
-                            Total Base Value
-                          </span>
+                      {/* Summary Stats - 2-column main layout */}
+                      <div className="space-y-2 px-1">
+                        {/* Main row: Base Value + Buy Cost */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Base Value */}
+                          <div className="bg-slate-800/50 rounded-lg px-4 py-3 text-center border border-slate-700/30">
+                            <div className="text-2xl sm:text-3xl font-bold text-emerald-400 tabular-nums">
+                              ₽{Math.floor(total).toLocaleString()}
+                            </div>
+                            <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">
+                              Total Base Value
+                            </div>
+                          </div>
+
+                          {/* Buy Cost */}
+                          <div className="bg-slate-800/50 rounded-lg px-4 py-3 text-center border border-slate-700/30">
+                            <div className="text-2xl sm:text-3xl font-bold text-cyan-400 tabular-nums">
+                              ₽{Math.floor(totalFleaCost || 0).toLocaleString()}
+                            </div>
+                            <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">
+                              Buy Cost
+                            </div>
+                          </div>
                         </div>
 
-                        <span className="text-slate-600">•</span>
-
-                        {/* Need/Status */}
-                        {isThresholdMet ? (
-                          <span className="text-emerald-400 font-medium">
-                            ✓ Threshold Met
-                          </span>
-                        ) : (
-                          <span className="text-amber-400 font-medium">
-                            Need ₽{(threshold - total).toLocaleString()}
-                          </span>
+                        {/* Needed bar - only show if threshold not met */}
+                        {!isThresholdMet && (
+                          <div className="flex items-center gap-2 bg-amber-900/20 rounded-md px-3 py-1.5 border border-amber-600/30">
+                            <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    (total / threshold) * 100
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center gap-1.5 text-sm">
+                              <span className="text-amber-400 font-bold tabular-nums">
+                                ₽
+                                {Math.floor(threshold - total).toLocaleString()}
+                              </span>
+                              <span className="text-amber-500/70 text-xs">
+                                needed
+                              </span>
+                            </div>
+                          </div>
                         )}
-
-                        <span className="text-slate-600">•</span>
-
-                        {/* Timer */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-slate-500">Timer:</span>
-                          <span className="font-semibold text-slate-300">
-                            {getExpectedTimer(total)}
-                          </span>
-                        </div>
-
-                        <span className="text-slate-600">•</span>
-
-                        {/* Cost */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-slate-500">Cost:</span>
-                          <span className="font-semibold text-slate-300">
-                            ₽{totalFleaCost?.toLocaleString()}
-                          </span>
-                        </div>
-
-                        <span className="text-slate-600">•</span>
-
-                        {/* Reward */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-slate-500">
-                            Reward:
-                          </span>
-                          <span className="font-semibold text-slate-300 text-xs">
-                            {getExpectedOutcome(total).short}
-                          </span>
-                        </div>
                       </div>
 
-                      {/* Progress Bar */}
-                      <ThresholdProgress
-                        total={Math.floor(total)}
-                        threshold={threshold}
-                      />
+                      {/* Rewards Chart */}
+                      <RewardsChart currentTotal={Math.floor(total)} />
                     </>
                   )}
                 </div>

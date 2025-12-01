@@ -13,6 +13,7 @@ interface NextItemHintsProps {
 
 export function NextItemHints({ items, onPick, prevItem, className }: NextItemHintsProps) {
   if (!items || items.length === 0) return null;
+  
   return (
     <div className={cn("mt-1.5 pb-2 flex flex-wrap gap-1.5", className)}>
       {prevItem ? (
@@ -27,8 +28,12 @@ export function NextItemHints({ items, onPick, prevItem, className }: NextItemHi
           )}
           title={`Copy the same item from the slot above: ${prevItem.name}`}
         >
-          <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 uppercase tracking-wide text-[10px]">Copy</span>
-          <span className="font-medium truncate max-w-[140px]">{prevItem.shortName || prevItem.name}</span>
+          <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 uppercase tracking-wide text-[10px]">
+            Copy
+          </span>
+          <span className="font-medium truncate max-w-[140px]">
+            {prevItem.shortName || prevItem.name}
+          </span>
         </button>
       ) : null}
       {items.slice(0, 3).map((it, i) => (
@@ -43,10 +48,12 @@ export function NextItemHints({ items, onPick, prevItem, className }: NextItemHi
               ? "bg-amber-900/30 border-amber-600/40 text-amber-200 hover:bg-amber-900/50 hover:border-amber-500/60"
               : "bg-slate-800/60 border-slate-600/40 text-slate-200 hover:bg-slate-700/60 hover:border-slate-500/50"
           )}
-          title={`Insert ${it.name}`}
+          title={`${it.name} — Base: ₽${it.basePrice.toLocaleString()}`}
         >
-          <span className="font-medium truncate max-w-[160px]">{it.shortName || it.name}</span>
-          <span className="opacity-80">·</span>
+          <span className="font-medium truncate max-w-[140px]">
+            {it.shortName || it.name}
+          </span>
+          <span className="opacity-60">·</span>
           <span className="tabular-nums">₽{it.basePrice.toLocaleString()}</span>
         </button>
       ))}

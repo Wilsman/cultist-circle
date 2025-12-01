@@ -99,7 +99,12 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
                 <div className="w-5 h-5 flex items-center justify-center">
                   {selectedItem ? (
                     typeof selectedItem.icon === "string" ? (
-                      <Image src={selectedItem.icon} alt={selectedItem.name} width={20} height={20} />
+                      <Image
+                        src={selectedItem.icon}
+                        alt={selectedItem.name}
+                        width={20}
+                        height={20}
+                      />
                     ) : (
                       selectedItem.icon
                     )
@@ -124,10 +129,14 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
           </TooltipTrigger>
           <TooltipContent
             side="top"
-            className="max-w-[280px] p-2 text-left bg-slate-800 text-gray-100 border border-slate-700 rounded-md shadow-lg"
+            sideOffset={8}
+            collisionPadding={16}
+            className="max-w-[280px] p-2 text-left bg-slate-800 text-gray-100 border border-slate-700 rounded-md shadow-lg z-[100]"
           >
             <p className="text-xs font-semibold mb-1">Bonus Settings</p>
-            <p className="text-xs text-slate-300">Sacred Amulet increases Gift value by 15% (+Hideout skill)</p>
+            <p className="text-xs text-slate-300">
+              Sacred Amulet increases Gift value by 15% (+Hideout skill)
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -194,7 +203,9 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
                       <div className="flex items-center justify-center w-8 h-8 mr-3">
                         {item.icon}
                       </div>
-                      <span className="font-mono text-sm">{totalBonus.toFixed(2)}%</span>
+                      <span className="font-mono text-sm">
+                        {totalBonus.toFixed(2)}%
+                      </span>
                     </Button>
                   ))}
                 </div>
@@ -203,24 +214,34 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
 
             {selectedItem && selectedItem.id !== "none" && (
               <div className="flex items-center gap-2 animate-fade-in">
-                <span className="font-mono text-gray-200 text-sm">Hideout Level:</span>
+                <span className="font-mono text-gray-200 text-sm">
+                  Hideout Level:
+                </span>
                 <div className="relative">
                   <select
                     value={hideoutLevel}
                     onChange={(e) => setHideoutLevel(Number(e.target.value))}
                     className="bg-slate-800 text-gray-200 border border-slate-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-20 text-center appearance-none text-sm h-8"
                   >
-                    {Array.from({ length: 50 }, (_, i) => i + 1).map((level) => (
-                      <option key={level} value={level}>
-                        {level}
-                      </option>
-                    ))}
-                    <option key={51} value={51} className="text-yellow-400 font-bold">
+                    {Array.from({ length: 50 }, (_, i) => i + 1).map(
+                      (level) => (
+                        <option key={level} value={level}>
+                          {level}
+                        </option>
+                      )
+                    )}
+                    <option
+                      key={51}
+                      value={51}
+                      className="text-yellow-400 font-bold"
+                    >
                       Elite
                     </option>
                   </select>
                   {hideoutLevel === 51 && (
-                    <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-yellow-400 text-xs font-bold">★</span>
+                    <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-yellow-400 text-xs font-bold">
+                      ★
+                    </span>
                   )}
                 </div>
               </div>

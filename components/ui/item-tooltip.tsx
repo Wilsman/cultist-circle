@@ -54,13 +54,14 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
               <div className="flex items-start gap-3">
                 {/* Item Icon */}
                 {iconUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={iconUrl}
                     alt={item.name}
                     className="w-12 h-12 rounded-lg bg-gray-800/50 p-1.5 border border-gray-700/50 flex-shrink-0"
                   />
                 )}
-                
+
                 {/* Title - clickable if link exists */}
                 <div className="flex-1 min-w-0">
                   {item.link ? (
@@ -78,7 +79,9 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
                     </h3>
                   )}
                   {item.shortName && item.shortName !== item.name && (
-                    <p className="text-xs text-gray-400 mt-0.5">{item.shortName}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {item.shortName}
+                    </p>
                   )}
                 </div>
               </div>
@@ -128,7 +131,9 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
                   <span className="text-gray-400">Trader:</span>
                   <span className="font-semibold text-gray-200 capitalize">
                     {bestTrader.vendor.normalizedName}
-                    {bestTrader.vendor.minTraderLevel ? ` (L${bestTrader.vendor.minTraderLevel})` : ''}
+                    {bestTrader.vendor.minTraderLevel
+                      ? ` (L${bestTrader.vendor.minTraderLevel})`
+                      : ""}
                   </span>
                 </div>
               )}
@@ -145,10 +150,14 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
               {item.lastOfferCount !== undefined && (
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Offers:</span>
-                  <span className={cn(
-                    "font-semibold",
-                    item.lastOfferCount <= 5 ? "text-red-400" : "text-gray-200"
-                  )}>
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      item.lastOfferCount <= 5
+                        ? "text-red-400"
+                        : "text-gray-200"
+                    )}
+                  >
                     {item.lastOfferCount}
                   </span>
                 </div>

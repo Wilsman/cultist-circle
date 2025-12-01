@@ -52,7 +52,7 @@ export const CATEGORY_LEVEL_REQUIREMENTS: CategoryLevelRequirement[] = [
   
   // Medical
   { categoryId: "5448f3a64bdc2d60728b456a", categoryName: "Stimulant", levelRequirement: 30 },
-  // { categoryId: "5448f39d4bdc2d0a728b4568", categoryName: "Medikit", levelRequirement: 20 },
+  { categoryId: "5448f39d4bdc2d0a728b4568", categoryName: "Medikit", levelRequirement: 20 },
   { categoryId: "5448f3a14bdc2d27728b4569", categoryName: "Drug", levelRequirement: 20 },
   { categoryId: "57864c8c245977548867e7f1", categoryName: "Medical supplies", levelRequirement: 20 },
   

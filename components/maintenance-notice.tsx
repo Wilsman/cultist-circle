@@ -30,7 +30,7 @@ export function MaintenanceNotice() {
             New Feature: Flea Market Level Filter
           </p>
           <p className="text-[11px] uppercase tracking-wider text-sky-200/70">
-            Updated: November 28, 2025
+            Updated: December 1, 2025
           </p>
         </div>
       </div>
@@ -38,7 +38,7 @@ export function MaintenanceNotice() {
         You can now filter out items based on your PMC level! Open Settings →
         General → &quot;Flea Market Level Filter&quot; to enable it and enter
         your level. Items you can&apos;t buy yet will be excluded from Auto
-        Select. 🎯
+        Select. Please report any errors if found!
       </p>
     </div>
   );
