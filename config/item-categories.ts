@@ -60,6 +60,7 @@ const DEFAULT_NAMES = [
   "Chest rig",
   "Flyer",
   "Key",
+  "Medical item",
   "Repair Kits",
   "Weapon",
 ];

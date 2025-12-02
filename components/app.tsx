@@ -358,6 +358,15 @@ function AppContent() {
               return id ?? null;
             })
             .filter((x): x is string => Boolean(x));
+
+          // One-time migration: add "Medical item" category for existing users
+          const medicalItemId = CATEGORY_ID_BY_NAME.get("Medical item");
+          const migrationKey = "cc_migration_medical_item_v1";
+          if (medicalItemId && !localStorage.getItem(migrationKey)) {
+            ids.push(medicalItemId);
+            localStorage.setItem(migrationKey, "1");
+          }
+
           setExcludedCategories(new Set(ids));
         } else {
           console.error(
@@ -367,7 +376,6 @@ function AppContent() {
           setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
         }
       } else {
-        console.log("No saved categories found, using defaults");
         setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
       }
     } catch (e) {
@@ -453,10 +461,12 @@ function AppContent() {
     }
   }, [sortOption]);
 
-  // Save excluded categories to localStorage whenever they change, but only if it's not the initial load
+  // Save excluded categories to localStorage whenever they change, but only after init is complete
   useEffect(() => {
-    // Skip saving if it's an empty set (initial state)
-    if (excludedCategories.size === 0) return;
+    // Don't save until initialization is complete (prevents overwriting saved values)
+    if (!didInitStateRef.current) {
+      return;
+    }
 
     if (typeof window !== "undefined") {
       try {
