@@ -37,6 +37,7 @@ export const CATEGORY_LEVEL_REQUIREMENTS: CategoryLevelRequirement[] = [
   { categoryId: "610720f290b75a49ff2e5e25", categoryName: "Cylinder Magazine", levelRequirement: 25 },
   { categoryId: "55818a594bdc2db9688b456a", categoryName: "Stock", levelRequirement: 20 },
   { categoryId: "5a74651486f7744e73386dd1", categoryName: "Auxiliary Mod", levelRequirement: 25 },
+  { categoryId: "550aa4cd4bdc2dd8348b456c", categoryName: "Silencer", levelRequirement: 25 },
   
   // Weapons
   { categoryId: "5447b5f14bdc2d61278b4567", categoryName: "Assault rifle", levelRequirement: 25 },
