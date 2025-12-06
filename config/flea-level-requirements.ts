@@ -101,6 +101,7 @@ export const ITEM_LEVEL_REQUIREMENTS: ItemLevelRequirement[] = [
   { itemName: "Uhf Rfid Reader", levelRequirement: 35 },
   { itemName: "Vpx Flash Storage Module", levelRequirement: 35 },
   { itemName: "Virtex Programmable Processor", levelRequirement: 35 },
+  { itemName: "Old firesteel", levelRequirement: 30 },
   
   // Add more individual items as needed:
   // { itemName: "Item Name Here", levelRequirement: XX },

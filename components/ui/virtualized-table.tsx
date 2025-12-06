@@ -6,18 +6,28 @@ import { FixedSizeList as List } from "react-window";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { MinimalItem } from "@/hooks/use-tarkov-api";
-import {Tooltip, TooltipTrigger, TooltipContent, TooltipProvider} from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+} from "@/components/ui/hover-card";
 import { Copy } from "lucide-react";
 
 // Trader image mapping
 const TRADER_IMAGES: Record<string, string> = {
-  "prapor": "https://assets.tarkov.dev/54cb50c76803fa8b248b4571.webp",
-  "therapist": "https://assets.tarkov.dev/54cb57776803fa99248b456e.webp",
-  "skier": "https://assets.tarkov.dev/58330581ace78e27b8b10cee.webp",
-  "peacekeeper": "https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp",
-  "mechanic": "https://assets.tarkov.dev/5a7c2eca46aef81a7ca2145d.webp",
-  "ragman": "https://assets.tarkov.dev/5ac3b934156ae10c4430e83c.webp",
-  "jaeger": "https://assets.tarkov.dev/5c0647fdd443bc2504c2d371.webp"
+  prapor: "https://assets.tarkov.dev/54cb50c76803fa8b248b4571.webp",
+  therapist: "https://assets.tarkov.dev/54cb57776803fa99248b456e.webp",
+  skier: "https://assets.tarkov.dev/58330581ace78e27b8b10cee.webp",
+  peacekeeper: "https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp",
+  mechanic: "https://assets.tarkov.dev/5a7c2eca46aef81a7ca2145d.webp",
+  ragman: "https://assets.tarkov.dev/5ac3b934156ae10c4430e83c.webp",
+  jaeger: "https://assets.tarkov.dev/5c0647fdd443bc2504c2d371.webp",
 };
 
 interface VirtualizedTableProps {
@@ -25,7 +35,15 @@ interface VirtualizedTableProps {
   sortKey: string;
   sortDir: "asc" | "desc";
   onHeaderSort?: (
-    sortKey: "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice" | "traderSellPrice" | "traderBuyPrice" | "buyLimit"
+    sortKey:
+      | "name"
+      | "shortName"
+      | "basePrice"
+      | "lastLowPrice"
+      | "avg24hPrice"
+      | "traderSellPrice"
+      | "traderBuyPrice"
+      | "buyLimit"
   ) => void;
   onToggleFavorite?: (itemId: string) => void;
   isFavorite?: (itemId: string) => boolean;
@@ -75,26 +93,36 @@ export function VirtualizedTable({
       if (!item) return null;
 
       // Best trader price minus "Flea Market"
-      const bestTraderPrice = item.sellFor?.length > 0 
-        ? item.sellFor
-            .filter(seller => seller?.vendor?.normalizedName !== "flea-market" && seller?.priceRUB != null)
-            .reduce<typeof item.sellFor[0] | null>((prev, curr) => {
-              if (!prev) return curr;
-              if (!curr?.priceRUB) return prev;
-              return (prev?.priceRUB ?? 0) > curr.priceRUB ? prev : curr;
-            }, null)
-        : null;
+      const bestTraderPrice =
+        item.sellFor?.length > 0
+          ? item.sellFor
+              .filter(
+                (seller) =>
+                  seller?.vendor?.normalizedName !== "flea-market" &&
+                  seller?.priceRUB != null
+              )
+              .reduce<(typeof item.sellFor)[0] | null>((prev, curr) => {
+                if (!prev) return curr;
+                if (!curr?.priceRUB) return prev;
+                return (prev?.priceRUB ?? 0) > curr.priceRUB ? prev : curr;
+              }, null)
+          : null;
 
       // Best buy price from traders (excluding flea market)
-      const bestBuyPrice = item.buyFor?.length > 0
-        ? item.buyFor
-            .filter(offer => offer?.vendor?.normalizedName !== "flea-market" && offer?.priceRUB != null)
-            .reduce<typeof item.buyFor[0] | null>((prev, curr) => {
-              if (!prev) return curr;
-              if (!curr?.priceRUB) return prev;
-              return (prev?.priceRUB ?? 0) < curr.priceRUB ? prev : curr;
-            }, null)
-        : null;
+      const bestBuyPrice =
+        item.buyFor?.length > 0
+          ? item.buyFor
+              .filter(
+                (offer) =>
+                  offer?.vendor?.normalizedName !== "flea-market" &&
+                  offer?.priceRUB != null
+              )
+              .reduce<(typeof item.buyFor)[0] | null>((prev, curr) => {
+                if (!prev) return curr;
+                if (!curr?.priceRUB) return prev;
+                return (prev?.priceRUB ?? 0) < curr.priceRUB ? prev : curr;
+              }, null)
+          : null;
 
       return (
         <div
@@ -126,7 +154,7 @@ export function VirtualizedTable({
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
-                   fill={isFavorite(item.id) ? "currentColor" : "none"}
+                  fill={isFavorite(item.id) ? "currentColor" : "none"}
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
@@ -141,15 +169,57 @@ export function VirtualizedTable({
                 </svg>
               </button>
             )}
-            <a
-              href={item.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline text-primary flex-1 truncate"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {item.name}
-            </a>
+            <HoverCard openDelay={150} closeDelay={50}>
+              <HoverCardTrigger asChild>
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline text-primary flex-1 truncate"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {item.name}
+                </a>
+              </HoverCardTrigger>
+              <HoverCardContent
+                side="bottom"
+                align="start"
+                sideOffset={4}
+                className="w-auto max-w-xs p-2 bg-gray-900/95 backdrop-blur-md border-gray-700/80 shadow-xl"
+              >
+                <div className="space-y-1.5">
+                  {/* Short name if different */}
+                  {item.shortName && item.shortName !== item.name && (
+                    <div className="text-xs text-gray-400">
+                      {item.shortName}
+                    </div>
+                  )}
+                  {/* Base value highlight */}
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-gray-500">Base:</span>
+                    <span className="font-semibold text-purple-400">
+                      ₽{item.basePrice.toLocaleString()}
+                    </span>
+                  </div>
+                  {/* Categories */}
+                  <div className="flex flex-wrap gap-1">
+                    {item.categories?.slice(0, 4).map((cat) => (
+                      <span
+                        key={cat.name}
+                        className="inline-flex items-center rounded-full bg-gray-800/80 border border-gray-700/60 px-2 py-0.5 text-[10px] text-gray-300"
+                      >
+                        {cat.name}
+                      </span>
+                    ))}
+                    {(item.categories?.length ?? 0) > 4 && (
+                      <span className="text-[10px] text-gray-500">
+                        +{(item.categories?.length ?? 0) - 4}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
           </Cell>
           <Cell className="text-right font-semibold w-[120px]">
             <div className="flex items-center justify-end gap-2">
@@ -161,7 +231,9 @@ export function VirtualizedTable({
                       className="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-background/60 hover:bg-muted/50 text-muted-foreground"
                       onClick={(e) => {
                         e.stopPropagation();
-                        void navigator.clipboard.writeText(String(item.basePrice));
+                        void navigator.clipboard.writeText(
+                          String(item.basePrice)
+                        );
                       }}
                       aria-label="Copy base price"
                     >
@@ -185,7 +257,9 @@ export function VirtualizedTable({
             {bestTraderPrice ? (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger>{bestTraderPrice.priceRUB.toLocaleString()}</TooltipTrigger>
+                  <TooltipTrigger>
+                    {bestTraderPrice.priceRUB.toLocaleString()}
+                  </TooltipTrigger>
                   <TooltipContent>
                     <p>{bestTraderPrice.vendor.normalizedName}</p>
                   </TooltipContent>
@@ -212,7 +286,10 @@ export function VirtualizedTable({
                     )}
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{bestBuyPrice.vendor.normalizedName} (Level {bestBuyPrice.vendor.minTraderLevel || 1})</p>
+                    <p>
+                      {bestBuyPrice.vendor.normalizedName} (Level{" "}
+                      {bestBuyPrice.vendor.minTraderLevel || 1})
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -221,7 +298,9 @@ export function VirtualizedTable({
             )}
           </Cell>
           <Cell className="text-muted-foreground text-right w-[120px]">
-            {bestBuyPrice?.vendor?.buyLimit ? bestBuyPrice.vendor.buyLimit.toLocaleString() : '∞'}
+            {bestBuyPrice?.vendor?.buyLimit
+              ? bestBuyPrice.vendor.buyLimit.toLocaleString()
+              : "∞"}
           </Cell>
         </div>
       );
@@ -286,8 +365,7 @@ export function VirtualizedTable({
           className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
           onClick={() => onHeaderSort?.("buyLimit")}
         >
-          Buy Limit{" "}
-          {sortKey === "buyLimit" && (sortDir === "asc" ? "↑" : "↓")}
+          Buy Limit {sortKey === "buyLimit" && (sortDir === "asc" ? "↑" : "↓")}
         </div>
       </div>
       <List
