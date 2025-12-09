@@ -125,7 +125,37 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
         },
       },
     ],
-    resultText: "14h (add 1x STM for 6h)",
+    resultText: "350K+ (14h)",
+  },
+  {
+    id: "4x-stm-saiga",
+    ingredients: [
+      {
+        name: "Soyuz-TM STM-9 Gen.2 9x19 carbine",
+        shortName: "STM-9",
+        count: 4,
+        imageUrl:
+          "https://assets.tarkov.dev/60479c3f420fac5ebc199f86-icon.webp",
+        vendor: {
+          name: "Skier",
+          level: "LL2",
+          imageUrl: "https://assets.tarkov.dev/58330581ace78e27b8b10cee.webp",
+        },
+      },
+      {
+        name: "Saiga-9 9x19 carbine",
+        shortName: "Saiga-9",
+        count: 1,
+        imageUrl:
+          "https://assets.tarkov.dev/5a13df5286f774032f5454a0-icon.webp",
+        vendor: {
+          name: "Skier",
+          level: "LL1",
+          imageUrl: "https://assets.tarkov.dev/58330581ace78e27b8b10cee.webp",
+        },
+      },
+    ],
+    resultText: "400K+ (6h & 14h)",
   },
   {
     id: "labs-g28",
@@ -150,7 +180,7 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
         },
       },
     ],
-    resultText: "(6h & 14h)",
+    resultText: "400K+ (6h & 14h)",
     separator: "➡️",
   },
 ];
