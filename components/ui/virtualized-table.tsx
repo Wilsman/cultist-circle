@@ -17,7 +17,11 @@ import {
   HoverCardTrigger,
   HoverCardContent,
 } from "@/components/ui/hover-card";
-import { Copy } from "lucide-react";
+import { Copy, Lock } from "lucide-react";
+import {
+  getItemLevelRequirement,
+  getCategoryLevelRequirementByName,
+} from "@/config/flea-level-requirements";
 
 // Trader image mapping
 const TRADER_IMAGES: Record<string, string> = {
@@ -124,6 +128,20 @@ export function VirtualizedTable({
               }, null)
           : null;
 
+      // Calculate Flea Level Requirement
+      const itemLevelReq = getItemLevelRequirement(item.name);
+      
+      const categoryLevelReqs =
+        item.categories?.map((cat) => getCategoryLevelRequirementByName(cat.name)) ||
+        [];
+      
+      // Get the highest requirement from categories (if multiple)
+      const maxCategoryReq =
+        categoryLevelReqs.length > 0 ? Math.max(...categoryLevelReqs) : 0;
+      
+      // Item specific requirement takes precedence if defined, otherwise use category requirement
+      const fleaLevelRequirement = itemLevelReq ?? maxCategoryReq;
+
       return (
         <div
           style={style}
@@ -169,57 +187,99 @@ export function VirtualizedTable({
                 </svg>
               </button>
             )}
-            <HoverCard openDelay={150} closeDelay={50}>
-              <HoverCardTrigger asChild>
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline text-primary flex-1 truncate"
-                  onClick={(e) => e.stopPropagation()}
+              <HoverCard openDelay={0} closeDelay={0}>
+                <HoverCardTrigger asChild>
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline text-zinc-100 flex-1 truncate"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {item.name}
+                  </a>
+                </HoverCardTrigger>
+                <HoverCardContent
+                  side="right"
+                  align="start"
+                  sideOffset={12}
+                  className="w-[280px] p-0 bg-zinc-950/95 backdrop-blur-xl border-zinc-800/80 shadow-2xl rounded-xl overflow-hidden"
                 >
-                  {item.name}
-                </a>
-              </HoverCardTrigger>
-              <HoverCardContent
-                side="bottom"
-                align="start"
-                sideOffset={4}
-                className="w-auto max-w-xs p-2 bg-gray-900/95 backdrop-blur-md border-gray-700/80 shadow-xl"
-              >
-                <div className="space-y-1.5">
-                  {/* Short name if different */}
-                  {item.shortName && item.shortName !== item.name && (
-                    <div className="text-xs text-gray-400">
-                      {item.shortName}
+                  <div className="relative">
+                    {/* Color bar indicator based on value or rarity could go here, for now just a subtle gradient */}
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-zinc-800 via-zinc-700 to-zinc-800 opacity-50" />
+                    
+                    <div className="p-4 space-y-4">
+                      {/* Header */}
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold text-zinc-100 leading-tight">
+                          {item.name}
+                        </h4>
+                        {item.shortName && item.shortName !== item.name && (
+                          <div className="text-xs text-zinc-500 font-mono tracking-tight">
+                            {item.shortName}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-4 py-3 border-y border-zinc-900/50 bg-zinc-900/20 -mx-4 px-4">
+                        {/* Price */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                            Base Price
+                          </span>
+                          <div className="font-mono text-sm text-emerald-400/90 font-medium">
+                            ₽{item.basePrice.toLocaleString()}
+                          </div>
+                        </div>
+
+                        {/* Flea Req */}
+                        {fleaLevelRequirement > 0 ? (
+                          <div className="space-y-1">
+                            <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                              Flea Req
+                            </span>
+                            <div className="flex items-center gap-1.5 text-orange-400 font-medium text-sm">
+                              <Lock className="w-3 h-3" />
+                              <span>Lvl {fleaLevelRequirement}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                              Flea Req
+                            </span>
+                            <div className="text-sm text-zinc-600">None</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Categories */}
+                      <div className="space-y-2">
+                        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                          Categories
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.categories?.slice(0, 5).map((cat) => (
+                            <span
+                              key={cat.name}
+                              className="px-2 py-0.5 rounded-[4px] bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-400 font-medium"
+                            >
+                              {cat.name}
+                            </span>
+                          ))}
+                          {(item.categories?.length ?? 0) > 5 && (
+                            <span className="px-2 py-0.5 rounded-[4px] bg-zinc-900/50 border border-zinc-800/50 text-[10px] text-zinc-500">
+                              +{(item.categories?.length ?? 0) - 5}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  {/* Base value highlight */}
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-gray-500">Base:</span>
-                    <span className="font-semibold text-purple-400">
-                      ₽{item.basePrice.toLocaleString()}
-                    </span>
                   </div>
-                  {/* Categories */}
-                  <div className="flex flex-wrap gap-1">
-                    {item.categories?.slice(0, 4).map((cat) => (
-                      <span
-                        key={cat.name}
-                        className="inline-flex items-center rounded-full bg-gray-800/80 border border-gray-700/60 px-2 py-0.5 text-[10px] text-gray-300"
-                      >
-                        {cat.name}
-                      </span>
-                    ))}
-                    {(item.categories?.length ?? 0) > 4 && (
-                      <span className="text-[10px] text-gray-500">
-                        +{(item.categories?.length ?? 0) - 4}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </HoverCardContent>
-            </HoverCard>
+                </HoverCardContent>
+              </HoverCard>
           </Cell>
           <Cell className="text-right font-semibold w-[120px]">
             <div className="flex items-center justify-end gap-2">

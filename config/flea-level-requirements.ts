@@ -139,12 +139,28 @@ export const CATEGORY_LEVEL_MAP = new Map<string, number>(
   CATEGORY_LEVEL_REQUIREMENTS.map((req) => [req.categoryId, req.levelRequirement])
 );
 
+
+/**
+ * Map of category Name to level requirement for quick lookup (fallback if ID not available)
+ */
+export const CATEGORY_NAME_LEVEL_MAP = new Map<string, number>(
+  CATEGORY_LEVEL_REQUIREMENTS.map((req) => [req.categoryName.toLowerCase(), req.levelRequirement])
+);
+
 /**
  * Get the level requirement for a category ID
  * Returns 0 if no requirement exists (accessible at any level)
  */
 export function getCategoryLevelRequirement(categoryId: string): number {
   return CATEGORY_LEVEL_MAP.get(categoryId) ?? 0;
+}
+
+/**
+ * Get the level requirement for a category Name
+ * Returns 0 if no requirement exists
+ */
+export function getCategoryLevelRequirementByName(categoryName: string): number {
+  return CATEGORY_NAME_LEVEL_MAP.get(categoryName.toLowerCase()) ?? 0;
 }
 
 /**

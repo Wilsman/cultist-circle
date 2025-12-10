@@ -62,8 +62,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: "Cultist Circle Calculator | Optimize Your EFT Sacrifices",
-      description:
-        "Get the best Cultist Circle rewards in Escape from Tarkov.",
+      description: "Get the best Cultist Circle rewards in Escape from Tarkov.",
       creator: "@wilsman77",
       site: "@wilsman77",
       images: ["/images/og2.png"],
@@ -82,12 +81,19 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" className="dark antialiased">
+    <html lang="en" className="dark antialiased" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {/* Google Analytics */}
-        <Script async src="https://www.googletagmanager.com/gtag/js?id=G-MDQ1Z37Y5M" />
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-MDQ1Z37Y5M"
+        />
         <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
@@ -121,29 +127,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           data-y_margin="50"
         />
         <PostHogProvider>
-            <CookieConsentProvider>
+          <CookieConsentProvider>
             <LanguageProvider>
-                <main className="relative min-h-screen">
-                  {/* Background color */}
-              <div className="fixed inset-0 -z-10 bg-[#101720]" />
-    
-              {/* Global Nav */}
-              <SiteNav />
+              <main className="relative min-h-screen">
+                {/* Background color */}
+                <div className="fixed inset-0 -z-10 bg-[#101720]" />
 
-              {/* Content */}
-              <div className="relative z-10">{children}</div>
-    
-              {/* Cookie consent and notifications */}
-              <div className="relative z-50">
-                    <OnboardingDialog />
-                    <ChatbotWidget />
-                    <NotesWidget />
-                <CookieConsent />
-                    <SonnerToaster />
-                  </div>
-                </main>
+                {/* Global Nav */}
+                <SiteNav />
+
+                {/* Content */}
+                <div className="relative z-10">{children}</div>
+
+                {/* Cookie consent and notifications */}
+                <div className="relative z-50">
+                  <OnboardingDialog />
+                  <ChatbotWidget />
+                  <NotesWidget />
+                  <CookieConsent />
+                  <SonnerToaster />
+                </div>
+              </main>
             </LanguageProvider>
-            </CookieConsentProvider>
+          </CookieConsentProvider>
         </PostHogProvider>
       </body>
     </html>
