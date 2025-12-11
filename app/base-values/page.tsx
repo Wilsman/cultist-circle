@@ -31,11 +31,11 @@ import {
   Star,
   Download,
   CircleAlert,
-  Info,
+  // Info,
   Search,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+// import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PriceRangeFilter } from "@/components/ui/price-range-filter";
 import { Button } from "@/components/ui/button";
 import { CategoryFilter } from "@/components/ui/category-filter";

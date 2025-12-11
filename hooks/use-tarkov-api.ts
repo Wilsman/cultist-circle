@@ -1,7 +1,10 @@
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { GraphQLResponse, TarkovItem } from "@/types/GraphQLResponse";
 
-const GRAPHQL_API_URL = "https://api.tarkov.dev/graphql";
+const GRAPHQL_API_URL =
+  typeof window !== "undefined"
+    ? "/api/tarkov"
+    : "https://api.tarkov.dev/graphql";
 
 // Define a type for the combined data response
 interface CombinedTarkovData {
@@ -176,14 +179,14 @@ export async function fetchCombinedTarkovData(
       categories_display: item.categories,
       buyFor: item.buyFor
         ? item.buyFor
-            .filter((o) => !!o && !!o.vendor && typeof o.priceRUB === "number")
-            .map((o) => ({
-              priceRUB: o.priceRUB,
-              vendor: {
-                normalizedName: o.vendor.normalizedName,
-                minTraderLevel: o.vendor.minTraderLevel,
-              },
-            }))
+          .filter((o) => !!o && !!o.vendor && typeof o.priceRUB === "number")
+          .map((o) => ({
+            priceRUB: o.priceRUB,
+            vendor: {
+              normalizedName: o.vendor.normalizedName,
+              minTraderLevel: o.vendor.minTraderLevel,
+            },
+          }))
         : undefined,
     });
 
