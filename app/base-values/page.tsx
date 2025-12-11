@@ -32,6 +32,7 @@ import {
   Download,
   CircleAlert,
   Info,
+  Search,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -568,45 +569,19 @@ export default function ItemsTablePage() {
           Item Base Values
         </h1>
       </div>
-      {/* Header description */}
-      <div className="mb-6">
-        <p className="text-muted-foreground pb-2">
-          Quickly view the base values for{" "}
-          <span className="font-semibold">all items</span> from Escape From
-          Tarkov
-        </p>
-        <ul className="text-muted-foreground list-disc list-inside">
-          <li>Sort and filter items by various criteria</li>
-          <li>Search by long or short name</li>
-          <li>
-            Adjust the base value range to find items within a specific price
-          </li>
-          <li>
-            Switch between <span className="font-semibold">PVP</span> and{" "}
-            <span className="font-semibold">PVE</span> to see base values per
-            game mode
-          </li>
-        </ul>
-      </div>
 
-      <Alert className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
-        <AlertDescription className="flex items-center gap-2 text-sm">
-          <Info className="h-4 w-4 flex-shrink-0 text-yellow-500" />
-          Flea prices shown are estimates sourced from tarkov.dev and may not
-          reflect real-time market values. These prices are the latest available
-          from the API.
-        </AlertDescription>
-      </Alert>
-
-      {/* Search Bar - Sticky Full width */}
-      <div className="sticky top-2 z-10 bg-background/95 backdrop-blur-sm border-b mb-4 p-4">
+      {/* Search Bar Row */}
+      <div className="relative w-full sticky top-2 z-10 mb-4">
         <Input
-          placeholder="Search items by name or short name..."
+          placeholder="Search items..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="h-12 w-full max-w text-base bg-gray-700 animate-pulse" // make bg of text box more obvious
+          className="h-11 w-full pl-11 bg-muted/40 border-border/60 focus:bg-background focus:border-primary/50 text-base shadow-sm transition-all rounded-xl"
           aria-label="Search items"
         />
+        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+          <Search className="h-5 w-5 opacity-50" />
+        </div>
       </div>
 
       {/* Main Filter Controls */}
@@ -783,8 +758,12 @@ export default function ItemsTablePage() {
                   <SelectItem value="basePrice">Base Price</SelectItem>
                   <SelectItem value="lastLowPrice">Last Low Price</SelectItem>
                   <SelectItem value="avg24hPrice">24h Avg Price</SelectItem>
-                  <SelectItem value="traderSellPrice">Sell to Trader</SelectItem>
-                  <SelectItem value="traderBuyPrice">Buy from Trader</SelectItem>
+                  <SelectItem value="traderSellPrice">
+                    Sell to Trader
+                  </SelectItem>
+                  <SelectItem value="traderBuyPrice">
+                    Buy from Trader
+                  </SelectItem>
                   <SelectItem value="buyLimit">Buy Limit</SelectItem>
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="shortName">Short Name</SelectItem>
@@ -844,241 +823,318 @@ export default function ItemsTablePage() {
         </div>
         {!showTester ? (
           <div className="text-xs text-muted-foreground border rounded-md p-3">
-            Experimental tool for weapon value discrepancies. Click &quot;Show tester&quot; to open.
+            Experimental tool for weapon value discrepancies. Click &quot;Show
+            tester&quot; to open.
           </div>
         ) : null}
         {showTester && (
-        <>
-        <div id="multiplier-tester" className="mt-2 rounded-lg border bg-muted/20 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">Quickly infer k from outcomes</span>
-          </div>
-          <div className="text-xs text-muted-foreground mb-3">
-            Use the main table&apos;s search box to find your weapon and read its base price. Enter totals below.
-          </div>
-        </div>
-        {/* Quick calc: base price × quantity */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Single weapon base price (RUB)</label>
-            <Input
-              type="number"
-              inputMode="numeric"
-              value={Number.isFinite(singleBasePrice) ? singleBasePrice : 0}
-              onChange={(e) => setSingleBasePrice(Number(e.target.value) || 0)}
-              placeholder="e.g. 40,000"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Quantity (1–5)</label>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((q) => (
-                <Button
-                  key={q}
-                  type="button"
-                  size="sm"
-                  variant={selectedQty === q ? "default" : "outline"}
-                  className="h-9 w-9 p-0"
-                  onClick={() => setSelectedQty(q)}
-                >
-                  {q}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Computed weapon sum</label>
-            <div className="h-9 flex items-center px-3 rounded-md border bg-background/60 text-sm">
-              {testerWeaponSum.toLocaleString()} RUB
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Sum of weapon base values (RUB)</label>
-            <Input
-              type="number"
-              inputMode="numeric"
-              value={Number.isFinite(testerWeaponSum) ? testerWeaponSum : 0}
-              onChange={(e) => setTesterWeaponSum(Number(e.target.value) || 0)}
-              placeholder="e.g. 207740 for 5x MP5 Navy"
-            />
-          </div>
-          {/* Non-weapon sum hidden for weapon-only testing, still editable if needed */}
-          <div className="space-y-1 hidden">
-            <label className="text-xs text-muted-foreground">Sum of other items (non-weapons) (RUB)</label>
-            <Input
-              type="number"
-              inputMode="numeric"
-              value={Number.isFinite(testerOtherSum) ? testerOtherSum : 0}
-              onChange={(e) => setTesterOtherSum(Number(e.target.value) || 0)}
-              placeholder="0 if only weapons"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Observed outcome</label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={testerOutcome === "6h" ? "default" : "outline"}
-                onClick={() => setTesterOutcome("6h")}
-                className="h-9"
-              >
-                6h
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={testerOutcome === "14h" ? "default" : "outline"}
-                onClick={() => setTesterOutcome("14h")}
-                className="h-9"
-              >
-                14h
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={testerOutcome === "12h" ? "default" : "outline"}
-                onClick={() => setTesterOutcome("12h")}
-                className="h-9"
-              >
-                12h
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {(() => {
-          const sumW = Math.max(0, testerWeaponSum || 0);
-          const sumO = Math.max(0, testerOtherSum || 0);
-          const sixH = 400_000;
-          const fourteenH = 350_000;
-          const twelveHMin = 200_000;
-          const kFor6h = sumW > 0 ? (sixH - sumO) / sumW : NaN;
-          const kMin14 = sumW > 0 ? (fourteenH - sumO) / sumW : NaN;
-          const kMax14 = sumW > 0 ? (sixH - sumO) / sumW : NaN;
-          const kMin12 = sumW > 0 ? (twelveHMin - sumO) / sumW : NaN;
-          const kMax12 = sumW > 0 ? (fourteenH - sumO) / sumW : NaN;
-
-          // Prediction for a candidate k
-          const kCandidate = Number.isFinite(testerK) ? testerK : 0;
-          const predictedTotal = sumO + sumW * Math.max(0, kCandidate);
-          const predictedOutcome = predictedTotal >= sixH ? "6h" : predictedTotal >= fourteenH ? "14h" : predictedTotal >= twelveHMin ? "12h" : "<12h";
-          const predictedBand = (() => {
-            if (predictedTotal >= sixH) return "6h (≥ 400,000)";
-            if (predictedTotal >= fourteenH) return "14h [350,000, 400,000)";
-            if (predictedTotal >= twelveHMin) return "12h [200,000, 350,000)";
-            if (predictedTotal >= 100_001) return "8h [100,001, 200,000)";
-            if (predictedTotal >= 50_001) return "5h [50,001, 100,000)";
-            if (predictedTotal >= 25_001) return "4h [25,001, 50,000)";
-            if (predictedTotal >= 10_001) return "3h [10,001, 25,000)";
-            return "2h [0, 10,000]";
-          })();
-
-          return (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="rounded-md border p-3 bg-background/60">
-                <div className="text-xs text-muted-foreground mb-1">Implied multiplier</div>
-                {testerOutcome === "6h" ? (
-                  <div className="text-sm">
-                    <div>
-                      k ≈ <span className="font-semibold">{Number.isFinite(kFor6h) ? kFor6h.toFixed(3) : "—"}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">Based on effective ≥ 400,000</div>
-                    <div className="mt-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => Number.isFinite(kFor6h) && setTesterK(Number(kFor6h.toFixed(3)))}
-                      >
-                        Use suggested k
-                      </Button>
-                    </div>
-                  </div>
-                ) : testerOutcome === "14h" ? (
-                  <div className="text-sm">
-                    <div>
-                      k ∈ [
-                      <span className="font-semibold">{Number.isFinite(kMin14) ? kMin14.toFixed(3) : "—"}</span>
-                      ,
-                      <span className="font-semibold">{Number.isFinite(kMax14) ? kMax14.toFixed(3) : "—"}</span>
-                      )
-                    </div>
-                    <div className="text-xs text-muted-foreground">14h implies total in [350k, 400k)</div>
-                    <div className="mt-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const mid = (kMin14 + kMax14) / 2;
-                          if (Number.isFinite(mid)) setTesterK(Number(mid.toFixed(3)));
-                        }}
-                      >
-                        Use suggested k (midpoint)
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm">
-                    <div>
-                      k ∈ [
-                      <span className="font-semibold">{Number.isFinite(kMin12) ? kMin12.toFixed(3) : "—"}</span>
-                      ,
-                      <span className="font-semibold">{Number.isFinite(kMax12) ? kMax12.toFixed(3) : "—"}</span>
-                      )
-                    </div>
-                    <div className="text-xs text-muted-foreground">12h implies total in [200k, 350k)</div>
-                    <div className="mt-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const mid = (kMin12 + kMax12) / 2;
-                          if (Number.isFinite(mid)) setTesterK(Number(mid.toFixed(3)));
-                        }}
-                      >
-                        Use suggested k (midpoint)
-                      </Button>
-                    </div>
-                  </div>
-                )}
+          <>
+            <div
+              id="multiplier-tester"
+              className="mt-2 rounded-lg border bg-muted/20 p-4"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">
+                  Quickly infer k from outcomes
+                </span>
               </div>
-
-              <div className="rounded-md border p-3 bg-background/60">
-                <div className="text-xs text-muted-foreground mb-1">Try a candidate k</div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    step="0.001"
-                    value={Number.isFinite(testerK) ? testerK : 0}
-                    onChange={(e) => setTesterK(Number(e.target.value))}
-                    className="w-28 h-9"
-                  />
-                  <div className="text-xs text-muted-foreground">Predicted total:</div>
-                  <div className="text-sm font-medium">{predictedTotal.toLocaleString()}</div>
-                  <div className="ml-auto text-xs text-right">
-                    <div>Outcome: <span className="font-semibold">{predictedOutcome}</span></div>
-                    <div className="text-muted-foreground">Band: {predictedBand}</div>
-                  </div>
+              <div className="text-xs text-muted-foreground mb-3">
+                Use the main table&apos;s search box to find your weapon and
+                read its base price. Enter totals below.
+              </div>
+            </div>
+            {/* Quick calc: base price × quantity */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Single weapon base price (RUB)
+                </label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={Number.isFinite(singleBasePrice) ? singleBasePrice : 0}
+                  onChange={(e) =>
+                    setSingleBasePrice(Number(e.target.value) || 0)
+                  }
+                  placeholder="e.g. 40,000"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Quantity (1–5)
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((q) => (
+                    <Button
+                      key={q}
+                      type="button"
+                      size="sm"
+                      variant={selectedQty === q ? "default" : "outline"}
+                      className="h-9 w-9 p-0"
+                      onClick={() => setSelectedQty(q)}
+                    >
+                      {q}
+                    </Button>
+                  ))}
                 </div>
               </div>
-
-              <div className="rounded-md border p-3 bg-background/60 text-xs text-muted-foreground">
-                <div>Tips:</div>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Set non-weapon sum to 0 when testing only weapons.</li>
-                  <li>Use 6h to get a single implied k. Use 14h to get bounds.</li>
-                  <li>Repeat across trials; compare medians to stabilize k.</li>
-                </ul>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Computed weapon sum
+                </label>
+                <div className="h-9 flex items-center px-3 rounded-md border bg-background/60 text-sm">
+                  {testerWeaponSum.toLocaleString()} RUB
+                </div>
               </div>
             </div>
-          );
-        })()}
-        </>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Sum of weapon base values (RUB)
+                </label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={Number.isFinite(testerWeaponSum) ? testerWeaponSum : 0}
+                  onChange={(e) =>
+                    setTesterWeaponSum(Number(e.target.value) || 0)
+                  }
+                  placeholder="e.g. 207740 for 5x MP5 Navy"
+                />
+              </div>
+              {/* Non-weapon sum hidden for weapon-only testing, still editable if needed */}
+              <div className="space-y-1 hidden">
+                <label className="text-xs text-muted-foreground">
+                  Sum of other items (non-weapons) (RUB)
+                </label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={Number.isFinite(testerOtherSum) ? testerOtherSum : 0}
+                  onChange={(e) =>
+                    setTesterOtherSum(Number(e.target.value) || 0)
+                  }
+                  placeholder="0 if only weapons"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Observed outcome
+                </label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={testerOutcome === "6h" ? "default" : "outline"}
+                    onClick={() => setTesterOutcome("6h")}
+                    className="h-9"
+                  >
+                    6h
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={testerOutcome === "14h" ? "default" : "outline"}
+                    onClick={() => setTesterOutcome("14h")}
+                    className="h-9"
+                  >
+                    14h
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={testerOutcome === "12h" ? "default" : "outline"}
+                    onClick={() => setTesterOutcome("12h")}
+                    className="h-9"
+                  >
+                    12h
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {(() => {
+              const sumW = Math.max(0, testerWeaponSum || 0);
+              const sumO = Math.max(0, testerOtherSum || 0);
+              const sixH = 400_000;
+              const fourteenH = 350_000;
+              const twelveHMin = 200_000;
+              const kFor6h = sumW > 0 ? (sixH - sumO) / sumW : NaN;
+              const kMin14 = sumW > 0 ? (fourteenH - sumO) / sumW : NaN;
+              const kMax14 = sumW > 0 ? (sixH - sumO) / sumW : NaN;
+              const kMin12 = sumW > 0 ? (twelveHMin - sumO) / sumW : NaN;
+              const kMax12 = sumW > 0 ? (fourteenH - sumO) / sumW : NaN;
+
+              // Prediction for a candidate k
+              const kCandidate = Number.isFinite(testerK) ? testerK : 0;
+              const predictedTotal = sumO + sumW * Math.max(0, kCandidate);
+              const predictedOutcome =
+                predictedTotal >= sixH
+                  ? "6h"
+                  : predictedTotal >= fourteenH
+                  ? "14h"
+                  : predictedTotal >= twelveHMin
+                  ? "12h"
+                  : "<12h";
+              const predictedBand = (() => {
+                if (predictedTotal >= sixH) return "6h (≥ 400,000)";
+                if (predictedTotal >= fourteenH)
+                  return "14h [350,000, 400,000)";
+                if (predictedTotal >= twelveHMin)
+                  return "12h [200,000, 350,000)";
+                if (predictedTotal >= 100_001) return "8h [100,001, 200,000)";
+                if (predictedTotal >= 50_001) return "5h [50,001, 100,000)";
+                if (predictedTotal >= 25_001) return "4h [25,001, 50,000)";
+                if (predictedTotal >= 10_001) return "3h [10,001, 25,000)";
+                return "2h [0, 10,000]";
+              })();
+
+              return (
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="rounded-md border p-3 bg-background/60">
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Implied multiplier
+                    </div>
+                    {testerOutcome === "6h" ? (
+                      <div className="text-sm">
+                        <div>
+                          k ≈{" "}
+                          <span className="font-semibold">
+                            {Number.isFinite(kFor6h) ? kFor6h.toFixed(3) : "—"}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Based on effective ≥ 400,000
+                        </div>
+                        <div className="mt-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              Number.isFinite(kFor6h) &&
+                              setTesterK(Number(kFor6h.toFixed(3)))
+                            }
+                          >
+                            Use suggested k
+                          </Button>
+                        </div>
+                      </div>
+                    ) : testerOutcome === "14h" ? (
+                      <div className="text-sm">
+                        <div>
+                          k ∈ [
+                          <span className="font-semibold">
+                            {Number.isFinite(kMin14) ? kMin14.toFixed(3) : "—"}
+                          </span>
+                          ,
+                          <span className="font-semibold">
+                            {Number.isFinite(kMax14) ? kMax14.toFixed(3) : "—"}
+                          </span>
+                          )
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          14h implies total in [350k, 400k)
+                        </div>
+                        <div className="mt-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const mid = (kMin14 + kMax14) / 2;
+                              if (Number.isFinite(mid))
+                                setTesterK(Number(mid.toFixed(3)));
+                            }}
+                          >
+                            Use suggested k (midpoint)
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm">
+                        <div>
+                          k ∈ [
+                          <span className="font-semibold">
+                            {Number.isFinite(kMin12) ? kMin12.toFixed(3) : "—"}
+                          </span>
+                          ,
+                          <span className="font-semibold">
+                            {Number.isFinite(kMax12) ? kMax12.toFixed(3) : "—"}
+                          </span>
+                          )
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          12h implies total in [200k, 350k)
+                        </div>
+                        <div className="mt-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const mid = (kMin12 + kMax12) / 2;
+                              if (Number.isFinite(mid))
+                                setTesterK(Number(mid.toFixed(3)));
+                            }}
+                          >
+                            Use suggested k (midpoint)
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-md border p-3 bg-background/60">
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Try a candidate k
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        step="0.001"
+                        value={Number.isFinite(testerK) ? testerK : 0}
+                        onChange={(e) => setTesterK(Number(e.target.value))}
+                        className="w-28 h-9"
+                      />
+                      <div className="text-xs text-muted-foreground">
+                        Predicted total:
+                      </div>
+                      <div className="text-sm font-medium">
+                        {predictedTotal.toLocaleString()}
+                      </div>
+                      <div className="ml-auto text-xs text-right">
+                        <div>
+                          Outcome:{" "}
+                          <span className="font-semibold">
+                            {predictedOutcome}
+                          </span>
+                        </div>
+                        <div className="text-muted-foreground">
+                          Band: {predictedBand}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border p-3 bg-background/60 text-xs text-muted-foreground">
+                    <div>Tips:</div>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>
+                        Set non-weapon sum to 0 when testing only weapons.
+                      </li>
+                      <li>
+                        Use 6h to get a single implied k. Use 14h to get bounds.
+                      </li>
+                      <li>
+                        Repeat across trials; compare medians to stabilize k.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
         )}
       </div>
 
