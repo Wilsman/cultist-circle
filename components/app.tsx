@@ -1531,12 +1531,23 @@ function AppContent() {
               <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
                 <VersionInfo version={CURRENT_VERSION} />
               </div>
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center gap-3">
+                <a
+                  href="https://eftboss.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
+                >
+                  EFT Boss
+                  <svg className="w-3 h-3 opacity-1 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
                 <a
                   href="https://discord.com/invite/3dFmr5qaJK"
                   rel="nofollow"
                   target="_blank"
-                  className="flex items-center"
+                  className="flex items-center gap-1 text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 group"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -1545,6 +1556,17 @@ function AppContent() {
                     style={{ maxWidth: "100%" }}
                     className="h-5" // Adjusted height to better fit the footer
                   />
+                </a>
+                <a
+                  href="https://kappas.pages.dev/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
+                >
+                  Kappas
+                  <svg className="w-3 h-3 opacity-1 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
                 </a>
               </div>
             </div>
@@ -1868,15 +1890,18 @@ function AppContent() {
 
             {/* Footer - Minimal */}
             <div className="text-center space-y-2">
-              <div className="text-xs text-slate-400">
+<div className="text-xs text-slate-400">
                 <span>Data by </span>
                 <a
                   href="https://tarkov.dev"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-slate-300 hover:text-white transition-colors"
+                  className="text-slate-300 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
                 >
                   Tarkov.dev
+                  <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
                 </a>
                 <span className="mx-2">•</span>
                 <span>Research by </span>
@@ -1884,9 +1909,12 @@ function AppContent() {
                   href="https://bio.link/verybadscav"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-slate-300 hover:text-white transition-colors"
+                  className="text-slate-300 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
                 >
                   VeryBadSCAV
+                  <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
                 </a>
               </div>
               <div className="flex justify-center gap-3">
