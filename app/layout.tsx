@@ -6,7 +6,6 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { CookieConsentProvider } from "@/context/cookie-consent-context";
 import Script from "next/script";
 import { LanguageProvider } from "@/contexts/language-context";
-import { PostHogProvider } from "@/components/PostHogProvider";
 import { ChatbotWidget } from "@/components/ai-chatbot/chatbot-widget";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { NotesWidget } from "@/components/notes-widget";
@@ -126,31 +125,29 @@ export default function RootLayout({
           data-x_margin="50"
           data-y_margin="50"
         />
-        <PostHogProvider>
-          <CookieConsentProvider>
-            <LanguageProvider>
-              <main className="relative min-h-screen">
-                {/* Background color */}
-                <div className="fixed inset-0 -z-10 bg-[#101720]" />
+        <CookieConsentProvider>
+          <LanguageProvider>
+            <main className="relative min-h-screen">
+              {/* Background color */}
+              <div className="fixed inset-0 -z-10 bg-[#101720]" />
 
-                {/* Global Nav */}
-                <SiteNav />
+              {/* Global Nav */}
+              <SiteNav />
 
-                {/* Content */}
-                <div className="relative z-10">{children}</div>
+              {/* Content */}
+              <div className="relative z-10">{children}</div>
 
-                {/* Cookie consent and notifications */}
-                <div className="relative z-50">
-                  <OnboardingDialog />
-                  <ChatbotWidget />
-                  <NotesWidget />
-                  <CookieConsent />
-                  <SonnerToaster />
-                </div>
-              </main>
-            </LanguageProvider>
-          </CookieConsentProvider>
-        </PostHogProvider>
+              {/* Cookie consent and notifications */}
+              <div className="relative z-50">
+                <OnboardingDialog />
+                <ChatbotWidget />
+                <NotesWidget />
+                <CookieConsent />
+                <SonnerToaster />
+              </div>
+            </main>
+          </LanguageProvider>
+        </CookieConsentProvider>
       </body>
     </html>
   );

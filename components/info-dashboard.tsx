@@ -26,12 +26,12 @@ export function InfoDashboard() {
   const showRecipesExpand = recipesTotalCount > 1;
 
   return (
-    <div className="w-full max-w-3xl mx-auto mb-4">
+    <div className="w-full max-w-3xl mx-auto mb-4 z-10">
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-slate-800/40 p-1 rounded-xl h-auto border-0 mb-2">
+        <TabsList className="grid w-full grid-cols-2 bg-slate-800/40 p-1 rounded-xl h-auto border-0 mb-2 z-10">
           <TabsTrigger
             value="updates"
-            className="flex items-center justify-center gap-2 py-2.5 rounded-lg data-[state=active]:bg-slate-700/60 data-[state=active]:text-slate-100 data-[state=active]:shadow-sm transition-all duration-200 border-0"
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg data-[state=active]:bg-slate-700/60 data-[state=active]:text-slate-100 data-[state=active]:shadow-sm transition-all duration-200 border-0 z-10"
           >
             <Bell className="h-4 w-4" />
             Updates & Alerts

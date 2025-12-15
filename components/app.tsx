@@ -61,6 +61,34 @@ import NextItemHints from "@/components/next-item-hints";
 import { CURRENT_VERSION } from "@/config/changelog";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 import { IncompatibleItemsNotice } from "@/components/incompatible-items-notice";
+import { ChristmasSnow } from "@/components/christmas-snow";
+
+// Snow toggle component
+function SnowToggle() {
+  const [isEnabled, setIsEnabled] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("christmasSnow");
+      return saved !== "false"; // Default to true (on by default)
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("christmasSnow", isEnabled.toString());
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent("christmasSnowChange"));
+  }, [isEnabled]);
+
+  return (
+    <button
+      onClick={() => setIsEnabled(!isEnabled)}
+      className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-full border border-white/20 transition-all duration-200"
+      title="Toggle snow effect"
+    >
+      ❄️ {isEnabled ? "ON" : "OFF"}
+    </button>
+  );
+}
 
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
@@ -1504,7 +1532,9 @@ function AppContent() {
   // Update the refresh button UI
   return (
     <>
-      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto">
+      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto relative">
+        {/* TODO: Remove when not christmas anymore */}
+        <ChristmasSnow />
         <div className="flex items-start justify-center gap-4 max-w-[1600px] mx-auto">
           {/* Left Ad Rail - Desktop Only */}
           <aside className="hidden xl:block w-[160px] flex-shrink-0">
@@ -1530,6 +1560,7 @@ function AppContent() {
               </h1>
               <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
                 <VersionInfo version={CURRENT_VERSION} />
+                <SnowToggle />
               </div>
               <div className="flex items-center justify-center gap-3">
                 <a

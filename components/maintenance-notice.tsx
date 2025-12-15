@@ -17,7 +17,7 @@ export function MaintenanceNotice() {
       role="status"
       aria-live="polite"
       className={`
-        w-full rounded-2xl border border-sky-500/40 bg-gradient-to-br
+        relative z-50 w-full rounded-2xl border border-sky-500/40 bg-gradient-to-br
         from-sky-400/15 via-slate-950/80 to-slate-950/95 px-4 py-3 text-left
         shadow-[0_18px_30px_-20px_rgba(0,0,0,0.8)] transition-all duration-500
         animate-[pulse-color_4s_ease-in-out_infinite]

@@ -123,7 +123,7 @@ export function NotificationPanel() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="w-full max-w-3xl mx-auto mb-3">
+    <div className="w-full max-w-3xl mx-auto mb-3 z-10">
       {/* Collapsed state - compact pill */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}

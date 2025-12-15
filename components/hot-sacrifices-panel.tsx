@@ -187,7 +187,7 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
 
 export function ComboRow({ combo }: { combo: SacrificeCombo }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-xl bg-white/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 p-4 transition-all hover:bg-white/80 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-600">
+    <div className="relative z-50 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-xl bg-white/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 p-4 transition-all hover:bg-white/80 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-600">
       <div className="flex flex-wrap items-center gap-2 flex-1">
         {combo.ingredients.map((ingredient, idx) => (
           <div key={idx} className="flex items-center gap-2">
