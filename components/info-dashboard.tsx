@@ -2,15 +2,32 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion } from "framer-motion";
 import { MaintenanceNotice } from "./maintenance-notice";
 import { NOTIFICATIONS, NotificationCard } from "./notification-panel";
 import { HOT_SACRIFICES, ComboRow } from "./hot-sacrifices-panel";
+import { useDynamicNotifications } from "./dynamic-notification-system";
 import { SHOW_MAINTENANCE_NOTICE } from "@/config/maintenance";
 import { Bell, Flame, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SimplifiedItem } from "@/types/SimplifiedItem";
+import { SacrificeCombo } from "./hot-sacrifices-panel";
 
-export function InfoDashboard() {
-  const hasUpdates = SHOW_MAINTENANCE_NOTICE || NOTIFICATIONS.length > 0;
+interface InfoDashboardProps {
+  selectedItems?: SimplifiedItem[];
+  onUseThis?: (combo: SacrificeCombo) => void;
+  availableItems?: SimplifiedItem[];
+}
+
+export function InfoDashboard({
+  selectedItems = [],
+  onUseThis,
+  availableItems = [],
+}: InfoDashboardProps) {
+  const dynamicNotifications = useDynamicNotifications(selectedItems);
+  const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications];
+
+  const hasUpdates = SHOW_MAINTENANCE_NOTICE || allNotifications.length > 0;
   const defaultTab = hasUpdates ? "updates" : "recipes";
 
   const [updatesExpanded, setUpdatesExpanded] = useState(false);
@@ -18,7 +35,7 @@ export function InfoDashboard() {
 
   // Updates logic
   const updatesTotalCount =
-    (SHOW_MAINTENANCE_NOTICE ? 1 : 0) + NOTIFICATIONS.length;
+    (SHOW_MAINTENANCE_NOTICE ? 1 : 0) + allNotifications.length;
   const showUpdatesExpand = updatesTotalCount > 1;
 
   // Recipes logic
@@ -35,17 +52,29 @@ export function InfoDashboard() {
           >
             <Bell className="h-4 w-4" />
             Updates & Alerts
-            {NOTIFICATIONS.length > 0 && (
+            {allNotifications.length > 0 && (
               <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-500">
-                {NOTIFICATIONS.length}
+                {allNotifications.length}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger
             value="recipes"
-            className="flex items-center justify-center gap-2 py-2.5 rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-300 data-[state=active]:shadow-sm transition-all duration-200 border-0"
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-300 data-[state=active]:shadow-[0_0_15px_rgba(99,102,241,0.1)] transition-all duration-300 border-0"
           >
-            <Flame className="h-4 w-4" />
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                rotate: [-5, 5, -5],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <Flame className="h-4 w-4" />
+            </motion.div>
             Hot Sacrifices
           </TabsTrigger>
         </TabsList>
@@ -58,8 +87,8 @@ export function InfoDashboard() {
           {SHOW_MAINTENANCE_NOTICE ? (
             <MaintenanceNotice />
           ) : (
-            NOTIFICATIONS.length > 0 && (
-              <NotificationCard notification={NOTIFICATIONS[0]} />
+            allNotifications.length > 0 && (
+              <NotificationCard notification={allNotifications[0]} />
             )
           )}
 
@@ -71,19 +100,21 @@ export function InfoDashboard() {
               >
                 {SHOW_MAINTENANCE_NOTICE
                   ? // If maintenance is shown, all notifications are hidden by default
-                    NOTIFICATIONS.map((notification) => (
+                    allNotifications.map((notification) => (
                       <NotificationCard
                         key={notification.id}
                         notification={notification}
                       />
                     ))
-                  : // If maintenance is NOT shown, the first notification is already shown above
-                    NOTIFICATIONS.slice(1).map((notification) => (
-                      <NotificationCard
-                        key={notification.id}
-                        notification={notification}
-                      />
-                    ))}
+                  : // If maintenance is NOT shown, first notification is already shown above
+                    allNotifications
+                      .slice(1)
+                      .map((notification) => (
+                        <NotificationCard
+                          key={notification.id}
+                          notification={notification}
+                        />
+                      ))}
               </div>
               <div className="flex justify-center">
                 <Button
@@ -111,7 +142,13 @@ export function InfoDashboard() {
           className="space-y-3 focus-visible:ring-0 mt-0"
         >
           {/* Always show the first combo */}
-          {HOT_SACRIFICES.length > 0 && <ComboRow combo={HOT_SACRIFICES[0]} />}
+          {HOT_SACRIFICES.length > 0 && (
+            <ComboRow
+              combo={HOT_SACRIFICES[0]}
+              onUseThis={onUseThis}
+              availableItems={availableItems}
+            />
+          )}
 
           {showRecipesExpand && (
             <>
@@ -119,7 +156,12 @@ export function InfoDashboard() {
                 className={`space-y-3 ${recipesExpanded ? "block" : "hidden"}`}
               >
                 {HOT_SACRIFICES.slice(1).map((combo) => (
-                  <ComboRow key={combo.id} combo={combo} />
+                  <ComboRow
+                    key={combo.id}
+                    combo={combo}
+                    onUseThis={onUseThis}
+                    availableItems={availableItems}
+                  />
                 ))}
                 <div className="mt-3 pt-3 border-t border-slate-700/30 text-center">
                   <p className="text-[10px] text-slate-500">
@@ -132,13 +174,13 @@ export function InfoDashboard() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setRecipesExpanded(!recipesExpanded)}
-                  className="text-[10px] font-medium text-slate-300 bg-slate-800/30 hover:bg-slate-800/60 hover:text-slate-200 h-6 px-3 border border-slate-700/30 rounded-full transition-all duration-200"
+                  className="text-[10px] font-bold text-slate-400 bg-white/[0.03] hover:bg-indigo-500/10 hover:text-indigo-300 h-7 px-4 border border-white/5 hover:border-indigo-500/20 rounded-full transition-all duration-300"
                 >
                   {recipesExpanded
                     ? "Show Less"
                     : `Show ${recipesTotalCount - 1} More`}
                   <ChevronDown
-                    className={`ml-2 h-3 w-3 transition-transform duration-200 ${
+                    className={`ml-2 h-3 w-3 transition-transform duration-300 ${
                       recipesExpanded ? "rotate-180" : ""
                     }`}
                   />

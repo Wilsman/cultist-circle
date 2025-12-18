@@ -6,10 +6,16 @@ import Link from "next/link";
 
 export interface Notification {
   id: string;
-  type: "success" | "warning" | "info" | "halloween";
+  type: "success" | "warning" | "info" | "halloween" | "hot-sacrifice" | "weapon-warning";
   icon?: string;
   title: string;
   description: string | React.ReactNode;
+  actions?: NotificationAction[];
+}
+
+export interface NotificationAction {
+  label: string;
+  action: () => void;
 }
 
 export const NOTIFICATIONS: Notification[] = [
@@ -73,6 +79,10 @@ export function NotificationCard({
             ? "bg-red-950/30 border-red-500/20"
             : notification.type === "halloween"
             ? "bg-orange-950/30 border-orange-500/20"
+            : notification.type === "hot-sacrifice"
+            ? "bg-indigo-950/30 border-indigo-500/20"
+            : notification.type === "weapon-warning"
+            ? "bg-amber-950/30 border-amber-500/20"
             : "bg-slate-800/40 border-slate-700/30"
         }
       `}
@@ -95,6 +105,10 @@ export function NotificationCard({
                 ? "text-red-200"
                 : notification.type === "halloween"
                 ? "text-orange-200"
+                : notification.type === "hot-sacrifice"
+                ? "text-indigo-200"
+                : notification.type === "weapon-warning"
+                ? "text-amber-200"
                 : "text-slate-200"
             }`}
           >
@@ -108,19 +122,53 @@ export function NotificationCard({
                 ? "text-red-300/90"
                 : notification.type === "halloween"
                 ? "text-orange-300/90"
+                : notification.type === "hot-sacrifice"
+                ? "text-indigo-300/90"
+                : notification.type === "weapon-warning"
+                ? "text-amber-300/90"
                 : "text-slate-300/90"
             }`}
           >
             {notification.description}
           </div>
+          
+          {notification.actions && notification.actions.length > 0 && (
+            <div className="flex gap-2 mt-3 pt-2 border-t border-current/10">
+              {notification.actions.map((action, index) => (
+                <button
+                  key={index}
+                  onClick={action.action}
+                  className={`text-xs px-2 py-1 rounded-md font-medium transition-colors ${
+                    notification.type === "hot-sacrifice"
+                      ? "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30"
+                      : notification.type === "weapon-warning"
+                      ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+                      : "bg-slate-500/20 text-slate-300 hover:bg-slate-500/30"
+                  }`}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export function NotificationPanel() {
+export function NotificationPanel({ 
+  dynamicNotifications = [],
+  totalNotifications 
+}: { 
+  dynamicNotifications?: Notification[];
+  totalNotifications?: number;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Combine static and dynamic notifications
+  const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications];
+  const notificationCount = totalNotifications ?? allNotifications.length;
 
   return (
     <div className="w-full max-w-3xl mx-auto mb-3 z-10">
@@ -151,12 +199,12 @@ export function NotificationPanel() {
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 text-[8px] items-center justify-center text-white font-bold">
-                  {NOTIFICATIONS.length}
+                  {notificationCount}
                 </span>
               </span>
             </div>
             <span className="text-sm font-medium text-slate-200">
-              {isExpanded ? "Notifications" : `${NOTIFICATIONS.length} Updates`}
+              {isExpanded ? "Notifications" : `${notificationCount} Updates`}
             </span>
           </div>
           <ChevronDown
@@ -175,7 +223,7 @@ export function NotificationPanel() {
       `}
       >
         <div className="space-y-2">
-          {NOTIFICATIONS.map((notification) => (
+          {allNotifications.map((notification) => (
             <NotificationCard
               key={notification.id}
               notification={notification}

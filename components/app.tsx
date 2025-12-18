@@ -12,10 +12,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 // import Link from "next/link";
 import ItemSocket from "@/components/item-socket";
-import { 
-  AlertCircle,
-  Loader2, 
-} from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 // cn moved to components that need it
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,19 +46,21 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
+import { WeaponWarning } from "./weapon-warning";
 import { InfoDashboard } from "./info-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
 import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { toast as sonnerToast } from "sonner";
+import { toast as sonnerToast, Toaster } from "sonner";
 import NextItemHints from "@/components/next-item-hints";
 // ShareCardButton and ShareCodeDialog merged into ShareButton
 import { CURRENT_VERSION } from "@/config/changelog";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 import { IncompatibleItemsNotice } from "@/components/incompatible-items-notice";
 import { ChristmasSnow } from "@/components/christmas-snow";
+import { SacrificeCombo } from "@/components/hot-sacrifices-panel";
 
 // Snow toggle component
 function SnowToggle() {
@@ -1324,6 +1323,136 @@ function AppContent() {
     setPriceMode,
   ]);
 
+  // Handler for using hot sacrifice combos
+  const handleUseHotSacrifice = useCallback(
+    async (combo: SacrificeCombo) => {
+      const { ingredients } = combo;
+
+      // Check if combo contains weapons
+      const weaponKeywords = [
+        "weapon",
+        "rifle",
+        "pistol",
+        "gun",
+        "smg",
+        "carbine",
+        "sniper",
+        "submachine gun",
+      ];
+      const hasWeapons = ingredients.some((ingredient) =>
+        weaponKeywords.some((keyword) =>
+          ingredient.name.toLowerCase().includes(keyword)
+        )
+      );
+
+      // Check if weapons category is excluded and prompt user if needed
+      if (hasWeapons) {
+        const weaponCategoryId = "5422acb9af1c889c16000029"; // Weapon category ID
+        if (excludedCategories.has(weaponCategoryId)) {
+          const confirmed = window.confirm(
+            "This combo contains weapons, but the weapons category is currently excluded. Would you like to temporarily enable the weapons category to use this combo?"
+          );
+
+          if (!confirmed) {
+            return; // User cancelled
+          }
+
+          // Temporarily enable weapons category
+          const newExcludedCategories = new Set(excludedCategories);
+          newExcludedCategories.delete(weaponCategoryId);
+          setExcludedCategories(newExcludedCategories);
+
+          // Show toast notification
+          sonnerToast.success("Weapons category enabled", {
+            description:
+              "You can now select weapons for this hot sacrifice combo.",
+          });
+        }
+      }
+
+      // Function to find matching item by name
+      const findMatchingItem = (
+        ingredientName: string
+      ): SimplifiedItem | null => {
+        // Try exact match first
+        const exactMatch = items.find(
+          (item) =>
+            item.name === ingredientName ||
+            item.englishName === ingredientName ||
+            item.shortName === ingredientName ||
+            item.englishShortName === ingredientName
+        );
+
+        if (exactMatch) return exactMatch;
+
+        // Try partial match (contains)
+        const partialMatch = items.find(
+          (item) =>
+            item.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
+            ingredientName.toLowerCase().includes(item.name.toLowerCase()) ||
+            item.englishName
+              ?.toLowerCase()
+              .includes(ingredientName.toLowerCase()) ||
+            ingredientName
+              .toLowerCase()
+              .includes(item.englishName?.toLowerCase() || "")
+        );
+
+        return partialMatch || null;
+      };
+
+      // Clear current selections
+      setSelectedItems(Array(5).fill(null));
+      setPinnedItems(Array(5).fill(false));
+      setOverriddenPrices({});
+
+      // Populate items from combo
+      let slotIndex = 0;
+      const successItems: string[] = [];
+
+      for (const ingredient of ingredients) {
+        // Skip Labs Card for G28 combo as per user request
+        if (combo.id === "labs-g28" && ingredient.name === "Labs Access") {
+          continue;
+        }
+
+        const matchingItem = findMatchingItem(ingredient.name);
+
+        if (matchingItem) {
+          // Fill multiple slots if count > 1
+          for (let i = 0; i < ingredient.count && slotIndex < 5; i++) {
+            updateSelectedItem(matchingItem, slotIndex);
+            successItems.push(ingredient.shortName || ingredient.name);
+            slotIndex++;
+          }
+        } else {
+          // Show error toast if item not found
+          sonnerToast.error("Item not found", {
+            description: `Could not find "${ingredient.name}" in the available items.`,
+          });
+        }
+      }
+
+      // Show success toast
+      if (successItems.length > 0) {
+        sonnerToast.success("Hot sacrifice loaded", {
+          description: `Added ${successItems.length} items: ${successItems.join(
+            ", "
+          )}`,
+        });
+      }
+    },
+    [
+      items,
+      excludedCategories,
+      setExcludedCategories,
+      setSelectedItems,
+      setPinnedItems,
+      setOverriddenPrices,
+      updateSelectedItem,
+    ]
+  );
+
   // Handle mode toggle with simplified caching approach
   const handleModeToggle = useCallback((checked: boolean): void => {
     // Mode switching is now handled by SWR cache in use-items-data.ts
@@ -1570,8 +1699,18 @@ function AppContent() {
                   className="text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
                 >
                   EFT Boss
-                  <svg className="w-3 h-3 opacity-1 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg
+                    className="w-3 h-3 opacity-1 group-hover:opacity-100 transition-opacity"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
                   </svg>
                 </a>
                 <a
@@ -1595,15 +1734,29 @@ function AppContent() {
                   className="text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
                 >
                   Kappas
-                  <svg className="w-3 h-3 opacity-1 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg
+                    className="w-3 h-3 opacity-1 group-hover:opacity-100 transition-opacity"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
                   </svg>
                 </a>
               </div>
             </div>
 
             {/* Info Dashboard (Alerts, Notifications, Hot Sacrifices) */}
-            <InfoDashboard />
+            <InfoDashboard
+              selectedItems={selectedItems.filter(Boolean) as SimplifiedItem[]}
+              onUseThis={handleUseHotSacrifice}
+              availableItems={items}
+            />
 
             {/* Main Calculator Card */}
             <Card className="bg-slate-800/60 backdrop-blur-md border-slate-700/40 shadow-xl overflow-hidden">
@@ -1638,6 +1791,12 @@ function AppContent() {
                 />
 
                 {/* Items Don't Fit Warning */}
+                <WeaponWarning
+                  selectedItems={
+                    selectedItems.filter(Boolean) as SimplifiedItem[]
+                  }
+                />
+
                 {!itemsFitInBox && (
                   <Alert className="border-red-500/40 bg-red-950/30 backdrop-blur-sm">
                     <AlertTitle className="flex items-center gap-2 text-base font-bold text-red-200">
@@ -1921,7 +2080,7 @@ function AppContent() {
 
             {/* Footer - Minimal */}
             <div className="text-center space-y-2">
-<div className="text-xs text-slate-400">
+              <div className="text-xs text-slate-400">
                 <span>Data by </span>
                 <a
                   href="https://tarkov.dev"
@@ -1930,8 +2089,18 @@ function AppContent() {
                   className="text-slate-300 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
                 >
                   Tarkov.dev
-                  <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg
+                    className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
                   </svg>
                 </a>
                 <span className="mx-2">•</span>
@@ -1943,8 +2112,18 @@ function AppContent() {
                   className="text-slate-300 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
                 >
                   VeryBadSCAV
-                  <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg
+                    className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
                   </svg>
                 </a>
               </div>
