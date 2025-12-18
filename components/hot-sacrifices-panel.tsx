@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronDown, Flame, Play, Plus, ArrowRight } from "lucide-react";
+import { ChevronDown, Flame, Plus, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import {
@@ -172,7 +172,7 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
           "https://assets.tarkov.dev/5c94bbff86f7747ee735c08f-icon.webp",
       },
       {
-        name: "HK G28 7.62x51 marksman rifle Default",
+        name: "HK G28 7.62x51 marksman rifle Patrol",
         shortName: "G28",
         count: 1,
         imageUrl:
@@ -371,9 +371,8 @@ export function ComboRow({
                   size="sm"
                   variant="ghost"
                   onClick={() => onUseThis(combo)}
-                  className="h-8 px-3 text-[11px] font-bold rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-300 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 group/btn"
+                  className="h-8 px-4 text-[11px] font-semibold tracking-wide rounded-full border border-white/10 bg-transparent text-slate-200 hover:border-indigo-300/60 hover:text-white hover:bg-white/5 transition duration-200 focus-visible:ring-0 focus-visible:ring-offset-0"
                 >
-                  <Play className="w-3 h-3 fill-current group-hover/btn:scale-110 transition-transform" />
                   Use
                 </Button>
               </TooltipTrigger>
