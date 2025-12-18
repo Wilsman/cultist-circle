@@ -85,9 +85,18 @@ export function PriceRangeFilter({
 
   // Update local state when external value changes
   useEffect(() => {
-    setLocalValue(value);
-    setInputValues([value[0].toString(), value[1].toString()]);
-    setSliderValue([toSlider(value[0]), toSlider(value[1])]);
+    const sliderMin = toSlider(value[0]);
+    const sliderMax = toSlider(value[1]);
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setLocalValue(value);
+      setInputValues([value[0].toString(), value[1].toString()]);
+      setSliderValue([sliderMin, sliderMax]);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [value, toSlider]);
 
   const handleSliderChange = useCallback(

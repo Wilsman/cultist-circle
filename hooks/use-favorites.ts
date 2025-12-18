@@ -55,15 +55,22 @@ export function useFavorites(gameMode: GameMode) {
 
   // Load favorites from localStorage on mount or when gameMode changes
   useEffect(() => {
-    try {
-      const savedFavorites = localStorage.getItem(`favorites_${gameMode}`);
-      if (savedFavorites) {
-        setFavorites(new Set(JSON.parse(savedFavorites)));
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      try {
+        const savedFavorites = localStorage.getItem(`favorites_${gameMode}`);
+        if (savedFavorites) {
+          setFavorites(new Set(JSON.parse(savedFavorites)));
+        }
+      } catch (error) {
+        console.error("Failed to load favorites:", error);
+        localStorage.removeItem(`favorites_${gameMode}`);
       }
-    } catch (error) {
-      console.error("Failed to load favorites:", error);
-      localStorage.removeItem(`favorites_${gameMode}`);
-    }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [gameMode]);
 
   // Memoize the save function to prevent recreation on every render

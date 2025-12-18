@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
-import { HOT_SACRIFICES, SacrificeCombo } from "@/components/hot-sacrifices-panel";
+import { HOT_SACRIFICES } from "@/components/hot-sacrifices-panel";
 
 export interface DynamicNotification {
   id: string;

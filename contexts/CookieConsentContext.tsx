@@ -28,10 +28,17 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
   const [cookiesAccepted, setCookiesAccepted] = useState<boolean | null>(true);
 
   useEffect(() => {
-    const consent = localStorage.getItem("cookieConsent");
-    if (consent !== null) {
-      setCookiesAccepted(consent === "true");
-    }
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      const consent = localStorage.getItem("cookieConsent");
+      if (consent !== null) {
+        setCookiesAccepted(consent === "true");
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const acceptCookies = () => {

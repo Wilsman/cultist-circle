@@ -201,7 +201,7 @@ __Output__:
           } items from code.`,
         });
       }
-    } catch (error) {
+    } catch {
       setIsLoading(false);
       sonnerToast("Clipboard Access Failed", {
         description:

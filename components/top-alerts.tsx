@@ -3,9 +3,7 @@ import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, ChevronDown } from "lucide-react";
 
-interface TopAlertsProps {}
-
-export function TopAlerts({}: TopAlertsProps) {
+export function TopAlerts() {
   return (
     <div className="flex items-center justify-center px-3 sm:px-4 md:px-8">
       <Alert

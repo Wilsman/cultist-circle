@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "changelog:preview": "node scripts/extract-notes.js --print",
-    "changelog:write": "node scripts/extract-notes.js --write",
+    "changelog:preview": "node scripts/extract-notes.mjs --print",
+    "changelog:write": "node scripts/extract-notes.mjs --write",
     "dev": "bun run --bun next dev",
     "build": "bun run --bun next build",
     "start": "bun run --bun next start",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest"
   },

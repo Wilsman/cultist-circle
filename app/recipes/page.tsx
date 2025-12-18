@@ -232,6 +232,12 @@ const tarkovRecipes: Recipe[] = [
   },
 ];
 
+const NewBadge = () => (
+  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500 text-white absolute -top-1 -left-1 shadow-lg animate-pulse">
+    NEW
+  </span>
+);
+
 export default function Page() {
   // Get isPVE from localStorage (same as main app)
   const [isPVE] = useState<boolean>(() => {
@@ -285,15 +291,6 @@ export default function Page() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
-
-  // NewBadge component
-  function NewBadge() {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500 text-white absolute -top-1 -left-1 shadow-lg animate-pulse">
-        NEW
-      </span>
-    );
-  }
 
   // ItemBadge component with large external icon
   function ItemBadge({

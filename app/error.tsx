@@ -9,7 +9,7 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
-    // eslint-disable-next-line no-console
+     
     console.error("App Router error boundary:", error);
   }, [error]);
 

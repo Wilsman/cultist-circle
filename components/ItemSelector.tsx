@@ -1,9 +1,25 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { Copy, X as XIcon, Pin, Edit, CircleSlash, Trash2 } from "lucide-react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
+import {
+  Copy,
+  X as XIcon,
+  Pin,
+  Edit,
+  CircleSlash,
+  Trash2,
+  Search,
+  ExternalLink,
+} from "lucide-react";
 import Fuse from "fuse.js";
+import { motion, AnimatePresence } from "framer-motion";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { TraderLevels } from "@/components/ui/trader-level-selector";
 import {
@@ -13,14 +29,18 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { ItemTooltip } from "@/components/ui/item-tooltip";
-import { getRelativeDate } from "@/lib/utils";
+import { getRelativeDate, cn } from "@/lib/utils";
 import { toast as sonnerToast } from "sonner";
 
 // Import Dropdown components
 import { Button } from "@/components/ui/button";
 
 // Import react-window for virtualization
-import { FixedSizeList as List, ListChildComponentProps } from "react-window";
+import {
+  FixedSizeList as List,
+  type FixedSizeList as FixedSizeListInstance,
+  type ListChildComponentProps,
+} from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 
 interface ItemSelectorProps {
@@ -40,8 +60,8 @@ interface ItemSelectorProps {
   isExcluded: boolean;
   onToggleExclude: () => void;
   excludedItems: Set<string>;
-  fleaPriceType: 'lastLowPrice' | 'avg24hPrice';
-  priceMode: 'flea' | 'trader';
+  fleaPriceType: "lastLowPrice" | "avg24hPrice";
+  priceMode: "flea" | "trader";
   traderLevels: TraderLevels;
 }
 
@@ -73,6 +93,9 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const [priceOverride, setPriceOverride] = useState<string>("");
   const [isPriceOverrideActive, setIsPriceOverrideActive] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<FixedSizeListInstance<SimplifiedItem> | null>(null);
 
   // Avatars for trader vendors (normalizedName keys)
   const TRADER_AVATARS = useMemo<Record<keyof TraderLevels, string>>(
@@ -88,23 +111,44 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     []
   );
 
+  const getSearchableNames = useCallback((item: SimplifiedItem) => {
+    return [
+      item.name,
+      item.shortName,
+      item.englishName,
+      item.englishShortName,
+    ].filter(Boolean) as string[];
+  }, []);
+
+  const excludedLookup = useMemo(() => {
+    return new Set(Array.from(excludedItems, (name) => name.toLowerCase()));
+  }, [excludedItems]);
+
   // Helper: compute effective price and chosen vendor info
   const getEffectivePriceInfo = useCallback(
     (
       item: SimplifiedItem | null | undefined
-    ): { price: number | null; vendorName?: keyof TraderLevels; minTraderLevel?: number } => {
+    ): {
+      price: number | null;
+      vendorName?: keyof TraderLevels;
+      minTraderLevel?: number;
+    } => {
       if (!item) return { price: null };
-      if (priceMode === 'flea') {
-        const fleaVal = item[fleaPriceType as 'lastLowPrice' | 'avg24hPrice'];
-        return { price: typeof fleaVal === 'number' ? fleaVal : null };
+      if (priceMode === "flea") {
+        const fleaVal = item[fleaPriceType as "lastLowPrice" | "avg24hPrice"];
+        return { price: typeof fleaVal === "number" ? fleaVal : null };
       }
       // trader mode
       const offers = item.buyFor ?? [];
-      let best: { price: number; vendorName: keyof TraderLevels; minTraderLevel?: number } | null = null;
+      let best: {
+        price: number;
+        vendorName: keyof TraderLevels;
+        minTraderLevel?: number;
+      } | null = null;
       for (const offer of offers) {
         const vendorName = offer.vendor?.normalizedName as string | undefined;
         const minLevel =
-          offer.vendor && 'minTraderLevel' in offer.vendor
+          offer.vendor && "minTraderLevel" in offer.vendor
             ? (offer.vendor as { minTraderLevel?: number }).minTraderLevel
             : undefined;
         if (!vendorName) continue;
@@ -113,26 +157,38 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         if (userLevel === undefined) continue; // not a trader or unknown vendor
         if (minLevel !== undefined && minLevel > userLevel) continue; // not eligible
         const price = offer.priceRUB;
-        if (typeof price === 'number') {
-          if (best === null || price > best.price) best = { price, vendorName: key, minTraderLevel: minLevel };
+        if (typeof price === "number") {
+          if (best === null || price > best.price)
+            best = { price, vendorName: key, minTraderLevel: minLevel };
         }
       }
-      return best ? { price: best.price, vendorName: best.vendorName, minTraderLevel: best.minTraderLevel } : { price: null };
+      return best
+        ? {
+            price: best.price,
+            vendorName: best.vendorName,
+            minTraderLevel: best.minTraderLevel,
+          }
+        : { price: null };
     },
     [fleaPriceType, priceMode, traderLevels]
   );
 
   useEffect(() => {
-    if (selectedItem && overriddenPrice !== undefined) {
-      const next = overriddenPrice.toString();
-      // Only update when values actually change to avoid render loops
-      setIsPriceOverrideActive((prev) => (prev ? prev : true));
-      setPriceOverride((prev) => (prev !== next ? next : prev));
-    } else {
-      // Only reset if there is something to reset
-      setIsPriceOverrideActive((prev) => (prev ? false : prev));
-      setPriceOverride((prev) => (prev !== "" ? "" : prev));
-    }
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      if (selectedItem && overriddenPrice !== undefined) {
+        const next = overriddenPrice.toString();
+        setIsPriceOverrideActive(true);
+        setPriceOverride(next);
+      } else {
+        setIsPriceOverrideActive(false);
+        setPriceOverride("");
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedItem, overriddenPrice]);
 
   // Initialize Fuse.js for searching
@@ -141,13 +197,13 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     try {
       return new Fuse(validItems, {
         keys: [
-          { name: 'name', weight: 0.7 },
-          { name: 'shortName', weight: 0.3 }
+          { name: "name", weight: 0.7 },
+          { name: "shortName", weight: 0.3 },
         ],
         threshold: 0.4,
         includeScore: true,
         ignoreLocation: true,
-        minMatchCharLength: 2
+        minMatchCharLength: 1,
       });
     } catch (e) {
       console.debug("Fuse initialization error or empty items array", e);
@@ -172,31 +228,87 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     const validItems = Array.isArray(items) ? items : [];
     if (validItems.length === 0) return [];
 
-    let results;
+    let results: SimplifiedItem[];
     if (isFocused && !debouncedSearchTerm) {
-      // Show only items with basePrice > 0 when focused but the search input is empty
       results = validItems.filter((item) => item.basePrice > 0);
     } else if (!debouncedSearchTerm) {
       return [];
     } else if (!fuse) {
-      return validItems;
+      results = validItems;
     } else {
       results = fuse
         .search(debouncedSearchTerm)
         .map((result) => result.item)
         .filter((item) => item.basePrice > 0);
     }
-    return results.filter((item) => {
-      const candidates = [
-        item.name,
-        item.shortName,
-        item.englishName,
-        item.englishShortName,
-      ].filter(Boolean) as string[];
-      const lowered = new Set(Array.from(excludedItems, (n) => n.toLowerCase()));
-      return !candidates.some((n) => lowered.has(n.toLowerCase()));
+    return results.filter(
+      (item) =>
+        item.basePrice > 0 &&
+        !getSearchableNames(item).some((name) =>
+          excludedLookup.has(name.toLowerCase())
+        )
+    );
+  }, [
+    debouncedSearchTerm,
+    excludedLookup,
+    fuse,
+    getSearchableNames,
+    isFocused,
+    items,
+  ]);
+
+  const inlineSuggestionItem = useMemo(() => {
+    const normalizedTerm = searchTerm.trim().toLowerCase();
+    if (!normalizedTerm) return null;
+    const validItems = Array.isArray(items) ? items : [];
+    for (const item of validItems) {
+      if (item.basePrice <= 0) continue;
+      const searchableNames = getSearchableNames(item);
+      const matches = searchableNames.some((name) =>
+        name.toLowerCase().startsWith(normalizedTerm)
+      );
+      if (
+        matches &&
+        !searchableNames.some((name) =>
+          excludedLookup.has(name.toLowerCase())
+        )
+      ) {
+        return item;
+      }
+    }
+    return null;
+  }, [excludedLookup, getSearchableNames, items, searchTerm]);
+
+  const inlineSuggestionText = inlineSuggestionItem?.name ?? "";
+  const hasInlineSuggestion =
+    !!inlineSuggestionText &&
+    inlineSuggestionText.toLowerCase() !== searchTerm.trim().toLowerCase();
+  const suggestionRemainder = hasInlineSuggestion
+    ? inlineSuggestionText.slice(
+        Math.min(inlineSuggestionText.length, searchTerm.trim().length)
+      )
+    : "";
+
+  useEffect(() => {
+    let nextIndex = -1;
+    if (isFocused && filteredItems.length > 0) {
+      nextIndex = 0;
+    }
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) {
+        setHighlightedIndex(nextIndex);
+      }
     });
-  }, [debouncedSearchTerm, fuse, isFocused, items, excludedItems]);
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearchTerm, filteredItems.length, isFocused]);
+
+  useEffect(() => {
+    if (!isFocused || highlightedIndex < 0) return;
+    listRef.current?.scrollToItem(highlightedIndex);
+  }, [highlightedIndex, isFocused]);
 
   // Handle selection
   const handleSelect = useCallback(
@@ -255,24 +367,17 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   }, [isPriceOverrideActive, selectedItem, overriddenPrice, onSelect]);
 
   // Debounce price override updates
-  const [debouncedPriceValue, setDebouncedPriceValue] = useState("");
-
   useEffect(() => {
-    if (priceOverride === debouncedPriceValue) return;
     const handler = setTimeout(() => {
-      setDebouncedPriceValue(priceOverride);
       if (!selectedItem || !isPriceOverrideActive || !priceOverride) return;
       const nextValue = Number(priceOverride) || 0;
-      // Skip if parent already has this exact override to prevent update loops
-      if (overriddenPrice !== undefined && overriddenPrice === nextValue) return;
+      if (overriddenPrice !== undefined && overriddenPrice === nextValue)
+        return;
       onSelect(selectedItem, nextValue);
-    }, 300);
-    return () => {
-      clearTimeout(handler);
-    };
+    }, 500);
+    return () => clearTimeout(handler);
   }, [
     priceOverride,
-    debouncedPriceValue,
     selectedItem,
     isPriceOverrideActive,
     overriddenPrice,
@@ -283,17 +388,12 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   const handlePriceOverride = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
-      // Only numbers allowed
       if (/^\d*$/.test(value)) {
         setPriceOverride(value);
       }
     },
     []
   );
-
-  const toggleExclude = useCallback(() => {
-    onToggleExclude();
-  }, [onToggleExclude]);
 
   // Copy item name (with optional toast)
   const handleCopy = useCallback(() => {
@@ -303,15 +403,131 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     } else {
       sonnerToast("Name Copied", {
         description: selectedItem
-          ? `"${selectedItem.name}" copied to clipboard`
+          ? `${selectedItem.name} copied to clipboard`
           : "Item copied to clipboard",
       });
     }
   }, [onCopy, onCopyWithToast, selectedItem]);
 
+  const acceptInlineSuggestion = useCallback(() => {
+    if (!hasInlineSuggestion) return false;
+    setSearchTerm(inlineSuggestionText);
+    requestAnimationFrame(() => {
+      const length = inlineSuggestionText.length;
+      inputRef.current?.setSelectionRange(length, length);
+    });
+    return true;
+  }, [hasInlineSuggestion, inlineSuggestionText]);
+
+  const handleInputKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "ArrowDown") {
+        if (!filteredItems.length) return;
+        event.preventDefault();
+        setHighlightedIndex((prev) => {
+          if (filteredItems.length === 0) return -1;
+          const next =
+            prev < 0
+              ? 0
+              : prev >= filteredItems.length - 1
+              ? 0
+              : prev + 1;
+          return next;
+        });
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        if (!filteredItems.length) return;
+        event.preventDefault();
+        setHighlightedIndex((prev) => {
+          if (filteredItems.length === 0) return -1;
+          const next =
+            prev <= 0 ? filteredItems.length - 1 : Math.max(prev - 1, 0);
+          return next;
+        });
+        return;
+      }
+      if (event.key === "Enter") {
+        if (
+          highlightedIndex >= 0 &&
+          filteredItems[highlightedIndex]
+        ) {
+          event.preventDefault();
+          handleSelect(filteredItems[highlightedIndex]);
+          return;
+        }
+        if (inlineSuggestionItem) {
+          event.preventDefault();
+          handleSelect(inlineSuggestionItem);
+        }
+        return;
+      }
+      if (event.key === "Tab") {
+        if (acceptInlineSuggestion()) {
+          event.preventDefault();
+        }
+        return;
+      }
+      if (
+        event.key === "ArrowRight" &&
+        hasInlineSuggestion &&
+        inputRef.current &&
+        inputRef.current.selectionStart === inputRef.current.value.length &&
+        inputRef.current.selectionEnd === inputRef.current.value.length
+      ) {
+        event.preventDefault();
+        acceptInlineSuggestion();
+        return;
+      }
+      if (event.key === "Escape") {
+        if (searchTerm) {
+          event.preventDefault();
+          setSearchTerm("");
+        } else {
+          inputRef.current?.blur();
+          setIsFocused(false);
+        }
+      }
+    },
+    [
+      acceptInlineSuggestion,
+      filteredItems,
+      handleSelect,
+      hasInlineSuggestion,
+      highlightedIndex,
+      inlineSuggestionItem,
+      searchTerm,
+    ]
+  );
+
+  const highlightMatch = useCallback(
+    (text: string): React.ReactNode => {
+      const term = debouncedSearchTerm.trim();
+      if (!term) return text;
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`(${escaped})`, "ig");
+      return text.split(regex).map((segment, idx) => {
+        if (!segment) {
+          return (
+            <React.Fragment key={`empty-${idx}`}></React.Fragment>
+          );
+        }
+        if (idx % 2 === 1) {
+          return (
+            <span key={`${segment}-${idx}`} className="text-primary">
+              {segment}
+            </span>
+          );
+        }
+        return <span key={`${segment}-${idx}`}>{segment}</span>;
+      });
+    },
+    [debouncedSearchTerm]
+  );
+
   // Row component for react-window (dropdown list item)
   const Row = useCallback(
-    ({ index, style }: ListChildComponentProps) => {
+    ({ index, style }: ListChildComponentProps<SimplifiedItem>) => {
       const item = filteredItems[index];
       const itemOverriddenPrice = overriddenPrices[item.id];
       const effectiveInfo = getEffectivePriceInfo(item);
@@ -321,430 +537,393 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
           : effectiveInfo.price ?? null;
       const isOverridden = itemOverriddenPrice !== undefined;
 
-      const isItemExcluded = (() => {
-        const candidates = [
-          item.name,
-          item.shortName,
-          item.englishName,
-          item.englishShortName,
-        ].filter(Boolean) as string[];
-        const lowered = new Set(Array.from(excludedItems, (n) => n.toLowerCase()));
-        return candidates.some((n) => lowered.has(n.toLowerCase()));
-      })();
-      const itemIcon = item.iconLink;
-
       return (
-        <li
+        <div
           style={style}
           onMouseDown={(e) => e.preventDefault()}
-          onMouseUp={() => handleSelect(item)}
-          className="p-1 hover:bg-gray-600 cursor-pointer text-white flex items-center"
-        >
-          {itemIcon && (
-            <img
-              src={itemIcon}
-              alt={item.name}
-              className="w-10 h-10 object-contain rounded mr-2"
-            />
+          onClick={() => handleSelect(item)}
+          className={cn(
+            "group px-3 py-2 cursor-pointer flex items-center transition-all active:scale-[0.98]",
+            highlightedIndex === index ? "bg-white/10" : "hover:bg-white/5"
           )}
-          <div className="flex-1 min-w-0 flex flex-col text-xs">
-            <span className="truncate font-semibold text-sm">{item.name}</span>
-            <div className="text-gray-400 flex flex-wrap items-center gap-2">
-              {/* Base value chip */}
-              <div className="inline-flex items-center rounded-full bg-blue-500/10 border border-gray-700 px-2 py-0.5">
-                <span className="mr-1 text-gray-400 font-bold">Base</span>
-                <span className="font-semibold text-teal-300">
-                  ₽{(item.basePrice || 0).toLocaleString()}
-                </span>
-              </div>
-
-              {/* Price chip (Flea/Trader) */}
-              <div
-                className={`inline-flex items-center rounded-full px-2 py-0.5 border ${
-                  isOverridden
-                    ? "bg-amber-500/10 border-amber-400/30 text-amber-300"
-                    : item.lastOfferCount !== undefined &&
-                      item.lastOfferCount <= 5
-                    ? "bg-red-500/10 border-red-400/30 text-red-300"
-                    : "bg-gray-800/60 border-gray-700 text-gray-300"
-                }`}
-              >
-                <span className="mr-1 text-gray-400">
-                  {priceMode === "flea" ? "Flea" : "Trader"}
-                </span>
-                <span className="font-semibold">
-                  {typeof displayedPrice === "number"
-                    ? `₽${displayedPrice.toLocaleString()}`
-                    : "N/A"}
-                </span>
-                {isOverridden && (
-                  <span className="text-gray-400 ml-1">(Override)</span>
+          onMouseEnter={() => setHighlightedIndex(index)}
+        >
+          {item.iconLink && (
+            <div className="relative p-1 bg-white/5 border border-white/10 rounded-md mr-3 group-hover:border-primary/30 transition-colors">
+              <img
+                src={item.iconLink}
+                alt={item.name}
+                className="w-10 h-10 object-contain"
+              />
+            </div>
+          )}
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <span className="truncate font-semibold text-sm text-slate-100 group-hover:text-primary transition-colors">
+              {highlightMatch(item.name)}
+            </span>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-wider">
+                ₽{(item.basePrice || 0).toLocaleString()}
+              </span>
+              <span className="h-1 w-1 rounded-full bg-white/20" />
+              <span
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider",
+                  isOverridden ? "text-amber-400" : "text-primary/70"
                 )}
-              </div>
-
-              {/* Trader vendor chip */}
-              {priceMode === "trader" && effectiveInfo.vendorName && (
-                <div className="inline-flex items-center rounded-full bg-gray-800/60 border border-gray-700 px-2 py-0.5">
-                  <img
-                    src={TRADER_AVATARS[effectiveInfo.vendorName]}
-                    alt={effectiveInfo.vendorName}
-                    className="w-4 h-4 rounded-full"
-                  />
-                  <span className="ml-1 capitalize">
-                    {effectiveInfo.vendorName}{" "}
-                    {effectiveInfo.minTraderLevel
-                      ? `L${effectiveInfo.minTraderLevel}`
-                      : ""}
-                  </span>
-                </div>
-              )}
-
-              {/* Excluded badge */}
-              {isItemExcluded && (
-                <span className="ml-auto inline-flex items-center rounded-full bg-red-500/10 border border-red-400/30 text-red-300 px-2 py-0.5">
-                  Excluded
-                </span>
-              )}
+              >
+                {priceMode === "flea" ? "Flea" : "Trader"}:{" "}
+                {typeof displayedPrice === "number"
+                  ? `₽${displayedPrice.toLocaleString()}`
+                  : "N/A"}
+              </span>
             </div>
           </div>
-        </li>
+        </div>
       );
     },
     [
       filteredItems,
-      handleSelect,
-      overriddenPrices,
-      excludedItems,
-      priceMode,
       getEffectivePriceInfo,
-      TRADER_AVATARS,
+      handleSelect,
+      highlightMatch,
+      highlightedIndex,
+      overriddenPrices,
+      priceMode,
     ]
   );
 
   return (
     <TooltipProvider>
-      <div className="relative w-full text-sm gap-1">
-        {/* SEARCH + DROP-DOWN (when no item is selected) */}
-        {!selectedItem && (
-          <div className="relative border border-gray-700 rounded-md p-1">
-            <input
-              onMouseUp={() => setIsFocused(true)}
-              onBlur={() => setTimeout(() => setIsFocused(false), 100)}
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search items..."
-              className="w-full p-1 text-sm bg-gray-700 text-white rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            {isFocused && (
+      <div className="relative w-full">
+        <AnimatePresence mode="wait">
+          {!selectedItem ? (
+            <motion.div
+              key="search-mode"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="relative"
+              >
               <div
-              className="
-                  w-full mt-3 pt-2 bg-transparent rounded-md shadow-lg
-                  max-h-[50vh] overflow-y-auto overflow-x-hidden
-                  touch-pan-y
-                  "
-                  style={{ marginTop: '10px' }}
-                  >
-                <AutoSizer disableHeight>
-                  {({ width }) => (
-                    <List
-                      height={240}
-                      itemCount={filteredItems.length}
-                      itemSize={56}
-                      width={width}
-                      >
-                      {Row}
-                    </List>
-                  )}
-                </AutoSizer>
-                {filteredItems.length === 0 && (
-                  <div className="p-1 text-gray-400">No items found.</div>
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 bg-black/40 backdrop-blur-xl border transition-all duration-300 rounded-xl",
+                  isFocused
+                    ? "border-primary/50 shadow-[0_0_20px_rgba(0,255,255,0.1)]"
+                    : "border-white/10"
                 )}
+              >
+                <Search
+                  className={cn(
+                    "h-4 w-4 transition-colors",
+                    isFocused ? "text-primary" : "text-white/30"
+                  )}
+                />
+                <div className="relative flex-1">
+                  {isFocused && hasInlineSuggestion && (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 left-0 flex items-center text-sm font-medium text-white/25"
+                    >
+                      <span className="text-transparent">{searchTerm}</span>
+                      <span>{suggestionRemainder}</span>
+                    </span>
+                  )}
+                  <input
+                    ref={inputRef}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                    type="text"
+                    value={searchTerm}
+                    onKeyDown={handleInputKeyDown}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search items..."
+                    className="relative z-10 w-full bg-transparent text-sm text-white placeholder:text-white/20 outline-none font-medium"
+                  />
+                </div>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* SELECTED ITEM CARD */}
-        {selectedItem && (
-          <div
-            className={`border p-1 mb-0.5 rounded-md bg-gray-900 overflow-hidden ${
-              isPinned ? "border-yellow-400" : "border-gray-600"
-            }`}
-          >
-            <div className="flex items-stretch">
-              <div className="rounded-l-md overflow-hidden flex items-center justify-center min-w-3 max-w-10 sm:min-w-24 sm:max-w-28">
-                {selectedItem.iconLink && (
-                  <ItemTooltip item={selectedItem} iconUrl={selectedItem.iconLink}>
+              {isFocused && hasInlineSuggestion && (
+                <div className="flex items-center gap-2 px-4 pt-2 text-[11px] text-white/50">
+                  <span className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/70">
+                    Tab
+                  </span>
+                  <span className="truncate">
+                    Autocomplete to &quot;{inlineSuggestionText}&quot;
+                  </span>
+                </div>
+              )}
+
+              <AnimatePresence>
+                {isFocused && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 4 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 right-0 z-[100] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+                  >
+                    <div className="max-h-[320px]">
+                      <AutoSizer disableHeight>
+                        {({ width }) => (
+                          <List
+                            ref={listRef}
+                            height={Math.min(
+                              filteredItems.length * 56 || 200,
+                              320
+                            )}
+                            itemCount={filteredItems.length}
+                            itemSize={56}
+                            width={width}
+                          >
+                            {Row}
+                          </List>
+                        )}
+                      </AutoSizer>
+                      {filteredItems.length === 0 && (
+                        <div className="p-8 text-center text-white/30 text-sm font-medium">
+                          No items matching your search
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="selected-mode"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className={cn(
+                "relative group bg-black/40 backdrop-blur-xl border rounded-xl overflow-hidden transition-all duration-500",
+                isPinned
+                  ? "border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.1)]"
+                  : "border-white/10 hover:border-white/20"
+              )}
+            >
+              <div className="flex items-center p-3 sm:p-4 gap-4">
+                {/* Item Icon */}
+                <div className="relative shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center group-hover:border-primary/30 transition-colors">
+                  <ItemTooltip
+                    item={selectedItem}
+                    iconUrl={selectedItem.iconLink || ""}
+                  >
                     <img
-                      src={selectedItem.iconLink}
+                      src={selectedItem.iconLink || ""}
                       alt={selectedItem.name}
-                      className="object-contain max-h-20 sm:max-h-24 md:max-h-28 cursor-help"
+                      className="w-full h-full object-contain p-1"
                     />
                   </ItemTooltip>
-                )}
-              </div>
+                </div>
 
-              {/* RIGHT SIDE (All info and buttons) */}
-              <div className="flex-1 min-w-0 flex flex-col p-2 space-y-2">
-                {/* Top row: name + compact action toolbar */}
-                <div className="grid w-full grid-cols-[1fr_auto] items-center gap-2">
-                  {/* Item name */}
-                  <div className="min-w-0">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        {selectedItem.link ? (
-                          <a
-                            href={selectedItem.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block text-teal-400 font-semibold text-xs sm:text-sm truncate hover:underline"
-                          >
-                            {selectedItem.name}
-                          </a>
-                        ) : (
-                          <span className="block text-teal-400 font-semibold text-xs sm:text-sm truncate">
-                            {selectedItem.name}
-                          </span>
-                        )}
-                      </TooltipTrigger>
-                      <TooltipContent>{selectedItem.name}</TooltipContent>
-                    </Tooltip>
-                  </div>
-
-                  {/* Actions toolbar */}
-                  <div className="ml-2 shrink-0 flex items-center rounded-full border border-gray-700/60 bg-gray-800/50 px-1.5 py-0.5 shadow-sm">
-                    {/* Copy */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={handleCopy}
-                          className="h-5 w-5 text-gray-400 hover:bg-gray-700"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Copy name</TooltipContent>
-                    </Tooltip>
-
-                    <span className="mx-0.5 h-5 w-px bg-gray-700/70" />
-
-                    {/* Toggle override */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={togglePriceOverride}
-                          className={`h-5 w-5 rounded ${
+                {/* Content */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-white font-bold text-sm sm:text-base truncate tracking-tight">
+                        {selectedItem.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          ₽{(selectedItem.basePrice || 0).toLocaleString()}
+                        </span>
+                        <div
+                          className={cn(
+                            "flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider",
                             isPriceOverrideActive
-                              ? "text-amber-300 bg-amber-500/10"
-                              : "text-gray-400"
-                          } hover:bg-gray-700`}
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                              : "bg-primary/10 border-primary/30 text-primary/80"
+                          )}
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {isPriceOverrideActive ? "Disable override" : "Enable override"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <span className="mx-0.5 h-5 w-px bg-gray-700/70" />
-
-                    {/* Pin */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={onPin}
-                          className={`h-5 w-5 rounded ${
-                            isPinned
-                              ? "text-yellow-400 bg-yellow-500/10"
-                              : "text-gray-400"
-                          } hover:bg-gray-700`}
-                        >
-                          <Pin className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{isPinned ? "Unpin" : "Pin"}</TooltipContent>
-                    </Tooltip>
-
-                    {/* Exclude */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={toggleExclude}
-                          className={`h-5 w-5 rounded ${
-                            isExcluded
-                              ? "text-red-400 bg-red-500/10"
-                              : "text-gray-400"
-                          } hover:bg-gray-700`}
-                        >
-                          <CircleSlash className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {isExcluded ? "Include in auto-pick" : "Exclude from auto-pick"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <span className="mx-0.5 h-5 w-px bg-gray-700/70" />
-
-                    {/* Delete */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={handleRemove}
-                          className="h-5 w-5 text-gray-400 hover:bg-gray-700"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Remove</TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-
-                {/* Middle row: base & price, updated, override button */}
-                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-300">
-                  {/* Base value chip */}
-                  <div className="inline-flex items-center rounded-full bg-blue-500/10 border border-gray-700 px-2 py-0.5">
-                    <span className="mr-1 text-gray-400 font-bold">Base</span>
-                    <span className="font-semibold text-teal-300">
-                      ₽{(selectedItem.basePrice || 0).toLocaleString()}
-                    </span>
-                  </div>
-
-                  {/* Price chip (Flea/Trader) */}
-                  <div
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 border ${
-                      (isPriceOverrideActive && priceOverride)
-                        ? 'bg-amber-500/10 border-amber-400/30 text-amber-300'
-                        : (selectedItem.lastOfferCount !== undefined && selectedItem.lastOfferCount <= 5)
-                        ? 'bg-red-500/10 border-red-400/30 text-red-300'
-                        : 'bg-gray-800/60 border-gray-700 text-gray-300'
-                    }`}
-                  >
-                    <span className="mr-1 text-gray-400">{priceMode === 'flea' ? 'Flea' : 'Trader'}</span>
-                    <span className="font-semibold">
-                      {(
-                        (isPriceOverrideActive && priceOverride ? Number(priceOverride) : null) ??
-                        overriddenPrices[selectedItem.id] ??
-                        getEffectivePriceInfo(selectedItem).price ??
-                        null
-                      ) !== null
-                        ? `₽${(
-                            (isPriceOverrideActive && priceOverride ? Number(priceOverride) : null) ??
-                            overriddenPrices[selectedItem.id] ??
-                            getEffectivePriceInfo(selectedItem).price ??
-                            0
-                          ).toLocaleString()}`
-                        : 'N/A'}
-                    </span>
-                  </div>
-
-                  {/* Trader vendor chip */}
-                  {priceMode === 'trader' && getEffectivePriceInfo(selectedItem).vendorName && (
-                    <div className="inline-flex items-center rounded-full bg-gray-800/60 border border-gray-700 px-2 py-0.5">
-                      <img
-                        src={TRADER_AVATARS[getEffectivePriceInfo(selectedItem).vendorName!]}
-                        alt={getEffectivePriceInfo(selectedItem).vendorName!}
-                        className="w-4 h-4 rounded-full"
-                      />
-                      <span className="ml-1 capitalize">
-                        {getEffectivePriceInfo(selectedItem).vendorName} {getEffectivePriceInfo(selectedItem).minTraderLevel ? `L${getEffectivePriceInfo(selectedItem).minTraderLevel}` : ''}
-                      </span>
+                          <span>
+                            {priceMode === "flea" ? "Flea" : "Trader"}
+                          </span>
+                          <span>
+                            {((isPriceOverrideActive && priceOverride
+                              ? Number(priceOverride)
+                              : null) ??
+                              overriddenPrices[selectedItem.id] ??
+                              getEffectivePriceInfo(selectedItem).price ??
+                              null) !== null
+                              ? `₽${(
+                                  (isPriceOverrideActive && priceOverride
+                                    ? Number(priceOverride)
+                                    : null) ??
+                                  overriddenPrices[selectedItem.id] ??
+                                  getEffectivePriceInfo(selectedItem).price ??
+                                  0
+                                ).toLocaleString()}`
+                              : "N/A"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  )}
 
-                  {/* Updated time (flea) */}
-                  {priceMode === 'flea' && selectedItem.updated && (
-                    <span className="text-gray-500 ml-1">
-                      • Updated: {getRelativeDate(selectedItem.updated.toString())}
-                    </span>
-                  )}
+                    {/* Compact Toolbar */}
+                    <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-0.5">
+                      <ActionButton
+                        icon={<Copy className="h-3.5 w-3.5" />}
+                        onClick={handleCopy}
+                        tooltip="Copy name"
+                      />
+                      {selectedItem.link && (
+                        <ActionButton
+                          icon={<ExternalLink className="h-3.5 w-3.5" />}
+                          onClick={() =>
+                            window.open(selectedItem.link, "_blank")
+                          }
+                          tooltip="View on Tarkov.dev"
+                        />
+                      )}
+                      <div className="w-px h-4 bg-white/10 mx-0.5" />
+                      <ActionButton
+                        icon={<Edit className="h-3.5 w-3.5" />}
+                        onClick={togglePriceOverride}
+                        active={isPriceOverrideActive}
+                        activeClass="text-amber-400 bg-amber-500/10"
+                        tooltip="Override price"
+                      />
+                      <ActionButton
+                        icon={<Pin className="h-3.5 w-3.5" />}
+                        onClick={onPin}
+                        active={isPinned}
+                        activeClass="text-amber-400 bg-amber-500/10"
+                        tooltip={isPinned ? "Unpin item" : "Pin item"}
+                      />
+                      <ActionButton
+                        icon={<CircleSlash className="h-3.5 w-3.5" />}
+                        onClick={onToggleExclude}
+                        active={isExcluded}
+                        activeClass="text-red-400 bg-red-500/10"
+                        tooltip={
+                          isExcluded
+                            ? "Include in auto-pick"
+                            : "Exclude from auto-pick"
+                        }
+                      />
+                      <div className="w-px h-4 bg-white/10 mx-0.5" />
+                      <ActionButton
+                        icon={<Trash2 className="h-3.5 w-3.5" />}
+                        onClick={handleRemove}
+                        className="text-red-400 hover:bg-red-500/10"
+                        tooltip="Remove"
+                      />
+                    </div>
+                  </div>
 
-                  {/* Override toggle moved to action toolbar above */}
+                  {/* Price Override Input */}
+                  <AnimatePresence>
+                    {isPriceOverrideActive && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex items-center gap-2 mt-1 pb-1">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30">
+                              ₽
+                            </span>
+                            <input
+                              type="text"
+                              value={priceOverride}
+                              onChange={handlePriceOverride}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg pl-6 pr-3 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 transition-colors"
+                              placeholder="Enter manual price..."
+                            />
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={clearPriceOverride}
+                            className="h-8 w-8 text-white/30 hover:text-red-400 hover:bg-red-500/10"
+                          >
+                            <XIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Metadata Row */}
+                  <div className="flex items-center gap-3 text-[10px] text-white/30 font-medium">
+                    {priceMode === "trader" &&
+                      getEffectivePriceInfo(selectedItem).vendorName && (
+                        <div className="flex items-center gap-1.5">
+                          <img
+                            src={
+                              TRADER_AVATARS[
+                                getEffectivePriceInfo(selectedItem).vendorName!
+                              ]
+                            }
+                            alt=""
+                            className="w-3.5 h-3.5 rounded-full ring-1 ring-white/10"
+                          />
+                          <span className="capitalize">
+                            {getEffectivePriceInfo(selectedItem).vendorName}
+                            {getEffectivePriceInfo(selectedItem).minTraderLevel
+                              ? ` L${
+                                  getEffectivePriceInfo(selectedItem)
+                                    .minTraderLevel
+                                }`
+                              : ""}
+                          </span>
+                        </div>
+                      )}
+                    {priceMode === "flea" && selectedItem.updated && (
+                      <span>
+                        Updated{" "}
+                        {getRelativeDate(selectedItem.updated.toString())}
+                      </span>
+                    )}
+                    {isExcluded && (
+                      <span className="text-red-400 font-bold uppercase tracking-wider">
+                        Excluded from Autopick
+                      </span>
+                    )}
+                  </div>
                 </div>
-
-                {/* Price override input (if active) */}
-                {isPriceOverrideActive && (
-                  <div className="flex items-center rounded-full border border-gray-700/60 bg-gray-800/50 px-2 py-1 text-xs sm:text-sm">
-                    <span className="text-gray-400 mr-1">₽</span>
-                    <input
-                      id="price-override"
-                      type="text"
-                      value={priceOverride}
-                      onChange={handlePriceOverride}
-                      className="bg-transparent text-white px-1 py-0.5 rounded w-24 sm:w-28 text-right outline-none placeholder:text-gray-500"
-                      placeholder="Price"
-                    />
-                    <span className="mx-1 h-5 w-px bg-gray-700/70" />
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={clearPriceOverride}
-                          className="h-5 w-5 text-gray-400 hover:bg-gray-700"
-                        >
-                          <XIcon className="h-4 w-4 text-red-400" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Clear override</TooltipContent>
-                    </Tooltip>
-                  </div>
-                )}
-
-                {/* Excluded notice at bottom if item is excluded */}
-                {isExcluded && (
-                  <div className="px-2 py-1 bg-red-900/20 text-red-400 text-xs rounded">
-                    Excluded from Autopick
-                  </div>
-                )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* If override is active but no item is selected, show bare input */}
-        {isPriceOverrideActive && !selectedItem && (
-          <div className="mt-1 flex items-center">
-            <label
-              htmlFor="price-override"
-              className="text-xs sm:text-sm text-gray-400 mr-1"
-            >
-              Override Price:
-            </label>
-            <input
-              id="price-override"
-              type="text"
-              value={priceOverride}
-              onChange={handlePriceOverride}
-              className="text-xs sm:text-sm bg-gray-700/50 text-white p-1 mr-1 rounded w-16 text-right"
-              placeholder="Enter price"
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={clearPriceOverride}
-              className="h-5 w-5 text-gray-400 hover:bg-gray-800"
-            >
-              <XIcon className="text-red-500 h-4 w-4" />
-            </Button>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </TooltipProvider>
   );
 };
+
+const ActionButton: React.FC<{
+  icon: React.ReactNode;
+  onClick: () => void;
+  tooltip: string;
+  active?: boolean;
+  activeClass?: string;
+  className?: string;
+}> = ({ icon, onClick, tooltip, active, activeClass, className }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        className={cn(
+          "h-7 w-7 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-all",
+          active && activeClass,
+          className
+        )}
+      >
+        {icon}
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent side="top" className="text-[10px] px-2 py-1">
+      {tooltip}
+    </TooltipContent>
+  </Tooltip>
+);
 
 export default React.memo(ItemSelector);

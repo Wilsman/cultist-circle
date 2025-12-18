@@ -48,9 +48,16 @@ export function ChristmasSnow() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     if (!isEnabled) {
-      setSnowflakes([]);
-      return;
+      Promise.resolve().then(() => {
+        if (!cancelled) {
+          setSnowflakes([]);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
     // Generate snowflakes with varied properties
@@ -62,7 +69,14 @@ export function ChristmasSnow() {
       sway: Math.random() * 60 + 15, // 15-75px sway (more varied)
       delay: Math.random() * 10, // Staggered start 0-10s
     }));
-    setSnowflakes(flakes);
+    Promise.resolve().then(() => {
+      if (!cancelled) {
+        setSnowflakes(flakes);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [isEnabled]);
 
   if (!isEnabled || snowflakes.length === 0) {

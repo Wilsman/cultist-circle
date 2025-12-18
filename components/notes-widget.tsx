@@ -46,12 +46,19 @@ export function NotesWidget(): JSX.Element {
 
   // Load initial value from localStorage once on mount
   useEffect(() => {
-    try {
-      const cached = localStorage.getItem(STORAGE_KEY);
-      if (cached !== null) setValue(cached);
-    } catch {
-      // no-op
-    }
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached !== null) setValue(cached);
+      } catch {
+        // no-op
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
 
@@ -62,13 +69,25 @@ export function NotesWidget(): JSX.Element {
       const id = window.requestAnimationFrame(() => setPanelVisible(true));
       return () => window.cancelAnimationFrame(id);
     }
-    setPanelVisible(false);
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) {
+        setPanelVisible(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
   // Debounced auto-save to localStorage
   useEffect(() => {
-    // skip on initial idle with empty value and no prior storage
-    setStatus("saving");
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) {
+        setStatus("saving");
+      }
+    });
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
       try {
@@ -82,6 +101,7 @@ export function NotesWidget(): JSX.Element {
     }, 400);
 
     return () => {
+      cancelled = true;
       if (saveTimer.current) window.clearTimeout(saveTimer.current);
     };
   }, [value]);

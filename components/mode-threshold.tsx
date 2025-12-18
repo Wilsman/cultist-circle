@@ -22,7 +22,7 @@ export function ModeThreshold({
 }: ModeThresholdProps) {
   // Track dwell time between mode switches and on page hide
   const lastModeRef = useRef<"pve" | "pvp">(isPVE ? "pve" : "pvp")
-  const lastTsRef = useRef<number>(performance.now())
+  const lastTsRef = useRef<number>(0)
 
   const captureModeSelected = useCallback(
     (mode: "pve" | "pvp") => {
@@ -61,6 +61,10 @@ export function ModeThreshold({
     lastTsRef.current = now
   }, [threshold])
 
+  useEffect(() => {
+    lastTsRef.current = performance.now()
+  }, [])
+
   // Flush dwell on visibility change (e.g., tab close or navigate)
   useEffect(() => {
     const onVisibility = () => {
@@ -78,7 +82,7 @@ export function ModeThreshold({
       captureDwell()
       lastModeRef.current = nextMode
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [isPVE, captureDwell])
 
   const handleToggle = useCallback(

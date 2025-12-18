@@ -11,7 +11,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { SimplifiedItem } from "@/types/SimplifiedItem";
 
 export interface Ingredient {
   name: string;
@@ -192,61 +191,11 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
 interface ComboRowProps {
   combo: SacrificeCombo;
   onUseThis?: (combo: SacrificeCombo) => void;
-  availableItems?: SimplifiedItem[];
-}
-
-// Helper function to find matching item by name
-function findMatchingItem(
-  ingredientName: string,
-  items: SimplifiedItem[]
-): SimplifiedItem | null {
-  // Try exact match first
-  const exactMatch = items.find(
-    (item) =>
-      item.name === ingredientName ||
-      item.englishName === ingredientName ||
-      item.shortName === ingredientName ||
-      item.englishShortName === ingredientName
-  );
-
-  if (exactMatch) return exactMatch;
-
-  // Try partial match (contains)
-  const partialMatch = items.find(
-    (item) =>
-      item.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
-      ingredientName.toLowerCase().includes(item.name.toLowerCase()) ||
-      item.englishName?.toLowerCase().includes(ingredientName.toLowerCase()) ||
-      ingredientName
-        .toLowerCase()
-        .includes(item.englishName?.toLowerCase() || "")
-  );
-
-  return partialMatch || null;
-}
-
-// Check if combo contains weapons
-function hasWeapons(combo: SacrificeCombo): boolean {
-  const weaponKeywords = [
-    "weapon",
-    "rifle",
-    "pistol",
-    "gun",
-    "smg",
-    "carbine",
-    "sniper",
-  ];
-  return combo.ingredients.some((ingredient) =>
-    weaponKeywords.some((keyword) =>
-      ingredient.name.toLowerCase().includes(keyword)
-    )
-  );
 }
 
 export function ComboRow({
   combo,
   onUseThis,
-  availableItems = [],
 }: ComboRowProps) {
   const isHighValue =
     combo.resultText.includes("400K") || combo.resultText.includes("6h");
@@ -389,12 +338,10 @@ export function ComboRow({
 
 interface HotSacrificesPanelProps {
   onUseThis?: (combo: SacrificeCombo) => void;
-  availableItems?: SimplifiedItem[];
 }
 
 export function HotSacrificesPanel({
   onUseThis,
-  availableItems = [],
 }: HotSacrificesPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const featuredCombo = HOT_SACRIFICES[0];
@@ -461,7 +408,6 @@ export function HotSacrificesPanel({
             <ComboRow
               combo={featuredCombo}
               onUseThis={onUseThis}
-              availableItems={availableItems}
             />
           </div>
 
@@ -503,7 +449,6 @@ export function HotSacrificesPanel({
                         key={combo.id}
                         combo={combo}
                         onUseThis={onUseThis}
-                        availableItems={availableItems}
                       />
                     ))}
 

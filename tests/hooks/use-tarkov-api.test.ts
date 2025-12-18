@@ -1,12 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-
-// Helper to load a fresh copy of the module so in-module caches reset between tests
-async function importFresh() {
-  vi.resetModules();
-  // mock url before import so module can use it
-  const mod = await import('@/hooks/use-tarkov-api');
-  return mod as typeof import('@/hooks/use-tarkov-api');
-}
+import {
+  fetchCombinedTarkovData,
+  fetchMinimalTarkovData,
+  fetchTarkovData,
+  resetTarkovApiCachesForTests,
+} from '@/hooks/use-tarkov-api';
 
 const emptyCombinedResponse = {
   data: { pvpItems: [], pveItems: [] },
@@ -14,6 +12,7 @@ const emptyCombinedResponse = {
 
 describe('use-tarkov-api GraphQL fetchers', () => {
   beforeEach(() => {
+    resetTarkovApiCachesForTests();
     vi.restoreAllMocks();
   });
 
@@ -25,8 +24,6 @@ describe('use-tarkov-api GraphQL fetchers', () => {
     const fetchMock = vi
       .spyOn(global, 'fetch' as any)
       .mockResolvedValue({ ok: true, json: async () => emptyCombinedResponse } as any);
-
-    const { fetchCombinedTarkovData } = await importFresh();
 
     await fetchCombinedTarkovData('de');
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -70,8 +67,6 @@ describe('use-tarkov-api GraphQL fetchers', () => {
       .spyOn(global, 'fetch' as any)
       .mockResolvedValue({ ok: true, json: async () => response } as any);
 
-    const { fetchTarkovData } = await importFresh();
-
     const pvp = await fetchTarkovData('regular', 'en');
     expect(pvp.items).toHaveLength(1);
     expect(pvp.meta.mode).toBe('pvp');
@@ -91,8 +86,6 @@ describe('use-tarkov-api GraphQL fetchers', () => {
     const fetchMock = vi
       .spyOn(global, 'fetch' as any)
       .mockResolvedValue({ ok: true, json: async () => minimalResponse } as any);
-
-    const { fetchMinimalTarkovData } = await importFresh();
 
     await fetchMinimalTarkovData('fr');
     expect(fetchMock).toHaveBeenCalledTimes(1);

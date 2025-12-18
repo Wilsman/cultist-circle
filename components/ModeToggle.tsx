@@ -15,7 +15,15 @@ export function ModeToggle({ isPVE, onToggle, embedded = false }: ModeToggleProp
   )
 
   useEffect(() => {
-    setInternalMode(isPVE ? "PVE" : "PVP")
+    let cancelled = false
+    Promise.resolve().then(() => {
+      if (!cancelled) {
+        setInternalMode(isPVE ? "PVE" : "PVP")
+      }
+    })
+    return () => {
+      cancelled = true
+    }
   }, [isPVE])
 
   const handleModeChange = (newMode: "PVP" | "PVE") => {

@@ -65,8 +65,16 @@ export function ShareCodeDialog({
 
   // Update the current code whenever selected items change
   useEffect(() => {
-    const code = generateShareableCode(selectedItems, isPVE);
-    setCurrentCode(code);
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) {
+        const code = generateShareableCode(selectedItems, isPVE);
+        setCurrentCode(code);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedItems, isPVE]);
 
   const handleCopyCode = () => {
@@ -119,7 +127,7 @@ export function ShareCodeDialog({
       if (result.items) {
         onItemsLoaded(result.items, result.isPVE);
       }
-    } catch (error) {
+    } catch {
       setIsLoading(false);
       sonnerToast("Clipboard Access Failed", {
         description:

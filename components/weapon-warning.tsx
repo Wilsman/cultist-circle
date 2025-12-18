@@ -2,7 +2,6 @@
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import Link from "next/link";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 
 interface WeaponWarningProps {

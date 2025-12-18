@@ -131,7 +131,7 @@ export function parseShareableCode(code: string): {
     const itemIds = itemsString ? itemsString.split(",") : [];
 
     return { itemIds, isPVE };
-  } catch (error) {
+  } catch {
     return { itemIds: [], isPVE: null, error: "Failed to parse code" };
   }
 }
@@ -203,7 +203,7 @@ export function loadItemsFromCode(
     });
 
     return { items: newSelectedItems, isPVE };
-  } catch (error) {
+  } catch {
     sonnerToast("Error Loading Items", {
       description: "There was a problem loading the items from the code.",
     });

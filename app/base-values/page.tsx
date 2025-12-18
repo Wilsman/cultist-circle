@@ -75,6 +75,52 @@ function getMinMax(
   return [Math.min(...nums), Math.max(...nums)];
 }
 
+const clampQuantity = (qty: number) => Math.min(5, Math.max(1, qty || 1));
+
+const TableSkeleton = () => (
+  <div className="rounded-md border overflow-hidden">
+    {/* Header skeleton */}
+    <div className="flex border-b">
+      <div className="font-medium p-2 flex-1 min-w-[200px]">
+        <Skeleton className="h-4 w-20" />
+      </div>
+      <div className="text-right font-semibold p-2 w-[120px]">
+        <Skeleton className="h-4 w-16 ml-auto" />
+      </div>
+      <div className="text-muted-foreground text-right p-2 w-[120px]">
+        <Skeleton className="h-4 w-16 ml-auto" />
+      </div>
+      <div className="text-muted-foreground text-right p-2 w-[120px]">
+        <Skeleton className="h-4 w-16 ml-auto" />
+      </div>
+      <div className="text-muted-foreground text-right p-2 w-[120px]">
+        <Skeleton className="h-4 w-16 ml-auto" />
+      </div>
+    </div>
+
+    {/* Row skeletons */}
+    {Array.from({ length: 10 }).map((_, index) => (
+      <div className="flex border-b transition-colors" key={index}>
+        <div className="px-4 py-2 font-medium flex-1 min-w-[200px]">
+          <Skeleton className="h-4 w-[180px]" />
+        </div>
+        <div className="px-4 py-2 text-right font-semibold w-[120px]">
+          <Skeleton className="h-4 w-[60px] ml-auto" />
+        </div>
+        <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
+          <Skeleton className="h-4 w-[60px] ml-auto" />
+        </div>
+        <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
+          <Skeleton className="h-4 w-[60px] ml-auto" />
+        </div>
+        <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
+          <Skeleton className="h-4 w-[60px] ml-auto" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export default function ItemsTablePage() {
   // Add isPending state for transitions
   const [isPending, startTransition] = useTransition();
@@ -116,14 +162,18 @@ export default function ItemsTablePage() {
   // Weapon combobox removed; use main table search to find base prices.
   const [selectedQty, setSelectedQty] = useState<number>(1);
   const [singleBasePrice, setSingleBasePrice] = useState<number>(0);
-
-  useEffect(() => {
-    // If a single base price is entered, auto-compute the weapon sum using quantity
-    if (singleBasePrice > 0) {
-      setTesterWeaponSum(singleBasePrice * Math.min(5, Math.max(1, selectedQty || 1)));
+  const updateTesterComputedSum = useCallback(
+    (basePrice: number, qty: number) => {
+      if (basePrice <= 0) {
+        setTesterWeaponSum(0);
+        return;
+      }
+      const normalizedQty = clampQuantity(qty);
+      setTesterWeaponSum(basePrice * normalizedQty);
       setTesterOtherSum(0);
-    }
-  }, [singleBasePrice, selectedQty]);
+    },
+    []
+  );
 
   // Initialize favorites functionality
   const {
@@ -146,7 +196,6 @@ export default function ItemsTablePage() {
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
     fetchMinimalTarkovData().then(
       (data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }) => {
         if (isMounted) {
@@ -516,51 +565,6 @@ export default function ItemsTablePage() {
     selectedCategory,
   ]); // Update dependencies
 
-  // Create a skeleton table component for loading state
-  const TableSkeleton = () => (
-    <div className="rounded-md border overflow-hidden">
-      {/* Header skeleton */}
-      <div className="flex border-b">
-        <div className="font-medium p-2 flex-1 min-w-[200px]">
-          <Skeleton className="h-4 w-20" />
-        </div>
-        <div className="text-right font-semibold p-2 w-[120px]">
-          <Skeleton className="h-4 w-16 ml-auto" />
-        </div>
-        <div className="text-muted-foreground text-right p-2 w-[120px]">
-          <Skeleton className="h-4 w-16 ml-auto" />
-        </div>
-        <div className="text-muted-foreground text-right p-2 w-[120px]">
-          <Skeleton className="h-4 w-16 ml-auto" />
-        </div>
-        <div className="text-muted-foreground text-right p-2 w-[120px]">
-          <Skeleton className="h-4 w-16 ml-auto" />
-        </div>
-      </div>
-
-      {/* Row skeletons */}
-      {Array.from({ length: 10 }).map((_, index) => (
-        <div className="flex border-b transition-colors" key={index}>
-          <div className="px-4 py-2 font-medium flex-1 min-w-[200px]">
-            <Skeleton className="h-4 w-[180px]" />
-          </div>
-          <div className="px-4 py-2 text-right font-semibold w-[120px]">
-            <Skeleton className="h-4 w-[60px] ml-auto" />
-          </div>
-          <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
-            <Skeleton className="h-4 w-[60px] ml-auto" />
-          </div>
-          <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
-            <Skeleton className="h-4 w-[60px] ml-auto" />
-          </div>
-          <div className="px-4 py-2 text-muted-foreground text-right w-[120px]">
-            <Skeleton className="h-4 w-[60px] ml-auto" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto -mt-px">
       {/* Header Section */}
@@ -849,16 +853,18 @@ export default function ItemsTablePage() {
                 <label className="text-xs text-muted-foreground">
                   Single weapon base price (RUB)
                 </label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  value={Number.isFinite(singleBasePrice) ? singleBasePrice : 0}
-                  onChange={(e) =>
-                    setSingleBasePrice(Number(e.target.value) || 0)
-                  }
-                  placeholder="e.g. 40,000"
-                />
-              </div>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    value={Number.isFinite(singleBasePrice) ? singleBasePrice : 0}
+                    onChange={(e) => {
+                      const next = Number(e.target.value) || 0;
+                      setSingleBasePrice(next);
+                      updateTesterComputedSum(next, selectedQty);
+                    }}
+                    placeholder="e.g. 40,000"
+                  />
+                </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">
                   Quantity (1–5)
@@ -871,7 +877,10 @@ export default function ItemsTablePage() {
                       size="sm"
                       variant={selectedQty === q ? "default" : "outline"}
                       className="h-9 w-9 p-0"
-                      onClick={() => setSelectedQty(q)}
+                      onClick={() => {
+                        setSelectedQty(q);
+                        updateTesterComputedSum(singleBasePrice, q);
+                      }}
                     >
                       {q}
                     </Button>

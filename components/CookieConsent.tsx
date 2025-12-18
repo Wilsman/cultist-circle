@@ -45,24 +45,31 @@ export default function CookieConsent() {
   const [preferences, setPreferences] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    const consent = localStorage.getItem('cookieConsent')
-    if (!consent) {
-      setIsVisible(true)
-      // Initialize preferences with default values
-      const initialPreferences = cookieTypes.reduce((acc, type) => ({
-        ...acc,
-        [type.id]: type.defaultValue ?? false
-      }), {})
-      setPreferences(initialPreferences)
-    } else {
-      setIsVisible(false)
-      setHasConsent(true)
-      try {
-        const savedPreferences = JSON.parse(consent)
-        setPreferences(savedPreferences)
-      } catch (e) {
-        console.error('Error parsing cookie preferences:', e)
+    let cancelled = false
+    Promise.resolve().then(() => {
+      if (cancelled) return
+      const consent = localStorage.getItem('cookieConsent')
+      if (!consent) {
+        setIsVisible(true)
+        // Initialize preferences with default values
+        const initialPreferences = cookieTypes.reduce((acc, type) => ({
+          ...acc,
+          [type.id]: type.defaultValue ?? false
+        }), {})
+        setPreferences(initialPreferences)
+      } else {
+        setIsVisible(false)
+        setHasConsent(true)
+        try {
+          const savedPreferences = JSON.parse(consent)
+          setPreferences(savedPreferences)
+        } catch (e) {
+          console.error('Error parsing cookie preferences:', e)
+        }
       }
+    })
+    return () => {
+      cancelled = true
     }
   }, [setHasConsent])
 

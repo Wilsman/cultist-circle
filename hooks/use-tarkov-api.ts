@@ -33,6 +33,11 @@ const minimalDataCacheByLang: Map<
   { data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }; time: number }
 > = new Map();
 
+export function resetTarkovApiCachesForTests() {
+  combinedDataCacheByLang.clear();
+  minimalDataCacheByLang.clear();
+}
+
 /**
  * Fetches all Tarkov item data from the tarkov.dev GraphQL API for both game modes
  * @returns Promise with combined data for both PVP and PVE modes

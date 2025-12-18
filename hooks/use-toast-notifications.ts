@@ -53,33 +53,40 @@ export function useToastNotifications() {
 
   // Load from localStorage on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Check if we're on a new version - reset shown status if version changed
-        if (parsed.currentVersion !== CURRENT_APP_VERSION) {
-          setState({
-            shownNotifications: new Set(),
-            dismissedNotifications: parsed.dismissedNotifications || new Set(),
-            currentVersion: CURRENT_APP_VERSION,
-          });
-        } else {
-          setState({
-            shownNotifications: new Set(parsed.shownNotifications || []),
-            dismissedNotifications: new Set(
-              parsed.dismissedNotifications || []
-            ),
-            currentVersion: CURRENT_APP_VERSION,
-          });
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      try {
+        const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // Check if we're on a new version - reset shown status if version changed
+          if (parsed.currentVersion !== CURRENT_APP_VERSION) {
+            setState({
+              shownNotifications: new Set(),
+              dismissedNotifications: parsed.dismissedNotifications || new Set(),
+              currentVersion: CURRENT_APP_VERSION,
+            });
+          } else {
+            setState({
+              shownNotifications: new Set(parsed.shownNotifications || []),
+              dismissedNotifications: new Set(
+                parsed.dismissedNotifications || []
+              ),
+              currentVersion: CURRENT_APP_VERSION,
+            });
+          }
         }
+      } catch (error) {
+        console.error(
+          "Failed to load toast notifications from localStorage:",
+          error
+        );
       }
-    } catch (error) {
-      console.error(
-        "Failed to load toast notifications from localStorage:",
-        error
-      );
-    }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Save to localStorage whenever state changes

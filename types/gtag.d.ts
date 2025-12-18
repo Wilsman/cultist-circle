@@ -9,5 +9,5 @@ interface Window {
       ad_personalization?: 'granted' | 'denied'
     }
   ) => void
-  dataLayer?: any[]
+  dataLayer?: Array<Record<string, unknown>>
 }

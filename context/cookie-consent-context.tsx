@@ -18,9 +18,16 @@ export function CookieConsentProvider({
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const consent = localStorage.getItem("cookieConsent")
-    setHasConsent(consent === "true")
-    setIsLoading(false)
+    let cancelled = false
+    Promise.resolve().then(() => {
+      if (cancelled) return
+      const consent = localStorage.getItem("cookieConsent")
+      setHasConsent(consent === "true")
+      setIsLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   if (isLoading) {

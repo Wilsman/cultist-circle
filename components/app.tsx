@@ -53,7 +53,7 @@ import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
 import { useItemsData } from "@/hooks/use-items-data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { toast as sonnerToast, Toaster } from "sonner";
+import { toast as sonnerToast } from "sonner";
 import NextItemHints from "@/components/next-item-hints";
 // ShareCardButton and ShareCodeDialog merged into ShareButton
 import { CURRENT_VERSION } from "@/config/changelog";
@@ -459,7 +459,7 @@ function AppContent() {
 
     // Mark initialization complete
     didInitStateRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [rawItemsData]);
 
   // Auto-trigger notifications after onboarding completion and data load
@@ -1107,14 +1107,17 @@ function AppContent() {
     [selectedItems]
   );
 
-  const updateSelectedItem = (
-    item: SimplifiedItem | null,
-    index: number,
-    overriddenPrice?: number | null
-  ) => {
-    setHasAutoSelected(false); // Reset Auto Select when user changes selection
-    handleItemSelect(index, item, overriddenPrice);
-  };
+  const updateSelectedItem = useCallback(
+    (
+      item: SimplifiedItem | null,
+      index: number,
+      overriddenPrice?: number | null
+    ) => {
+      setHasAutoSelected(false); // Reset Auto Select when user changes selection
+      handleItemSelect(index, item, overriddenPrice);
+    },
+    [handleItemSelect]
+  );
 
   // Handler to pin/unpin items
   const handlePinItem = (index: number) => {

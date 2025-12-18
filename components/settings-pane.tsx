@@ -182,7 +182,7 @@ export default function SettingsPane({
           sonnerToast("Success", {
             description: "Data imported successfully",
           });
-        } catch (error) {
+        } catch {
           sonnerToast("Error", {
             description: "Failed to import data. Please check the file format.",
           });
