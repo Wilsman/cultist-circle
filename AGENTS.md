@@ -1,4 +1,4 @@
-# Repository Guidelines
+ï»¿# Repository Guidelines
 
 ## Project Structure & Module Organization
 - `app/` houses Next.js route handlers, layouts, and server actions; treat each route folder as an independent feature module with colocated loading/error UI.
@@ -6,11 +6,11 @@
 - Static assets stay under `public/`, and automated verification resides in `tests/` (mirroring the source folder names for clarity).
 
 ## Build, Test, and Development Commands
-- `bun run dev` – starts the local Next dev server with hot reloading.
-- `bun run build` – creates the production bundle; run before pushing sizable changes.
-- `bun run start` – serves the compiled build to smoke-test deployments.
-- `bun run test` / `bun run test:watch` – executes the Vitest suite once or in watch mode.
-- `bun run lint` – enforces ESLint rules aligned with `eslint-config-next` and Prettier.
+- `bun run dev` â€“ starts the local Next dev server with hot reloading.
+- `bun run build` â€“ creates the production bundle; run before pushing sizable changes.
+- `bun run start` â€“ serves the compiled build to smoke-test deployments.
+- `bun run test` / `bun run test:watch` â€“ executes the Vitest suite once or in watch mode.
+- `bun run lint` â€“ enforces ESLint rules aligned with `eslint-config-next` and Prettier.
 
 ## Coding Style & Naming Conventions
 - Use TypeScript, functional React components, and 2-space indentation; favor hooks over class lifecycles.
@@ -20,7 +20,7 @@
 
 ## Testing Guidelines
 - Tests live in `tests/<area>` and mirror the module they cover; name suites after behavior (`item-selector.exclusions.test.tsx`).
-- Use Vitest + Testing Library for components and `vi.mock` for Supabase/PostHog calls.
+- Use Vitest + Testing Library for components and `vi.mock` for Supabase calls.
 - Cover critical state transitions, API boundaries, and edge-case rendering states; add regression tests for reported issues before fixing them.
 
 ## Commit & Pull Request Guidelines
@@ -31,3 +31,4 @@
 ## Security & Configuration Tips
 - Load secrets via `.env.local` and never commit them; document required keys (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, etc.) in Notion or the issue thread.
 - Be mindful of user data in analytics hooks; scrub or mock identifiers inside tests and preview builds.
+

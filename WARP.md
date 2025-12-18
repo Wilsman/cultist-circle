@@ -49,7 +49,7 @@ npm run lint
 - **UI Components**: Shadcn UI + Radix UI primitives
 - **State Management**: React Context + custom hooks, LocalStorage persistence
 - **Data Fetching**: SWR with custom persistence middleware
-- **Analytics**: PostHog, Google Analytics
+- **Analytics**: Google Analytics
 - **Testing**: Vitest + Testing Library
 
 ### Project Structure
@@ -166,8 +166,6 @@ Required environment variables (see `.env.example`):
 - `SUPABASE_URL` - Supabase project URL
 - `SUPABASE_ANON_KEY` - Supabase anonymous key
 - `USE_LOCAL_DATA` - Use local data instead of API (development)
-- `NEXT_PUBLIC_POSTHOG_KEY` - PostHog analytics key
-- `NEXT_PUBLIC_POSTHOG_HOST` - PostHog host URL
 
 ## Development Guidelines
 
