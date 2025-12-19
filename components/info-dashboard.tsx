@@ -22,7 +22,6 @@ interface InfoDashboardProps {
 export function InfoDashboard({
   selectedItems = [],
   onUseThis,
-  availableItems = [],
 }: InfoDashboardProps) {
   const dynamicNotifications = useDynamicNotifications(selectedItems);
   const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications];

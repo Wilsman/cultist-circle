@@ -3,8 +3,6 @@
 import { useState, useMemo } from "react";
 import {
   Search,
-  AlertTriangle,
-  Package,
   Clock,
   Ban,
   HelpCircle,
@@ -41,7 +39,10 @@ function FAQItem({ id, question, answer, icon }: FAQItemProps) {
       typeof window !== "undefined" &&
       window.location.hash === `#${id}`
     ) {
-      setIsOpen(true);
+      // Use setTimeout to avoid "synchronous setState within effect" warning
+      // This defers the update to the next tick
+      const timer = setTimeout(() => setIsOpen(true), 0);
+      return () => clearTimeout(timer);
     }
   }, [id]);
 
@@ -391,11 +392,11 @@ export default function FAQPage() {
                 answer={
                   <div className="space-y-2">
                     <p>
-                      The Cultist Circle uses an internal "base value" for
-                      items, which is different from flea or trader prices.
+                      The Cultist Circle uses an internal &quot;base value&quot;
+                      for items, which is different from flea or trader prices.
                     </p>
                     <div className="bg-gray-800/50 p-4 rounded-xl text-center font-mono border border-white/5">
-                      Base Value = Vendor Sell Price ÷ Vendor's Multiplier
+                      Base Value = Vendor Sell Price ÷ Vendor&apos;s Multiplier
                     </div>
                     <p className="text-xs text-gray-500">
                       Example: A Graphics Card sells to Therapist for 124,740₽.
@@ -425,10 +426,10 @@ export default function FAQPage() {
                       reaching the 400k threshold.
                     </p>
                     <p>
-                      However, many weapon "mods" or attachments have low base
-                      values, and the calculation for full weapon builds can be
-                      uncertain due to durability and the number of attached
-                      parts.
+                      However, many weapon &quot;mods&quot; or attachments have
+                      low base values, and the calculation for full weapon
+                      builds can be uncertain due to durability and the number
+                      of attached parts.
                     </p>
                   </div>
                 }
@@ -442,8 +443,8 @@ export default function FAQPage() {
                     can toggle which categories of items you are willing to
                     sacrifice. If a category is unchecked, any items belonging
                     to it will be hidden from the calculator and auto-select
-                    feature to prevent unintentional sacrifices of gear you'd
-                    rather keep.
+                    feature to prevent unintentional sacrifices of gear you
+                    &apos;d rather keep.
                   </p>
                 }
               />
@@ -483,7 +484,7 @@ export default function FAQPage() {
                       <span className="font-bold">
                         Settings &gt; Categories
                       </span>{" "}
-                      if you have spares you're willing to sacrifice.
+                      if you have spares you&apos;re willing to sacrifice.
                     </p>
                   </div>
                 }
@@ -498,12 +499,12 @@ export default function FAQPage() {
                       <span className="text-blue-400 font-bold">
                         never be returned
                       </span>{" "}
-                      as a reward from a 6h ritual. This prevents "infinite
-                      loops" of extremely rare items.
+                      as a reward from a 6h ritual. This prevents &quot;infinite
+                      loops&quot; of extremely rare items.
                     </p>
                     <p className="bg-white/5 p-3 rounded-lg italic text-xs">
-                      Note: "High Value" in Tarkov is a broad term. It can refer
-                      to rare items like a{" "}
+                      Note: &quot;High Value&quot; in Tarkov is a broad term. It
+                      can refer to rare items like a{" "}
                       <span className="text-yellow-400">LedX</span>.
                     </p>
                   </div>
@@ -522,7 +523,7 @@ export default function FAQPage() {
                       internal base values to hit the 400k threshold cheaply.
                     </p>
                     <p>
-                      You'll find them in the{" "}
+                      You&apos;ll find them in the{" "}
                       <span className="font-semibold">Hot Sacrifices</span>{" "}
                       panel on the main calculator page. Click{" "}
                       <span className="text-slate-200">Use</span> to auto-fill
@@ -697,7 +698,7 @@ export default function FAQPage() {
                   Note:
                 </span>
                 These items can still be received as rewards from 14h rituals,
-                but never from the 6h "Quest/Hideout" ritual.
+                but never from the 6h &quot;Quest/Hideout&quot; ritual.
               </div>
             </CardContent>
           </Card>
