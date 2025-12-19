@@ -454,9 +454,7 @@ export default function FAQPage() {
                   <p>
                     Some items are hard-coded as{" "}
                     <span className="text-red-400">Incompatible</span> (see the
-                    Incompatible Items tab). These include special containers,
-                    certain ammunition, and unique items that the game mechanics
-                    simply don't allow to be sacrificed.
+                    Incompatible Items tab).
                   </p>
                 }
               />
