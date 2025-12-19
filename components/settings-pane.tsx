@@ -4,7 +4,6 @@ import {
   LayoutGrid,
   RotateCcw,
   Search,
-  Filter,
   Download,
   Upload,
   Trash2,
@@ -12,6 +11,7 @@ import {
   Archive,
   Database,
   ChevronRight,
+  ChevronDown,
   Info,
   HelpCircle,
   Settings as SettingsIcon,
@@ -66,6 +66,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { CURRENT_VERSION } from "@/config/changelog";
 
 interface SettingsPaneProps {
@@ -187,6 +193,18 @@ export default function SettingsPane({
       : [...excludedCategories, categoryId];
 
     onCategoryChange(updatedCategories);
+  };
+
+  const handleTickAll = () => {
+    onCategoryChange(allCategories.map((c) => c.id));
+  };
+
+  const handleUntickAll = () => {
+    onCategoryChange([]);
+  };
+
+  const handleResetCategories = () => {
+    onCategoryChange([...DEFAULT_EXCLUDED_CATEGORY_IDS]);
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -688,7 +706,7 @@ export default function SettingsPane({
 
                 {activeTab === "categories" && (
                   <div className="space-y-6">
-                    <div className="flex items-center justify-between gap-4 bg-white/5 p-5 rounded-3xl border border-white/5">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white/5 p-5 rounded-3xl border border-white/5">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold text-lg">
@@ -709,38 +727,75 @@ export default function SettingsPane({
                           items lists.
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onCategoryChange([])}
-                          className="h-8 hover:bg-emerald-400/10 hover:text-emerald-400 text-xs rounded-xl"
-                        >
-                          <Check className="h-3.5 w-3.5 mr-2 text-emerald-400" />
-                          Enable All
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            onCategoryChange(allCategories.map((c) => c.id))
-                          }
-                          className="h-8 hover:bg-red-400/10 hover:text-red-400 text-xs rounded-xl"
-                        >
-                          <Ban className="h-3.5 w-3.5 mr-2 text-red-400" />
-                          Disable All
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            onCategoryChange([...DEFAULT_EXCLUDED_CATEGORY_IDS])
-                          }
-                          className="h-8 hover:bg-white/10 text-xs rounded-xl"
-                        >
-                          <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
-                          Reset
-                        </Button>
+                      <div className="w-full space-y-2 md:w-auto md:space-y-0">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="md:hidden h-10 w-full justify-between rounded-2xl border border-white/10 bg-white/5 text-sm text-gray-200 hover:bg-white/10"
+                            >
+                              Quick Actions
+                              <ChevronDown className="h-4 w-4 opacity-70" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-48 rounded-2xl border border-white/10 bg-[#0f131a]/95 p-1 text-gray-200 shadow-2xl backdrop-blur"
+                          >
+                            <DropdownMenuItem
+                              className="flex items-center gap-2 text-sm"
+                              onSelect={handleTickAll}
+                            >
+                              <Check className="h-3.5 w-3.5 text-emerald-400" />
+                              Tick All
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="flex items-center gap-2 text-sm"
+                              onSelect={handleUntickAll}
+                            >
+                              <Ban className="h-3.5 w-3.5 text-red-400" />
+                              Untick All
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="flex items-center gap-2 text-sm"
+                              onSelect={handleResetCategories}
+                            >
+                              <RotateCcw className="h-3.5 w-3.5 text-yellow-400" />
+                              Reset Defaults
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <div className="hidden md:flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleTickAll}
+                            className="h-8 hover:bg-emerald-400/10 hover:text-emerald-400 text-xs rounded-xl"
+                          >
+                            <Check className="h-3.5 w-3.5 mr-2 text-emerald-400" />
+                            Tick All
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleUntickAll}
+                            className="h-8 hover:bg-red-400/10 hover:text-red-400 text-xs rounded-xl"
+                          >
+                            <Ban className="h-3.5 w-3.5 mr-2 text-red-400" />
+                            Untick All
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleResetCategories}
+                            className="h-8 hover:bg-white/10 text-xs rounded-xl"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
+                            Reset
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
