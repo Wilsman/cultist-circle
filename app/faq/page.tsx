@@ -473,18 +473,11 @@ export default function FAQPage() {
                     <ul className="list-disc list-inside space-y-1">
                       <li>
                         <span className="font-semibold text-gray-200">
-                          Value Uncertainty:
+                          Base Value Uncertainty:
                         </span>{" "}
                         Weapon base values are complex and can vary based on
                         durability and the specific combination of attached
                         parts/mods.
-                      </li>
-                      <li>
-                        <span className="font-semibold text-gray-200">
-                          Protection:
-                        </span>{" "}
-                        It prevents the calculator from accidentally suggesting
-                        you sacrifice primary gear you want to keep.
                       </li>
                     </ul>
                     <p>
