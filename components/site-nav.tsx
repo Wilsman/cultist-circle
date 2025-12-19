@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Table, BookOpen, HelpCircle, Settings, Calculator } from "lucide-react";
-import { InstructionsDialog } from "@/components/InstructionsDialog";
+import {
+  Table,
+  BookOpen,
+  HelpCircle,
+  Settings,
+  Calculator,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function SiteNav() {
@@ -40,23 +45,29 @@ export function SiteNav() {
     window.addEventListener("orientationchange", () => setHideOnMobile(false));
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("orientationchange", () => setHideOnMobile(false));
+      window.removeEventListener("orientationchange", () =>
+        setHideOnMobile(false)
+      );
     };
   }, []);
 
   return (
     <>
       {/* Top nav (all screens, hides on scroll on mobile) */}
-      <nav className={`sticky top-0 z-30 backdrop-blur bg-gray-900/70 border-b border-gray-800 transition-transform duration-200 ${hideOnMobile ? '-translate-y-full sm:translate-y-0' : 'translate-y-0'}`}>
+      <nav
+        className={`sticky top-0 z-30 backdrop-blur bg-gray-900/70 border-b border-gray-800 transition-transform duration-200 ${
+          hideOnMobile ? "-translate-y-full sm:translate-y-0" : "translate-y-0"
+        }`}
+      >
         <div className="mx-auto max-w-3xl w-full px-3 py-2 flex items-center justify-between gap-2">
-          {/* Left: Help */}
+          {/* Left: Help & FAQ */}
           <div className="flex items-center gap-2 w-[44px] md:w-[128px]">
-            <InstructionsDialog>
+            <Link href="/faq">
               <Button variant="ghost" size="sm" className="gap-2">
                 <HelpCircle className="h-4 w-4" />
-                <span className="hidden md:inline">Help</span>
+                <span className="hidden md:inline">Help & FAQ</span>
               </Button>
-            </InstructionsDialog>
+            </Link>
           </div>
 
           {/* Center: primary links */}
@@ -64,7 +75,9 @@ export function SiteNav() {
             <Link
               href="/"
               aria-label="Calculator"
-              className={`${linkBase} ${pathname === "/" ? active : inactive} px-2 md:px-3`}
+              className={`${linkBase} ${
+                pathname === "/" ? active : inactive
+              } px-2 md:px-3`}
               aria-current={pathname === "/" ? "page" : undefined}
             >
               <Calculator className="h-4 w-4" />
@@ -73,8 +86,12 @@ export function SiteNav() {
             <Link
               href="/recipes"
               aria-label="Recipes"
-              className={`${linkBase} ${pathname?.startsWith("/recipes") ? active : inactive} px-2 md:px-3`}
-              aria-current={pathname?.startsWith("/recipes") ? "page" : undefined}
+              className={`${linkBase} ${
+                pathname?.startsWith("/recipes") ? active : inactive
+              } px-2 md:px-3`}
+              aria-current={
+                pathname?.startsWith("/recipes") ? "page" : undefined
+              }
             >
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Recipes</span>
@@ -82,8 +99,12 @@ export function SiteNav() {
             <Link
               href="/base-values"
               aria-label="Base Values"
-              className={`${linkBase} ${pathname?.startsWith("/base-values") ? active : inactive} px-2 md:px-3`}
-              aria-current={pathname?.startsWith("/base-values") ? "page" : undefined}
+              className={`${linkBase} ${
+                pathname?.startsWith("/base-values") ? active : inactive
+              } px-2 md:px-3`}
+              aria-current={
+                pathname?.startsWith("/base-values") ? "page" : undefined
+              }
             >
               <Table className="h-4 w-4" />
               <span className="hidden sm:inline">Base Values</span>

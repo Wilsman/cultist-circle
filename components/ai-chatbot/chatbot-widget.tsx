@@ -18,7 +18,7 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { cn } from "@/lib/utils";
 import type { ChatStatus } from "ai";
-import { InstructionsDialog } from "@/components/InstructionsDialog";
+import Link from "next/link";
 import { Suggestions, Suggestion } from "@/components/ai-elements/suggestion";
 
 /**
@@ -79,7 +79,8 @@ const ANSWERS: Array<{ test: (q: string) => boolean; answer: string }> = [
       "200-350k is guaranteed 12h(normal-item). 350–399k will give 14h(high-value).",
   },
   {
-    test: (q) => includesAny(q, ["threshold", "thresholds", "explain thresholds"]),
+    test: (q) =>
+      includesAny(q, ["threshold", "thresholds", "explain thresholds"]),
     answer:
       "Thresholds: <350k → 12h(normal-item). 350–399k → 14h(high-value). ≥400k → 25% 6h(quest/hideout-item), 75% 14h(high-value). Over 400k doesn't improve 6h chance.",
   },
@@ -100,8 +101,10 @@ const ANSWERS: Array<{ test: (q: string) => boolean; answer: string }> = [
 
   // Weapons & durability
   {
-    test: (q) => includesAny(q, ["weapon", "weapons", "gun"]) &&
-      (includesAny(q, ["investigating"]) || (q.includes("higher") && q.includes("base"))),
+    test: (q) =>
+      includesAny(q, ["weapon", "weapons", "gun"]) &&
+      (includesAny(q, ["investigating"]) ||
+        (q.includes("higher") && q.includes("base"))),
     answer:
       "We're investigating why some weapons return higher base values in the circle; weapon-specific values may apply.",
   },
@@ -112,7 +115,8 @@ const ANSWERS: Array<{ test: (q: string) => boolean; answer: string }> = [
   },
   {
     test: (q) => q.includes("durability"),
-    answer: "Item durability can influence effective circle value, especially for weapons.",
+    answer:
+      "Item durability can influence effective circle value, especially for weapons.",
   },
   {
     test: (q) => includesAny(q, ["mp5sd", "slim diary", "diary"]),
@@ -127,7 +131,8 @@ const ANSWERS: Array<{ test: (q: string) => boolean; answer: string }> = [
   {
     test: (q) =>
       includesAny(q, ["5x mp5", "5 x mp5", "five mp5"]) ||
-      (q.includes("mp5") && includesAny(q, ["level 1", "lvl 1", "peacekeeper"])),
+      (q.includes("mp5") &&
+        includesAny(q, ["level 1", "lvl 1", "peacekeeper"])),
     answer:
       "Reported combo: 5× MP5 (Peacekeeper L1) can trigger 6/14h due to special weapon circle values.",
   },
@@ -166,46 +171,91 @@ const ANSWERS: Array<{ test: (q: string) => boolean; answer: string }> = [
   },
 
   // Features from Instructions
-  { test: (q) => includesAny(q, ["auto select", "autoselect"]), answer: "Auto Select finds the most cost-effective combo to hit your target (e.g., ≥400k) automatically." },
-  { test: (q) => q.includes("pin"), answer: "Pin locks chosen items so Auto Select must include them in the final combination." },
-  { test: (q) => includesAny(q, ["override", "override price"]), answer: "Override lets you set custom flea prices when market differs from API data." },
-  { test: (q) => q.includes("share"), answer: "Share creates a compact code to save or send your selection to others." },
-  { test: (q) => includesAny(q, ["red price", "unstable"]), answer: "Red price text = unstable flea price (low offer count at capture)." },
-  { test: (q) => includesAny(q, ["yellow price", "manual"]), answer: "Yellow price text = price manually overridden by you." },
-  { test: (q) => includesAny(q, ["exclude", "categories"]), answer: "Exclude categories you don't want to sacrifice to narrow results." },
-  { test: (q) => q.includes("sort"), answer: "Sort items by most recently updated or best value for rubles." },
+  {
+    test: (q) => includesAny(q, ["auto select", "autoselect"]),
+    answer:
+      "Auto Select finds the most cost-effective combo to hit your target (e.g., ≥400k) automatically.",
+  },
+  {
+    test: (q) => q.includes("pin"),
+    answer:
+      "Pin locks chosen items so Auto Select must include them in the final combination.",
+  },
+  {
+    test: (q) => includesAny(q, ["override", "override price"]),
+    answer:
+      "Override lets you set custom flea prices when market differs from API data.",
+  },
+  {
+    test: (q) => q.includes("share"),
+    answer:
+      "Share creates a compact code to save or send your selection to others.",
+  },
+  {
+    test: (q) => includesAny(q, ["red price", "unstable"]),
+    answer:
+      "Red price text = unstable flea price (low offer count at capture).",
+  },
+  {
+    test: (q) => includesAny(q, ["yellow price", "manual"]),
+    answer: "Yellow price text = price manually overridden by you.",
+  },
+  {
+    test: (q) => includesAny(q, ["exclude", "categories"]),
+    answer: "Exclude categories you don't want to sacrifice to narrow results.",
+  },
+  {
+    test: (q) => q.includes("sort"),
+    answer: "Sort items by most recently updated or best value for rubles.",
+  },
 
   // PVP/PVE & trader pricing
   {
-    test: (q) => includesAny(q, ["pvp flea", "flea disabled", "flea off"]) || (q.includes("pvp") && q.includes("flea")),
+    test: (q) =>
+      includesAny(q, ["pvp flea", "flea disabled", "flea off"]) ||
+      (q.includes("pvp") && q.includes("flea")),
     answer:
       "PVP: Flea is disabled. Use Settings → Price Mode: Trader, then set Trader Levels to calculate trader-only prices.",
   },
   {
-    test: (q) => includesAny(q, ["flea prices", "flea prices wrong", "flea wrong"]),
-    answer:
-      "Flea prices are the best and latest we can get from the API.",
+    test: (q) =>
+      includesAny(q, ["flea prices", "flea prices wrong", "flea wrong"]),
+    answer: "Flea prices are the best and latest we can get from the API.",
   },
   {
-    test: (q) => includesAny(q, ["trader price", "price mode", "trader levels"]),
+    test: (q) =>
+      includesAny(q, ["trader price", "price mode", "trader levels"]),
     answer:
       "Switch Price Mode to Trader in Settings, then pick your Trader Levels (LL1–LL4) to use trader-only prices.",
   },
   {
-    test: (q) => includesAny(q, ["hardcore", "l1 traders", "ll1"]) || (q.includes("level 1") && q.includes("trader")),
+    test: (q) =>
+      includesAny(q, ["hardcore", "l1 traders", "ll1"]) ||
+      (q.includes("level 1") && q.includes("trader")),
     answer:
       "Hardcore PVP tip (LL1): 5× MP5 from Peacekeeper ≈ 400k+. Cost: $478 (~63,547₽) × 5 = $2,390 (~317,735₽).",
   },
   {
-    test: (q) => includesAny(q, ["limitation", "wip", "work in progress", "quest locked"]),
+    test: (q) =>
+      includesAny(q, ["limitation", "wip", "work in progress", "quest locked"]),
     answer:
       "Trader pricing is work-in-progress: quest-locked items are currently included.",
   },
-  { test: (q) => includesAny(q, ["mode", "pve", "pvp"]), answer: "Toggle PVE/PVP to match the correct flea market for pricing/search." },
-  { test: (q) => includesAny(q, ["tips", "strategy", "optimal"]), answer: "Aim slightly over 400k, use Auto Select, pin items you own, and ensure relevant quests are active for quest rewards." },
   {
-    test: (q) => includesAny(q, ["discord", "discord server", "discord community"]),
-    answer: "Join our Discord server for support, updates, and community discussion. https://discord.com/invite/3dFmr5qaJK",
+    test: (q) => includesAny(q, ["mode", "pve", "pvp"]),
+    answer:
+      "Toggle PVE/PVP to match the correct flea market for pricing/search.",
+  },
+  {
+    test: (q) => includesAny(q, ["tips", "strategy", "optimal"]),
+    answer:
+      "Aim slightly over 400k, use Auto Select, pin items you own, and ensure relevant quests are active for quest rewards.",
+  },
+  {
+    test: (q) =>
+      includesAny(q, ["discord", "discord server", "discord community"]),
+    answer:
+      "Join our Discord server for support, updates, and community discussion. https://discord.com/invite/3dFmr5qaJK",
   },
 
   // Calculator usage
@@ -220,9 +270,7 @@ function getAnswer(question: string): string {
   const q = normalize(question);
   const rule = ANSWERS.find(({ test }) => test(q));
   if (rule) return rule.answer;
-  return (
-    "Ask about thresholds (350k/400k), 6h/12h/14h chances, base value math (vendor ÷ trader multiplier), PVE/PVP flea, Auto Select/Pin/Override/Share/Refresh, price indicators, excluding categories, sorting, tips, or Discord."
-  );
+  return "Ask about thresholds (350k/400k), 6h/12h/14h chances, base value math (vendor ÷ trader multiplier), PVE/PVP flea, Auto Select/Pin/Override/Share/Refresh, price indicators, excluding categories, sorting, tips, or Discord.";
 }
 
 // ------------------------------
@@ -350,9 +398,15 @@ export function ChatbotWidget({ className }: { className?: string }) {
             </button>
           </div>
 
-          {/* Quick help button using the existing Instructions dialog */}
+          {/* Link to full Help & FAQ */}
           <div className="px-3 pb-2">
-            <InstructionsDialog className="h-7 rounded-full px-2 text-xs text-slate-300 hover:text-slate-100 hover:bg-slate-800" />
+            <Link
+              href="/faq"
+              target="_blank"
+              className="inline-flex h-7 items-center justify-center rounded-full px-3 text-xs font-medium text-slate-300 bg-slate-800/50 hover:bg-slate-800 hover:text-slate-100 transition-colors"
+            >
+              View Full Help & FAQ
+            </Link>
           </div>
 
           {/* Messages */}
@@ -381,7 +435,10 @@ export function ChatbotWidget({ className }: { className?: string }) {
           <div className="border-t border-slate-800/50 p-2">
             <PromptInput onSubmit={handleSubmit}>
               <div className="relative">
-                <PromptInputTextarea placeholder="Ask a quick question…" className="pr-12" />
+                <PromptInputTextarea
+                  placeholder="Ask a quick question…"
+                  className="pr-12"
+                />
                 <PromptInputSubmit
                   status={status}
                   className="absolute bottom-2 right-2 h-8 w-8 rounded-full"
@@ -393,7 +450,10 @@ export function ChatbotWidget({ className }: { className?: string }) {
           {/* Suggestions under input */}
           <div className="px-3 pb-3">
             <Suggestions className="gap-1.5">
-              <Suggestion suggestion="What is base value?" onClick={submitQuestion} />
+              <Suggestion
+                suggestion="What is base value?"
+                onClick={submitQuestion}
+              />
               <Suggestion suggestion="Thresholds?" onClick={submitQuestion} />
               <Suggestion suggestion="14h" onClick={submitQuestion} />
               <Suggestion suggestion="6h" onClick={submitQuestion} />

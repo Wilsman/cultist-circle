@@ -13,8 +13,11 @@ import {
   Database,
   ChevronRight,
   Info,
+  HelpCircle,
   Settings as SettingsIcon,
   X,
+  Check,
+  Ban,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,6 +60,7 @@ import {
 import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
 import { useLanguage } from "@/contexts/language-context";
 import { CATEGORY_LEVEL_REQUIREMENTS } from "@/config/flea-level-requirements";
+import Link from "next/link";
 import {
   Popover,
   PopoverContent,
@@ -686,15 +690,46 @@ export default function SettingsPane({
                   <div className="space-y-6">
                     <div className="flex items-center justify-between gap-4 bg-white/5 p-5 rounded-3xl border border-white/5">
                       <div className="space-y-1">
-                        <h4 className="font-semibold text-lg">
-                          Excluded Categories
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-lg">
+                            Excluded Categories
+                          </h4>
+                          <Link href="/faq" target="_blank">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 rounded-full hover:bg-white/10 text-gray-400"
+                            >
+                              <HelpCircle className="h-3.5 w-3.5" />
+                            </Button>
+                          </Link>
+                        </div>
                         <p className="text-sm text-gray-400">
                           Selection will be hidden from the auto-selector &
                           items lists.
                         </p>
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onCategoryChange([])}
+                          className="h-8 hover:bg-emerald-400/10 hover:text-emerald-400 text-xs rounded-xl"
+                        >
+                          <Check className="h-3.5 w-3.5 mr-2 text-emerald-400" />
+                          Enable All
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            onCategoryChange(allCategories.map((c) => c.id))
+                          }
+                          className="h-8 hover:bg-red-400/10 hover:text-red-400 text-xs rounded-xl"
+                        >
+                          <Ban className="h-3.5 w-3.5 mr-2 text-red-400" />
+                          Disable All
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -705,15 +740,6 @@ export default function SettingsPane({
                         >
                           <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
                           Reset
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onCategoryChange([])}
-                          className="h-8 hover:bg-red-400/10 hover:text-red-400 text-xs rounded-xl"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 mr-2 text-red-400" />
-                          Clear
                         </Button>
                       </div>
                     </div>
@@ -763,9 +789,20 @@ export default function SettingsPane({
                   <div className="space-y-8">
                     <div className="flex items-center justify-between p-6 bg-gradient-to-r from-emerald-400/10 to-transparent rounded-3xl border border-emerald-400/10">
                       <div className="space-y-1">
-                        <h4 className="font-semibold text-lg text-emerald-400">
-                          Compatibility Mode
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-lg text-emerald-400">
+                            Compatibility Mode
+                          </h4>
+                          <Link href="/faq" target="_blank">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 rounded-full hover:bg-emerald-400/10 text-emerald-400/60"
+                            >
+                              <HelpCircle className="h-3.5 w-3.5" />
+                            </Button>
+                          </Link>
+                        </div>
                         <p className="text-sm text-gray-400">
                           Exclude items invalid for the cultist circle.
                         </p>
