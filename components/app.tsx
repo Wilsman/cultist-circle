@@ -459,7 +459,6 @@ function AppContent() {
 
     // Mark initialization complete
     didInitStateRef.current = true;
-     
   }, [rawItemsData]);
 
   // Auto-trigger notifications after onboarding completion and data load
@@ -1326,7 +1325,6 @@ function AppContent() {
     setPriceMode,
   ]);
 
-  // Handler for using hot sacrifice combos
   const handleUseHotSacrifice = useCallback(
     async (combo: SacrificeCombo) => {
       const { ingredients } = combo;
@@ -1348,37 +1346,43 @@ function AppContent() {
         )
       );
 
-      // Check if weapons category is excluded and prompt user if needed
+      // Check for filters that might hide weapons
       if (hasWeapons) {
         const weaponCategoryId = "5422acb9af1c889c16000029"; // Weapon category ID
-        if (excludedCategories.has(weaponCategoryId)) {
+        const isWeaponCategoryExcluded =
+          excludedCategories.has(weaponCategoryId);
+
+        // Check if flea level filter hides these items (most weapons are level 20-25)
+        // We'll just check if the filter is on and level is < 25 as a proxy,
+        // or more accurately check if weapons would be hidden.
+        const wouldFleaFilterHideWeapons = useLevelFilter && playerLevel < 25;
+
+        if (isWeaponCategoryExcluded || wouldFleaFilterHideWeapons) {
+          const reason =
+            isWeaponCategoryExcluded && wouldFleaFilterHideWeapons
+              ? "the weapons category and flea market level filters are active"
+              : isWeaponCategoryExcluded
+              ? "the weapons category is excluded"
+              : "the flea market level filter is active";
+
           const confirmed = window.confirm(
-            "This combo contains weapons, but the weapons category is currently excluded. Would you like to temporarily enable the weapons category to use this combo?"
+            `This combo contains weapons, but ${reason}. Would you like to use this combo anyway? (Filters will remain in their normal state)`
           );
 
           if (!confirmed) {
             return; // User cancelled
           }
-
-          // Temporarily enable weapons category
-          const newExcludedCategories = new Set(excludedCategories);
-          newExcludedCategories.delete(weaponCategoryId);
-          setExcludedCategories(newExcludedCategories);
-
-          // Show toast notification
-          sonnerToast.success("Weapons category enabled", {
-            description:
-              "You can now select weapons for this hot sacrifice combo.",
-          });
         }
       }
 
-      // Function to find matching item by name
+      // Function to find matching item by name - ALWAYS use rawItemsData to bypass UI filters
       const findMatchingItem = (
         ingredientName: string
       ): SimplifiedItem | null => {
+        if (!rawItemsData) return null;
+
         // Try exact match first
-        const exactMatch = items.find(
+        const exactMatch = rawItemsData.find(
           (item) =>
             item.name === ingredientName ||
             item.englishName === ingredientName ||
@@ -1389,7 +1393,7 @@ function AppContent() {
         if (exactMatch) return exactMatch;
 
         // Try partial match (contains)
-        const partialMatch = items.find(
+        const partialMatch = rawItemsData.find(
           (item) =>
             item.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
             ingredientName.toLowerCase().includes(item.name.toLowerCase()) ||
@@ -1431,7 +1435,7 @@ function AppContent() {
         } else {
           // Show error toast if item not found
           sonnerToast.error("Item not found", {
-            description: `Could not find "${ingredient.name}" in the available items.`,
+            description: `Could not find "${ingredient.name}" in the available items data.`,
           });
         }
       }
@@ -1446,9 +1450,10 @@ function AppContent() {
       }
     },
     [
-      items,
+      rawItemsData,
       excludedCategories,
-      setExcludedCategories,
+      useLevelFilter,
+      playerLevel,
       setSelectedItems,
       setPinnedItems,
       setOverriddenPrices,
@@ -1767,7 +1772,7 @@ function AppContent() {
                 {/* Controls Section - Clean & Focused */}
                 <div className="space-y-2.5">
                   {/* Primary Controls Row */}
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
                     <ModeThreshold
                       isPVE={isPVE}
                       onModeToggle={handleModeToggle}

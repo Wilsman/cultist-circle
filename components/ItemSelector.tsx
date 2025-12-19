@@ -17,6 +17,7 @@ import {
   Trash2,
   Search,
   ExternalLink,
+  MoreHorizontal,
 } from "lucide-react";
 import Fuse from "fuse.js";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,6 +34,12 @@ import { getRelativeDate, cn } from "@/lib/utils";
 import { toast as sonnerToast } from "sonner";
 
 // Import Dropdown components
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
 // Import react-window for virtualization
@@ -269,9 +276,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
       );
       if (
         matches &&
-        !searchableNames.some((name) =>
-          excludedLookup.has(name.toLowerCase())
-        )
+        !searchableNames.some((name) => excludedLookup.has(name.toLowerCase()))
       ) {
         return item;
       }
@@ -427,11 +432,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         setHighlightedIndex((prev) => {
           if (filteredItems.length === 0) return -1;
           const next =
-            prev < 0
-              ? 0
-              : prev >= filteredItems.length - 1
-              ? 0
-              : prev + 1;
+            prev < 0 ? 0 : prev >= filteredItems.length - 1 ? 0 : prev + 1;
           return next;
         });
         return;
@@ -448,10 +449,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         return;
       }
       if (event.key === "Enter") {
-        if (
-          highlightedIndex >= 0 &&
-          filteredItems[highlightedIndex]
-        ) {
+        if (highlightedIndex >= 0 && filteredItems[highlightedIndex]) {
           event.preventDefault();
           handleSelect(filteredItems[highlightedIndex]);
           return;
@@ -508,9 +506,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
       const regex = new RegExp(`(${escaped})`, "ig");
       return text.split(regex).map((segment, idx) => {
         if (!segment) {
-          return (
-            <React.Fragment key={`empty-${idx}`}></React.Fragment>
-          );
+          return <React.Fragment key={`empty-${idx}`}></React.Fragment>;
         }
         if (idx % 2 === 1) {
           return (
@@ -604,7 +600,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98 }}
               className="relative"
-              >
+            >
               <div
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 bg-black/40 backdrop-blur-xl border transition-all duration-300 rounded-xl",
@@ -702,66 +698,67 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   : "border-white/10 hover:border-white/20"
               )}
             >
-              <div className="flex items-center p-3 sm:p-4 gap-4">
-                {/* Item Icon */}
-                <div className="relative shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center group-hover:border-primary/30 transition-colors">
-                  <ItemTooltip
-                    item={selectedItem}
-                    iconUrl={selectedItem.iconLink || ""}
-                  >
-                    <img
-                      src={selectedItem.iconLink || ""}
-                      alt={selectedItem.name}
-                      className="w-full h-full object-contain p-1"
-                    />
-                  </ItemTooltip>
-                </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center p-3 sm:p-4 gap-4">
+                {/* Item Icon & Basic Info */}
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="relative shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center group-hover:border-primary/30 transition-colors">
+                    <ItemTooltip
+                      item={selectedItem}
+                      iconUrl={selectedItem.iconLink || undefined}
+                    >
+                      <img
+                        src={selectedItem.iconLink || undefined}
+                        alt={selectedItem.name}
+                        className="w-full h-full object-contain p-1"
+                      />
+                    </ItemTooltip>
+                  </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-bold text-sm sm:text-base truncate tracking-tight">
-                        {selectedItem.name}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                          ₽{(selectedItem.basePrice || 0).toLocaleString()}
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                    <h3 className="text-white font-bold text-sm sm:text-base truncate tracking-tight">
+                      {selectedItem.name}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        ₽{(selectedItem.basePrice || 0).toLocaleString()}
+                      </span>
+                      <div
+                        className={cn(
+                          "flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider",
+                          isPriceOverrideActive
+                            ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                            : "bg-primary/10 border-primary/30 text-primary/80"
+                        )}
+                      >
+                        <span>{priceMode === "flea" ? "Flea" : "Trader"}</span>
+                        <span>
+                          {((isPriceOverrideActive && priceOverride
+                            ? Number(priceOverride)
+                            : null) ??
+                            overriddenPrices[selectedItem.id] ??
+                            getEffectivePriceInfo(selectedItem).price ??
+                            null) !== null
+                            ? `₽${(
+                                (isPriceOverrideActive && priceOverride
+                                  ? Number(priceOverride)
+                                  : null) ??
+                                overriddenPrices[selectedItem.id] ??
+                                getEffectivePriceInfo(selectedItem).price ??
+                                0
+                              ).toLocaleString()}`
+                            : "N/A"}
                         </span>
-                        <div
-                          className={cn(
-                            "flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider",
-                            isPriceOverrideActive
-                              ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                              : "bg-primary/10 border-primary/30 text-primary/80"
-                          )}
-                        >
-                          <span>
-                            {priceMode === "flea" ? "Flea" : "Trader"}
-                          </span>
-                          <span>
-                            {((isPriceOverrideActive && priceOverride
-                              ? Number(priceOverride)
-                              : null) ??
-                              overriddenPrices[selectedItem.id] ??
-                              getEffectivePriceInfo(selectedItem).price ??
-                              null) !== null
-                              ? `₽${(
-                                  (isPriceOverrideActive && priceOverride
-                                    ? Number(priceOverride)
-                                    : null) ??
-                                  overriddenPrices[selectedItem.id] ??
-                                  getEffectivePriceInfo(selectedItem).price ??
-                                  0
-                                ).toLocaleString()}`
-                              : "N/A"}
-                          </span>
-                        </div>
                       </div>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Compact Toolbar */}
-                    <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-0.5">
+                {/* Toolbar Section */}
+                <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-1 pl-0 sm:pl-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                  <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-0.5 h-9 sm:h-auto">
+                    {/* Desktop Toolbar (visible on md+) */}
+                    <div className="hidden sm:flex items-center gap-1">
                       <ActionButton
                         icon={<Copy className="h-3.5 w-3.5" />}
                         onClick={handleCopy}
@@ -777,20 +774,28 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                         />
                       )}
                       <div className="w-px h-4 bg-white/10 mx-0.5" />
-                      <ActionButton
-                        icon={<Edit className="h-3.5 w-3.5" />}
-                        onClick={togglePriceOverride}
-                        active={isPriceOverrideActive}
-                        activeClass="text-amber-400 bg-amber-500/10"
-                        tooltip="Override price"
-                      />
-                      <ActionButton
-                        icon={<Pin className="h-3.5 w-3.5" />}
-                        onClick={onPin}
-                        active={isPinned}
-                        activeClass="text-amber-400 bg-amber-500/10"
-                        tooltip={isPinned ? "Unpin item" : "Pin item"}
-                      />
+                    </div>
+
+                    {/* Primary Actions (always visible) */}
+                    <ActionButton
+                      icon={<Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                      onClick={togglePriceOverride}
+                      active={isPriceOverrideActive}
+                      activeClass="text-amber-400 bg-amber-500/10"
+                      tooltip="Override price"
+                      className="h-8 w-8 sm:h-7 sm:w-7"
+                    />
+                    <ActionButton
+                      icon={<Pin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                      onClick={onPin}
+                      active={isPinned}
+                      activeClass="text-amber-400 bg-amber-500/10"
+                      tooltip={isPinned ? "Unpin item" : "Pin item"}
+                      className="h-8 w-8 sm:h-7 sm:w-7"
+                    />
+
+                    {/* Desktop-only Exclude button (part of expanded toolbar) */}
+                    <div className="hidden sm:flex items-center">
                       <ActionButton
                         icon={<CircleSlash className="h-3.5 w-3.5" />}
                         onClick={onToggleExclude}
@@ -802,89 +807,144 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                             : "Exclude from auto-pick"
                         }
                       />
-                      <div className="w-px h-4 bg-white/10 mx-0.5" />
-                      <ActionButton
-                        icon={<Trash2 className="h-3.5 w-3.5" />}
-                        onClick={handleRemove}
-                        className="text-red-400 hover:bg-red-500/10"
-                        tooltip="Remove"
-                      />
                     </div>
-                  </div>
 
-                  {/* Price Override Input */}
-                  <AnimatePresence>
-                    {isPriceOverrideActive && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="flex items-center gap-2 mt-1 pb-1">
-                          <div className="relative flex-1">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30">
-                              ₽
-                            </span>
-                            <input
-                              type="text"
-                              value={priceOverride}
-                              onChange={handlePriceOverride}
-                              className="w-full bg-white/5 border border-white/10 rounded-lg pl-6 pr-3 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 transition-colors"
-                              placeholder="Enter manual price..."
-                            />
-                          </div>
+                    <div className="w-px h-4 bg-white/10 mx-0.5" />
+
+                    {/* Mobile-only More Actions Dropdown */}
+                    <div className="flex sm:hidden">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
-                            size="icon"
                             variant="ghost"
-                            onClick={clearPriceOverride}
-                            className="h-8 w-8 text-white/30 hover:text-red-400 hover:bg-red-500/10"
+                            size="icon"
+                            className="h-8 w-8 text-white/40 hover:text-white"
                           >
-                            <XIcon className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-48 bg-black/90 border-white/10 backdrop-blur-xl"
+                        >
+                          <DropdownMenuItem
+                            onClick={handleCopy}
+                            className="gap-2 text-white/70 focus:text-white focus:bg-white/10"
+                          >
+                            <Copy className="h-4 w-4" />
+                            <span>Copy Name</span>
+                          </DropdownMenuItem>
+                          {selectedItem.link && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                window.open(selectedItem.link, "_blank")
+                              }
+                              className="gap-2 text-white/70 focus:text-white focus:bg-white/10"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              <span>View on Tarkov.dev</span>
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={onToggleExclude}
+                            className={cn(
+                              "gap-2 focus:bg-white/10",
+                              isExcluded
+                                ? "text-red-400 focus:text-red-300"
+                                : "text-white/70 focus:text-white"
+                            )}
+                          >
+                            <CircleSlash className="h-4 w-4" />
+                            <span>
+                              {isExcluded
+                                ? "Include in Autopick"
+                                : "Exclude from Autopick"}
+                            </span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
 
-                  {/* Metadata Row */}
-                  <div className="flex items-center gap-3 text-[10px] text-white/30 font-medium">
-                    {priceMode === "trader" &&
-                      getEffectivePriceInfo(selectedItem).vendorName && (
-                        <div className="flex items-center gap-1.5">
-                          <img
-                            src={
-                              TRADER_AVATARS[
-                                getEffectivePriceInfo(selectedItem).vendorName!
-                              ]
-                            }
-                            alt=""
-                            className="w-3.5 h-3.5 rounded-full ring-1 ring-white/10"
-                          />
-                          <span className="capitalize">
-                            {getEffectivePriceInfo(selectedItem).vendorName}
-                            {getEffectivePriceInfo(selectedItem).minTraderLevel
-                              ? ` L${
-                                  getEffectivePriceInfo(selectedItem)
-                                    .minTraderLevel
-                                }`
-                              : ""}
-                          </span>
-                        </div>
-                      )}
-                    {priceMode === "flea" && selectedItem.updated && (
-                      <span>
-                        Updated{" "}
-                        {getRelativeDate(selectedItem.updated.toString())}
-                      </span>
-                    )}
-                    {isExcluded && (
-                      <span className="text-red-400 font-bold uppercase tracking-wider">
-                        Excluded from Autopick
-                      </span>
-                    )}
+                    {/* Always visible Trash */}
+                    <ActionButton
+                      icon={<Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                      onClick={handleRemove}
+                      className="h-8 w-8 sm:h-7 sm:w-7 text-red-400 hover:bg-red-500/10"
+                      tooltip="Remove"
+                    />
                   </div>
                 </div>
+
+                {/* Price Override Input */}
+                <AnimatePresence>
+                  {isPriceOverrideActive && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden sm:absolute sm:bottom-0 sm:left-0 sm:right-0 sm:translate-y-full sm:z-10"
+                    >
+                      <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:p-2 sm:bg-black/60 sm:backdrop-blur-xl sm:border sm:border-white/10 sm:rounded-b-xl">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30">
+                            ₽
+                          </span>
+                          <input
+                            type="text"
+                            value={priceOverride}
+                            onChange={handlePriceOverride}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg pl-6 pr-3 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 transition-colors"
+                            placeholder="Enter manual price..."
+                          />
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={clearPriceOverride}
+                          className="h-8 w-8 text-white/30 hover:text-red-400 hover:bg-red-500/10"
+                        >
+                          <XIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Metadata Row */}
+              <div className="px-3 sm:px-4 pb-3 flex items-center gap-3 text-[10px] text-white/30 font-medium">
+                {priceMode === "trader" &&
+                  getEffectivePriceInfo(selectedItem).vendorName && (
+                    <div className="flex items-center gap-1.5">
+                      <img
+                        src={
+                          TRADER_AVATARS[
+                            getEffectivePriceInfo(selectedItem).vendorName!
+                          ]
+                        }
+                        alt=""
+                        className="w-3.5 h-3.5 rounded-full ring-1 ring-white/10"
+                      />
+                      <span className="capitalize">
+                        {getEffectivePriceInfo(selectedItem).vendorName}
+                        {getEffectivePriceInfo(selectedItem).minTraderLevel
+                          ? ` L${
+                              getEffectivePriceInfo(selectedItem).minTraderLevel
+                            }`
+                          : ""}
+                      </span>
+                    </div>
+                  )}
+                {priceMode === "flea" && selectedItem.updated && (
+                  <span>
+                    Updated {getRelativeDate(selectedItem.updated.toString())}
+                  </span>
+                )}
+                {isExcluded && (
+                  <span className="text-red-400 font-bold uppercase tracking-wider">
+                    Excluded from Autopick
+                  </span>
+                )}
               </div>
             </motion.div>
           )}

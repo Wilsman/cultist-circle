@@ -1,6 +1,21 @@
 // components/settings-pane.tsx
 
-import { List, RotateCcw, Search, CandlestickChart, Filter } from "lucide-react";
+import {
+  LayoutGrid,
+  RotateCcw,
+  Search,
+  Filter,
+  Download,
+  Upload,
+  Trash2,
+  ShieldCheck,
+  Archive,
+  Database,
+  ChevronRight,
+  Info,
+  Settings as SettingsIcon,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,20 +23,16 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog";
-import {
-  HelpCircle,
-  Download,
-  Upload,
-  Trash2,
-  Settings as SettingsIcon,
-} from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { toast as sonnerToast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 import {
   Select,
@@ -30,7 +41,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -39,7 +49,6 @@ import {
   getCategoryDisplayName,
   type ItemCategory,
 } from "@/config/item-categories";
-import { Alert } from "./ui/alert";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import {
   TraderLevelSelector,
@@ -47,16 +56,13 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
 import { useLanguage } from "@/contexts/language-context";
-import {
-  CATEGORY_LEVEL_REQUIREMENTS,
-  ITEM_LEVEL_REQUIREMENTS,
-} from "@/config/flea-level-requirements";
+import { CATEGORY_LEVEL_REQUIREMENTS } from "@/config/flea-level-requirements";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Info } from "lucide-react";
+import { CURRENT_VERSION } from "@/config/changelog";
 
 interface SettingsPaneProps {
   isOpen: boolean;
@@ -88,6 +94,13 @@ interface SettingsPaneProps {
   onPlayerLevelChange: (level: number) => void;
 }
 
+const NAV_ITEMS = [
+  { id: "general", label: "General", icon: LayoutGrid },
+  { id: "categories", label: "Categories", icon: ShieldCheck },
+  { id: "items", label: "Excluded Items", icon: Archive },
+  { id: "data", label: "Data & Reset", icon: Database },
+];
+
 export default function SettingsPane({
   isOpen,
   onClose,
@@ -116,6 +129,7 @@ export default function SettingsPane({
   playerLevel,
   onPlayerLevelChange,
 }: SettingsPaneProps) {
+  const [activeTab, setActiveTab] = useState("general");
   const [sortOption, setSortOption] = useState(currentSortOption);
   const [currentFleaPriceType, setCurrentFleaPriceType] =
     useState(fleaPriceType);
@@ -194,675 +208,759 @@ export default function SettingsPane({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        onPointerDownOutside={(e) => e.preventDefault()}
-        className="bg-gray-800/95 backdrop-blur-md border-gray-700 text-white max-w-2xl max-h-[90vh] sm:max-h-[85vh] h-full overflow-hidden flex flex-col"
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl text-white">
-            <SettingsIcon className="h-5 w-5" />
-            Settings
-          </DialogTitle>
-          <DialogDescription className="text-gray-400">
+      <DialogContent className="bg-[#0f1115]/95 backdrop-blur-xl border-white/5 text-white max-w-4xl max-h-[90vh] sm:max-h-[85vh] h-[800px] sm:h-[700px] overflow-hidden p-0 gap-0 shadow-2xl flex flex-col sm:flex-row [&>button:last-child]:hidden sm:[&>button:last-child]:flex">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>
             Configure your preferences and manage your data
           </DialogDescription>
         </DialogHeader>
 
-        {/* Tabs Switcher */}
-        <Tabs
-          defaultValue="general"
-          className="w-full flex-1 flex flex-col overflow-hidden"
-        >
-          <TabsList className="sticky top-0 z-10 flex-shrink-0 overflow-x-auto">
-            <TabsTrigger value="general">General/Sorting</TabsTrigger>
-            <TabsTrigger value="categories">Excluded Categories</TabsTrigger>
-            <TabsTrigger value="items">Excluded Items</TabsTrigger>
-            <TabsTrigger value="data">Data/Reset</TabsTrigger>
-          </TabsList>
+        {/* Navigation Sidebar/Top-Bar */}
+        <div className="w-full sm:w-[240px] border-b sm:border-b-0 sm:border-r border-white/5 bg-black/20 flex flex-row sm:flex-col py-0 sm:py-6 px-0 sm:px-4 shrink-0 overflow-x-auto sm:overflow-x-visible no-scrollbar relative items-center sm:items-stretch">
+          <div className="hidden sm:flex items-center gap-3 px-2 mb-8 mt-6">
+            <div className="p-2 bg-yellow-400/10 rounded-xl">
+              <SettingsIcon className="h-5 w-5 text-yellow-400" />
+            </div>
+            <h2 className="text-lg font-semibold tracking-tight">Settings</h2>
+          </div>
 
-          <ScrollArea className="flex-1 h-[calc(100%-48px)]" type="always">
-            <TabsContent value="general" className="h-full p-1">
-              {/* Language Section (General Tab) */}
-              {ENABLE_LANGUAGE_FEATURE && (
-                <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg font-semibold">Language</span>
-                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">
-                      WIP
-                    </span>
-                  </div>
-                  <div className="w-56">
-                    <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger className="w-full bg-[#232b32] border border-[#e4c15a]/30 text-gray-100 focus:ring-yellow-300 focus:border-yellow-300">
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#232b32] border border-[#e4c15a]/30 text-gray-100">
-                        {supported.map((l) => (
-                          <SelectItem
-                            key={l.code}
-                            value={l.code}
-                            className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
-                          >
-                            {l.label} ({l.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    ⚠️ Known issue: the &quot;Excluded Items&quot; list in
-                    Settings is still shown in English, but items are still
-                    excluded in the app. This setting is work-in-progress.
-                  </p>
-                </div>
-              )}
-              {/* Sort Options Section (General Tab) */}
-              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <List className="h-5 w-5 text-blue-400" />
-                  <span className="text-lg font-semibold">Sort Options</span>
-                </div>
-                <div className="w-56">
-                  <Select value={sortOption} onValueChange={setSortOption}>
-                    <SelectTrigger className="w-full bg-[#232b32] border border-[#e4c15a]/30 text-gray-100 focus:ring-yellow-300 focus:border-yellow-300">
-                      <SelectValue placeholder="Sort by..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#232b32] border border-[#e4c15a]/30 text-gray-100">
-                      <SelectItem
-                        value="az"
-                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
-                      >
-                        Item name: A-Z
-                      </SelectItem>
-                      <SelectItem
-                        value="most-recent"
-                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
-                      >
-                        Most recently updated first
-                      </SelectItem>
-                      <SelectItem
-                        value="base-value"
-                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
-                      >
-                        Base Value: Low to High
-                      </SelectItem>
-                      <SelectItem
-                        value="base-value-desc"
-                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
-                      >
-                        Base Value: High to Low
-                      </SelectItem>
-                      <SelectItem
-                        value="ratio"
-                        className="hover:bg-[#2d3748] focus:bg-[#2d3748] focus:text-white"
-                      >
-                        Best value for money
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Price Mode Toggle */}
-              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <CandlestickChart className="h-5 w-5 text-yellow-400" />
-                    <span className="text-lg font-semibold">Price Mode</span>
-                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">
-                      WIP
-                    </span>
-                  </div>
-                </div>
-                <RadioGroup
-                  value={currentPriceMode}
-                  onValueChange={(v) =>
-                    setCurrentPriceMode(v as "flea" | "trader")
-                  }
-                  className="grid gap-3 sm:grid-cols-2"
+          <nav className="flex flex-row sm:flex-col space-x-1 sm:space-x-0 sm:space-y-1 py-3 sm:py-0 px-4 sm:px-0">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={cn(
+                    "flex items-center gap-2 sm:gap-3 px-3 sm:px-3 py-2 sm:py-2.5 rounded-xl transition-all duration-200 group relative whitespace-nowrap",
+                    isActive
+                      ? "bg-white/10 text-white shadow-lg shadow-black/20"
+                      : "text-gray-400 hover:text-white hover:bg-white/5"
+                  )}
                 >
-                  <div className="flex items-center space-x-2 rounded-md border border-gray-700 p-3">
-                    <RadioGroupItem value="flea" id="mode-flea" />
-                    <Label htmlFor="mode-flea">Flea market prices</Label>
-                  </div>
-                  <div className="flex items-center space-x-2 rounded-md border border-gray-700 p-3">
-                    <RadioGroupItem value="trader" id="mode-trader" />
-                    <Label htmlFor="mode-trader">Trader prices</Label>
-                  </div>
-                </RadioGroup>
-                <p className="text-xs text-gray-400 mt-2">
-                  ⚠️ Traders are currently work-in-progress, known limitations:
-                  all quest locked items present.
-                </p>
-              </div>
-
-              {/* Trader Levels (only when trader mode) */}
-              {currentPriceMode === "trader" && (
-                <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <List className="h-5 w-5 text-yellow-400" />
-                      <span className="text-lg font-semibold">
-                        Trader Levels
-                      </span>
-                      <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-yellow-400/30 text-yellow-300/90 bg-yellow-400/10">
-                        WIP
-                      </span>
-                    </div>
-                  </div>
-                  <TraderLevelSelector
-                    traderLevels={traderLevels}
-                    onTraderLevelsChange={onTraderLevelsChange}
-                  />
-                </div>
-              )}
-
-              {/* Flea Price Type Section (General Tab) */}
-              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <CandlestickChart className="h-5 w-5 text-green-400" />
-                    <span className="text-lg font-semibold">
-                      Flea Market Price Basis
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="text-yellow-300 border-gray-600 rounded-full animate-pulse"
-                    >
-                      New
-                    </Badge>
-                  </div>
-                </div>
-                <RadioGroup
-                  value={currentFleaPriceType}
-                  onValueChange={(value) =>
-                    setCurrentFleaPriceType(
-                      value as "lastLowPrice" | "avg24hPrice"
-                    )
-                  }
-                  className="space-y-2"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value="lastLowPrice"
-                      id="lastLowPrice"
-                      className="text-yellow-300 border-gray-600"
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-tab"
+                      className="absolute bottom-0 left-0 right-0 sm:bottom-auto sm:right-auto sm:left-0 h-1 sm:h-5 w-auto sm:w-1 bg-yellow-400 rounded-full"
+                      transition={{
+                        type: "spring",
+                        bounce: 0.2,
+                        duration: 0.6,
+                      }}
                     />
-                    <Label htmlFor="lastLowPrice" className="text-gray-200">
-                      Last Low Price
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value="avg24hPrice"
-                      id="avg24hPrice"
-                      className="text-yellow-300 border-gray-600"
-                    />
-                    <Label htmlFor="avg24hPrice" className="text-gray-200">
-                      Average 24h Price
-                    </Label>
-                  </div>
-                </RadioGroup>
-                <p className="text-xs text-gray-400 mt-2">
-                  Determines which flea market price is used for calculations.
-                </p>
-              </div>
-
-              {/* Market Offer Count Filter Section (General Tab) */}
-              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4 opacity-50">
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-5 w-5 text-purple-400" />
-                    <span className="text-lg font-semibold text-gray-500">
-                      Exclude Low Offer Count Items
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="text-gray-500 border-gray-600 rounded-full"
-                    >
-                      Disabled
-                    </Badge>
-                  </div>
-                  <Switch
-                    id="use-last-offer-count-filter"
-                    checked={false}
-                    disabled={true}
-                    className="data-[state=checked]:bg-gray-500 data-[state=unchecked]:bg-gray-600 opacity-50 cursor-not-allowed"
+                  )}
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 sm:h-4.5 sm:w-4.5 transition-colors",
+                      isActive
+                        ? "text-yellow-400"
+                        : "group-hover:text-yellow-400/80"
+                    )}
                   />
-                </div>
-                <p className="text-sm text-gray-500">
-                  This feature is temporarily disabled. Items with fewer than 5
-                  offers on the Flea Market will not be excluded from
-                  calculations.
-                </p>
-              </div>
+                  <span className="text-xs sm:text-sm font-medium">
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <ChevronRight className="hidden sm:block ml-auto h-4 w-4 text-white/30" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-              {/* Player Level Filter Section (General Tab) */}
-              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-5 w-5 text-cyan-400" />
-                    <span className="text-lg font-semibold">
-                      Flea Market Level Filter
-                    </span>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="text-gray-400 hover:text-cyan-300 transition-colors">
-                          <Info className="h-4 w-4" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        side="bottom"
-                        align="start"
-                        className="w-72 max-h-80 overflow-y-auto bg-slate-900/95 backdrop-blur-sm border-slate-700 rounded-xl shadow-xl p-0"
-                      >
-                        <div className="p-3 space-y-3">
-                          <div>
-                            <p className="text-xs font-semibold text-cyan-300 mb-2">
-                              Categories
-                            </p>
-                            <div className="space-y-1">
-                              {[...CATEGORY_LEVEL_REQUIREMENTS]
-                                .sort(
-                                  (a, b) =>
-                                    a.levelRequirement - b.levelRequirement
-                                )
-                                .map((cat) => (
-                                  <div
-                                    key={cat.categoryId}
-                                    className="flex justify-between text-xs"
-                                  >
-                                    <span className="text-gray-300 truncate mr-2">
-                                      {cat.categoryName}
-                                    </span>
-                                    <span className="text-amber-400 font-mono">
-                                      Lv.{cat.levelRequirement}
-                                    </span>
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                          {ITEM_LEVEL_REQUIREMENTS.length > 0 && (
-                            <div className="border-t border-slate-700 pt-3">
-                              <p className="text-xs font-semibold text-purple-300 mb-2">
-                                Individual Items
-                              </p>
-                              <div className="space-y-1">
-                                {[...ITEM_LEVEL_REQUIREMENTS]
-                                  .sort(
-                                    (a, b) =>
-                                      a.levelRequirement - b.levelRequirement
-                                  )
-                                  .map((item) => (
-                                    <div
-                                      key={item.itemName}
-                                      className="flex justify-between text-xs"
-                                    >
-                                      <span className="text-gray-300 truncate mr-2">
-                                        {item.itemName}
-                                      </span>
-                                      <span className="text-amber-400 font-mono">
-                                        Lv.{item.levelRequirement}
-                                      </span>
-                                    </div>
-                                  ))}
-                              </div>
-                            </div>
-                          )}
+          {/* Mobile Close Button - Sticky */}
+          <div className="sm:hidden sticky right-0 top-0 h-full flex items-center pr-4 pl-8 bg-gradient-to-l from-[#0f1115] via-[#0f1115]/90 to-transparent z-10">
+            <DialogClose className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
+              <X className="h-5 w-5" />
+            </DialogClose>
+          </div>
+
+          <div className="hidden sm:flex pt-6 border-t border-white/5 flex flex-col gap-1 sm:mt-auto">
+            <p className="px-2 text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
+              Version
+            </p>
+            <div className="px-2 flex items-center justify-between">
+              <Badge
+                variant="outline"
+                className="bg-black/40 border-white/5 text-[10px] text-gray-400 px-2 py-0"
+              >
+                v{CURRENT_VERSION}
+              </Badge>
+              <span className="text-[10px] text-gray-600">Stable</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-transparent to-white/[0.02]">
+          <div className="h-12 sm:h-14 flex items-center px-6 sm:px-8 border-b border-white/5">
+            <h3 className="text-[10px] sm:text-sm font-medium text-gray-400 uppercase tracking-wider">
+              {NAV_ITEMS.find((i) => i.id === activeTab)?.label}
+            </h3>
+          </div>
+
+          <ScrollArea className="flex-1">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -10, filter: "blur(8px)" }}
+                transition={{ duration: 0.2 }}
+                className="p-8 pb-12"
+              >
+                {activeTab === "general" && (
+                  <div className="space-y-8">
+                    {/* Language Section */}
+                    {ENABLE_LANGUAGE_FEATURE && (
+                      <section className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-base font-semibold text-white">
+                            Language
+                          </Label>
+                          <Badge className="bg-yellow-400/10 text-yellow-500 border-yellow-400/20 text-[10px] uppercase">
+                            WIP
+                          </Badge>
                         </div>
-                      </PopoverContent>
-                    </Popover>
-                    <Badge
-                      variant="outline"
-                      className="text-emerald-300 border-emerald-500/30 rounded-full"
-                    >
-                      New
-                    </Badge>
-                  </div>
-                  <Switch
-                    id="use-level-filter"
-                    checked={useLevelFilter}
-                    onCheckedChange={onUseLevelFilterChange}
-                    className="data-[state=checked]:bg-cyan-500"
-                  />
-                </div>
-                <p className="text-sm text-gray-400 mb-4">
-                  Filter out items from categories that require a higher level
-                  to purchase on the Flea Market. Enter your current PMC level
-                  below.
-                </p>
-                <div className="flex items-center gap-3">
-                  <Label
-                    htmlFor="player-level"
-                    className="text-gray-300 whitespace-nowrap"
-                  >
-                    Your Level:
-                  </Label>
-                  <Input
-                    id="player-level"
-                    type="number"
-                    min={1}
-                    max={79}
-                    value={playerLevel}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value, 10);
-                      if (!isNaN(val) && val >= 1 && val <= 79) {
-                        onPlayerLevelChange(val);
-                      }
-                    }}
-                    disabled={!useLevelFilter}
-                    className={`w-20 text-center ${
-                      !useLevelFilter ? "opacity-50" : ""
-                    }`}
-                  />
-                  <span className="text-xs text-gray-500">(1-79)</span>
-                </div>
-                {useLevelFilter && playerLevel < 30 && (
-                  <p className="text-xs text-amber-400 mt-3">
-                    ⚠️ At level {playerLevel}, some high-value categories
-                    (Injectors, Keycards, Valuables, Gear components) are
-                    restricted.
-                  </p>
-                )}
-              </div>
-            </TabsContent>
+                        <div className="w-64">
+                          <Select value={language} onValueChange={setLanguage}>
+                            <SelectTrigger className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-10 rounded-xl">
+                              <SelectValue placeholder="Select language" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#1a1c20] border-white/10 text-white rounded-xl">
+                              {supported.map((l) => (
+                                <SelectItem
+                                  key={l.code}
+                                  value={l.code}
+                                  className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
+                                >
+                                  {l.label} ({l.code})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <p className="text-xs text-gray-400 leading-relaxed italic">
+                          Known issue: the &quot;Excluded Items&quot; list is
+                          still shown in English.
+                        </p>
+                      </section>
+                    )}
 
-            <TabsContent value="categories" className="h-full p-1">
-              {/* Excluded Categories Section (Categories Tab) */}
-              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <List className="h-5 w-5 text-blue-400" />
-                    <span className="text-lg font-semibold">
-                      Excluded Categories
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
-                      onClick={() =>
-                        onCategoryChange([...DEFAULT_EXCLUDED_CATEGORY_IDS])
-                      }
-                    >
-                      <RotateCcw className="h-4 w-4 mr-1" />
-                      Reset
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
-                      onClick={() => onCategoryChange([])}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2 mb-4">
-                  <Search className="h-4 w-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search categories..."
-                    className="flex-1"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <ScrollArea className="h-[40vh] max-h-[300px] pr-4">
-                  <div className="">
-                    {allCategories
-                      .filter((c) =>
-                        c.name.toLowerCase().includes(searchTerm.toLowerCase())
-                      )
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((c) => (
-                        <div
-                          key={c.id}
-                          className="flex items-center space-x-2 py-1"
+                    {/* Sort Options Section */}
+                    <section className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-base font-semibold text-white">
+                          Sort Options
+                        </Label>
+                      </div>
+                      <div className="w-64">
+                        <Select
+                          value={sortOption}
+                          onValueChange={setSortOption}
                         >
-                          <Checkbox
-                            checked={excludedCategories.includes(c.id)}
-                            onCheckedChange={() => handleCategoryChange(c.id)}
-                            className="border-gray-500"
-                          />
-                          <Label className="text-sm">
-                            {getCategoryDisplayName(c.name)}
+                          <SelectTrigger className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-10 rounded-xl">
+                            <SelectValue placeholder="Sort by..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-[#1a1c20] border-white/10 text-white rounded-xl text-xs">
+                            <SelectItem
+                              value="az"
+                              className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
+                            >
+                              Item name: A-Z
+                            </SelectItem>
+                            <SelectItem
+                              value="most-recent"
+                              className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
+                            >
+                              Most recently updated
+                            </SelectItem>
+                            <SelectItem
+                              value="base-value"
+                              className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
+                            >
+                              Base Value: Low to High
+                            </SelectItem>
+                            <SelectItem
+                              value="base-value-desc"
+                              className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
+                            >
+                              Base Value: High to Low
+                            </SelectItem>
+                            <SelectItem
+                              value="ratio"
+                              className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
+                            >
+                              Best value for money
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </section>
+
+                    {/* Price Mode Toggle */}
+                    <section className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-base font-semibold text-white">
+                          Price Mode
+                        </Label>
+                        <Badge className="bg-yellow-400/10 text-yellow-500 border-yellow-400/20 text-[10px] uppercase">
+                          WIP
+                        </Badge>
+                      </div>
+                      <RadioGroup
+                        value={currentPriceMode}
+                        onValueChange={(v) =>
+                          setCurrentPriceMode(v as "flea" | "trader")
+                        }
+                        className="grid grid-cols-2 gap-4"
+                      >
+                        <Label
+                          htmlFor="mode-flea"
+                          className={cn(
+                            "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
+                            currentPriceMode === "flea"
+                              ? "border-yellow-400/50 bg-yellow-400/5"
+                              : "border-white/5 bg-white/5 hover:bg-white/10"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="flea"
+                              id="mode-flea"
+                              className="sr-only"
+                            />
+                            <span className="text-sm font-medium">
+                              Flea Market
+                            </span>
+                          </div>
+                          {currentPriceMode === "flea" && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                          )}
+                        </Label>
+                        <Label
+                          htmlFor="mode-trader"
+                          className={cn(
+                            "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
+                            currentPriceMode === "trader"
+                              ? "border-yellow-400/50 bg-yellow-400/5"
+                              : "border-white/5 bg-white/5 hover:bg-white/10"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="trader"
+                              id="mode-trader"
+                              className="sr-only"
+                            />
+                            <span className="text-sm font-medium">Trader</span>
+                          </div>
+                          {currentPriceMode === "trader" && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                          )}
+                        </Label>
+                      </RadioGroup>
+                    </section>
+
+                    {/* Trader Levels */}
+                    {currentPriceMode === "trader" && (
+                      <section className="space-y-4 pt-4 border-t border-white/5">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-base font-semibold text-white">
+                            Trader Levels
                           </Label>
                         </div>
-                      ))}
-                  </div>
-                </ScrollArea>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="items" className="h-full p-1">
-              {/* Excluded Items Section (Items Tab) */}
-              <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <List className="h-5 w-5 text-blue-400" />
-                    <span className="text-lg font-semibold">
-                      Excluded Items
-                    </span>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="h-8 px-4 bg-red-300 hover:bg-red-400 text-gray-800 rounded"
-                    onClick={() => {
-                      // Reset to default excluded items
-                      onExcludedItemsChange(new Set(DEFAULT_EXCLUDED_ITEMS));
-                      sonnerToast("Reset complete", {
-                        description:
-                          "Excluded items have been reset to defaults",
-                      });
-                    }}
-                  >
-                    <RotateCcw className="h-4 w-4 mr-1" />
-                    Reset
-                  </Button>
-                </div>
-                <div className="border-b border-[#e4c15a]/10 mb-2"></div>
-                <div className="grid gap-4">
-                  <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium">
-                        Exclude Incompatible Items
-                      </Label>
-                      <p className="text-sm text-gray-400">
-                        Exclude items that are incompatible with the cultist
-                        circle
-                      </p>
-                    </div>
-                    <Switch
-                      checked={excludeIncompatible}
-                      onCheckedChange={(checked) =>
-                        onExcludeIncompatibleChange(checked as boolean)
-                      }
-                    />
-                  </div>
-                  <div className="flex flex-col p-3 bg-gray-700/50 rounded-lg">
-                    <Label className="text-sm font-medium">
-                      Excluded Items List
-                    </Label>
-                    {/* note: add new items with the exclude from auto button */}
-                    <Alert variant="default" className="text-sm mb-2 mt-2">
-                      To add an item to the list, use the{" "}
-                      <span className="font-bold">
-                        &quot;Exclude from Auto&quot;
-                      </span>{" "}
-                      when selecting items.
-                    </Alert>
-                    <p className="text-sm text-gray-400 mb-4">
-                      Manage the list of excluded items
-                    </p>
-
-                    {/* Search existing items */}
-                    <div className="flex items-center space-x-2 mb-4">
-                      <Search className="h-4 w-4 text-gray-400" />
-                      <Input
-                        type="search"
-                        placeholder="Search excluded items..."
-                        className="flex-1"
-                        value={excludedItemsSearch}
-                        onChange={(e) => setExcludedItemsSearch(e.target.value)}
-                      />
-                    </div>
-
-                    <ScrollArea className="overflow-y-auto pr-4">
-                      <div className="">
-                        {Array.from(excludedItems)
-                          .filter((itemId) =>
-                            itemId
-                              .toLowerCase()
-                              .includes(excludedItemsSearch.toLowerCase())
-                          )
-                          .sort()
-                          .map((itemId) => (
-                            <div
-                              key={itemId}
-                              className="flex items-center space-x-2 py-1 justify-between"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <Label className="text-sm">{itemId}</Label>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-xs px-2 py-1 rounded text-white hover:bg-transparent"
-                                onClick={() => {
-                                  const newExcludedItems = new Set(
-                                    excludedItems
-                                  );
-                                  newExcludedItems.delete(itemId);
-                                  onExcludedItemsChange(newExcludedItems);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-400 hover:text-red-600" />
-                              </Button>
-                            </div>
-                          ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-            <TabsContent value="data" className="h-full p-1">
-              {/* Data Management Section */}
-              <div className="space-y-6">
-                <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <HelpCircle className="h-5 w-5 text-blue-400" />
-                    <span className="text-lg font-semibold">
-                      Data Management
-                    </span>
-                  </div>
-                  <div className="border-b border-[#e4c15a]/10 mb-2"></div>
-                  <div className="grid gap-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                      <div>
-                        <Label className="text-sm font-medium">
-                          Export Data
-                        </Label>
-                        <p className="text-sm text-gray-400">
-                          Download your settings and preferences
-                        </p>
-                      </div>
-                      <Button
-                        onClick={onExportData}
-                        variant="outline"
-                        size="sm"
-                        className="interactive-bounce border-gray-600 hover:bg-gray-600"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
-                      </Button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                      <div>
-                        <Label className="text-sm font-medium">
-                          Import Data
-                        </Label>
-                        <p className="text-sm text-gray-400">
-                          Restore from a backup file
-                        </p>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="file"
-                          accept=".json"
-                          onChange={handleImport}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        <TraderLevelSelector
+                          traderLevels={traderLevels}
+                          onTraderLevelsChange={onTraderLevelsChange}
                         />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="interactive-bounce border-gray-600 hover:bg-gray-600"
+                      </section>
+                    )}
+
+                    {/* Flea Market Price Basis */}
+                    <section className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-base font-semibold text-white">
+                          Flea Market Price Basis
+                        </Label>
+                      </div>
+                      <RadioGroup
+                        value={currentFleaPriceType}
+                        onValueChange={(v) =>
+                          setCurrentFleaPriceType(
+                            v as "lastLowPrice" | "avg24hPrice"
+                          )
+                        }
+                        className="space-y-3"
+                      >
+                        <Label
+                          htmlFor="lastLowPrice"
+                          className={cn(
+                            "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
+                            currentFleaPriceType === "lastLowPrice"
+                              ? "border-emerald-400/50 bg-emerald-400/5"
+                              : "border-white/5 bg-white/5 hover:bg-white/10"
+                          )}
                         >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Import
+                          <div className="flex items-center gap-3 text-sm">
+                            <RadioGroupItem
+                              value="lastLowPrice"
+                              id="lastLowPrice"
+                              className="sr-only"
+                            />
+                            <span className="font-medium">Last Low Price</span>
+                            <span className="text-gray-500 text-xs">
+                              Uses the most recent lowest listing
+                            </span>
+                          </div>
+                          {currentFleaPriceType === "lastLowPrice" && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          )}
+                        </Label>
+                        <Label
+                          htmlFor="avg24hPrice"
+                          className={cn(
+                            "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
+                            currentFleaPriceType === "avg24hPrice"
+                              ? "border-emerald-400/50 bg-emerald-400/5"
+                              : "border-white/5 bg-white/5 hover:bg-white/10"
+                          )}
+                        >
+                          <div className="flex items-center gap-3 text-sm">
+                            <RadioGroupItem
+                              value="avg24hPrice"
+                              id="avg24hPrice"
+                              className="sr-only"
+                            />
+                            <span className="font-medium">
+                              Average 24h Price
+                            </span>
+                            <span className="text-gray-500 text-xs">
+                              Weighted average over the last 24h
+                            </span>
+                          </div>
+                          {currentFleaPriceType === "avg24hPrice" && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          )}
+                        </Label>
+                      </RadioGroup>
+                    </section>
+
+                    {/* Market Offer Count Filter (Temporarily Disabled) */}
+                    <section className="space-y-4 pt-6 border-t border-white/5 opacity-50 cursor-not-allowed">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-base font-semibold text-gray-400">
+                              Exclude Low Offer Count Items
+                            </Label>
+                            <Badge
+                              variant="outline"
+                              className="bg-white/5 border-white/10 text-[10px] text-gray-500 uppercase px-2 py-0"
+                            >
+                              Disabled
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 leading-relaxed">
+                            Items with fewer than 5 offers on the Flea Market
+                            will not be excluded from calculations.
+                          </p>
+                        </div>
+                        <Switch
+                          id="use-last-offer-count-filter"
+                          checked={false}
+                          disabled={true}
+                          className="data-[state=unchecked]:bg-white/10"
+                        />
+                      </div>
+                    </section>
+
+                    {/* Flea Market Level Filter */}
+                    <section className="space-y-6 pt-6 border-t border-white/5">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-base font-semibold text-white">
+                              Flea Market Level Filter
+                            </Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button className="text-gray-500 hover:text-white transition-colors">
+                                  <Info className="h-4 w-4" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                side="right"
+                                className="w-80 bg-[#1a1c20] border-white/10 p-4 shadow-2xl rounded-2xl"
+                              >
+                                <div className="space-y-4">
+                                  <h4 className="text-sm font-semibold text-yellow-400 lowercase tracking-wider">
+                                    Level Requirements
+                                  </h4>
+                                  <ScrollArea className="h-48">
+                                    <div className="space-y-2 pr-4">
+                                      {[...CATEGORY_LEVEL_REQUIREMENTS]
+                                        .sort(
+                                          (a, b) =>
+                                            a.levelRequirement -
+                                            b.levelRequirement
+                                        )
+                                        .map((cat) => (
+                                          <div
+                                            key={cat.categoryId}
+                                            className="flex justify-between text-xs py-1 border-b border-white/5 last:border-0"
+                                          >
+                                            <span className="text-gray-400">
+                                              {cat.categoryName}
+                                            </span>
+                                            <span className="text-yellow-400 font-mono">
+                                              Lv.{cat.levelRequirement}
+                                            </span>
+                                          </div>
+                                        ))}
+                                    </div>
+                                  </ScrollArea>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            Filter items you can&apos;t buy yet based on your
+                            level.
+                          </p>
+                        </div>
+                        <Switch
+                          id="use-level-filter"
+                          checked={useLevelFilter}
+                          onCheckedChange={onUseLevelFilterChange}
+                          className="data-[state=checked]:bg-yellow-400"
+                        />
+                      </div>
+
+                      <AnimatePresence>
+                        {useLevelFilter && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5"
+                          >
+                            <div className="space-y-1 flex-1">
+                              <Label className="text-sm font-medium">
+                                Your Current Level
+                              </Label>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={79}
+                                  value={playerLevel}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val) && val >= 1 && val <= 79)
+                                      onPlayerLevelChange(val);
+                                  }}
+                                  className="w-16 h-8 bg-black/40 border-white/10 text-center font-mono text-yellow-400"
+                                />
+                                <span className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">
+                                  (1 - 79)
+                                </span>
+                              </div>
+                            </div>
+                            {playerLevel < 30 && (
+                              <div className="w-32 text-[10px] text-yellow-400/80 leading-relaxed bg-yellow-400/5 p-2 rounded-lg border border-yellow-400/10">
+                                ⚠️ High-value categories are restricted at Lv.
+                                {playerLevel}.
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </section>
+                  </div>
+                )}
+
+                {activeTab === "categories" && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between gap-4 bg-white/5 p-5 rounded-3xl border border-white/5">
+                      <div className="space-y-1">
+                        <h4 className="font-semibold text-lg">
+                          Excluded Categories
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          Selection will be hidden from the auto-selector &
+                          items lists.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            onCategoryChange([...DEFAULT_EXCLUDED_CATEGORY_IDS])
+                          }
+                          className="h-8 hover:bg-white/10 text-xs rounded-xl"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
+                          Reset
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onCategoryChange([])}
+                          className="h-8 hover:bg-red-400/10 hover:text-red-400 text-xs rounded-xl"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-2 text-red-400" />
+                          Clear
                         </Button>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Reset Options Section */}
-                <div className="bg-[#232b32] border border-[#e4c15a]/20 rounded-xl shadow-sm p-4 mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <RotateCcw className="h-5 w-5 text-yellow-400" />
-                    <span className="text-lg font-semibold">Reset Options</span>
+                    <div className="relative group">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within:text-yellow-400 transition-colors" />
+                      <Input
+                        placeholder="Search for categories..."
+                        className="pl-11 h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-yellow-400 focus:border-yellow-400 transition-all placeholder:text-gray-600"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-2 pt-2">
+                      {allCategories
+                        .filter((c) =>
+                          c.name
+                            .toLowerCase()
+                            .includes(searchTerm.toLowerCase())
+                        )
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors group"
+                          >
+                            <Checkbox
+                              id={`cat-${c.id}`}
+                              checked={excludedCategories.includes(c.id)}
+                              onCheckedChange={() => handleCategoryChange(c.id)}
+                              className="border-white/20 data-[state=checked]:bg-yellow-400"
+                            />
+                            <Label
+                              htmlFor={`cat-${c.id}`}
+                              className="text-sm cursor-pointer text-gray-400 group-hover:text-white transition-colors"
+                            >
+                              {getCategoryDisplayName(c.name)}
+                            </Label>
+                          </div>
+                        ))}
+                    </div>
                   </div>
-                  <div className="border-b border-[#e4c15a]/10 mb-2"></div>
-                  <div className="grid gap-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                      <div>
-                        <Label className="text-sm font-medium text-red-400">
-                          Clear All Data
-                        </Label>
+                )}
+
+                {activeTab === "items" && (
+                  <div className="space-y-8">
+                    <div className="flex items-center justify-between p-6 bg-gradient-to-r from-emerald-400/10 to-transparent rounded-3xl border border-emerald-400/10">
+                      <div className="space-y-1">
+                        <h4 className="font-semibold text-lg text-emerald-400">
+                          Compatibility Mode
+                        </h4>
                         <p className="text-sm text-gray-400">
-                          Remove all stored data and start fresh
+                          Exclude items invalid for the cultist circle.
                         </p>
+                      </div>
+                      <Switch
+                        checked={excludeIncompatible}
+                        onCheckedChange={onExcludeIncompatibleChange}
+                        className="data-[state=checked]:bg-emerald-400"
+                      />
+                    </div>
+
+                    <section className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <h4 className="text-base font-semibold">
+                            Individual Exclusions
+                          </h4>
+                          <p className="text-xs text-gray-500">
+                            To add items, use the &quot;Exclude from Auto&quot;
+                            button in the selector.
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            onExcludedItemsChange(
+                              new Set(DEFAULT_EXCLUDED_ITEMS)
+                            );
+                            sonnerToast.success("Reset Complete", {
+                              description: "Defaults restored.",
+                            });
+                          }}
+                          className="h-8 hover:bg-white/10 text-xs rounded-xl"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
+                          Restore Defaults
+                        </Button>
+                      </div>
+
+                      <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within:text-yellow-400 transition-colors" />
+                        <Input
+                          placeholder="Find an excluded item..."
+                          className="pl-11 h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-yellow-400 focus:border-yellow-400 transition-all placeholder:text-gray-600"
+                          value={excludedItemsSearch}
+                          onChange={(e) =>
+                            setExcludedItemsSearch(e.target.value)
+                          }
+                        />
+                      </div>
+
+                      <ScrollArea className="h-[300px] border border-white/5 bg-black/20 rounded-2xl p-4">
+                        <div className="grid grid-cols-1 gap-1">
+                          {Array.from(excludedItems)
+                            .filter((id) =>
+                              id
+                                .toLowerCase()
+                                .includes(excludedItemsSearch.toLowerCase())
+                            )
+                            .sort()
+                            .map((id) => (
+                              <div
+                                key={id}
+                                className="flex items-center justify-between p-2 pl-4 rounded-xl hover:bg-white/5 transition-colors group"
+                              >
+                                <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
+                                  {id}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    const next = new Set(excludedItems);
+                                    next.delete(id);
+                                    onExcludedItemsChange(next);
+                                  }}
+                                  className="h-8 w-8 p-0 hover:bg-red-400/20 text-red-400 opacity-0 group-hover:opacity-100 transition-all rounded-lg"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          {excludedItems.size === 0 && (
+                            <div className="h-40 flex flex-col items-center justify-center text-gray-600 gap-2">
+                              <Archive className="h-8 w-8 opacity-20" />
+                              <p className="text-xs font-medium uppercase tracking-widest opacity-50">
+                                Empty Archive
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </section>
+                  </div>
+                )}
+
+                {activeTab === "data" && (
+                  <div className="space-y-8">
+                    <div className="grid grid-cols-2 gap-4">
+                      <section className="p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4">
+                        <div className="p-3 bg-blue-400/10 rounded-2xl w-fit">
+                          <Download className="h-6 w-6 text-blue-400" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-semibold">Export Profile</h4>
+                          <p className="text-xs text-gray-500 leading-relaxed">
+                            Save your custom exclusions and preferences as a
+                            JSON file.
+                          </p>
+                        </div>
+                        <Button
+                          onClick={onExportData}
+                          className="w-full h-10 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl transition-all shadow-sm"
+                        >
+                          Export Configuration
+                        </Button>
+                      </section>
+
+                      <section className="p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4">
+                        <div className="p-3 bg-indigo-400/10 rounded-2xl w-fit">
+                          <Upload className="h-6 w-6 text-indigo-400" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-semibold">Import Profile</h4>
+                          <p className="text-xs text-gray-500 leading-relaxed">
+                            Restore your configuration from a previously
+                            exported file.
+                          </p>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImport}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          />
+                          <Button
+                            variant="outline"
+                            className="w-full h-10 border-white/10 text-white rounded-xl bg-white/5 hover:bg-white/10 shadow-sm"
+                          >
+                            Upload File
+                          </Button>
+                        </div>
+                      </section>
+                    </div>
+
+                    <section className="p-8 bg-red-400/5 rounded-[32px] border border-red-400/10 space-y-6">
+                      <div className="flex items-start gap-5">
+                        <div className="p-3 bg-red-400/20 rounded-2xl text-red-400 mt-1">
+                          <RotateCcw className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="text-lg font-bold text-red-400">
+                            System Hard Reset
+                          </h4>
+                          <p className="text-sm text-gray-400 leading-relaxed max-w-md">
+                            This will clear all localized storage including
+                            custom categories, exclusions, and preferred price
+                            modes.
+                          </p>
+                        </div>
                       </div>
                       <Button
                         onClick={() => setShowConfirmClear(true)}
-                        variant="destructive"
-                        size="sm"
-                        className="interactive-bounce"
+                        className="w-full h-12 bg-red-400/10 hover:bg-red-400 text-red-100 font-semibold rounded-2xl border border-red-400/20 transition-all"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Clear
+                        Clear All Application Data
                       </Button>
-                    </div>
+                    </section>
                   </div>
-                </div>
-              </div>
-            </TabsContent>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </ScrollArea>
-        </Tabs>
+        </div>
 
         {/* Confirmation Dialogs */}
         <Dialog open={showConfirmClear} onOpenChange={setShowConfirmClear}>
-          <DialogContent className="bg-gray-800 border-gray-700 text-white">
-            <DialogHeader>
-              <DialogTitle>Confirm Clear Data</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                This will permanently remove all your stored data, including
-                settings and preferences. This action cannot be undone.
-              </DialogDescription>
+          <DialogContent className="bg-[#1a1c20] border-white/5 text-white rounded-[32px] p-8 shadow-2xl">
+            <DialogHeader className="space-y-4">
+              <div className="p-4 bg-red-400/20 rounded-3xl w-fit mx-auto">
+                <Trash2 className="h-8 w-8 text-red-400" />
+              </div>
+              <div className="text-center space-y-2">
+                <DialogTitle className="text-2xl font-bold">
+                  Clear All Data?
+                </DialogTitle>
+                <DialogDescription className="text-gray-400 text-sm leading-relaxed max-w-[320px] mx-auto">
+                  This action is irreversible. All your custom exclusions and
+                  settings will be permanently deleted.
+                </DialogDescription>
+              </div>
             </DialogHeader>
-            <div className="flex justify-end gap-3 mt-4">
-              <Button
-                variant="ghost"
-                onClick={() => setShowConfirmClear(false)}
-                className="hover:bg-gray-700"
-              >
-                Cancel
-              </Button>
+            <div className="flex flex-col gap-3 mt-8">
               <Button
                 variant="destructive"
                 onClick={() => {
@@ -870,9 +968,16 @@ export default function SettingsPane({
                   onClose();
                   setShowConfirmClear(false);
                 }}
-                className="interactive-bounce"
+                className="h-12 rounded-2xl font-bold bg-red-400 hover:bg-red-500 shadow-lg shadow-red-500/20"
               >
-                Clear All Data
+                Yes, Delete Everything
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowConfirmClear(false)}
+                className="h-12 rounded-2xl text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+              >
+                Cancel
               </Button>
             </div>
           </DialogContent>

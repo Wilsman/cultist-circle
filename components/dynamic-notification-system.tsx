@@ -6,7 +6,13 @@ import { HOT_SACRIFICES } from "@/components/hot-sacrifices-panel";
 
 export interface DynamicNotification {
   id: string;
-  type: "success" | "warning" | "info" | "halloween" | "hot-sacrifice" | "weapon-warning";
+  type:
+    | "success"
+    | "warning"
+    | "info"
+    | "halloween"
+    | "hot-sacrifice"
+    | "weapon-warning";
   priority: number;
   title: string;
   description: string | React.ReactNode;
@@ -37,19 +43,22 @@ export function useDynamicNotifications(selectedItems: SimplifiedItem[]) {
   }, [selectedItems]);
 }
 
-function detectHotSacrificePatterns(selectedItems: SimplifiedItem[]): DynamicNotification[] {
+function detectHotSacrificePatterns(
+  selectedItems: SimplifiedItem[]
+): DynamicNotification[] {
   const notifications: DynamicNotification[] = [];
 
   // Create a map of selected items for easier lookup
   const selectedItemMap = new Map<string, number>();
-  selectedItems.forEach(item => {
+  selectedItems.forEach((item) => {
     const key = item.shortName || item.name;
     selectedItemMap.set(key, (selectedItemMap.get(key) || 0) + 1);
   });
 
-  HOT_SACRIFICES.forEach(combo => {
-    const isMatch = combo.ingredients.every(ingredient => {
-      const selectedCount = selectedItemMap.get(ingredient.shortName || ingredient.name) || 0;
+  HOT_SACRIFICES.forEach((combo) => {
+    const isMatch = combo.ingredients.every((ingredient) => {
+      const selectedCount =
+        selectedItemMap.get(ingredient.shortName || ingredient.name) || 0;
       return selectedCount >= ingredient.count;
     });
 
@@ -62,10 +71,15 @@ function detectHotSacrificePatterns(selectedItems: SimplifiedItem[]): DynamicNot
         description: (
           <div>
             <p className="mb-2">
-              Your selection matches the <span className="font-semibold text-indigo-300">{combo.resultText}</span> community recipe!
+              Your selection matches the{" "}
+              <span className="font-semibold text-indigo-300">
+                {combo.resultText}
+              </span>{" "}
+              community recipe!
             </p>
             <p className="text-xs text-slate-400">
-              Check the Hot Sacrifices tab for more community-tested recipes like this one.
+              Check the Hot Sacrifices tab for more community-tested recipes
+              like this one.
             </p>
           </div>
         ),
@@ -74,11 +88,11 @@ function detectHotSacrificePatterns(selectedItems: SimplifiedItem[]): DynamicNot
             label: "View Hot Sacrifices",
             action: () => {
               // Scroll to hot sacrifices section
-              const element = document.querySelector('[data-hot-sacrifices]');
-              element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-          }
-        ]
+              const element = document.querySelector("[data-hot-sacrifices]");
+              element?.scrollIntoView({ behavior: "smooth", block: "center" });
+            },
+          },
+        ],
       });
     }
   });
@@ -86,11 +100,14 @@ function detectHotSacrificePatterns(selectedItems: SimplifiedItem[]): DynamicNot
   return notifications;
 }
 
-function detectWeaponWarnings(selectedItems: SimplifiedItem[]): DynamicNotification | null {
-  const weapons = selectedItems.filter(item => 
-    item.categories?.includes("Weapon") || 
-    item.categories_display?.some(cat => cat.name.toLowerCase().includes("weapon")) ||
-    item.categories_display_en?.some(cat => cat.name.toLowerCase().includes("weapon"))
+function detectWeaponWarnings(
+  selectedItems: SimplifiedItem[]
+): DynamicNotification | null {
+  const weapons = selectedItems.filter(
+    (item) =>
+      item.categories?.includes("5422acb9af1c889c16000029") || // Weapon category ID
+      item.categories_display?.some((cat) => cat.name === "Weapon") ||
+      item.categories_display_en?.some((cat) => cat.name === "Weapon")
   );
 
   if (weapons.length > 0) {
@@ -102,15 +119,17 @@ function detectWeaponWarnings(selectedItems: SimplifiedItem[]): DynamicNotificat
       description: (
         <div>
           <p className="mb-2">
-            Weapon base values may be inaccurate due to durability variations and attached weapon parts.
+            Weapon base values may be inaccurate due to durability variations
+            and attached weapon parts.
           </p>
           <p className="text-xs text-red-400 mb-2">
-            Current weapons: {weapons.map(w => w.shortName || w.name).join(", ")}
+            Current weapons:{" "}
+            {weapons.map((w) => w.shortName || w.name).join(", ")}
           </p>
           <p className="text-xs">
             Consider using the{" "}
-            <a 
-              href="/base-values" 
+            <a
+              href="/base-values"
               className="underline hover:text-amber-300 transition-colors font-semibold"
             >
               Base Values lookup
@@ -118,7 +137,7 @@ function detectWeaponWarnings(selectedItems: SimplifiedItem[]): DynamicNotificat
             page for verification.
           </p>
         </div>
-      )
+      ),
     };
   }
 

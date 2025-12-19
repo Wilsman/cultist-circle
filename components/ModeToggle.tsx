@@ -1,35 +1,39 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 interface ModeToggleProps {
-  isPVE: boolean
-  onToggle: (isPVEActive: boolean) => void
-  embedded?: boolean
+  isPVE: boolean;
+  onToggle: (isPVEActive: boolean) => void;
+  embedded?: boolean;
 }
 
-export function ModeToggle({ isPVE, onToggle, embedded = false }: ModeToggleProps) {
+export function ModeToggle({
+  isPVE,
+  onToggle,
+  embedded = false,
+}: ModeToggleProps) {
   const [internalMode, setInternalMode] = useState<"PVP" | "PVE">(
     isPVE ? "PVE" : "PVP"
-  )
+  );
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     Promise.resolve().then(() => {
       if (!cancelled) {
-        setInternalMode(isPVE ? "PVE" : "PVP")
+        setInternalMode(isPVE ? "PVE" : "PVP");
       }
-    })
+    });
     return () => {
-      cancelled = true
-    }
-  }, [isPVE])
+      cancelled = true;
+    };
+  }, [isPVE]);
 
   const handleModeChange = (newMode: "PVP" | "PVE") => {
-    setInternalMode(newMode)
-    onToggle(newMode === "PVE")
-  }
+    setInternalMode(newMode);
+    onToggle(newMode === "PVE");
+  };
 
   return (
     <div
@@ -50,7 +54,8 @@ export function ModeToggle({ isPVE, onToggle, embedded = false }: ModeToggleProp
             initial={false}
             animate={{
               x: internalMode === "PVP" ? 4 : "calc(100% - 4px)",
-              width: internalMode === "PVP" ? "calc(50% - 1px)" : "calc(50% - 1px)",
+              width:
+                internalMode === "PVP" ? "calc(50% - 1px)" : "calc(50% - 1px)",
             }}
             transition={{
               type: "spring",
@@ -62,7 +67,8 @@ export function ModeToggle({ isPVE, onToggle, embedded = false }: ModeToggleProp
           {/* PVP Button */}
           <button
             onClick={() => handleModeChange("PVP")}
-            className={`relative z-10 px-4 py-1.5 rounded-full font-semibold text-xs sm:text-sm tracking-wide transition-all duration-200 min-w-[64px] sm:min-w-[80px] text-center ${ // compact
+            className={`relative z-10 px-2 sm:px-4 py-1.5 rounded-full font-semibold text-xs sm:text-sm tracking-wide transition-all duration-200 min-w-[56px] sm:min-w-[80px] text-center ${
+              // compact
               internalMode === "PVP"
                 ? "text-white shadow-lg"
                 : "text-slate-400 hover:text-slate-300"
@@ -81,7 +87,8 @@ export function ModeToggle({ isPVE, onToggle, embedded = false }: ModeToggleProp
           {/* PVE Button */}
           <button
             onClick={() => handleModeChange("PVE")}
-            className={`relative z-10 px-4 py-1.5 rounded-full font-semibold text-xs sm:text-sm tracking-wide transition-all duration-200 min-w-[64px] sm:min-w-[80px] text-center ${ // compact
+            className={`relative z-10 px-2 sm:px-4 py-1.5 rounded-full font-semibold text-xs sm:text-sm tracking-wide transition-all duration-200 min-w-[56px] sm:min-w-[80px] text-center ${
+              // compact
               internalMode === "PVE"
                 ? "text-white shadow-lg"
                 : "text-slate-400 hover:text-slate-300"
@@ -114,5 +121,5 @@ export function ModeToggle({ isPVE, onToggle, embedded = false }: ModeToggleProp
         )}
       </div>
     </div>
-  )
+  );
 }

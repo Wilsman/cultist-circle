@@ -11,13 +11,9 @@ interface WeaponWarningProps {
 export function WeaponWarning({ selectedItems }: WeaponWarningProps) {
   const weapons = selectedItems.filter(
     (item) =>
-      item.categories?.includes("Weapon") ||
-      item.categories_display?.some((cat) =>
-        cat.name.toLowerCase().includes("weapon")
-      ) ||
-      item.categories_display_en?.some((cat) =>
-        cat.name.toLowerCase().includes("weapon")
-      )
+      item.categories?.includes("5422acb9af1c889c16000029") || // Weapon category ID
+      item.categories_display?.some((cat) => cat.name === "Weapon") ||
+      item.categories_display_en?.some((cat) => cat.name === "Weapon")
   );
 
   if (weapons.length === 0) {
@@ -39,9 +35,8 @@ export function WeaponWarning({ selectedItems }: WeaponWarningProps) {
           {weapons.map((w) => w.shortName || w.name).join(", ")}
         </div>
         <div className="text-xs">
-          You can check the{" "}
-          <strong> Hot Sacrifices </strong>{" "}
-          panel at the top of the page for known, community-tested combos.
+          You can check the <strong> Hot Sacrifices </strong> panel at the top
+          of the page for known, community-tested combos.
         </div>
       </AlertDescription>
     </Alert>
