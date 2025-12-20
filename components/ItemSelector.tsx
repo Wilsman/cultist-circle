@@ -558,14 +558,14 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               {highlightMatch(item.name)}
             </span>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-wider">
+              <span className="text-[10px] font-extrabold text-emerald-500/90 uppercase tracking-wider">
                 ₽{(item.basePrice || 0).toLocaleString()}
               </span>
-              <span className="h-1 w-1 rounded-full bg-white/20" />
+              <span className="h-0.5 w-0.5 rounded-full bg-white/10" />
               <span
                 className={cn(
-                  "text-[10px] font-bold uppercase tracking-wider",
-                  isOverridden ? "text-amber-400" : "text-primary/70"
+                  "text-[9px] font-semibold uppercase tracking-widest opacity-60",
+                  isOverridden ? "text-amber-400/80" : "text-primary/90"
                 )}
               >
                 {priceMode === "flea" ? "Flea" : "Trader"}:{" "}
@@ -599,11 +599,12 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15 }}
               className="relative"
             >
               <div
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 bg-black/40 backdrop-blur-xl border transition-all duration-300 rounded-xl",
+                  "flex items-center gap-3 px-4 py-3 bg-black/40 backdrop-blur-xl border transition-all duration-200 rounded-xl",
                   isFocused
                     ? "border-primary/50 shadow-[0_0_20px_rgba(0,255,255,0.1)]"
                     : "border-white/10"
@@ -656,6 +657,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 4 }}
                     exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.15 }}
                     className="absolute top-full left-0 right-0 z-[100] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
                   >
                     <div className="max-h-[320px]">
@@ -691,8 +693,9 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15 }}
               className={cn(
-                "relative group bg-black/40 backdrop-blur-xl border rounded-xl overflow-hidden transition-all duration-500",
+                "relative group bg-black/40 backdrop-blur-xl border rounded-xl overflow-hidden transition-all duration-300",
                 isPinned
                   ? "border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.1)]"
                   : "border-white/10 hover:border-white/20"
@@ -720,36 +723,101 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                       {selectedItem.name}
                     </h3>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                        ₽{(selectedItem.basePrice || 0).toLocaleString()}
+                      <span className="text-xs font-extrabold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-wider flex items-center shadow-[0_0_15px_rgba(16,185,129,0.05)] border border-emerald-500/20">
+                        Base: {(selectedItem.basePrice || 0).toLocaleString()}
                       </span>
-                      <div
-                        className={cn(
-                          "flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider",
-                          isPriceOverrideActive
-                            ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                            : "bg-primary/10 border-primary/30 text-primary/80"
-                        )}
-                      >
-                        <span>{priceMode === "flea" ? "Flea" : "Trader"}</span>
-                        <span>
-                          {((isPriceOverrideActive && priceOverride
-                            ? Number(priceOverride)
-                            : null) ??
-                            overriddenPrices[selectedItem.id] ??
-                            getEffectivePriceInfo(selectedItem).price ??
-                            null) !== null
-                            ? `₽${(
-                                (isPriceOverrideActive && priceOverride
-                                  ? Number(priceOverride)
-                                  : null) ??
+                      <AnimatePresence mode="wait">
+                        {isPriceOverrideActive ? (
+                          <motion.div
+                            key="price-input"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.15 }}
+                            className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/40 rounded-md px-2 py-0.5 ring-1 ring-amber-500/20"
+                          >
+                            <span className="text-[10px] text-amber-400 font-bold">
+                              ₽
+                            </span>
+                            <input
+                              autoFocus
+                              type="text"
+                              value={priceOverride}
+                              onChange={handlePriceOverride}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  if (selectedItem) {
+                                    onSelect(
+                                      selectedItem,
+                                      Number(priceOverride) || 0
+                                    );
+                                  }
+                                  setIsPriceOverrideActive(false);
+                                }
+                                if (e.key === "Escape") clearPriceOverride();
+                              }}
+                              className="w-20 bg-transparent text-[10px] font-bold text-amber-400 outline-none placeholder:text-amber-400/30 font-mono"
+                              placeholder="Manual..."
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                clearPriceOverride();
+                              }}
+                              className="text-amber-400/60 hover:text-red-400 transition-colors ml-1"
+                            >
+                              <XIcon className="h-3 w-3" />
+                            </button>
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="price-badge"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePriceOverride();
+                            }}
+                            className={cn(
+                              "flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-semibold uppercase tracking-widest cursor-pointer hover:scale-[1.03] active:scale-[0.97] transition-all",
+                              isPriceOverrideActive
+                                ? "bg-amber-500/15 border-amber-500/40 text-amber-400 opacity-100 ring-1 ring-amber-500/20"
+                                : "bg-primary/5 border-primary/20 text-primary/90 opacity-80 hover:opacity-100 hover:border-primary/40 hover:bg-primary/10"
+                            )}
+                          >
+                            <span className="text-[8px] text-white/60 mr-0.5">
+                              {priceMode === "flea" ? "Flea" : "Trader"}
+                            </span>
+                            <span>
+                              {((isPriceOverrideActive && priceOverride
+                                ? Number(priceOverride)
+                                : null) ??
                                 overriddenPrices[selectedItem.id] ??
                                 getEffectivePriceInfo(selectedItem).price ??
-                                0
-                              ).toLocaleString()}`
-                            : "N/A"}
-                        </span>
-                      </div>
+                                null) !== null
+                                ? `₽${(
+                                    (isPriceOverrideActive && priceOverride
+                                      ? Number(priceOverride)
+                                      : null) ??
+                                    overriddenPrices[selectedItem.id] ??
+                                    getEffectivePriceInfo(selectedItem).price ??
+                                    0
+                                  ).toLocaleString()}`
+                                : "N/A"}
+                            </span>
+                            <Edit
+                              className={cn(
+                                "h-2 w-2 ml-1 transition-opacity",
+                                isPriceOverrideActive
+                                  ? "opacity-100"
+                                  : "opacity-40"
+                              )}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 </div>
@@ -777,14 +845,6 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                     </div>
 
                     {/* Primary Actions (always visible) */}
-                    <ActionButton
-                      icon={<Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                      onClick={togglePriceOverride}
-                      active={isPriceOverrideActive}
-                      activeClass="text-amber-400 bg-amber-500/10"
-                      tooltip="Override price"
-                      className="h-8 w-8 sm:h-7 sm:w-7"
-                    />
                     <ActionButton
                       icon={<Pin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                       onClick={onPin}
@@ -875,40 +935,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                   </div>
                 </div>
 
-                {/* Price Override Input */}
-                <AnimatePresence>
-                  {isPriceOverrideActive && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden sm:absolute sm:bottom-0 sm:left-0 sm:right-0 sm:translate-y-full sm:z-10"
-                    >
-                      <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:p-2 sm:bg-black/60 sm:backdrop-blur-xl sm:border sm:border-white/10 sm:rounded-b-xl">
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30">
-                            ₽
-                          </span>
-                          <input
-                            type="text"
-                            value={priceOverride}
-                            onChange={handlePriceOverride}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg pl-6 pr-3 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 transition-colors"
-                            placeholder="Enter manual price..."
-                          />
-                        </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={clearPriceOverride}
-                          className="h-8 w-8 text-white/30 hover:text-red-400 hover:bg-red-500/10"
-                        >
-                          <XIcon className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* Price Override Input removed - integrated into badge area */}
               </div>
 
               {/* Metadata Row */}
