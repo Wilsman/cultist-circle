@@ -191,12 +191,10 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
 interface ComboRowProps {
   combo: SacrificeCombo;
   onUseThis?: (combo: SacrificeCombo) => void;
+  estimatedCost?: number;
 }
 
-export function ComboRow({
-  combo,
-  onUseThis,
-}: ComboRowProps) {
+export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
   const isHighValue =
     combo.resultText.includes("400K") || combo.resultText.includes("6h");
 
@@ -291,26 +289,39 @@ export function ComboRow({
         ))}
       </div>
 
-      <div className="flex items-center gap-3 justify-end sm:justify-start mt-2 sm:mt-0 pl-1">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className={`text-[12px] font-bold px-4 py-1.5 rounded-full backdrop-blur-md shadow-lg ${
-            isHighValue
-              ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-400 ring-1 ring-emerald-500/30"
-              : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 ring-1 ring-amber-500/30"
-          }`}
-        >
-          <span className="relative z-10 flex items-center gap-1.5">
-            {isHighValue && (
-              <motion.span
-                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"
-              />
-            )}
-            {combo.resultText}
-          </span>
-        </motion.div>
+      <div className="flex items-center gap-4 justify-end sm:justify-start mt-2 sm:mt-0 pl-1">
+        <div className="flex flex-col items-end sm:items-start gap-1">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className={`text-[12px] font-bold px-4 py-1.5 rounded-full backdrop-blur-md shadow-lg ${
+              isHighValue
+                ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-400 ring-1 ring-emerald-500/30"
+                : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 ring-1 ring-amber-500/30"
+            }`}
+          >
+            <span className="relative z-10 flex items-center gap-1.5">
+              {isHighValue && (
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"
+                />
+              )}
+              {combo.resultText}
+            </span>
+          </motion.div>
+
+          {estimatedCost !== undefined && (
+            <div className="flex items-baseline gap-1.5 px-1 opacity-80 group-hover:opacity-100 transition-opacity">
+              <span className="text-[9px] uppercase tracking-tighter text-slate-500 font-bold whitespace-nowrap">
+                Est. Cost:
+              </span>
+              <span className="text-[11px] font-black text-cyan-400/90 tabular-nums whitespace-nowrap">
+                ₽{estimatedCost.toLocaleString()}
+              </span>
+            </div>
+          )}
+        </div>
 
         {onUseThis && (
           <TooltipProvider>
@@ -338,10 +349,12 @@ export function ComboRow({
 
 interface HotSacrificesPanelProps {
   onUseThis?: (combo: SacrificeCombo) => void;
+  sacrificeCosts?: Record<string, number>;
 }
 
 export function HotSacrificesPanel({
   onUseThis,
+  sacrificeCosts = {},
 }: HotSacrificesPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const featuredCombo = HOT_SACRIFICES[0];
@@ -408,6 +421,7 @@ export function HotSacrificesPanel({
             <ComboRow
               combo={featuredCombo}
               onUseThis={onUseThis}
+              estimatedCost={sacrificeCosts[featuredCombo.id]}
             />
           </div>
 
@@ -449,6 +463,7 @@ export function HotSacrificesPanel({
                         key={combo.id}
                         combo={combo}
                         onUseThis={onUseThis}
+                        estimatedCost={sacrificeCosts[combo.id]}
                       />
                     ))}
 

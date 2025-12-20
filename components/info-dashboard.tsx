@@ -17,11 +17,13 @@ interface InfoDashboardProps {
   selectedItems?: SimplifiedItem[];
   onUseThis?: (combo: SacrificeCombo) => void;
   availableItems?: SimplifiedItem[];
+  sacrificeCosts?: Record<string, number>;
 }
 
 export function InfoDashboard({
   selectedItems = [],
   onUseThis,
+  sacrificeCosts = {},
 }: InfoDashboardProps) {
   const dynamicNotifications = useDynamicNotifications(selectedItems);
   const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications];
@@ -142,7 +144,11 @@ export function InfoDashboard({
         >
           {/* Always show the first combo */}
           {HOT_SACRIFICES.length > 0 && (
-            <ComboRow combo={HOT_SACRIFICES[0]} onUseThis={onUseThis} />
+            <ComboRow
+              combo={HOT_SACRIFICES[0]}
+              onUseThis={onUseThis}
+              estimatedCost={sacrificeCosts[HOT_SACRIFICES[0].id]}
+            />
           )}
 
           {showRecipesExpand && (
@@ -151,7 +157,12 @@ export function InfoDashboard({
                 className={`space-y-3 ${recipesExpanded ? "block" : "hidden"}`}
               >
                 {HOT_SACRIFICES.slice(1).map((combo) => (
-                  <ComboRow key={combo.id} combo={combo} onUseThis={onUseThis} />
+                  <ComboRow
+                    key={combo.id}
+                    combo={combo}
+                    onUseThis={onUseThis}
+                    estimatedCost={sacrificeCosts[combo.id]}
+                  />
                 ))}
                 <div className="mt-3 pt-3 border-t border-slate-700/30 text-center">
                   <p className="text-[10px] text-slate-500">

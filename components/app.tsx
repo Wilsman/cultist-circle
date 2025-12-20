@@ -60,7 +60,10 @@ import { CURRENT_VERSION } from "@/config/changelog";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 import { IncompatibleItemsNotice } from "@/components/incompatible-items-notice";
 import { ChristmasSnow } from "@/components/christmas-snow";
-import { SacrificeCombo } from "@/components/hot-sacrifices-panel";
+import {
+  SacrificeCombo,
+  HOT_SACRIFICES,
+} from "@/components/hot-sacrifices-panel";
 
 // Snow toggle component
 function SnowToggle() {
@@ -1324,89 +1327,112 @@ function AppContent() {
     priceMode,
     setPriceMode,
   ]);
+  // Function to find matching item by name - ALWAYS use rawItemsData to bypass UI filters
+  const findMatchingItem = useCallback(
+    (ingredientName: string): SimplifiedItem | null => {
+      if (!rawItemsData) return null;
+
+      // Try exact match first
+      const exactMatch = rawItemsData.find(
+        (item) =>
+          item.name === ingredientName ||
+          item.englishName === ingredientName ||
+          item.shortName === ingredientName ||
+          item.englishShortName === ingredientName
+      );
+
+      if (exactMatch) return exactMatch;
+
+      // Try partial match (contains)
+      const partialMatch = rawItemsData.find(
+        (item) =>
+          item.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
+          ingredientName.toLowerCase().includes(item.name.toLowerCase()) ||
+          item.englishName
+            ?.toLowerCase()
+            .includes(ingredientName.toLowerCase()) ||
+          ingredientName
+            .toLowerCase()
+            .includes(item.englishName?.toLowerCase() || "")
+      );
+
+      return partialMatch || null;
+    },
+    [rawItemsData]
+  );
+
+  // Memoized calculation of sacrifice costs
+  const sacrificeCosts = useMemo(() => {
+    if (!rawItemsData || rawItemsData.length === 0) return {};
+
+    const costs: Record<string, number> = {};
+
+    for (const combo of HOT_SACRIFICES) {
+      let totalCost = 0;
+      for (const ingredient of combo.ingredients) {
+        // Special case: Labs card only for G28 combo
+        if (combo.id === "labs-g28" && ingredient.name !== "Labs Access") {
+          continue;
+        }
+
+        const match = findMatchingItem(ingredient.name);
+        if (match) {
+          // Smart Pricing logic:
+          // 1. Override
+          const override = overriddenPrices[match.id];
+          let itemPrice: number | undefined =
+            typeof override === "number" ? override : undefined;
+
+          // 2. Best trader price (cheapest eligible)
+          if (
+            itemPrice === undefined &&
+            match.buyFor &&
+            match.buyFor.length > 0
+          ) {
+            let bestTrader: number | undefined = undefined;
+            for (const offer of match.buyFor) {
+              const vendor = offer.vendor?.normalizedName as
+                | keyof TraderLevels
+                | undefined;
+              if (!vendor) continue;
+              const minLvl = offer.vendor?.minTraderLevel ?? 1;
+              const userLvl = traderLevels[vendor];
+              if (userLvl && userLvl >= minLvl) {
+                if (typeof offer.priceRUB === "number") {
+                  if (bestTrader === undefined || offer.priceRUB < bestTrader)
+                    bestTrader = offer.priceRUB;
+                }
+              }
+            }
+            itemPrice = bestTrader;
+          }
+
+          // 3. Flea fallback
+          if (itemPrice === undefined) {
+            const fleaVal = match[fleaPriceType as keyof SimplifiedItem];
+            if (typeof fleaVal === "number") itemPrice = fleaVal;
+          }
+
+          if (itemPrice) {
+            totalCost += itemPrice * ingredient.count;
+          }
+        }
+      }
+      costs[combo.id] = totalCost;
+    }
+
+    return costs;
+  }, [
+    rawItemsData,
+    findMatchingItem,
+    overriddenPrices,
+    traderLevels,
+    fleaPriceType,
+  ]);
 
   const handleUseHotSacrifice = useCallback(
     async (combo: SacrificeCombo) => {
       const { ingredients } = combo;
-
-      // Check if combo contains weapons
-      const weaponKeywords = [
-        "weapon",
-        "rifle",
-        "pistol",
-        "gun",
-        "smg",
-        "carbine",
-        "sniper",
-        "submachine gun",
-      ];
-      const hasWeapons = ingredients.some((ingredient) =>
-        weaponKeywords.some((keyword) =>
-          ingredient.name.toLowerCase().includes(keyword)
-        )
-      );
-
-      // Check for filters that might hide weapons
-      if (hasWeapons) {
-        const weaponCategoryId = "5422acb9af1c889c16000029"; // Weapon category ID
-        const isWeaponCategoryExcluded =
-          excludedCategories.has(weaponCategoryId);
-
-        // Check if flea level filter hides these items (most weapons are level 20-25)
-        // We'll just check if the filter is on and level is < 25 as a proxy,
-        // or more accurately check if weapons would be hidden.
-        const wouldFleaFilterHideWeapons = useLevelFilter && playerLevel < 25;
-
-        if (isWeaponCategoryExcluded || wouldFleaFilterHideWeapons) {
-          const reason =
-            isWeaponCategoryExcluded && wouldFleaFilterHideWeapons
-              ? "the weapons category and flea market level filters are active"
-              : isWeaponCategoryExcluded
-              ? "the weapons category is excluded"
-              : "the flea market level filter is active";
-
-          const confirmed = window.confirm(
-            `This combo contains weapons, but ${reason}. Would you like to use this combo anyway? (Filters will remain in their normal state)`
-          );
-
-          if (!confirmed) {
-            return; // User cancelled
-          }
-        }
-      }
-
-      // Function to find matching item by name - ALWAYS use rawItemsData to bypass UI filters
-      const findMatchingItem = (
-        ingredientName: string
-      ): SimplifiedItem | null => {
-        if (!rawItemsData) return null;
-
-        // Try exact match first
-        const exactMatch = rawItemsData.find(
-          (item) =>
-            item.name === ingredientName ||
-            item.englishName === ingredientName ||
-            item.shortName === ingredientName ||
-            item.englishShortName === ingredientName
-        );
-
-        if (exactMatch) return exactMatch;
-
-        // Try partial match (contains)
-        const partialMatch = rawItemsData.find(
-          (item) =>
-            item.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
-            ingredientName.toLowerCase().includes(item.name.toLowerCase()) ||
-            item.englishName
-              ?.toLowerCase()
-              .includes(ingredientName.toLowerCase()) ||
-            ingredientName
-              .toLowerCase()
-              .includes(item.englishName?.toLowerCase() || "")
-        );
-
-        return partialMatch || null;
-      };
 
       // Clear current selections
       setSelectedItems(Array(5).fill(null));
@@ -1764,6 +1790,7 @@ function AppContent() {
               selectedItems={selectedItems.filter(Boolean) as SimplifiedItem[]}
               onUseThis={handleUseHotSacrifice}
               availableItems={items}
+              sacrificeCosts={sacrificeCosts}
             />
 
             {/* Main Calculator Card */}
