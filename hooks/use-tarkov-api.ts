@@ -1,10 +1,12 @@
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { GraphQLResponse, TarkovItem } from "@/types/GraphQLResponse";
 
+const DEFAULT_GRAPHQL_API_URL = "https://api.tarkov.dev/graphql";
+
 const GRAPHQL_API_URL =
   typeof window !== "undefined"
-    ? "/api/tarkov"
-    : "https://api.tarkov.dev/graphql";
+    ? process.env.NEXT_PUBLIC_TARKOV_GRAPHQL_URL ?? DEFAULT_GRAPHQL_API_URL
+    : process.env.TARKOV_GRAPHQL_URL ?? DEFAULT_GRAPHQL_API_URL;
 
 // Define a type for the combined data response
 interface CombinedTarkovData {

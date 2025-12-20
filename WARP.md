@@ -56,7 +56,6 @@ npm run lint
 
 #### Key Directories
 - `app/` - Next.js App Router pages and API routes
-  - `app/api/tarkov/` - GraphQL proxy to tarkov.dev API
   - `app/api/submit-feedback/` - Feedback submission endpoint
 - `components/` - React components
   - `components/ui/` - Shadcn UI base components
@@ -81,7 +80,7 @@ npm run lint
 ### Core Data Flow
 
 #### Item Data Pipeline
-1. **Data Source**: tarkov.dev GraphQL API (queried via `/app/api/tarkov/`)
+1. **Data Source**: tarkov.dev GraphQL API (queried directly from the client to avoid proxying through Vercel)
 2. **Fetching**: `use-tarkov-api.ts` hook handles API requests with caching
 3. **Processing**: `use-items-data.ts` merges English + localized data, handles 16 languages
 4. **Persistence**: SWR with custom localStorage middleware (`utils/swr-persistence.ts`)
