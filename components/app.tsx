@@ -228,6 +228,7 @@ function AppContent() {
   >({});
   const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
   const [itemBonus, setItemBonus] = useState<number>(0);
+  const [ignoreFilters, setIgnoreFilters] = useState(false);
 
   // Toast state
   const toastShownRef = useRef<boolean>(false);
@@ -602,7 +603,6 @@ function AppContent() {
     toastShownRef.current = false; // Reset toast shown flag when threshold changes
   };
 
-  // Memoized computation of items based on categories, sort option, and excluded items
   const items: SimplifiedItem[] = useMemo(() => {
     if (loading || !rawItemsData) {
       return [];
@@ -616,6 +616,7 @@ function AppContent() {
     // First filter by excluded categories (by category ID)
     const categoryFiltered = rawItemsData.filter((item: SimplifiedItem) => {
       if (item.name.toLowerCase() === "pestily plague mask") return true; // TEMP FIX
+      if (ignoreFilters) return true; // Bypass category filters
       const ids =
         item.categories && item.categories.length > 0
           ? item.categories
@@ -665,6 +666,7 @@ function AppContent() {
     );
     const excludedFiltered = excludeIncompatible
       ? levelFiltered.filter((item: SimplifiedItem) => {
+          if (ignoreFilters) return true; // Bypass individual exclusions
           const candidates = [
             item.name,
             item.shortName,
@@ -712,6 +714,7 @@ function AppContent() {
     loading,
     useLevelFilter,
     playerLevel,
+    ignoreFilters,
   ]);
 
   // Helper: compute effective price for an item given current mode and overrides
@@ -1163,7 +1166,7 @@ function AppContent() {
             price !== undefined &&
             price > 0 &&
             item.basePrice >= threshold * 0.1 &&
-            !excludedItems.has(item.name.toLowerCase())
+            (ignoreFilters || !excludedItems.has(item.name.toLowerCase()))
         )
         .sort((a, b) => b.efficiency - a.efficiency);
 
@@ -1326,6 +1329,7 @@ function AppContent() {
     isPVE,
     priceMode,
     setPriceMode,
+    ignoreFilters,
   ]);
   // Function to find matching item by name - ALWAYS use rawItemsData to bypass UI filters
   const findMatchingItem = useCallback(
@@ -1367,7 +1371,7 @@ function AppContent() {
 
     const costs: Record<string, number> = {};
 
-for (const combo of HOT_SACRIFICES) {
+    for (const combo of HOT_SACRIFICES) {
       let totalCost = 0;
       for (const ingredient of combo.ingredients) {
         // Special case: labs-g28 combo - only include Labs Access Card in cost
@@ -1380,7 +1384,7 @@ for (const combo of HOT_SACRIFICES) {
           // Check if this is a non-weapon item (use flea price)
           const nonWeaponItems = ["Diary", "Labs Access"];
           const isNonWeapon = nonWeaponItems.includes(ingredient.name);
-          
+
           // Smart Pricing logic:
           // 1. Override
           const override = overriddenPrices[match.id];
@@ -1454,7 +1458,7 @@ for (const combo of HOT_SACRIFICES) {
       let slotIndex = 0;
       const successItems: string[] = [];
 
-for (const ingredient of ingredients) {
+      for (const ingredient of ingredients) {
         // Skip Labs Card for G28 combo when using "Use" button (only add for cost estimation)
         if (combo.id === "labs-g28" && ingredient.name === "Labs Access") {
           continue;
@@ -1486,13 +1490,9 @@ for (const ingredient of ingredients) {
         });
       }
     },
-[
-      findMatchingItem,
-      updateSelectedItem,
-    ]
+    [findMatchingItem, updateSelectedItem]
   );
 
-  // Handle mode toggle with simplified caching approach
   const handleModeToggle = useCallback((checked: boolean): void => {
     // Mode switching is now handled by SWR cache in use-items-data.ts
     // We just need to update the UI state
@@ -1855,6 +1855,25 @@ for (const ingredient of ingredients) {
                     </AlertDescription>
                   </Alert>
                 )}
+
+                {/* Items Selection Area Headers */}
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                    Items
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIgnoreFilters(!ignoreFilters)}
+                    className={`h-7 px-2 text-[10px] uppercase font-bold transition-all duration-200 rounded-md border ${
+                      ignoreFilters
+                        ? "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
+                        : "bg-slate-700/30 border-slate-600/30 text-slate-500 hover:text-slate-400 hover:bg-slate-700/50"
+                    }`}
+                  >
+                    {ignoreFilters ? "⚠ Showing All Items" : "Bypass Filters"}
+                  </Button>
+                </div>
 
                 {/* Item Selection Area */}
                 <div className="space-y-1" id="search-items">
