@@ -1367,25 +1367,36 @@ function AppContent() {
 
     const costs: Record<string, number> = {};
 
-    for (const combo of HOT_SACRIFICES) {
+for (const combo of HOT_SACRIFICES) {
       let totalCost = 0;
       for (const ingredient of combo.ingredients) {
-        // Special case: Labs card only for G28 combo
+        // Special case: labs-g28 combo - only include Labs Access Card in cost
         if (combo.id === "labs-g28" && ingredient.name !== "Labs Access") {
           continue;
         }
 
         const match = findMatchingItem(ingredient.name);
         if (match) {
+          // Check if this is a non-weapon item (use flea price)
+          const nonWeaponItems = ["Diary", "Labs Access"];
+          const isNonWeapon = nonWeaponItems.includes(ingredient.name);
+          
           // Smart Pricing logic:
           // 1. Override
           const override = overriddenPrices[match.id];
           let itemPrice: number | undefined =
             typeof override === "number" ? override : undefined;
 
-          // 2. Best trader price (cheapest eligible)
+          // 2. For non-weapon items, use flea price directly (skip trader prices)
+          if (itemPrice === undefined && isNonWeapon) {
+            const fleaVal = match[fleaPriceType as keyof SimplifiedItem];
+            if (typeof fleaVal === "number") itemPrice = fleaVal;
+          }
+
+          // 3. Best trader price (cheapest eligible) - only for weapons
           if (
             itemPrice === undefined &&
+            !isNonWeapon &&
             match.buyFor &&
             match.buyFor.length > 0
           ) {
@@ -1407,8 +1418,8 @@ function AppContent() {
             itemPrice = bestTrader;
           }
 
-          // 3. Flea fallback
-          if (itemPrice === undefined) {
+          // 4. Flea fallback for weapons only
+          if (itemPrice === undefined && !isNonWeapon) {
             const fleaVal = match[fleaPriceType as keyof SimplifiedItem];
             if (typeof fleaVal === "number") itemPrice = fleaVal;
           }
@@ -1443,8 +1454,8 @@ function AppContent() {
       let slotIndex = 0;
       const successItems: string[] = [];
 
-      for (const ingredient of ingredients) {
-        // Skip Labs Card for G28 combo as per user request
+for (const ingredient of ingredients) {
+        // Skip Labs Card for G28 combo when using "Use" button (only add for cost estimation)
         if (combo.id === "labs-g28" && ingredient.name === "Labs Access") {
           continue;
         }
@@ -1475,14 +1486,8 @@ function AppContent() {
         });
       }
     },
-    [
-      rawItemsData,
-      excludedCategories,
-      useLevelFilter,
-      playerLevel,
-      setSelectedItems,
-      setPinnedItems,
-      setOverriddenPrices,
+[
+      findMatchingItem,
       updateSelectedItem,
     ]
   );
