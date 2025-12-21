@@ -124,6 +124,22 @@ export function NextItemHints({
           </motion.button>
         ))}
       </AnimatePresence>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.4 }}
+        className="flex items-center gap-1.5 ml-1 select-none pointer-events-none"
+      >
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Press
+        </span>
+        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-white/5 border border-white/10 rounded text-[10px] font-black text-white/50 font-mono shadow-sm">
+          /
+        </span>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          to focus
+        </span>
+      </motion.div>
     </motion.div>
   );
 }

@@ -98,9 +98,14 @@ const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
 const PRICE_MODE_KEY = "priceMode";
 const TRADER_LEVELS_KEY = "traderLevels";
 
-const DynamicItemSelector = dynamic(() => import("@/components/ItemSelector"), {
-  ssr: false,
-});
+const DynamicItemSelector = dynamic<any>(
+  () => import("@/components/ItemSelector"),
+  {
+    ssr: false,
+  }
+);
+
+import type { ItemSelectorHandle } from "@/components/ItemSelector";
 
 type FleaPriceType = "lastLowPrice" | "avg24hPrice";
 type PriceMode = "flea" | "trader";
@@ -229,6 +234,9 @@ function AppContent() {
   const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
   const [itemBonus, setItemBonus] = useState<number>(0);
   const [ignoreFilters, setIgnoreFilters] = useState(false);
+
+  // Refs for item selectors to enable keyboard focus
+  const selectorRefs = useRef<(ItemSelectorHandle | null)[]>([]);
 
   // Toast state
   const toastShownRef = useRef<boolean>(false);
@@ -548,6 +556,33 @@ function AppContent() {
       }
     }
   }, [overriddenPrices]);
+
+  // Global keyboard shortcut to jump to the first empty item selector
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Logic for '/': focus first empty selector
+      if (
+        e.key === "/" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          (e.target as HTMLElement).tagName
+        )
+      ) {
+        e.preventDefault();
+
+        // Find index of first empty slot
+        let targetIndex = selectedItems.findIndex((item) => !item);
+
+        // If all are full, default to the first one
+        if (targetIndex === -1) targetIndex = 0;
+
+        // Focus the selector at that index
+        selectorRefs.current[targetIndex]?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedItems]);
 
   // Handler for category changes
   const handleCategoryChange = useCallback((categories: string[]) => {
@@ -1928,15 +1963,15 @@ function AppContent() {
                         <React.Fragment>
                           <Suspense fallback={<div>Loading...</div>}>
                             <DynamicItemSelector
+                              ref={(el: ItemSelectorHandle | null) => {
+                                selectorRefs.current[index] = el;
+                              }}
                               items={items}
                               selectedItem={item}
-                              onSelect={(selectedItem, overriddenPrice) =>
-                                updateSelectedItem(
-                                  selectedItem,
-                                  index,
-                                  overriddenPrice
-                                )
-                              }
+                              onSelect={(
+                                sel: SimplifiedItem | null,
+                                op: number | null | undefined
+                              ) => updateSelectedItem(sel, index, op)}
                               onCopy={() => handleCopyToClipboard(index)}
                               onPin={() => handlePinItem(index)}
                               isPinned={pinnedItems[index]}
