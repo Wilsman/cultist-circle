@@ -3,17 +3,17 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: 'PressStart2P';
-  src: url('/fonts/PressStart2P-Regular.ttf') format('truetype');
+  font-family: "PressStart2P";
+  src: url("/fonts/PressStart2P-Regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
-
 /* Custom animations */
 @keyframes pulse-color {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -22,13 +22,20 @@
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-160%); }
-  50% { transform: translateX(0%); }
-  100% { transform: translateX(160%); }
+  0% {
+    transform: translateX(-160%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(160%);
+  }
 }
 
 @keyframes floating {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -86,17 +93,34 @@
 
 /* Retro game specific animations */
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 @keyframes glitch {
-  0% { transform: translate(0); }
-  20% { transform: translate(-2px, 2px); }
-  40% { transform: translate(-2px, -2px); }
-  60% { transform: translate(2px, 2px); }
-  80% { transform: translate(2px, -2px); }
-  100% { transform: translate(0); }
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
 }
 
 @layer base {
@@ -174,9 +198,15 @@
 }
 
 @keyframes float {
-  0% { transform: translatey(0); }
-  50% { transform: translatey(-5px); }
-  100% { transform: translatey(0); }
+  0% {
+    transform: translatey(0);
+  }
+  50% {
+    transform: translatey(-5px);
+  }
+  100% {
+    transform: translatey(0);
+  }
 }
 
 .animate-float {
@@ -277,23 +307,36 @@
 }
 
 @keyframes pulse-color {
-  0%, 100% {
-    color: #EAB308; /* yellow-500 */
+  0%,
+  100% {
+    color: #eab308; /* yellow-500 */
   }
   50% {
-    color: #86EFAC; /* green-300 */
+    color: #86efac; /* green-300 */
   }
 }
 
 @keyframes floating {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes shine {
@@ -309,4 +352,19 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Hide Support Widgets */
+[id^="kofi-widget-overlay-"],
+.kofi-widget-overlay-container,
+.floatingchat-container-wrap,
+.floatingchat-container-wrap-mobi,
+#kofi-widget-overlay {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+#bmc-wbtn {
+  display: none !important;
 }

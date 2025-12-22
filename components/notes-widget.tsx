@@ -37,10 +37,16 @@ export function NotesWidget(): JSX.Element {
           return { x: parsed.x, y: parsed.y };
       }
     } catch {}
+    // Now defaults to right side
     return { x: 16, y: 16 };
   });
   const isDraggingRef = useRef(false);
-  const dragStartRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const dragStartRef = useRef<{
+    startX: number;
+    startY: number;
+    origX: number;
+    origY: number;
+  } | null>(null);
   const fromIconRef = useRef(false);
   const clickCancelledRef = useRef(false);
 
@@ -60,7 +66,6 @@ export function NotesWidget(): JSX.Element {
       cancelled = true;
     };
   }, []);
-
 
   // Animate panel on open
   useEffect(() => {
@@ -96,8 +101,12 @@ export function NotesWidget(): JSX.Element {
         // ignore quota errors
       }
       setStatus("saved");
-      if (statusResetTimer.current) window.clearTimeout(statusResetTimer.current);
-      statusResetTimer.current = window.setTimeout(() => setStatus("idle"), 800);
+      if (statusResetTimer.current)
+        window.clearTimeout(statusResetTimer.current);
+      statusResetTimer.current = window.setTimeout(
+        () => setStatus("idle"),
+        800
+      );
     }, 400);
 
     return () => {
@@ -106,28 +115,38 @@ export function NotesWidget(): JSX.Element {
     };
   }, [value]);
 
-  useEffect(() => () => {
-    if (saveTimer.current) window.clearTimeout(saveTimer.current);
-    if (statusResetTimer.current) window.clearTimeout(statusResetTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+      if (statusResetTimer.current)
+        window.clearTimeout(statusResetTimer.current);
+    },
+    []
+  );
 
   const charCount = useMemo(() => value.length, [value]);
 
   // Drag handlers
-  const onDragStart = useCallback((e: React.MouseEvent) => {
-    isDraggingRef.current = true;
-    const startX = e.clientX;
-    const startY = e.clientY;
-    dragStartRef.current = { startX, startY, origX: pos.x, origY: pos.y };
-    e.preventDefault();
-  }, [pos.x, pos.y]);
+  const onDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      isDraggingRef.current = true;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      dragStartRef.current = { startX, startY, origX: pos.x, origY: pos.y };
+      e.preventDefault();
+    },
+    [pos.x, pos.y]
+  );
 
   useEffect(() => {
     function onMove(e: MouseEvent) {
       if (!isDraggingRef.current || !dragStartRef.current) return;
       const dx = e.clientX - dragStartRef.current.startX;
       const dy = e.clientY - dragStartRef.current.startY;
-      const next = { x: Math.max(8, dragStartRef.current.origX + dx), y: Math.max(8, dragStartRef.current.origY - dy) };
+      const next = {
+        x: Math.max(8, dragStartRef.current.origX - dx),
+        y: Math.max(8, dragStartRef.current.origY - dy),
+      };
       // Constrain to viewport with some margin
       const vw = window.innerWidth;
       const vh = window.innerHeight;
@@ -142,7 +161,9 @@ export function NotesWidget(): JSX.Element {
     function onUp() {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
-        try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch {}
+        try {
+          localStorage.setItem(POS_KEY, JSON.stringify(pos));
+        } catch {}
       }
       fromIconRef.current = false;
     }
@@ -161,8 +182,8 @@ export function NotesWidget(): JSX.Element {
   return (
     <TooltipProvider delayDuration={200}>
       <div
-        className="pointer-events-none fixed left-0 bottom-0 z-50"
-        style={{ left: pos.x, bottom: pos.y }}
+        className="pointer-events-none fixed right-0 bottom-0 z-50"
+        style={{ right: pos.x, bottom: pos.y }}
       >
         {/* Floating trigger */}
         <div className="pointer-events-auto flex justify-start">
@@ -190,10 +211,12 @@ export function NotesWidget(): JSX.Element {
                 }}
               >
                 <StickyNote aria-hidden className="size-4" />
-                <span className="text-sm font-medium hidden sm:inline">Notes</span>
+                <span className="text-sm font-medium hidden sm:inline">
+                  Notes
+                </span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Sticky Notes</TooltipContent>
+            <TooltipContent side="left">Sticky Notes</TooltipContent>
           </Tooltip>
         </div>
 
@@ -214,13 +237,21 @@ export function NotesWidget(): JSX.Element {
                   {status === "saving" && (
                     <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
                   )}
-                  <span className={status === "saved" ? "animate-pulse" : undefined}>
-                    {status === "saving" ? "Saving…" : status === "saved" ? "Saved" : ""}
+                  <span
+                    className={status === "saved" ? "animate-pulse" : undefined}
+                  >
+                    {status === "saving"
+                      ? "Saving…"
+                      : status === "saved"
+                      ? "Saved"
+                      : ""}
                   </span>
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="mx-1 text-xs tabular-nums text-slate-400">{charCount}</span>
+                <span className="mx-1 text-xs tabular-nums text-slate-400">
+                  {charCount}
+                </span>
                 <Button
                   aria-label="Clear notes"
                   size="sm"

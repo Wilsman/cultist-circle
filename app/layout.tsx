@@ -6,9 +6,9 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { CookieConsentProvider } from "@/context/cookie-consent-context";
 import Script from "next/script";
 import { LanguageProvider } from "@/contexts/language-context";
-import { ChatbotWidget } from "@/components/ai-chatbot/chatbot-widget";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { NotesWidget } from "@/components/notes-widget";
+import { SupportWidget } from "@/components/support-widget";
 import { SiteNav } from "@/components/site-nav";
 
 export const viewport: Viewport = {
@@ -102,7 +102,6 @@ export default function RootLayout({
           `}
         </Script>
 
-        {/* Google AdSense */}
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065"
@@ -110,21 +109,6 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
 
-        {/* Buy Me a Coffee */}
-        <Script
-          id="bmc-widget"
-          strategy="afterInteractive"
-          data-name="BMC-Widget"
-          data-cfasync="false"
-          src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
-          data-id="wilsman77"
-          data-description="Support me on Buy me a coffee!"
-          data-message=""
-          data-color="#5F7FFF"
-          data-position="Left"
-          data-x_margin="50"
-          data-y_margin="50"
-        />
         <CookieConsentProvider>
           <LanguageProvider>
             <main className="relative min-h-screen">
@@ -140,7 +124,7 @@ export default function RootLayout({
               {/* Cookie consent and notifications */}
               <div className="relative z-50">
                 <OnboardingDialog />
-                <ChatbotWidget />
+                <SupportWidget />
                 <NotesWidget />
                 <CookieConsent />
                 <SonnerToaster />
