@@ -77,6 +77,11 @@ export async function generateMetadata(): Promise<Metadata> {
         "max-video-preview": -1,
       },
     },
+    icons: {
+      icon: "/images/Cultist-Calulator.webp",
+      apple: "/images/Cultist-Calulator.webp",
+    },
+    manifest: "/manifest.json",
   };
 }
 
