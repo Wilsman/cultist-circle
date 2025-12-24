@@ -37,6 +37,12 @@ interface Recipe {
 // Escape from Tarkov crafting recipes
 const tarkovRecipes: Recipe[] = [
   {
+    requiredItems: ["1x Tigzresq splint"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Golden egg"],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Mazoni golden dumbbell"],
     craftingTime: "66 mins",
     producedItems: ["1x Mazoni golden dumbbell"],
