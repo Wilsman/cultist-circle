@@ -82,4 +82,7 @@ export const recipeIconMap: Record<string, string> = {
   "Christmas tree ornament (White)": "https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp",
   "Christmas tree ornament (Violet)": "https://assets.tarkov.dev/5df8a77486f77412672a1e3f-icon.webp",
   "1x Domontovich ushanka hat": "https://assets.tarkov.dev/unknown-item-512.webp",
+  "1x ZiD SP-81 26x75 signal pistol": "https://assets.tarkov.dev/620109578d82e67e7911abf2-icon.webp",
+  "1x Bottle of Dan Jackiel whiskey": "https://assets.tarkov.dev/5d403f9186f7743cac3f229b-icon.webp",
+  "1x Supply department director's office key": "https://assets.tarkov.dev/63a39ce4cd6db0635c1975fa-icon.webp",
 };

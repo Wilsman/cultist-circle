@@ -20,25 +20,6 @@ export interface NotificationAction {
 
 export const NOTIFICATIONS: Notification[] = [
   {
-    id: "recipe-research",
-    type: "info",
-    icon: "🍳",
-    title: "Cooking Updates",
-    description: (
-      <>
-        New recipes are being researched. Once confirmed they will be listed on
-        the{" "}
-        <Link
-          href="/recipes"
-          className="underline hover:text-blue-300 transition-colors font-semibold"
-        >
-          Recipes page
-        </Link>
-        . Latest: 1x Augmentin
-      </>
-    ),
-  },
-  {
     id: "weapon-values-warning",
     type: "warning",
     title: "Weapon Base Values - Work in Progress",
