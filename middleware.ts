@@ -1,82 +1,83 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Common bot/scraping paths to block early
-const BLOCKED_PATHS = [
-    // WordPress
-    "/wp-admin",
-    "/wp-login",
-    "/wp-content",
-    "/wp-includes",
-    "/xmlrpc.php",
-    // PHP / Backend
-    ".php",
-    "/phpmyadmin",
-    "/admin",
-    "/config",
-    "/setup.php",
-    // Sensitive files
-    "/.env",
-    "/.git",
-    "/.ssh",
-    "/.aws",
-    "/.vscode",
-    "/.well-known/security.txt",
-    // Java / Spring
-    "/actuator",
-    "/nacos",
-    "/jolokia",
-    // Generic / Misc
-    "/cgi-bin",
-    "/autodiscover",
-    "/mail",
-    "/backup",
-    "/temp",
-    "/weblog",
-    "/wordpress",
+/**
+ * AGGRESSIVE MITIGATION STRATEGY - V3
+ * 
+ * Problem: Bots hit thousands of unique URLs (/wp-admin/x1, /wp-admin/x2, etc.)
+ * Each unique URL = separate cache entry = Edge Request billed
+ * 
+ * Solution: Skip middleware entirely for known bad patterns using the matcher.
+ * For paths that DO run middleware, only allow whitelisted routes.
+ * Return a minimal inline 404 with aggressive caching.
+ */
+
+// Whitelist of valid path prefixes (your actual app routes)
+const ALLOWED_PREFIXES = [
+    "/api",
+    "/recipes",
+    "/base-values",
+    "/faq",
+    "/updates",
+    "/privacy-policy",
+    "/_next",
+    "/images",
+    "/fonts",
+    "/_vercel",
+    "/index",
+    "/favicon",
+    "/.well-known",
 ];
+
+// Whitelist of exact valid paths
+const ALLOWED_EXACT = new Set([
+    "/",
+    "/404",
+    "/favicon.ico",
+    "/manifest.json",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/ads.txt",
+]);
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // 1. Block common bot/scraping paths early
-    const isBlocked = BLOCKED_PATHS.some((path) =>
-        pathname.toLowerCase().includes(path.toLowerCase())
-    );
+    // Check if the path is whitelisted
+    const isAllowed =
+        ALLOWED_EXACT.has(pathname) ||
+        ALLOWED_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
-    if (isBlocked) {
-        // Return a cheap 404 with long-term caching
-        // This allows upstream proxies (like Cloudflare) to cache this 404
-        // and prevent subsequent requests for the same path from hitting Vercel's Edge.
-        const response = new NextResponse(null, {
-            status: 404,
-            statusText: "Not Found",
+    if (!isAllowed) {
+        // CRITICAL: Redirect ALL bad paths to a single /404 URL
+        // This normalizes thousands of unique bot URLs into ONE cacheable path
+        // The redirect itself is cheap, and /404 will be cached at the edge
+        const url = request.nextUrl.clone();
+        url.pathname = "/404";
+        
+        return NextResponse.redirect(url, {
+            status: 308, // Permanent redirect - browsers/bots will cache this
+            headers: {
+                "Cache-Control": "public, s-maxage=31536000, immutable",
+                "X-Robots-Tag": "noindex, nofollow",
+            },
         });
-
-        // Cache for 24 hours at the edge/proxy
-        response.headers.set(
-            "Cache-Control",
-            "public, s-maxage=86400, stale-while-revalidate=3600"
-        );
-        response.headers.set("X-Robots-Tag", "noindex, nofollow");
-        return response;
     }
 
     return NextResponse.next();
 }
 
-// Ensure middleware runs on almost all paths
-// We exclude paths that are definitely static assets to minimize edge execution counts
+// CRITICAL: Exclude as many paths as possible from middleware execution
+// These patterns are matched BEFORE middleware runs = NO Edge Request billed
 export const config = {
     matcher: [
         /*
-         * Match all request paths except for the ones starting with:
+         * Match all paths EXCEPT:
          * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - images (static images)
-         * - manifest.json (web manifest)
+         * - _next/image (image optimization)
+         * - favicon.ico, images, fonts (static assets)
+         * - Common bot/scanner paths (wp-*, php files, etc.)
          */
-        "/((?!_next/static|_next/image|favicon.ico|images|manifest.json).*)",
+        "/((?!_next/static|_next/image|favicon.ico|images|fonts|manifest.json|robots.txt|sitemap.xml|ads.txt|wp-admin|wp-content|wp-includes|wp-login|xmlrpc|phpmyadmin|cgi-bin|admin|\.env|\.git|\.php|\.asp|\.sql).*)",
     ],
 };

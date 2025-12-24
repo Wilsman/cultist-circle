@@ -1,9 +1,21 @@
 import Link from "next/link";
 
+// Force static generation - this page will be pre-rendered at build time
 export const dynamic = "force-static";
-export const revalidate = 86400; // Cache for 24 hours
+export const revalidate = false; // Never revalidate - fully static
 
-export default function NotFound() {
+// Add aggressive cache headers
+export async function generateMetadata() {
+  return {
+    title: "404 - Page Not Found",
+    robots: {
+      index: false,
+      follow: false,
+    },
+  };
+}
+
+export default function NotFoundPage() {
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 text-center">
       <h1 className="text-6xl font-bold text-red-500 mb-4">404</h1>
