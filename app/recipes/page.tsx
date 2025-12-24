@@ -37,9 +37,15 @@ interface Recipe {
 // Escape from Tarkov crafting recipes
 const tarkovRecipes: Recipe[] = [
   {
+    requiredItems: ["1x Domontovich ushanka hat"],
+    craftingTime: "66 mins",
+    producedItems: ["TBC"],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Nut sack"],
     craftingTime: "66 mins",
-    producedItems: ["unknown"],
+    producedItems: ["1x SSh-68 steel helmet (Olive Drab), 1x BOSS cap, 2x Ushanka ear flap hat, 1x Bomber beanie"],
     isNew: true,
   },
   {

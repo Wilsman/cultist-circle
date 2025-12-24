@@ -74,7 +74,12 @@ export const recipeIconMap: Record<string, string> = {
   "1x Tigzresq splint": "https://assets.tarkov.dev/unknown-item-512.webp",
   "1x Golden egg": "https://assets.tarkov.dev/62a09cfe4f842e1bd12da3e4-icon.webp",
   "1x Nut sack": "https://assets.tarkov.dev/unknown-item-512.webp",
+  "2x Ushanka ear flap hat": "https://assets.tarkov.dev/59e7708286f7742cbd762753-icon.webp",
+  "1x Bomber beanie": "https://assets.tarkov.dev/60bf74184a63fc79b60c57f6-icon.webp",
+  "1x BOSS cap": "https://assets.tarkov.dev/60a7acf20c5cb24b01346648-icon.webp",
+  "1x SSh-68 steel helmet (Olive Drab)": "https://assets.tarkov.dev/5c06c6a80db834001b735491-icon.webp",
+  "Christmas tree ornament (Red)": "https://assets.tarkov.dev/5df8a6a186f77412640e2e80-icon.webp",
   "Christmas tree ornament (White)": "https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp",
   "Christmas tree ornament (Violet)": "https://assets.tarkov.dev/5df8a77486f77412672a1e3f-icon.webp",
-  "Christmas tree ornament (Red)": "https://assets.tarkov.dev/5df8a6a186f77412640e2e80-icon.webp",
+  "1x Domontovich ushanka hat": "https://assets.tarkov.dev/unknown-item-512.webp",
 };
