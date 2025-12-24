@@ -73,4 +73,8 @@ export const recipeIconMap: Record<string, string> = {
   "1x Mazoni golden dumbbell": "https://assets.tarkov.dev/unknown-item-512.webp",
   "1x Tigzresq splint": "https://assets.tarkov.dev/unknown-item-512.webp",
   "1x Golden egg": "https://assets.tarkov.dev/62a09cfe4f842e1bd12da3e4-icon.webp",
+  "1x Nut sack": "https://assets.tarkov.dev/unknown-item-512.webp",
+  "Christmas tree ornament (White)": "https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp",
+  "Christmas tree ornament (Violet)": "https://assets.tarkov.dev/5df8a77486f77412672a1e3f-icon.webp",
+  "Christmas tree ornament (Red)": "https://assets.tarkov.dev/5df8a6a186f77412640e2e80-icon.webp",
 };

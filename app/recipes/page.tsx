@@ -37,6 +37,30 @@ interface Recipe {
 // Escape from Tarkov crafting recipes
 const tarkovRecipes: Recipe[] = [
   {
+    requiredItems: ["1x Nut sack"],
+    craftingTime: "66 mins",
+    producedItems: ["unknown"],
+    isNew: true,
+  },
+  {
+    requiredItems: ["Christmas tree ornament (White)"],
+    craftingTime: "66 mins",
+    producedItems: ["Christmas tree ornament (Violet)"],
+    isNew: true,
+  },
+  {
+    requiredItems: ["Christmas tree ornament (Violet)"],
+    craftingTime: "66 mins",
+    producedItems: ["Christmas tree ornament (Red)"],
+    isNew: true,
+  },
+  {
+    requiredItems: ["Christmas tree ornament (Red)"],
+    craftingTime: "66 mins",
+    producedItems: ["Christmas tree ornament (White)"],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Tigzresq splint"],
     craftingTime: "66 mins",
     producedItems: ["1x Golden egg"],
