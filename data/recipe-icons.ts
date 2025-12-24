@@ -70,4 +70,5 @@ export const recipeIconMap: Record<string, string> = {
   "Random drinks 🍹": "https://assets.tarkov.dev/57513f9324597720a7128161-icon.webp",
   "1x Augmentin antibiotic pills": "https://assets.tarkov.dev/590c695186f7741e566b64a2-icon.webp",
   "1x xTG-12 antidote injector": "https://assets.tarkov.dev/5fca138c2a7b221b2852a5c6-icon.webp",
+  "1x Mazoni golden dumbbell": "https://assets.tarkov.dev/unknown-item-512.webp",
 };
