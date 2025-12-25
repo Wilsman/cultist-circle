@@ -416,6 +416,9 @@ export default function Page() {
   }: {
     roomInfo: { itemName: string; spawnInfo: string };
   }) {
+    // Get the battery icon URL
+    const batteryIconUrl = recipeIconMap["1x 6-STEN-140-M military battery"];
+
     return (
       <TooltipProvider>
         <Tooltip>
@@ -431,11 +434,28 @@ export default function Page() {
             side="top"
             className="max-w-xs bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-xl"
           >
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-blue-300">
-                {roomInfo.itemName}
-              </p>
-              <p className="text-xs text-gray-300">{roomInfo.spawnInfo}</p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                {/* Battery Icon */}
+                {batteryIconUrl && (
+                  <Image
+                    src={batteryIconUrl}
+                    alt="6-STEN-140-M military battery"
+                    width={48}
+                    height={48}
+                    className="rounded-lg bg-gray-800/50 p-1.5 border border-gray-700/50 flex-shrink-0"
+                    unoptimized
+                  />
+                )}
+
+                {/* Text content */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-blue-300 mb-1">
+                    {roomInfo.itemName}
+                  </p>
+                  <p className="text-xs text-gray-300">{roomInfo.spawnInfo}</p>
+                </div>
+              </div>
             </div>
           </TooltipContent>
         </Tooltip>
