@@ -85,4 +85,5 @@ export const recipeIconMap: Record<string, string> = {
   "1x ZiD SP-81 26x75 signal pistol": "https://assets.tarkov.dev/620109578d82e67e7911abf2-icon.webp",
   "1x Bottle of Dan Jackiel whiskey": "https://assets.tarkov.dev/5d403f9186f7743cac3f229b-icon.webp",
   "1x Supply department director's office key": "https://assets.tarkov.dev/63a39ce4cd6db0635c1975fa-icon.webp",
+  "1x 6-STEN-140-M military battery": "https://assets.tarkov.dev/5d03794386f77420415576f5-icon.webp",
 };

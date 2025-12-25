@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 
 import { Input } from "@/components/ui/input";
-import { Package, CheckCircle2, Clock } from "lucide-react";
+import { Package, CheckCircle2, Clock, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -32,10 +32,24 @@ interface Recipe {
     | string[]
     | { type: "multiple_possible"; items: string[]; explanation: string }[];
   isNew?: boolean;
+  roomInfo?: {
+    itemName: string;
+    spawnInfo: string;
+  };
 }
 
 // Escape from Tarkov crafting recipes
 const tarkovRecipes: Recipe[] = [
+  {
+    requiredItems: ["1x 6-STEN-140-M military battery"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Old house toilet key"],
+    isNew: true,
+    roomInfo: {
+      itemName: "Old house toilet key",
+      spawnInfo: "Room has 100% spawn chance for 6-STEN-140-M military battery",
+    },
+  },
   {
     requiredItems: ["1x Domontovich ushanka hat"],
     craftingTime: "66 mins",
@@ -396,14 +410,53 @@ export default function Page() {
     return badgeContent;
   }
 
+  // RoomInfoBadge component for displaying room spawn information
+  function RoomInfoBadge({
+    roomInfo,
+  }: {
+    roomInfo: { itemName: string; spawnInfo: string };
+  }) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-blue-900/20 border border-blue-800/40 hover:bg-blue-900/30 transition-colors cursor-help">
+              <Info className="h-4 w-4 text-blue-400 flex-shrink-0" />
+              <span className="text-xs text-blue-300 font-medium">
+                Room contains 100% battery spawn
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent
+            side="top"
+            className="max-w-xs bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-xl"
+          >
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-blue-300">
+                {roomInfo.itemName}
+              </p>
+              <p className="text-xs text-gray-300">{roomInfo.spawnInfo}</p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
   // MultipleOutputBadge component for recipes with multiple possible outputs
-  function MultipleOutputBadge({ items, explanation }: { items: string[]; explanation: string }) {
+  function MultipleOutputBadge({
+    items,
+    explanation,
+  }: {
+    items: string[];
+    explanation: string;
+  }) {
     return (
       <div className="flex flex-col gap-2">
         {items.map((item, idx) => {
           const iconUrl = recipeIconMap[item];
           const itemData = getItemByName(item);
-          
+
           const badgeContent = (
             <div className="flex items-center gap-3 lg:gap-4 w-full">
               {iconUrl ? (
@@ -446,7 +499,9 @@ export default function Page() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button className="text-xs text-gray-400 bg-gray-800/60 px-3 py-1.5 rounded-full border border-gray-700 hover:bg-gray-700/60 hover:text-gray-300 transition-colors">
-                          {explanation.includes("You always get 2 items") ? "and/or" : "or"}
+                          {explanation.includes("You always get 2 items")
+                            ? "and/or"
+                            : "or"}
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-xs">
@@ -499,7 +554,10 @@ export default function Page() {
       if (output.type === "normal") {
         return count + 1;
       } else {
-        const content = output.content as { items: string[]; explanation: string };
+        const content = output.content as {
+          items: string[];
+          explanation: string;
+        };
         // If explanation indicates you get 1 item (OR logic), count as 1
         // If explanation indicates you get 2 items (AND/OR logic), count as items length
         const isOrLogic = content.explanation.includes("You get 1 item");
@@ -572,6 +630,8 @@ export default function Page() {
                 }
               })}
             </div>
+            {/* Room spawn information */}
+            {recipe.roomInfo && <RoomInfoBadge roomInfo={recipe.roomInfo} />}
           </div>
         </div>
       </div>
