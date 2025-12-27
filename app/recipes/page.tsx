@@ -41,6 +41,16 @@ interface Recipe {
 // Escape from Tarkov crafting recipes
 const tarkovRecipes: Recipe[] = [
   {
+    requiredItems: ["1x Mastichin figurine"],
+    craftingTime: "66 mins",
+    producedItems: [
+      "1x Voron's Hideout key",
+      "1x Note with code word Voron",
+      "1x Raven",
+    ],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x 6-STEN-140-M military battery"],
     craftingTime: "66 mins",
     producedItems: ["1x Old house toilet key"],
@@ -386,8 +396,8 @@ export default function Page() {
           variant="secondary"
           title={itemName}
           className={`inline-flex items-center flex-1 truncate rounded-full border py-1.5 px-3 lg:py-2 lg:px-4 ${isOutput
-              ? "bg-green-900/40 text-green-300 border-green-800/60"
-              : "bg-gray-800/70 text-gray-100 border-gray-600"
+            ? "bg-green-900/40 text-green-300 border-green-800/60"
+            : "bg-gray-800/70 text-gray-100 border-gray-600"
             }`}
         >
           <span className="truncate text-sm lg:text-base">{itemName}</span>

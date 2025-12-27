@@ -86,4 +86,8 @@ export const recipeIconMap: Record<string, string> = {
   "1x Bottle of Dan Jackiel whiskey": "https://assets.tarkov.dev/5d403f9186f7743cac3f229b-icon.webp",
   "1x Supply department director's office key": "https://assets.tarkov.dev/63a39ce4cd6db0635c1975fa-icon.webp",
   "1x 6-STEN-140-M military battery": "https://assets.tarkov.dev/5d03794386f77420415576f5-icon.webp",
+  "1x Mastichin figurine": "https://assets.tarkov.dev/68f261f6928cd23ddf0471fd-icon.webp",
+  "1x Voron's Hideout key": "https://assets.tarkov.dev/664d3ddfdda2e85aca370d75-icon.webp",
+  "1x Note with code word Voron": "https://assets.tarkov.dev/675aaab74bca0b001d02f356-icon.webp",
+  "1x Raven": "https://assets.tarkov.dev/5e54f62086f774219b0f1937-icon.webp",
 };
