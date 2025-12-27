@@ -29,8 +29,8 @@ interface Recipe {
   requiredItems: string[];
   craftingTime: string;
   producedItems:
-    | string[]
-    | { type: "multiple_possible"; items: string[]; explanation: string }[];
+  | string[]
+  | { type: "multiple_possible"; items: string[]; explanation: string }[];
   isNew?: boolean;
   roomInfo?: {
     itemName: string;
@@ -385,11 +385,10 @@ export default function Page() {
         <Badge
           variant="secondary"
           title={itemName}
-          className={`inline-flex items-center flex-1 truncate rounded-full border py-1.5 px-3 lg:py-2 lg:px-4 ${
-            isOutput
+          className={`inline-flex items-center flex-1 truncate rounded-full border py-1.5 px-3 lg:py-2 lg:px-4 ${isOutput
               ? "bg-green-900/40 text-green-300 border-green-800/60"
               : "bg-gray-800/70 text-gray-100 border-gray-600"
-          }`}
+            }`}
         >
           <span className="truncate text-sm lg:text-base">{itemName}</span>
         </Badge>
@@ -699,40 +698,7 @@ export default function Page() {
             Special Task
           </div>
           <div className="relative mb-6 rounded-2xl border border-gray-700/70 bg-gray-700/50 p-4 backdrop-blur">
-            <NewBadge />
-            <div className="mb-2 text-xl font-semibold text-red-400">
-              🔥 Friend from Norvinsk – Part 5 🔥
-            </div>
-            <p className="mb-3 text-sm text-gray-200">
-              📜 &quot;Diary. Circle. Location: you know where. Add:
-              flammable.&quot; — Use the cultist circle for this task.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-gray-800/40 p-2.5 sm:p-3 ring-1 ring-gray-700/70">
-                <div className="mb-1 text-sm font-medium text-green-400">
-                  ✅ Confirmed working (66s timer)
-                </div>
-                <ul className="list-disc pl-5 text-sm text-gray-100">
-                  <li>Expeditionary Fuel Tank</li>
-                  <li>Zibbo</li>
-                  <li>(Task) Diary</li>
-                </ul>
-              </div>
-              <div className="rounded-xl bg-gray-800/40 p-2.5 sm:p-3 ring-1 ring-gray-700/70">
-                <div className="mb-1 text-sm font-medium text-red-400">
-                  ❌ Tested but did NOT work (8h timer)
-                </div>
-                <ul className="list-disc pl-5 text-sm text-gray-100">
-                  <li>(Task) Diary</li>
-                  <li>Dry Fuel</li>
-                  <li>Fuel Conditioner</li>
-                  <li>Classic Matches</li>
-                </ul>
-              </div>
-            </div>
-            <p className="mt-3 text-xs text-yellow-200/90">
-              💡 There may be other valid combinations. Share your findings!
-            </p>
+
           </div>
           <div className="mb-6 h-px w-full bg-gray-700/60" />
           {filteredItems.length === 0 ? (
