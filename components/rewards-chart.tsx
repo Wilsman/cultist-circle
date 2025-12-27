@@ -1,68 +1,64 @@
 "use client";
 
-import { Clock, Gift, Target } from "lucide-react";
+import { Clock, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RewardTier {
   threshold: string;
   thresholdValue: number;
   timer: string;
-  timerHours: number;
-  rewards: string;
-  highlight?: "gold" | "purple";
+  color: string;
+  rewards?: string;
 }
 
 const REWARD_TIERS: RewardTier[] = [
   {
-    threshold: "<25,000",
+    threshold: "0 - 10,000",
     thresholdValue: 0,
-    timer: "2h",
-    timerHours: 2,
-    rewards: "Basic items, low value returns",
+    timer: "2 hours",
+    color: "#b43d22", // Reddish
   },
   {
-    threshold: "25,000+",
-    thresholdValue: 25000,
-    timer: "3h",
-    timerHours: 3,
-    rewards: "Slightly better items",
+    threshold: "10,001 - 25,000",
+    thresholdValue: 10001,
+    timer: "3 hours",
+    color: "#832e14", // Dark Red/Orange
   },
   {
-    threshold: "100,000+",
-    thresholdValue: 100000,
-    timer: "5h",
-    timerHours: 5,
-    rewards: "Mid-tier items",
+    threshold: "25,001 - 50,000",
+    thresholdValue: 25001,
+    timer: "4 hours",
+    color: "#834d20", // Brownish
   },
   {
-    threshold: "200,000+",
-    thresholdValue: 200000,
-    timer: "8h",
-    timerHours: 8,
-    rewards: "Better mid-tier items",
+    threshold: "50,001 - 100,000",
+    thresholdValue: 50001,
+    timer: "5 hours",
+    color: "#d4a946", // Yellow/Gold
   },
   {
-    threshold: "300,000+",
-    thresholdValue: 300000,
-    timer: "12h",
-    timerHours: 12,
-    rewards: "Normal high-value loot",
+    threshold: "100,001 - 200,000",
+    thresholdValue: 100001,
+    timer: "8 hours",
+    color: "#35579f", // Blue
   },
   {
-    threshold: "350,000+",
-    thresholdValue: 350000,
-    timer: "14h",
-    timerHours: 14,
-    rewards: "Guaranteed high-value items",
-    highlight: "gold",
+    threshold: "200,001 - 350,000",
+    thresholdValue: 200001,
+    timer: "12 hours",
+    color: "#4e7080", // Cyan/Grey
   },
   {
-    threshold: "400,000+",
+    threshold: ">= 350,001",
+    thresholdValue: 350001,
+    timer: "14 hours",
+    color: "#3b8364", // Green
+  },
+  {
+    threshold: ">= 400,000 25% chance of Quest/Hideout items",
     thresholdValue: 400000,
-    timer: "6h/14h",
-    timerHours: 6,
-    rewards: "25% Quest/Hideout items • 75% High-value items",
-    highlight: "purple",
+    timer: "6 hours or 14 hours",
+    color: "#4ade80", // Bright Green (matches image better)
   },
 ];
 
@@ -77,93 +73,59 @@ export function RewardsChart({
 }: RewardsChartProps) {
   // Find current tier
   const getCurrentTierIndex = () => {
-    if (currentTotal >= 400000) return 6; // 400k tier
-    if (currentTotal >= 350000) return 5;
-    if (currentTotal >= 300000) return 4;
-    if (currentTotal >= 200000) return 3;
-    if (currentTotal >= 100000) return 2;
-    if (currentTotal >= 25000) return 1;
+    for (let i = REWARD_TIERS.length - 1; i >= 0; i--) {
+      if (currentTotal >= REWARD_TIERS[i].thresholdValue) {
+        return i;
+      }
+    }
     return 0;
   };
 
   const currentTierIndex = getCurrentTierIndex();
 
   return (
-    <div className={cn("w-full", className)}>
-      <div className="bg-slate-900/60 backdrop-blur-sm rounded-xl border border-slate-700/40 overflow-hidden">
-        <div className="divide-y divide-slate-800/50">
-          {/* Column Headers */}
-          <div className="grid grid-cols-[1fr_60px_1fr] gap-2 px-4 py-2 bg-slate-800/30 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-            <div className="flex items-center gap-1">
-              <Target className="h-3 w-3" />
-              Threshold
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Timer
-            </div>
-            <div className="flex items-center gap-1">
-              <Gift className="h-3 w-3" />
-              Rewards
-            </div>
-          </div>
-
-          {/* Rows */}
+    <div className={cn("w-full max-w-2xl mx-auto", className)}>
+      <div className="bg-black/40 backdrop-blur-md rounded-xl border border-white/5 overflow-hidden">
+        <div className="p-4 space-y-1">
           {REWARD_TIERS.map((tier, index) => {
             const isCurrentTier = index === currentTierIndex;
-            const isPastTier =
-              tier.thresholdValue < currentTotal && !isCurrentTier;
+            const isLastTier = index === REWARD_TIERS.length - 1;
 
             return (
               <div
-                key={`${tier.threshold}-${tier.timer}-${index}`}
+                key={index}
                 className={cn(
-                  "grid grid-cols-[1fr_60px_1fr] gap-2 px-4 py-2.5 transition-colors",
-                  isCurrentTier &&
-                    "bg-emerald-500/10 border-l-2 border-emerald-400",
-                  isPastTier && "opacity-50",
-                  !isCurrentTier && !isPastTier && "hover:bg-slate-800/30"
+                  "grid grid-cols-[1fr_auto] gap-8 px-3 py-1.5 rounded-lg transition-all",
+                  isCurrentTier && "bg-white/5 ring-1 ring-white/10"
                 )}
               >
                 {/* Threshold */}
                 <div className="flex items-center">
-                  <span
-                    className={cn(
-                      "text-xs font-semibold",
-                      tier.highlight === "purple" && "text-purple-400",
-                      tier.highlight === "gold" && "text-amber-400",
-                      !tier.highlight && "text-slate-300"
-                    )}
-                  >
+                  <span className={cn(
+                    "text-sm font-medium",
+                    isCurrentTier ? "text-white" : "text-white/60"
+                  )}>
                     {tier.threshold}
                   </span>
                 </div>
 
                 {/* Timer */}
-                <div className="flex items-center">
+                <div className="flex items-center text-right">
                   <span
-                    className={cn(
-                      "text-xs font-bold",
-                      tier.highlight === "purple" && "text-purple-400",
-                      tier.highlight === "gold" && "text-amber-400",
-                      !tier.highlight && "text-slate-400"
-                    )}
+                    className="text-sm font-bold"
+                    style={{
+                      color: isLastTier && index === REWARD_TIERS.length - 1 ? undefined : tier.color
+                    }}
                   >
-                    {tier.timer}
-                  </span>
-                </div>
-
-                {/* Rewards */}
-                <div className="flex items-center">
-                  <span
-                    className={cn(
-                      "text-[11px] leading-tight",
-                      tier.highlight === "purple" && "text-purple-300/90",
-                      tier.highlight === "gold" && "text-amber-300/90",
-                      !tier.highlight && "text-slate-400"
+                    {isLastTier ? (
+                      <span>
+                        <span style={{ color: "#4ade80" }}>6 hours</span>
+                        <span className="text-white mx-1.5">or</span>
+                        <span style={{ color: "#3b8364" }}>14 hours</span>
+                      </span>
+                    ) : (
+                      tier.timer
                     )}
-                  >
-                    {tier.rewards}
                   </span>
                 </div>
               </div>
@@ -171,13 +133,10 @@ export function RewardsChart({
           })}
         </div>
 
-        {/* Footer Note */}
-        <div className="px-4 py-2 bg-slate-800/30 border-t border-slate-700/40">
-          <p className="text-[10px] text-slate-500 leading-relaxed">
-            <span className="text-purple-400 font-medium">💡 Tip:</span> At
-            400k+, you have a 25% chance for the 6h timer which gives
-            quest/hideout items you still need. The quest must be active to get
-            specific items.
+        {/* Info Note */}
+        <div className="px-6 py-3 bg-white/[0.02] border-t border-white/5">
+          <p className="text-[11px] text-white/40 leading-relaxed text-center italic">
+            * Higher thresholds increase the quality and rarity of returned items.
           </p>
         </div>
       </div>
