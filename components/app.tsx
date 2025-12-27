@@ -59,38 +59,13 @@ import NextItemHints from "@/components/next-item-hints";
 import { CURRENT_VERSION } from "@/config/changelog";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 import { IncompatibleItemsNotice } from "@/components/incompatible-items-notice";
-import { ChristmasSnow } from "@/components/christmas-snow";
+
 import {
   SacrificeCombo,
   HOT_SACRIFICES,
 } from "@/components/hot-sacrifices-panel";
 
-// Snow toggle component
-function SnowToggle() {
-  const [isEnabled, setIsEnabled] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("christmasSnow");
-      return saved !== "false"; // Default to true (on by default)
-    }
-    return true;
-  });
 
-  useEffect(() => {
-    localStorage.setItem("christmasSnow", isEnabled.toString());
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent("christmasSnowChange"));
-  }, [isEnabled]);
-
-  return (
-    <button
-      onClick={() => setIsEnabled(!isEnabled)}
-      className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-full border border-white/20 transition-all duration-200"
-      title="Toggle snow effect"
-    >
-      ❄️ {isEnabled ? "ON" : "OFF"}
-    </button>
-  );
-}
 
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
@@ -656,43 +631,43 @@ function AppContent() {
         item.categories && item.categories.length > 0
           ? item.categories
           : (item.categories_display_en ?? [])
-              .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
-              .filter((x): x is string => Boolean(x));
+            .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
+            .filter((x): x is string => Boolean(x));
       return !ids.some((id) => excludedCategories.has(id));
     });
 
     // Then filter by player level (flea market access)
     const levelFiltered = useLevelFilter
       ? categoryFiltered.filter((item: SimplifiedItem) => {
-          // First check individual item requirements (takes priority)
-          const itemNames = [
-            item.englishName,
-            item.name,
-            item.englishShortName,
-            item.shortName,
-          ].filter(Boolean) as string[];
+        // First check individual item requirements (takes priority)
+        const itemNames = [
+          item.englishName,
+          item.name,
+          item.englishShortName,
+          item.shortName,
+        ].filter(Boolean) as string[];
 
-          for (const name of itemNames) {
-            const itemReq = getItemLevelRequirement(name);
-            if (itemReq !== undefined) {
-              // Item has a specific level requirement
-              return playerLevel >= itemReq;
-            }
+        for (const name of itemNames) {
+          const itemReq = getItemLevelRequirement(name);
+          if (itemReq !== undefined) {
+            // Item has a specific level requirement
+            return playerLevel >= itemReq;
           }
+        }
 
-          // Fall back to category-level filtering
-          const ids =
-            item.categories && item.categories.length > 0
-              ? item.categories
-              : (item.categories_display_en ?? [])
-                  .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
-                  .filter((x): x is string => Boolean(x));
-          // Get categories that are inaccessible at current level
-          const inaccessibleCategories =
-            getInaccessibleCategoriesAtLevel(playerLevel);
-          // Item passes if none of its categories are inaccessible
-          return !ids.some((id) => inaccessibleCategories.includes(id));
-        })
+        // Fall back to category-level filtering
+        const ids =
+          item.categories && item.categories.length > 0
+            ? item.categories
+            : (item.categories_display_en ?? [])
+              .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
+              .filter((x): x is string => Boolean(x));
+        // Get categories that are inaccessible at current level
+        const inaccessibleCategories =
+          getInaccessibleCategoriesAtLevel(playerLevel);
+        // Item passes if none of its categories are inaccessible
+        return !ids.some((id) => inaccessibleCategories.includes(id));
+      })
       : categoryFiltered;
 
     // Then filter out individually excluded items (case-insensitive, language-agnostic)
@@ -701,17 +676,17 @@ function AppContent() {
     );
     const excludedFiltered = excludeIncompatible
       ? levelFiltered.filter((item: SimplifiedItem) => {
-          if (ignoreFilters) return true; // Bypass individual exclusions
-          const candidates = [
-            item.name,
-            item.shortName,
-            item.englishName,
-            item.englishShortName,
-          ].filter(Boolean) as string[];
-          return !candidates.some((n) =>
-            excludedItemNames.has(n.toLowerCase())
-          );
-        })
+        if (ignoreFilters) return true; // Bypass individual exclusions
+        const candidates = [
+          item.name,
+          item.shortName,
+          item.englishName,
+          item.englishShortName,
+        ].filter(Boolean) as string[];
+        return !candidates.some((n) =>
+          excludedItemNames.has(n.toLowerCase())
+        );
+      })
       : levelFiltered;
 
     // Sorting logic...
@@ -1600,8 +1575,7 @@ function AppContent() {
     if (storedVersion !== CURRENT_VERSION) {
       // Print a message to the console to let us know that the version has changed
       console.log(
-        `App version changed from ${
-          storedVersion || "none"
+        `App version changed from ${storedVersion || "none"
         } to ${CURRENT_VERSION}`
       );
       // If the version has changed, we want to clear out most of the items in local storage
@@ -1736,8 +1710,7 @@ function AppContent() {
   return (
     <>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto relative">
-        {/* TODO: Remove when not christmas anymore */}
-        <ChristmasSnow />
+
         <div className="flex items-start justify-center gap-4 max-w-[1600px] mx-auto">
           {/* Left Ad Rail - Desktop Only */}
           <aside className="hidden xl:block w-[160px] flex-shrink-0">
@@ -1763,7 +1736,7 @@ function AppContent() {
               </h1>
               <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
                 <VersionInfo version={CURRENT_VERSION} />
-                <SnowToggle />
+
               </div>
               <div className="flex items-center justify-center gap-3">
                 <a
@@ -1900,11 +1873,10 @@ function AppContent() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIgnoreFilters(!ignoreFilters)}
-                    className={`h-7 px-2 text-[10px] uppercase font-bold transition-all duration-200 rounded-md border ${
-                      ignoreFilters
+                    className={`h-7 px-2 text-[10px] uppercase font-bold transition-all duration-200 rounded-md border ${ignoreFilters
                         ? "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
                         : "bg-slate-700/30 border-slate-600/30 text-slate-500 hover:text-slate-400 hover:bg-slate-700/50"
-                    }`}
+                      }`}
                   >
                     {ignoreFilters ? "⚠ Showing All Items" : "Bypass Filters"}
                   </Button>
@@ -1955,9 +1927,8 @@ function AppContent() {
                     selectedItems.map((item, index) => (
                       <div
                         key={`selector-${index}`}
-                        className={`animate-fade-in transition-all duration-200 ${
-                          loadingSlots[index] ? "opacity-50" : ""
-                        }`}
+                        className={`animate-fade-in transition-all duration-200 ${loadingSlots[index] ? "opacity-50" : ""
+                          }`}
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <React.Fragment>
@@ -1993,37 +1964,37 @@ function AppContent() {
                             />
                           </Suspense>
                           {showHintPills &&
-                          !item &&
-                          nextItemSuggestions[index] &&
-                          nextItemSuggestions[index].length > 0 &&
-                          (index === selectedItems.findIndex((it) => !it) ||
-                            (selectedItems.every((it) => !it) &&
-                              index === 0)) ? (
+                            !item &&
+                            nextItemSuggestions[index] &&
+                            nextItemSuggestions[index].length > 0 &&
+                            (index === selectedItems.findIndex((it) => !it) ||
+                              (selectedItems.every((it) => !it) &&
+                                index === 0)) ? (
                             <NextItemHints
                               items={
                                 selectedItems.every((it) => !it) && index === 0
                                   ? (() => {
-                                      const divisorOptions = [5, 4, 3, 2];
-                                      let filteredSuggestions: SimplifiedItem[] =
-                                        [];
-                                      for (const divisor of divisorOptions) {
-                                        filteredSuggestions =
-                                          nextItemSuggestions[index].filter(
-                                            (it) =>
-                                              it.basePrice >=
-                                              threshold / divisor
-                                          );
-                                        if (filteredSuggestions.length >= 3)
-                                          break;
-                                      }
-                                      return filteredSuggestions
-                                        .sort(
-                                          (a, b) =>
-                                            (getEffectivePrice(a) ?? 0) -
-                                            (getEffectivePrice(b) ?? 0)
-                                        )
-                                        .slice(0, 3);
-                                    })()
+                                    const divisorOptions = [5, 4, 3, 2];
+                                    let filteredSuggestions: SimplifiedItem[] =
+                                      [];
+                                    for (const divisor of divisorOptions) {
+                                      filteredSuggestions =
+                                        nextItemSuggestions[index].filter(
+                                          (it) =>
+                                            it.basePrice >=
+                                            threshold / divisor
+                                        );
+                                      if (filteredSuggestions.length >= 3)
+                                        break;
+                                    }
+                                    return filteredSuggestions
+                                      .sort(
+                                        (a, b) =>
+                                          (getEffectivePrice(a) ?? 0) -
+                                          (getEffectivePrice(b) ?? 0)
+                                      )
+                                      .slice(0, 3);
+                                  })()
                                   : nextItemSuggestions[index]
                               }
                               prevItem={

@@ -103,7 +103,7 @@ describe('useItemsData dual-fetch + merge', () => {
       },
     ];
 
-    ;(fetchTarkovData as unknown as any).mockResolvedValue({
+    ; (fetchTarkovData as unknown as any).mockResolvedValue({
       items: enItems,
       meta: { totalItems: 1, validItems: 1, processTime: 1, categories: 1, mode: 'pvp' },
     });
