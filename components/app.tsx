@@ -64,6 +64,9 @@ import {
   SacrificeCombo,
   HOT_SACRIFICES,
 } from "@/components/hot-sacrifices-panel";
+import { hashString, seededShuffle } from "@/lib/item-utils";
+import { HeaderSection } from "@/components/app/header-section";
+import { FooterSection } from "@/components/app/footer-section";
 
 
 
@@ -958,31 +961,7 @@ function AppContent() {
     // Deterministic seeded randomness helpers (stable for same selection/threshold/slot)
     const selKey =
       selectedItems.map((s) => (s ? s.id : "-")).join("|") + `:${threshold}`;
-    function hashString(s: string): number {
-      let h = 2166136261 >>> 0; // FNV-1a
-      for (let i = 0; i < s.length; i++) {
-        h ^= s.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
-      return h >>> 0;
-    }
-    function rng(seed: number) {
-      return function () {
-        seed += 0x6d2b79f5;
-        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-        t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-    }
-    function seededShuffle<T>(arr: T[], seed: number): T[] {
-      const a = arr.slice();
-      const rnd = rng(seed);
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(rnd() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
+    // Deterministic seeded randomness helpers imported from lib/item-utils
 
     // Helper: build a cheap plan of up to k items that covers need by greedy on price,
     // prioritizing items that each contribute at least an even share towards the need.
@@ -1722,81 +1701,8 @@ function AppContent() {
 
           {/* Main Content */}
           <div className="w-full max-w-3xl mx-auto space-y-3 py-4">
-            {/* Header Section - Minimal */}
-            <div className="text-center space-y-3">
-              <h1 className="flex items-center justify-center">
-                <Image
-                  src="https://assets.cultistcircle.com/Cultist-Calulator.webp"
-                  alt="Cultist Circle Calculator"
-                  width={640}
-                  height={204}
-                  priority={true}
-                  className="w-auto h-32 sm:h-40"
-                />
-              </h1>
-              <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
-                <VersionInfo version={CURRENT_VERSION} />
-
-              </div>
-              <div className="flex items-center justify-center gap-3">
-                <a
-                  href="https://eftboss.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
-                >
-                  EFT Boss
-                  <svg
-                    className="w-3 h-3 opacity-1 group-hover:opacity-100 transition-opacity"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
-                <a
-                  href="https://discord.com/invite/3dFmr5qaJK"
-                  rel="nofollow"
-                  target="_blank"
-                  className="flex items-center gap-1 text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 group"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="https://img.shields.io/discord/1298971881776611470?color=7289DA&label=Discord&logo=discord&logoColor=white"
-                    alt="Discord"
-                    style={{ maxWidth: "100%" }}
-                    className="h-5" // Adjusted height to better fit the footer
-                  />
-                </a>
-                <a
-                  href="https://kappas.pages.dev/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
-                >
-                  Kappas
-                  <svg
-                    className="w-3 h-3 opacity-1 group-hover:opacity-100 transition-opacity"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
-              </div>
-            </div>
+            {/* Header Section */}
+            <HeaderSection />
 
             {/* Info Dashboard (Alerts, Notifications, Hot Sacrifices) */}
             <InfoDashboard
@@ -2143,81 +2049,8 @@ function AppContent() {
               </CardContent>
             </Card>
 
-            {/* Footer - Minimal */}
-            <div className="text-center space-y-2">
-              <div className="text-xs text-slate-400">
-                <span>Data by </span>
-                <a
-                  href="https://tarkov.dev"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-slate-300 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
-                >
-                  Tarkov.dev
-                  <svg
-                    className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
-                <span className="mx-2">•</span>
-                <span>Research by </span>
-                <a
-                  href="https://bio.link/verybadscav"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-slate-300 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
-                >
-                  VeryBadSCAV
-                  <svg
-                    className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
-              </div>
-              <div className="flex justify-center gap-3">
-                <a
-                  href="https://www.buymeacoffee.com/wilsman77"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Buy me a coffee"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-                    alt="Buy Me a Coffee"
-                    width="140"
-                    height="32"
-                    loading="lazy"
-                    className="h-8 w-auto"
-                  />
-                </a>
-                <Button
-                  onClick={() => setIsFeedbackFormVisible(true)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Feedback
-                </Button>
-              </div>
-            </div>
+            {/* Footer Section */}
+            <FooterSection onFeedbackClick={() => setIsFeedbackFormVisible(true)} />
           </div>
 
           {/* Right Ad Rail - Desktop Only */}
