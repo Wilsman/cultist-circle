@@ -90,4 +90,9 @@ export const recipeIconMap: Record<string, string> = {
   "1x Voron's Hideout key": "https://assets.tarkov.dev/664d3ddfdda2e85aca370d75-icon.webp",
   "1x Note with code word Voron": "https://assets.tarkov.dev/675aaab74bca0b001d02f356-icon.webp",
   "1x Raven": "https://assets.tarkov.dev/5e54f62086f774219b0f1937-icon.webp",
+  "1x Christmas tree ornament (Silver)": "https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp",
+  "1x Christmas tree ornament (Red)": "https://assets.tarkov.dev/5df8a6a186f77412640e2e80-icon.webp",
+  "1x Christmas tree ornament (Violet)": "https://assets.tarkov.dev/5df8a77486f77412672a1e3f-icon.webp",
+  "1x Ded Moroz hat": "https://assets.tarkov.dev/5a43943586f77416ad2f06e2-icon.webp",
+  "1x Ded Moroz figurine": "https://assets.tarkov.dev/655c67ab0d37ca5135388f4b-icon.webp",
 };

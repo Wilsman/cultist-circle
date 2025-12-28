@@ -21,6 +21,15 @@ export interface Recipe {
  */
 export const tarkovRecipes: Recipe[] = [
     {
+        requiredItems: ["1x Christmas tree ornament (Silver)", "1x Christmas tree ornament (Red)", "1x Christmas tree ornament (Violet)"],
+        craftingTime: "66 mins",
+        producedItems: [
+            "1x Ded Moroz hat",
+            "1x Ded Moroz figurine"
+        ],
+        isNew: true,
+    },
+    {
         requiredItems: ["1x Mastichin figurine"],
         craftingTime: "66 mins",
         producedItems: [
