@@ -1,9 +1,9 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import CookieConsent from "@/components/CookieConsent";
+import CookieConsent from "@/components/cookie-consent";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
-import { CookieConsentProvider } from "@/context/cookie-consent-context";
+import { CookieConsentProvider } from "@/contexts/cookie-consent-context";
 import Script from "next/script";
 import { LanguageProvider } from "@/contexts/language-context";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";

@@ -5,7 +5,7 @@ import { Cookie, X } from 'lucide-react'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Switch } from './ui/switch'
-import { useCookieConsent } from '@/context/cookie-consent-context'
+import { useCookieConsent } from '@/contexts/cookie-consent-context'
 
 interface CookieType {
   id: string
@@ -114,7 +114,7 @@ export default function CookieConsent() {
     setIsVisible(false)
     setShowPreferences(false)
     setHasConsent(true)
-    
+
     // Handle analytics consent
     if (prefs.analytics) {
       window.gtag?.('consent', 'update', {
@@ -211,7 +211,7 @@ export default function CookieConsent() {
               Customize which cookies you want to accept. Some cookies are necessary for the website to function properly.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6 py-4">
             {cookieTypes.map((type) => (
               <div key={type.id} className="flex items-start justify-between space-x-4">
@@ -260,14 +260,14 @@ export default function CookieConsent() {
               Last updated: February 3, 2025
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6 py-4 text-sm">
             <section>
               <h3 className="text-lg font-semibold mb-2">Cookie Usage</h3>
               <p className="mb-4">
                 We use different types of cookies to optimize your experience on our website. Cookies are small text files that are stored on your device when you visit our website.
               </p>
-              
+
               <h4 className="font-medium mb-2">Necessary Cookies</h4>
               <p className="mb-4">
                 These cookies are essential for the website to function properly. They enable basic functions like page navigation, access to secure areas, and proper website operation. The website cannot function properly without these cookies.

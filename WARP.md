@@ -111,7 +111,7 @@ The app heavily uses LocalStorage for user preferences:
 
 #### Context Providers
 - `LanguageProvider` (`contexts/language-context.tsx`) - Multi-language support
-- `CookieConsentProvider` (`contexts/CookieConsentContext.tsx`) - GDPR consent
+- `CookieConsentProvider` (`contexts/cookie-consent-context.tsx`) - GDPR consent
 
 #### Custom Hooks
 - `use-items-data.ts` - Primary item data hook with SWR caching

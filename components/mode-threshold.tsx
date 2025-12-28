@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { ModeToggle } from "@/components/ModeToggle";
+import { ModeToggle } from "@/components/mode-toggle";
 import ThresholdSelector from "@/components/ui/threshold-selector";
 
 interface ModeThresholdProps {

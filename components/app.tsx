@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import SettingsPane from "@/components/settings-pane";
 import { ModeThreshold } from "@/components/mode-threshold";
-import { AutoSelectButton } from "@/components/AutoSelectButton";
+import { AutoSelectButton } from "@/components/auto-select-button";
 import { VersionInfo } from "@/components/version-info";
 import { ShareButton } from "@/components/share-button";
 import { RewardsChart } from "@/components/rewards-chart";
@@ -74,13 +74,13 @@ const PRICE_MODE_KEY = "priceMode";
 const TRADER_LEVELS_KEY = "traderLevels";
 
 const DynamicItemSelector = dynamic<any>(
-  () => import("@/components/ItemSelector"),
+  () => import("@/components/item-selector"),
   {
     ssr: false,
   }
 );
 
-import type { ItemSelectorHandle } from "@/components/ItemSelector";
+import type { ItemSelectorHandle } from "@/components/item-selector";
 
 type FleaPriceType = "lastLowPrice" | "avg24hPrice";
 type PriceMode = "flea" | "trader";
@@ -1874,8 +1874,8 @@ function AppContent() {
                     size="sm"
                     onClick={() => setIgnoreFilters(!ignoreFilters)}
                     className={`h-7 px-2 text-[10px] uppercase font-bold transition-all duration-200 rounded-md border ${ignoreFilters
-                        ? "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
-                        : "bg-slate-700/30 border-slate-600/30 text-slate-500 hover:text-slate-400 hover:bg-slate-700/50"
+                      ? "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
+                      : "bg-slate-700/30 border-slate-600/30 text-slate-500 hover:text-slate-400 hover:bg-slate-700/50"
                       }`}
                   >
                     {ignoreFilters ? "⚠ Showing All Items" : "Bypass Filters"}

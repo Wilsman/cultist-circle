@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import ItemSelector from '@/components/ItemSelector';
+import ItemSelector from "@/components/item-selector";
 import { DEFAULT_EXCLUDED_ITEMS } from '@/config/excluded-items';
 import type { SimplifiedItem } from '@/types/SimplifiedItem';
 import type { TraderLevels } from '@/components/ui/trader-level-selector';
@@ -42,13 +42,13 @@ describe('ItemSelector exclusions are language-agnostic', () => {
 
   const baseProps = {
     selectedItem: null,
-    onSelect: () => {},
-    onCopy: () => {},
-    onPin: () => {},
+    onSelect: () => { },
+    onCopy: () => { },
+    onPin: () => { },
     isPinned: false,
     overriddenPrices: {},
     isExcluded: false,
-    onToggleExclude: () => {},
+    onToggleExclude: () => { },
     excludedItems,
     fleaPriceType: 'lastLowPrice' as const,
     priceMode: 'flea' as const,
