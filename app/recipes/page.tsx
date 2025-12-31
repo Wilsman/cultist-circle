@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 
 import { Input } from "@/components/ui/input";
-import { Package, CheckCircle2, Clock, Info } from "lucide-react";
+import { Package, CheckCircle2, Clock, Info, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -344,15 +344,20 @@ export default function Page() {
     return (
       <div className="relative rounded-2xl border border-gray-700/70 bg-gray-700/50 p-4 backdrop-blur transition-colors hover:bg-gray-700/70">
         {recipe.isNew && <NewBadge />}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-start">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-stretch">
           {/* Inputs */}
           <div className="min-w-0 sm:pr-2">
-            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-orange-300">
-              <Package className="h-3.5 w-3.5 opacity-90" aria-hidden />
-              <span>Input</span>
-              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">
-                {recipe.requiredItems.length}
-              </span>
+            <div className="mb-2">
+              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-red-300">
+                <Package className="h-3.5 w-3.5 opacity-90" aria-hidden />
+                <span>Sacrifice</span>
+                <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">
+                  {recipe.requiredItems.length}
+                </span>
+              </div>
+              <div className="mt-1 text-[10px] uppercase tracking-wide text-gray-400">
+                Items to sacrifice
+              </div>
             </div>
             <div className="flex flex-col gap-2">
               {recipe.requiredItems.map((ing, idx) => (
@@ -366,20 +371,59 @@ export default function Page() {
             className="sm:border-x sm:border-gray-700 sm:px-4 grid place-items-center"
             aria-label={`Crafting time ${recipe.craftingTime}`}
           >
-            <div className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-900/60 px-3 py-1 text-[11px] font-medium text-gray-100 tracking-wide">
-              <Clock className="h-3.5 w-3.5" aria-hidden />
-              <span className="font-mono">{recipe.craftingTime}</span>
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-widest text-gray-400"
+                aria-hidden
+              >
+                <ArrowRight className="flow-arrow h-3 w-3 text-green-400/60" />
+                <ArrowRight
+                  className="flow-arrow h-3 w-3 text-green-400/80"
+                  style={{ animationDelay: "150ms" }}
+                />
+                <ArrowRight
+                  className="flow-arrow h-3 w-3 text-green-400/90"
+                  style={{ animationDelay: "300ms" }}
+                />
+              </div>
+              <style jsx global>{`
+                @keyframes flowFlash {
+                  0% {
+                    opacity: 0;
+                  }
+                  30% {
+                    opacity: 1;
+                  }
+                  60%,
+                  100% {
+                    opacity: 0;
+                  }
+                }
+                .flow-arrow {
+                  animation: flowFlash 2s ease-in-out infinite;
+                  animation-fill-mode: both;
+                }
+              `}</style>
+              <div className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-900/60 px-3 py-1 text-[11px] font-medium text-gray-100 tracking-wide">
+                <Clock className="h-3.5 w-3.5" aria-hidden />
+                <span className="font-mono">{recipe.craftingTime}</span>
+              </div>
             </div>
           </div>
 
           {/* Outputs */}
           <div className="min-w-0 sm:pl-2">
-            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-orange-300">
-              <CheckCircle2 className="h-3.5 w-3.5 opacity-90" aria-hidden />
-              <span>Output</span>
-              <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">
-                {outputCount}
-              </span>
+            <div className="mb-2">
+              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-green-300">
+                <CheckCircle2 className="h-3.5 w-3.5 opacity-90" aria-hidden />
+                <span>Rewards</span>
+                <span className="rounded-full border border-gray-700 bg-gray-800/60 px-2 py-0.5 text-[10px] text-gray-300">
+                  {outputCount}
+                </span>
+              </div>
+              <div className="mt-1 text-[10px] uppercase tracking-wide text-gray-400">
+                Items gained
+              </div>
             </div>
             <div className="flex flex-col gap-2">
               {processedOutputs.map((output, idx) => {
