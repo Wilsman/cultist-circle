@@ -1,98 +1,185 @@
 // Static icon mappings for recipe items
 // Generated from Tarkov API data to avoid runtime API calls
 export const recipeIconMap: Record<string, string> = {
-  "Soap": "https://assets.tarkov.dev/5c13cd2486f774072c757944-icon.webp",
-  "Awl": "https://assets.tarkov.dev/62a0a098de7ac8199358053b-icon.webp",
+  Soap: "https://assets.tarkov.dev/5c13cd2486f774072c757944-icon.webp",
+  Awl: "https://assets.tarkov.dev/62a0a098de7ac8199358053b-icon.webp",
   "Scav Vest": "https://assets.tarkov.dev/572b7adb24597762ae139821-icon.webp",
-  "1x WD-40 (400ml)": "https://assets.tarkov.dev/590c5c9f86f77477c91c36e7-icon.webp",
-  "WD-40 (100ml)": "https://assets.tarkov.dev/590c5bbd86f774785762df04-icon.webp",
-  "Fleece fabric": "https://assets.tarkov.dev/5e2af47786f7746d404f3aaa-icon.webp",
-  "1x Nailhead figurine": "https://assets.tarkov.dev/679b9cce4e4ed4b3b40ae5c5-icon.webp",
-  "1x Xenoalien figurine": "https://assets.tarkov.dev/679b9d55708cfcb2060b9ae3-icon.webp",
-  "Medical bloodset": "https://assets.tarkov.dev/5b4335ba86f7744d2837a264-icon.webp",
-  "Cultist figurine ×1": "https://assets.tarkov.dev/655c669103999d3c810c025b-icon.webp",
-  "Cultist figurine ×5": "https://assets.tarkov.dev/655c669103999d3c810c025b-icon.webp",
-  "Cultist knife": "https://assets.tarkov.dev/5fc64ea372b0dd78d51159dc-icon.webp",
-  "Killa figurine": "https://assets.tarkov.dev/66572c82ad599021091c6118-icon.webp",
-  "Tagilla figurine": "https://assets.tarkov.dev/66572cbdad599021091c611a-icon.webp",
-  "Reshala figurine": "https://assets.tarkov.dev/66572be36a723f7f005a066e-icon.webp",
-  "Den figurine": "https://assets.tarkov.dev/66572b8d80b1cd4b6a67847f-icon.webp",
-  "Scav figurine": "https://assets.tarkov.dev/655c673673a43e23e857aebd-icon.webp",
-  "Scav backpack": "https://assets.tarkov.dev/56e335e4d2720b6c058b456d-icon.webp",
-  "Ryzhy figurine": "https://assets.tarkov.dev/655c67782a1356436041c9c5-icon.webp",
-  "Light bulb ×2": "https://assets.tarkov.dev/5d1b392c86f77425243e98fe-icon.webp",
-  "Physical Bitcoin": "https://assets.tarkov.dev/59faff1d86f7746c51718c9c-icon.webp",
-  "1x Pointy guy figurine": "https://assets.tarkov.dev/679b9d6390622daf9708da76-icon.webp",
-  "1x Petya Crooker figurine": "https://assets.tarkov.dev/679b9d43597ba2ed120c3d44-icon.webp",
-  "1x Count Bloodsucker figurine": "https://assets.tarkov.dev/679b9d4b3374fb14f40efe6d-icon.webp",
-  "Mr Kerman's cat hologram": "https://assets.tarkov.dev/6638a5474e92f038531e210e-icon.webp",
-  "Ded Moroz figurine": "https://assets.tarkov.dev/655c67ab0d37ca5135388f4b-icon.webp",
+  "1x WD-40 (400ml)":
+    "https://assets.tarkov.dev/590c5c9f86f77477c91c36e7-icon.webp",
+  "WD-40 (100ml)":
+    "https://assets.tarkov.dev/590c5bbd86f774785762df04-icon.webp",
+  "Fleece fabric":
+    "https://assets.tarkov.dev/5e2af47786f7746d404f3aaa-icon.webp",
+  "1x Nailhead figurine":
+    "https://assets.tarkov.dev/679b9cce4e4ed4b3b40ae5c5-icon.webp",
+  "1x Xenoalien figurine":
+    "https://assets.tarkov.dev/679b9d55708cfcb2060b9ae3-icon.webp",
+  "Medical bloodset":
+    "https://assets.tarkov.dev/5b4335ba86f7744d2837a264-icon.webp",
+  "Cultist figurine ×1":
+    "https://assets.tarkov.dev/655c669103999d3c810c025b-icon.webp",
+  "Cultist figurine ×5":
+    "https://assets.tarkov.dev/655c669103999d3c810c025b-icon.webp",
+  "Cultist knife":
+    "https://assets.tarkov.dev/5fc64ea372b0dd78d51159dc-icon.webp",
+  "Killa figurine":
+    "https://assets.tarkov.dev/66572c82ad599021091c6118-icon.webp",
+  "Tagilla figurine":
+    "https://assets.tarkov.dev/66572cbdad599021091c611a-icon.webp",
+  "Reshala figurine":
+    "https://assets.tarkov.dev/66572be36a723f7f005a066e-icon.webp",
+  "Den figurine":
+    "https://assets.tarkov.dev/66572b8d80b1cd4b6a67847f-icon.webp",
+  "Scav figurine":
+    "https://assets.tarkov.dev/655c673673a43e23e857aebd-icon.webp",
+  "Scav backpack":
+    "https://assets.tarkov.dev/56e335e4d2720b6c058b456d-icon.webp",
+  "Ryzhy figurine":
+    "https://assets.tarkov.dev/655c67782a1356436041c9c5-icon.webp",
+  "Light bulb ×2":
+    "https://assets.tarkov.dev/5d1b392c86f77425243e98fe-icon.webp",
+  "Physical Bitcoin":
+    "https://assets.tarkov.dev/59faff1d86f7746c51718c9c-icon.webp",
+  "1x Pointy guy figurine":
+    "https://assets.tarkov.dev/679b9d6390622daf9708da76-icon.webp",
+  "1x Petya Crooker figurine":
+    "https://assets.tarkov.dev/679b9d43597ba2ed120c3d44-icon.webp",
+  "1x Count Bloodsucker figurine":
+    "https://assets.tarkov.dev/679b9d4b3374fb14f40efe6d-icon.webp",
+  "Mr Kerman's cat hologram":
+    "https://assets.tarkov.dev/6638a5474e92f038531e210e-icon.webp",
+  "Ded Moroz figurine":
+    "https://assets.tarkov.dev/655c67ab0d37ca5135388f4b-icon.webp",
   "Santa's Bag": "https://assets.tarkov.dev/61b9e1aaef9a1b5d6a79899a-icon.webp",
-  "TerraGroup Labs access keycard": "https://assets.tarkov.dev/5c94bbff86f7747ee735c08f-icon.webp",
-  "Pack of nails": "https://assets.tarkov.dev/590c31c586f774245e3141b2-icon.webp",
-  "Xenomorph sealing foam": "https://assets.tarkov.dev/590c346786f77423e50ed342-icon.webp",
-  "Secure container Kappa": "https://assets.tarkov.dev/5c093ca986f7740a1867ab12-icon.webp",
-  "Spooky skull mask": "https://assets.tarkov.dev/635267ab3c89e2112001f826-icon.webp",
-  "Deadlyslob's beard oil": "https://assets.tarkov.dev/5bc9b9ecd4351e3bac122519-icon.webp",
-  "Baddie's red beard": "https://assets.tarkov.dev/62a09dd4621468534a797ac7-icon.webp",
-  "Politician Mutkevich figurine": "https://assets.tarkov.dev/655c66e40b2de553b618d4b8-icon.webp",
-  "Obdolbos cocktail injector": "https://assets.tarkov.dev/5ed5166ad380ab312177c100-icon.webp",
-  "Pack of sugar": "https://assets.tarkov.dev/59e3577886f774176a362503-icon.webp",
-  "BEAR operative figurine": "https://assets.tarkov.dev/655c652d60d0ac437100fed7-icon.webp",
-  "Grizzly medical kit": "https://assets.tarkov.dev/590c657e86f77412b013051d-icon.webp",
-  "USEC operative figurine": "https://assets.tarkov.dev/655c663a6689c676ce57af85-icon.webp",
-  "Relaxation room key": "https://assets.tarkov.dev/6582dbf0b8d7830efc45016f-icon.webp",
-  "Dundukk sport sunglasses": "https://assets.tarkov.dev/5aa2b986e5b5b00014028f4c-icon.webp",
-  "Axel parrot figurine": "https://assets.tarkov.dev/62a091170b9d3c46de5b6cf2-icon.webp",
-  "Zarya stun grenade": "https://assets.tarkov.dev/5a0c27731526d80618476ac4-icon.webp",
-  "GreenBat lithium battery ×2": "https://assets.tarkov.dev/5e2aedd986f7746d404f3aa4-icon.webp",
-  "LEDX Skin Transilluminator": "https://assets.tarkov.dev/5c0530ee86f774697952d952-icon.webp",
-  "1x Bottle of water (0.6L)": "https://assets.tarkov.dev/5448fee04bdc2dbc018b4567-icon.webp",
-  "Secure container Kappa (Desecrated)": "https://assets.tarkov.dev/676008db84e242067d0dc4c9-icon.webp",
-  "Tagilla's welding mask \"Gorilla\"": "https://assets.tarkov.dev/60a7ad3a0c5cb24b0134664a-icon.webp",
-  "Tagilla's welding mask \"UBEY\"": "https://assets.tarkov.dev/60a7ad2a2198820d95707a2e-icon.webp",
-  "Bottle of Tarkovskaya vodka ×3": "https://assets.tarkov.dev/5d40407c86f774318526545a-icon.webp",
-  "Tetriz portable game console ×2": "https://assets.tarkov.dev/5c12620d86f7743f8b198b72-icon.webp",
-  "TerraGroup \"Blue Folders\" materials": "https://assets.tarkov.dev/6389c8c5dbfd5e4b95197e6b-icon.webp",
-  "Tagilla's welding mask \"ZABEY\" (Replica)": "https://assets.tarkov.dev/67ea616a74f765cefd009fb7-icon.webp",
-  "Maska-1SCh bulletproof helmet (Killa Edition)": "https://assets.tarkov.dev/5c0e874186f7745dc7616606-icon.webp",
-  "Maska-1SCh face shield (Killa Edition)": "https://assets.tarkov.dev/5c0e842486f77443a74d2976-icon.webp",
-  "TT-33 7.62x25 TT pistol (Golden)": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-icon.webp",
-  "Bottle of Fierce Hatchling moonshine": "https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp",
-  "HighCom Trooper TFO body armor (MultiCam)": "https://assets.tarkov.dev/5c0e655586f774045612eeb2-icon.webp",
-  "Video cassette with the Cyborg Killer movie": "https://assets.tarkov.dev/62a09e974f842e1bd12da3f0-icon.webp",
-  "Rusty bloody key": "https://assets.tarkov.dev/64d4b23dc1b37504b41ac2b6-icon.webp",
-  "Secure container Gamma (The Unheard Edition)": "https://assets.tarkov.dev/665ee77ccf2d642e98220bca-icon.webp",
-  "Secure container Gamma (Edge of Darkness Edition)": "https://assets.tarkov.dev/5857a8bc2459772bad15db29-icon.webp",
-  "1x Jack-o'-lantern tactical pumpkin helmet": "https://assets.tarkov.dev/59ef13ca86f77445fd0e2483-icon.webp",
-  "1x Pumpkin with sweets": "https://assets.tarkov.dev/634959225289190e5e773b3b-icon.webp",
-  "Random foods🍴": "https://assets.tarkov.dev/544fb6cc4bdc2d34748b456e-icon.webp",
-  "Random drinks 🍹": "https://assets.tarkov.dev/57513f9324597720a7128161-icon.webp",
-  "1x Augmentin antibiotic pills": "https://assets.tarkov.dev/590c695186f7741e566b64a2-icon.webp",
-  "1x xTG-12 antidote injector": "https://assets.tarkov.dev/5fca138c2a7b221b2852a5c6-icon.webp",
-  "1x Mazoni golden dumbbell": "https://assets.tarkov.dev/unknown-item-512.webp",
-  "1x Tigzresq splint": "https://assets.tarkov.dev/unknown-item-512.webp",
-  "1x Golden egg": "https://assets.tarkov.dev/62a09cfe4f842e1bd12da3e4-icon.webp",
-  "1x Nut sack": "https://assets.tarkov.dev/unknown-item-512.webp",
-  "2x Ushanka ear flap hat": "https://assets.tarkov.dev/59e7708286f7742cbd762753-icon.webp",
-  "1x Bomber beanie": "https://assets.tarkov.dev/60bf74184a63fc79b60c57f6-icon.webp",
+  "TerraGroup Labs access keycard":
+    "https://assets.tarkov.dev/5c94bbff86f7747ee735c08f-icon.webp",
+  "Pack of nails":
+    "https://assets.tarkov.dev/590c31c586f774245e3141b2-icon.webp",
+  "Xenomorph sealing foam":
+    "https://assets.tarkov.dev/590c346786f77423e50ed342-icon.webp",
+  "Secure container Kappa":
+    "https://assets.tarkov.dev/5c093ca986f7740a1867ab12-icon.webp",
+  "Spooky skull mask":
+    "https://assets.tarkov.dev/635267ab3c89e2112001f826-icon.webp",
+  "Deadlyslob's beard oil":
+    "https://assets.tarkov.dev/5bc9b9ecd4351e3bac122519-icon.webp",
+  "Baddie's red beard":
+    "https://assets.tarkov.dev/62a09dd4621468534a797ac7-icon.webp",
+  "Politician Mutkevich figurine":
+    "https://assets.tarkov.dev/655c66e40b2de553b618d4b8-icon.webp",
+  "Obdolbos cocktail injector":
+    "https://assets.tarkov.dev/5ed5166ad380ab312177c100-icon.webp",
+  "Pack of sugar":
+    "https://assets.tarkov.dev/59e3577886f774176a362503-icon.webp",
+  "BEAR operative figurine":
+    "https://assets.tarkov.dev/655c652d60d0ac437100fed7-icon.webp",
+  "Grizzly medical kit":
+    "https://assets.tarkov.dev/590c657e86f77412b013051d-icon.webp",
+  "USEC operative figurine":
+    "https://assets.tarkov.dev/655c663a6689c676ce57af85-icon.webp",
+  "Relaxation room key":
+    "https://assets.tarkov.dev/6582dbf0b8d7830efc45016f-icon.webp",
+  "Dundukk sport sunglasses":
+    "https://assets.tarkov.dev/5aa2b986e5b5b00014028f4c-icon.webp",
+  "Axel parrot figurine":
+    "https://assets.tarkov.dev/62a091170b9d3c46de5b6cf2-icon.webp",
+  "Zarya stun grenade":
+    "https://assets.tarkov.dev/5a0c27731526d80618476ac4-icon.webp",
+  "GreenBat lithium battery ×2":
+    "https://assets.tarkov.dev/5e2aedd986f7746d404f3aa4-icon.webp",
+  "LEDX Skin Transilluminator":
+    "https://assets.tarkov.dev/5c0530ee86f774697952d952-icon.webp",
+  "1x Bottle of water (0.6L)":
+    "https://assets.tarkov.dev/5448fee04bdc2dbc018b4567-icon.webp",
+  "Secure container Kappa (Desecrated)":
+    "https://assets.tarkov.dev/676008db84e242067d0dc4c9-icon.webp",
+  'Tagilla\'s welding mask "Gorilla"':
+    "https://assets.tarkov.dev/60a7ad3a0c5cb24b0134664a-icon.webp",
+  'Tagilla\'s welding mask "UBEY"':
+    "https://assets.tarkov.dev/60a7ad2a2198820d95707a2e-icon.webp",
+  "Bottle of Tarkovskaya vodka ×3":
+    "https://assets.tarkov.dev/5d40407c86f774318526545a-icon.webp",
+  "Tetriz portable game console ×2":
+    "https://assets.tarkov.dev/5c12620d86f7743f8b198b72-icon.webp",
+  'TerraGroup "Blue Folders" materials':
+    "https://assets.tarkov.dev/6389c8c5dbfd5e4b95197e6b-icon.webp",
+  'Tagilla\'s welding mask "ZABEY" (Replica)':
+    "https://assets.tarkov.dev/67ea616a74f765cefd009fb7-icon.webp",
+  "Maska-1SCh bulletproof helmet (Killa Edition)":
+    "https://assets.tarkov.dev/5c0e874186f7745dc7616606-icon.webp",
+  "Maska-1SCh face shield (Killa Edition)":
+    "https://assets.tarkov.dev/5c0e842486f77443a74d2976-icon.webp",
+  "TT-33 7.62x25 TT pistol (Golden)":
+    "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-icon.webp",
+  "Bottle of Fierce Hatchling moonshine":
+    "https://assets.tarkov.dev/5d1b376e86f774252519444e-icon.webp",
+  "HighCom Trooper TFO body armor (MultiCam)":
+    "https://assets.tarkov.dev/5c0e655586f774045612eeb2-icon.webp",
+  "Video cassette with the Cyborg Killer movie":
+    "https://assets.tarkov.dev/62a09e974f842e1bd12da3f0-icon.webp",
+  "Rusty bloody key":
+    "https://assets.tarkov.dev/64d4b23dc1b37504b41ac2b6-icon.webp",
+  "Secure container Gamma (The Unheard Edition)":
+    "https://assets.tarkov.dev/665ee77ccf2d642e98220bca-icon.webp",
+  "Secure container Gamma (Edge of Darkness Edition)":
+    "https://assets.tarkov.dev/5857a8bc2459772bad15db29-icon.webp",
+  "1x Jack-o'-lantern tactical pumpkin helmet":
+    "https://assets.tarkov.dev/59ef13ca86f77445fd0e2483-icon.webp",
+  "1x Pumpkin with sweets":
+    "https://assets.tarkov.dev/634959225289190e5e773b3b-icon.webp",
+  "Random foods🍴":
+    "https://assets.tarkov.dev/544fb6cc4bdc2d34748b456e-icon.webp",
+  "Random drinks 🍹":
+    "https://assets.tarkov.dev/57513f9324597720a7128161-icon.webp",
+  "1x Augmentin antibiotic pills":
+    "https://assets.tarkov.dev/590c695186f7741e566b64a2-icon.webp",
+  "1x xTG-12 antidote injector":
+    "https://assets.tarkov.dev/5fca138c2a7b221b2852a5c6-icon.webp",
+  "1x Mazoni golden dumbbell":
+    "https://assets.tarkov.dev/6937edb912d456a817083e82-icon.webp",
+  "1x Tigzresq splint":
+    "https://assets.tarkov.dev/6937ecf8628ee476240c07cb-icon.webp",
+  "1x Golden egg":
+    "https://assets.tarkov.dev/62a09cfe4f842e1bd12da3e4-icon.webp",
+  "1x Nut sack": "https://assets.tarkov.dev/69398e94ca94fd2877039504-icon.webp",
+  "2x Ushanka ear flap hat":
+    "https://assets.tarkov.dev/59e7708286f7742cbd762753-icon.webp",
+  "1x Ushanka ear flap hat":
+    "https://assets.tarkov.dev/59e7708286f7742cbd762753-icon.webp",
+  "1x Kinda cowboy hat":
+    "https://assets.tarkov.dev/5aa2b9ede5b5b000137b758b-icon.webp",
+  "1x Bomber beanie":
+    "https://assets.tarkov.dev/60bf74184a63fc79b60c57f6-icon.webp",
   "1x BOSS cap": "https://assets.tarkov.dev/60a7acf20c5cb24b01346648-icon.webp",
-  "1x SSh-68 steel helmet (Olive Drab)": "https://assets.tarkov.dev/5c06c6a80db834001b735491-icon.webp",
-  "Christmas tree ornament (Red)": "https://assets.tarkov.dev/5df8a6a186f77412640e2e80-icon.webp",
-  "Christmas tree ornament (White)": "https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp",
-  "Christmas tree ornament (Violet)": "https://assets.tarkov.dev/5df8a77486f77412672a1e3f-icon.webp",
-  "1x Domontovich ushanka hat": "https://assets.tarkov.dev/unknown-item-512.webp",
-  "1x ZiD SP-81 26x75 signal pistol": "https://assets.tarkov.dev/620109578d82e67e7911abf2-icon.webp",
-  "1x Bottle of Dan Jackiel whiskey": "https://assets.tarkov.dev/5d403f9186f7743cac3f229b-icon.webp",
-  "1x Supply department director's office key": "https://assets.tarkov.dev/63a39ce4cd6db0635c1975fa-icon.webp",
-  "1x 6-STEN-140-M military battery": "https://assets.tarkov.dev/5d03794386f77420415576f5-icon.webp",
-  "1x Mastichin figurine": "https://assets.tarkov.dev/68f261f6928cd23ddf0471fd-icon.webp",
-  "1x Voron's Hideout key": "https://assets.tarkov.dev/664d3ddfdda2e85aca370d75-icon.webp",
-  "1x Note with code word Voron": "https://assets.tarkov.dev/675aaab74bca0b001d02f356-icon.webp",
+  "1x SSh-68 steel helmet (Olive Drab)":
+    "https://assets.tarkov.dev/5c06c6a80db834001b735491-icon.webp",
+  "1x Christmas tree ornament (Red)":
+    "https://assets.tarkov.dev/5df8a6a186f77412640e2e80-icon.webp",
+  "1x Christmas tree ornament (White)":
+    "https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp",
+  "1x Christmas tree ornament (Violet)":
+    "https://assets.tarkov.dev/5df8a77486f77412672a1e3f-icon.webp",
+  "1x Domontovich ushanka hat":
+    "https://assets.tarkov.dev/6937f02dfd6488bb27024839-icon.webp",
+  "1x ZiD SP-81 26x75 signal pistol":
+    "https://assets.tarkov.dev/620109578d82e67e7911abf2-icon.webp",
+  "1x Bottle of Dan Jackiel whiskey":
+    "https://assets.tarkov.dev/5d403f9186f7743cac3f229b-icon.webp",
+  "1x Supply department director's office key":
+    "https://assets.tarkov.dev/63a39ce4cd6db0635c1975fa-icon.webp",
+  "1x 6-STEN-140-M military battery":
+    "https://assets.tarkov.dev/5d03794386f77420415576f5-icon.webp",
+  "1x Mastichin figurine":
+    "https://assets.tarkov.dev/68f261f6928cd23ddf0471fd-icon.webp",
+  "1x Voron's Hideout key":
+    "https://assets.tarkov.dev/664d3ddfdda2e85aca370d75-icon.webp",
+  "1x Note with code word Voron":
+    "https://assets.tarkov.dev/675aaab74bca0b001d02f356-icon.webp",
   "1x Raven": "https://assets.tarkov.dev/5e54f62086f774219b0f1937-icon.webp",
-  "1x Christmas tree ornament (Silver)": "https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp",
-  "1x Christmas tree ornament (Red)": "https://assets.tarkov.dev/5df8a6a186f77412640e2e80-icon.webp",
-  "1x Christmas tree ornament (Violet)": "https://assets.tarkov.dev/5df8a77486f77412672a1e3f-icon.webp",
-  "1x Ded Moroz hat": "https://assets.tarkov.dev/5a43943586f77416ad2f06e2-icon.webp",
-  "1x Ded Moroz figurine": "https://assets.tarkov.dev/655c67ab0d37ca5135388f4b-icon.webp",
+  "1x Christmas tree ornament (Silver)":
+    "https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp",
+  "1x Ded Moroz hat":
+    "https://assets.tarkov.dev/5a43943586f77416ad2f06e2-icon.webp",
+  "1x Ded Moroz figurine":
+    "https://assets.tarkov.dev/655c67ab0d37ca5135388f4b-icon.webp",
 };

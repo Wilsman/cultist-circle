@@ -114,10 +114,11 @@ export default function Page() {
         <Badge
           variant="secondary"
           title={itemName}
-          className={`inline-flex items-center flex-1 truncate rounded-full border py-1.5 px-3 lg:py-2 lg:px-4 ${isOutput
-            ? "bg-green-900/40 text-green-300 border-green-800/60"
-            : "bg-gray-800/70 text-gray-100 border-gray-600"
-            }`}
+          className={`inline-flex items-center flex-1 truncate rounded-full border py-1.5 px-3 lg:py-2 lg:px-4 ${
+            isOutput
+              ? "bg-green-900/40 text-green-300 border-green-800/60"
+              : "bg-gray-800/70 text-gray-100 border-gray-600"
+          }`}
         >
           <span className="truncate text-sm lg:text-base">{itemName}</span>
         </Badge>
@@ -241,7 +242,7 @@ export default function Page() {
                 badgeContent
               )}
               {/* Add "and/or" or "or" between items (not after the last item) */}
-              {idx < items.length - 1 && (
+              {idx < items.length - 1 && !explanation.includes("Outcome") && (
                 <div className="flex items-center justify-center my-2">
                   <TooltipProvider>
                     <Tooltip>
@@ -298,20 +299,47 @@ export default function Page() {
     };
 
     const processedOutputs = processOutputs();
-    const outputCount = processedOutputs.reduce((count, output) => {
-      if (output.type === "normal") {
-        return count + 1;
+    const outputCount = (() => {
+      // If there are multiple outcome sets separated by OR, we only count the first one
+      // (as both should ideally have the same item count, or we represent the 'either' state)
+      const firstSet = processedOutputs[0];
+      if (!firstSet) return 0;
+
+      const countInItems = (items: string[]) => {
+        return items.reduce((sum, item) => {
+          const match = item.match(/^(\d+)x/);
+          const qty = match ? parseInt(match[1], 10) : 1;
+          return sum + qty;
+        }, 0);
+      };
+
+      if (firstSet.type === "normal") {
+        // Simple case: sum up all normal outputs (old format)
+        return processedOutputs.reduce((sum, output) => {
+          if (output.type === "normal") {
+            const match = (output.content as string).match(/^(\d+)x/);
+            return sum + (match ? parseInt(match[1], 10) : 1);
+          }
+          return sum;
+        }, 0);
       } else {
-        const content = output.content as {
+        // Complex case: handle multiple_possible
+        const content = firstSet.content as {
           items: string[];
           explanation: string;
         };
-        // If explanation indicates you get 1 item (OR logic), count as 1
-        // If explanation indicates you get 2 items (AND/OR logic), count as items length
-        const isOrLogic = content.explanation.includes("You get 1 item");
-        return count + (isOrLogic ? 1 : content.items.length);
+
+        if (content.explanation.includes("You get 1 item")) {
+          return 1;
+        }
+        if (content.explanation.includes("You always get 2 items")) {
+          return 2;
+        }
+
+        // Default to counting items in the set
+        return countInItems(content.items);
       }
-    }, 0);
+    })();
 
     return (
       <div className="relative rounded-2xl border border-gray-700/70 bg-gray-700/50 p-4 backdrop-blur transition-colors hover:bg-gray-700/70">
@@ -369,11 +397,20 @@ export default function Page() {
                     explanation: string;
                   };
                   return (
-                    <MultipleOutputBadge
-                      key={`multiple-${idx}`}
-                      items={content.items}
-                      explanation={content.explanation}
-                    />
+                    <div key={`multiple-wrapper-${idx}`}>
+                      <MultipleOutputBadge
+                        key={`multiple-${idx}`}
+                        items={content.items}
+                        explanation={content.explanation}
+                      />
+                      {idx < processedOutputs.length - 1 && (
+                        <div className="flex items-center justify-center my-4">
+                          <span className="text-sm font-bold text-orange-400 bg-orange-950/30 px-4 py-1 rounded-full border border-orange-900/50 uppercase tracking-widest">
+                            OR
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   );
                 }
               })}
@@ -423,13 +460,6 @@ export default function Page() {
           </div>
         </div>
         <CardContent className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-            Special Task
-          </div>
-          <div className="relative mb-6 rounded-2xl border border-gray-700/70 bg-gray-700/50 p-4 backdrop-blur">
-
-          </div>
-          <div className="mb-6 h-px w-full bg-gray-700/60" />
           {filteredItems.length === 0 ? (
             <div className="mt-8 rounded-2xl border border-gray-700/70 bg-gray-800/40 p-6 text-center text-sm text-gray-300">
               No recipes match your search. Try a different keyword.
