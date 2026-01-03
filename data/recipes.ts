@@ -20,6 +20,15 @@ export interface Recipe {
  * Escape from Tarkov Cultist Circle crafting recipes
  */
 export const tarkovRecipes: Recipe[] = [
+    {
+        requiredItems: ["1x Elvisvista figurine"],
+        craftingTime: "66",
+        producedItems: [
+            "1x Elvisvista figurine",
+            "1x Baseball cap"
+        ],
+        isNew: true,
+    },
   {
     requiredItems: [
       "1x Christmas tree ornament (Silver)",
