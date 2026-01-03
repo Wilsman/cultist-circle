@@ -21,6 +21,14 @@ export interface Recipe {
  */
 export const tarkovRecipes: Recipe[] = [
     {
+        requiredItems: ["1x Labrys research notes"],
+        craftingTime: "66",
+        producedItems: [
+            "1x Labrys access keycard"
+        ],
+        isNew: true,
+    },
+    {
         requiredItems: ["1x Elvisvista figurine"],
         craftingTime: "66",
         producedItems: [
