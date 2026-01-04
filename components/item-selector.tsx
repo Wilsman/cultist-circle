@@ -22,7 +22,6 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import Fuse from "fuse.js";
-import { motion, AnimatePresence } from "framer-motion";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { TraderLevels } from "@/components/ui/trader-level-selector";
 import {
@@ -52,7 +51,7 @@ import {
 } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 
-interface ItemSelectorProps {
+export interface ItemSelectorProps {
   items: SimplifiedItem[];
   selectedItem: SimplifiedItem | null;
   onSelect: (
@@ -610,16 +609,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
     return (
       <TooltipProvider>
         <div className="relative w-full">
-          <AnimatePresence mode="wait">
-            {!selectedItem ? (
-              <motion.div
-                key="search-mode"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.15 }}
-                className="relative"
-              >
+          {!selectedItem ? (
+            <div className="relative">
                 <div
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 bg-black/40 backdrop-blur-xl border transition-all duration-200 rounded-xl",
@@ -680,15 +671,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                   </div>
                 )}
 
-                <AnimatePresence>
-                  {isFocused && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 4 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 right-0 z-[100] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-                    >
+                {isFocused && (
+                  <div className="absolute top-full left-0 right-0 z-[100] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
                       <div className="max-h-[320px]">
                         <AutoSizer disableHeight>
                           {({ width }) => (
@@ -712,24 +696,18 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                           </div>
                         )}
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="selected-mode"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.15 }}
-                className={cn(
-                  "relative group bg-black/40 backdrop-blur-xl border rounded-xl overflow-hidden transition-all duration-300",
-                  isPinned
-                    ? "border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.1)]"
-                    : "border-white/10 hover:border-white/20"
+                  </div>
                 )}
-              >
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "relative group bg-black/40 backdrop-blur-xl border rounded-xl overflow-hidden transition-all duration-300",
+                isPinned
+                  ? "border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.1)]"
+                  : "border-white/10 hover:border-white/20"
+              )}
+            >
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center p-3 sm:p-4 gap-4">
                   {/* Item Icon & Basic Info */}
                   <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -755,16 +733,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                         <span className="text-xs font-extrabold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-wider flex items-center shadow-[0_0_15px_rgba(16,185,129,0.05)] border border-emerald-500/20">
                           Base: {(selectedItem.basePrice || 0).toLocaleString()}
                         </span>
-                        <AnimatePresence mode="wait">
-                          {isPriceOverrideActive ? (
-                            <motion.div
-                              key="price-input"
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: -10 }}
-                              transition={{ duration: 0.15 }}
-                              className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/40 rounded-md px-2 py-0.5 ring-1 ring-amber-500/20"
-                            >
+                        {isPriceOverrideActive ? (
+                          <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/40 rounded-md px-2 py-0.5 ring-1 ring-amber-500/20">
                               <span className="text-[10px] text-amber-400 font-bold">
                                 ₽
                               </span>
@@ -797,19 +767,14 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                               >
                                 <XIcon className="h-3 w-3" />
                               </button>
-                            </motion.div>
-                          ) : (
-                            <motion.div
-                              key="price-badge"
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              transition={{ duration: 0.15 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                togglePriceOverride();
-                              }}
-                              className={cn(
+                          </div>
+                        ) : (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePriceOverride();
+                            }}
+                            className={cn(
                                 "flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-semibold uppercase tracking-widest cursor-pointer hover:scale-[1.03] active:scale-[0.97] transition-all",
                                 isPriceOverrideActive
                                   ? "bg-amber-500/15 border-amber-500/40 text-amber-400 opacity-100 ring-1 ring-amber-500/20"
@@ -845,9 +810,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                                     : "opacity-40"
                                 )}
                               />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1004,14 +968,15 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                     </span>
                   )}
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </div>
       </TooltipProvider>
     );
   }
 );
+
+ItemSelector.displayName = "ItemSelector";
 
 const ActionButton: React.FC<{
   icon: React.ReactNode;
