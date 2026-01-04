@@ -2,7 +2,7 @@
 export const DEFAULT_EXCLUDED_ITEMS = new Set([
   // Ammunition and explosives
   "26x75 mm flares cartridges",
-  "40x46mm grenade",
+  // "40x46mm grenade", // now working
   // "40mm VOG-25 grenade", // now working
 
   // Fuel
@@ -16,8 +16,8 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "GP coin",
 
   // Tools and equipment
-  "MS2000 Marker",
-  "Leatherman Multitool",
+  // "MS2000 Marker", // now working
+  // "Leatherman Multitool", // now working
   "Tripwire installation kit",
   "Vortes Ranger 1500 rangefinder",
   "Digital secure DSP radio transmitter",
@@ -26,9 +26,9 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Radar station spare parts",
   "GARY ZONT portable electronic warfare device",
   "Sacred Amulet",
-  "WI-FI Camera",
+  // "WI-FI Camera", // now working
   "Signal Jammer",
-  "EYE MK2 professional hand-held compass",
+  // "EYE MK2 professional hand-held compass", // now working
   "KOSA UAV electronic jamming device",
 
   // Backpacks
@@ -49,33 +49,33 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "RSP-30 reactive signal cartridge (Special Yellow)",
   "RSP-30 reactive signal cartridge (Firework)",
 
-  // Weapons
-  "M60E6 (FDE)",
-  "M60E6",
-  "M60E4",
-  "SR-3M",
-  "Desert Eagle L5 .357",
-  "Desert Eagle L5 .50 AE",
-  "Desert Eagle L6 .50 AE",
-  "Desert Eagle L6 .50 AE WTS",
-  "Desert Deagle Mk XIX .50 AE",
-  "UZI 9x19 submachine gun",
-  "UZI PRO SMG 9x19 submachine gun",
-  "UZI PRO Pistol 9x19 submachine gun",
-  "Saiko TRG M10",
+  // Weapons // now working
+  // "M60E6 (FDE)",
+  // "M60E6",
+  // "M60E4",
+  // "SR-3M",
+  // "Desert Eagle L5 .357",
+  // "Desert Eagle L5 .50 AE",
+  // "Desert Eagle L6 .50 AE",
+  // "Desert Eagle L6 .50 AE WTS",
+  // "Desert Deagle Mk XIX .50 AE",
+  // "UZI 9x19 submachine gun",
+  // "UZI PRO SMG 9x19 submachine gun",
+  // "UZI PRO Pistol 9x19 submachine gun",
+  // "Saiko TRG M10",
 
   // Containers and special items
   "Sealed box",
   "Contraband box",
   "Locked case",
   "Case key",
-  "Special 40-degree fuel",
-  "Mr Kerman's cat hologram",
+  // "Special 40-degree fuel", // now working
+  // "Mr Kerman's cat hologram", // now working
 
   // Food and holiday items
-  "Jar of pickles",
-  "Olivier salad box",
-  "SHYSHKA Christmas tree life extender",
+  // "Jar of pickles", // now working
+  // "Olivier salad box", // now working
+  // "SHYSHKA Christmas tree life extender", // now working
   "Christmas gift",
   "Small Christmas gift",
 
@@ -95,7 +95,16 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "Sealed weapon case",
   "Key case",
   "Thumb drive with military data",
-
+  "Audio recorder",
+  "Interchange underground utility plan",
+  "Blank RFID keycard",
+  "Reshala's bunkhouse key",
+  "Zmeisky 3 apartment key",
+  "Rus Post car key",
+  "RB-PKPTS key",
+  "TerraGroup corporate apartment key",
+  "Elektronik's key",
+  
   // 2025 xmas items
   "Nut can"
 
