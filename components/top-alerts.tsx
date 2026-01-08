@@ -1,4 +1,4 @@
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, ChevronDown } from "lucide-react";
@@ -95,21 +95,25 @@ export function TopAlerts() {
           </div>
           {/* First combo preview (always visible) */}
           <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-            <Image
+            <img
               src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
               alt="MP5"
               width={32}
               height={32}
               className="rounded"
+              fetchPriority="low"
+              loading="lazy"
             />
             <span className="font-semibold">5× MP5</span>
             <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
-              <Image
+              <img
                 src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
                 alt="Peacekeeper"
                 width={14}
                 height={14}
                 className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
+                fetchPriority="low"
+                loading="lazy"
               />
               <span className="font-medium">LL1</span>
             </span>
@@ -134,23 +138,27 @@ export function TopAlerts() {
                 <AlertDescription className="mt-1 space-y-2">
                   {/* New Recipe Examples */}
                   <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-                    <Image
+                    <img
                       src="https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp"
                       alt="Christmas tree ornament (White)"
                       width={32}
                       height={32}
                       className="rounded"
+                      fetchPriority="low"
+                      loading="lazy"
                     />
                     <span className="font-semibold">
                       1× Christmas ornament (White)
                     </span>
                     <span className="opacity-60">➡️</span>
-                    <Image
+                    <img
                       src="https://assets.tarkov.dev/5df8a77486f77412672a1e3f-icon.webp"
                       alt="Christmas tree ornament (Violet)"
                       width={32}
                       height={32}
                       className="rounded"
+                      fetchPriority="low"
+                      loading="lazy"
                     />
                     <span className="font-semibold">
                       1× Christmas ornament (Violet)
@@ -161,7 +169,7 @@ export function TopAlerts() {
                   </div>
 
                   <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-                    <Image
+                    <img
                       src="https://assets.tarkov.dev/62a09cfe4f842e1bd12da3e4-icon.webp"
                       alt="Golden egg"
                       width={32}
@@ -170,7 +178,7 @@ export function TopAlerts() {
                     />
                     <span className="font-semibold">1× Tigzresq splint</span>
                     <span className="opacity-60">➡️</span>
-                    <Image
+                    <img
                       src="https://assets.tarkov.dev/62a09cfe4f842e1bd12da3e4-icon.webp"
                       alt="Golden egg"
                       width={32}
@@ -184,23 +192,27 @@ export function TopAlerts() {
                   </div>
 
                   <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-                    <Image
+                    <img
                       src="https://assets.tarkov.dev/590c695186f7741e566b64a2-icon.webp"
                       alt="Augmentin antibiotic pills"
                       width={32}
                       height={32}
                       className="rounded"
+                      fetchPriority="low"
+                      loading="lazy"
                     />
                     <span className="font-semibold">
                       1× Augmentin antibiotic pills
                     </span>
                     <span className="opacity-60">➡️</span>
-                    <Image
+                    <img
                       src="https://assets.tarkov.dev/5fca138c2a7b221b2852a5c6-icon.webp"
                       alt="xTG-12 antidote injector"
                       width={32}
                       height={32}
                       className="rounded"
+                      fetchPriority="low"
+                      loading="lazy"
                     />
                     <span className="font-semibold">
                       1× xTG-12 antidote injector

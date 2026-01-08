@@ -1,6 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -112,12 +112,14 @@ export function TraderLevelSelector({ traderLevels, onTraderLevelsChange }: Trad
       <CardContent className="space-y-3">
         {TRADERS.map((trader) => (
           <div key={trader.normalizedName} className="flex items-center space-x-3">
-            <Image
+            <img
               src={trader.imageLink}
               alt={trader.displayName}
               width={32}
               height={32}
               className="w-8 h-8 rounded-full object-cover"
+              fetchPriority="low"
+              loading="lazy"
             />
             <div className="flex-1">
               <Label htmlFor={`trader-${trader.normalizedName}`} className="text-sm">

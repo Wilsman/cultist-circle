@@ -1,9 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 // components/ui/virtualized-table.tsx
 "use client";
 
 import React, { useCallback, useState, useEffect } from "react";
 import { FixedSizeList as List } from "react-window";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { MinimalItem } from "@/hooks/use-tarkov-api";
 import {
@@ -336,12 +336,14 @@ export function VirtualizedTable({
                   <TooltipTrigger className="flex items-center justify-end gap-1">
                     <span>{bestBuyPrice.priceRUB.toLocaleString()}</span>
                     {TRADER_IMAGES[bestBuyPrice.vendor.normalizedName] && (
-                      <Image
+                      <img
                         src={TRADER_IMAGES[bestBuyPrice.vendor.normalizedName]}
                         alt={bestBuyPrice.vendor.normalizedName}
                         width={16}
                         height={16}
                         className="w-4 h-4 rounded-full"
+                        fetchPriority="low"
+                        loading="lazy"
                       />
                     )}
                   </TooltipTrigger>

@@ -5,7 +5,8 @@ import type { NextRequest } from "next/server";
  * Bot/Scanner suppression only.
  * Limit middleware to known bad paths so normal app routes never hit Edge.
  */
-export function middleware(_request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function middleware(request: NextRequest) {
   return new NextResponse("404 Not Found", {
     status: 404,
     headers: {

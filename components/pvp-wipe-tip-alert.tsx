@@ -1,4 +1,4 @@
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element */
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronDown, BadgeCheck } from "lucide-react";
 
@@ -47,21 +47,25 @@ export function PvpWipeTipAlert() {
                 <AlertDescription className="mt-1 space-y-2">
                   <div className="flex flex-col gap-1.5">
                     <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-                      <Image
+                      <img
                         src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
                         alt="MP5"
                         width={32}
                         height={32}
                         className="rounded"
+                        fetchPriority="low"
+                        loading="lazy"
                       />
                       <span className="font-semibold">5× MP5</span>
                       <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
-                        <Image
+                        <img
                           src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
                           alt="Peacekeeper"
                           width={14}
                           height={14}
                           className="rounded-full ring-1 ring-black/10 dark:ring-white/10"
+                          fetchPriority="low"
+                          loading="lazy"
                         />
                         <span className="font-medium">LL1</span>
                       </span>
@@ -70,16 +74,18 @@ export function PvpWipeTipAlert() {
                       </span>
                     </div>
                     <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-                      <Image
+                      <img
                         src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
                         alt="MP5"
                         width={32}
                         height={32}
                         className="rounded"
+                        fetchPriority="low"
+                        loading="lazy"
                       />
                       <span className="font-semibold">4× MP5</span>
                       <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
-                        <Image
+                        <img
                           src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
                           alt="Peacekeeper"
                           width={14}
@@ -89,12 +95,14 @@ export function PvpWipeTipAlert() {
                         <span className="font-medium">LL1</span>
                       </span>
                       <span className="opacity-60">+</span>
-                      <Image
+                      <img
                         src="https://assets.tarkov.dev/590c645c86f77412b01304d9-icon.webp"
                         alt="Diary"
                         width={32}
                         height={32}
                         className="rounded"
+                        fetchPriority="low"
+                        loading="lazy"
                       />
                       <span className="font-semibold">1× Diary</span>
                       <span className="ml-auto font-bold text-emerald-600 dark:text-emerald-400">
@@ -103,12 +111,14 @@ export function PvpWipeTipAlert() {
                     </div>
                   </div>
                   <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-                    <Image
+                    <img
                       src="https://assets.tarkov.dev/679b9d43597ba2ed120c3d44-icon.webp"
                       alt="Labyrinth figurine"
                       width={32}
                       height={32}
                       className="rounded"
+                      fetchPriority="low"
+                      loading="lazy"
                     />
                     <span className="font-semibold">You can get Labyrinth figurines from the 6-hour rituals</span>
                     <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-300">

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 // recipes/page.tsx
 
 "use client";
@@ -21,7 +22,6 @@ import {
 } from "@/components/ui/tooltip";
 import { ItemTooltip } from "@/components/ui/item-tooltip";
 import { recipeIconMap } from "@/data/recipe-icons";
-import Image from "next/image";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
 
 import { tarkovRecipes, type Recipe } from "@/data/recipes";
@@ -100,13 +100,14 @@ export default function Page() {
     const badgeContent = (
       <div className="flex items-center gap-3 lg:gap-4 w-full">
         {iconUrl ? (
-          <Image
+          <img
             src={iconUrl}
             alt={itemName}
             width={64}
             height={64}
             className="rounded-lg flex-shrink-0 bg-gray-900/50 p-2 w-12 h-12 lg:w-16 lg:h-16"
-            unoptimized
+            fetchPriority="low"
+            loading="lazy"
           />
         ) : (
           <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg bg-gray-900/50 flex-shrink-0" />
@@ -167,13 +168,14 @@ export default function Page() {
               <div className="flex items-start gap-3">
                 {/* Battery Icon */}
                 {batteryIconUrl && (
-                  <Image
+                  <img
                     src={batteryIconUrl}
                     alt="6-STEN-140-M military battery"
                     width={48}
                     height={48}
                     className="rounded-lg bg-gray-800/50 p-1.5 border border-gray-700/50 flex-shrink-0"
-                    unoptimized
+                    fetchPriority="low"
+                    loading="lazy"
                   />
                 )}
 
@@ -209,13 +211,14 @@ export default function Page() {
           const badgeContent = (
             <div className="flex items-center gap-3 lg:gap-4 w-full">
               {iconUrl ? (
-                <Image
+                <img
                   src={iconUrl}
                   alt={item}
                   width={64}
                   height={64}
                   className="rounded-lg flex-shrink-0 bg-gray-900/50 p-2 w-12 h-12 lg:w-16 lg:h-16"
-                  unoptimized
+                  fetchPriority="low"
+                  loading="lazy"
                 />
               ) : (
                 <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg bg-gray-900/50 flex-shrink-0" />
