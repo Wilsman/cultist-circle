@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /wp-admin/
+Disallow: /wp-login.php
+Disallow: /xmlrpc.php
+Disallow: /cgi-bin/
+Disallow: /.env
+Disallow: /.git/
+Disallow: /api/
+
+Sitemap: https://www.cultistcircle.com/sitemap.xml
