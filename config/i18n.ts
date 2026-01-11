@@ -1,6 +1,7 @@
 import en from "./i18n/en.json5";
 import fr from "./i18n/fr.json5";
 import de from "./i18n/de.json5";
+import es from "./i18n/es.json5";
 
 export const DEFAULT_LANGUAGE = "en";
 
@@ -10,6 +11,7 @@ export const MESSAGES: Record<string, MessageDictionary> = {
   en: en as MessageDictionary,
   fr: fr as MessageDictionary,
   de: de as MessageDictionary,
+  es: es as MessageDictionary,
 };
 
 export function getMessage(language: string, key: string): string {
