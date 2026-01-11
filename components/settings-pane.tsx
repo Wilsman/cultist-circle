@@ -215,12 +215,12 @@ export default function SettingsPane({
         try {
           const data = e.target?.result as string;
           onImportData(data);
-          sonnerToast("Success", {
-            description: "Data imported successfully",
+          sonnerToast(t("Success"), {
+            description: t("Data imported successfully"),
           });
         } catch {
-          sonnerToast("Error", {
-            description: "Failed to import data. Please check the file format.",
+          sonnerToast(t("Error"), {
+            description: t("Failed to import data. Please check the file format."),
           });
         }
       };

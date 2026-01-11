@@ -1499,7 +1499,7 @@ function AppContent() {
         });
       }
     },
-    [findMatchingItem, updateSelectedItem]
+    [findMatchingItem, t, updateSelectedItem]
   );
 
   const handleModeToggle = useCallback((checked: boolean): void => {

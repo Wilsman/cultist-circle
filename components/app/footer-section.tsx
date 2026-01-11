@@ -83,7 +83,7 @@ export function FooterSection({ onFeedbackClick }: FooterSectionProps) {
       {/* Footer Utility & Disclaimer */}
       <div className="space-y-5 pt-5 border-t border-white/5 max-w-lg mx-auto">
         <p className="text-[10px] text-slate-500 leading-relaxed uppercase tracking-widest font-medium opacity-60">
-          {t("Fan-made tool · Not affiliated with Battlestate Games")}
+          {t("Fan-made tool - Not affiliated with Battlestate Games")}
         </p>
 
         <div className="flex justify-center items-center gap-4">
