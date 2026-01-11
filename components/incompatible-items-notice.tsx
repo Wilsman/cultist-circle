@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { AlertTriangle, ExternalLink } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 export function IncompatibleItemsNotice() {
+  const { t } = useLanguage();
+
   return (
     <Link
       href="/faq"
@@ -11,7 +14,7 @@ export function IncompatibleItemsNotice() {
     >
       <AlertTriangle className="h-3 w-3" />
       <span className="group-hover:text-amber-200 transition-colors">
-        Help & FAQ
+        {t("Help & FAQ")}
       </span>
       <ExternalLink className="h-2.5 w-2.5 opacity-60 group-hover:opacity-100 transition-opacity" />
     </Link>

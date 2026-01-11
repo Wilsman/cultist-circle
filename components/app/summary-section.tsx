@@ -2,6 +2,7 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { RewardsChart } from "@/components/rewards-chart";
+import { useLanguage } from "@/contexts/language-context";
 
 interface SummarySectionProps {
     /** Whether data is loading */
@@ -27,6 +28,8 @@ export function SummarySection({
     threshold,
     isThresholdMet,
 }: SummarySectionProps) {
+    const { t } = useLanguage();
+
     if (loading) {
         return (
             <div id="sacrifice-value" className="space-y-3">
@@ -47,7 +50,7 @@ export function SummarySection({
                             ₽{Math.floor(total).toLocaleString()}
                         </div>
                         <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">
-                            Total Base Value
+                            {t("Total Base Value")}
                         </div>
                     </div>
 
@@ -57,7 +60,7 @@ export function SummarySection({
                             ₽{Math.floor(totalFleaCost || 0).toLocaleString()}
                         </div>
                         <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">
-                            Buy Cost
+                            {t("Buy Cost")}
                         </div>
                     </div>
                 </div>
@@ -77,7 +80,7 @@ export function SummarySection({
                             <span className="text-amber-400 font-bold tabular-nums">
                                 ₽{Math.floor(threshold - total).toLocaleString()}
                             </span>
-                            <span className="text-amber-500/70 text-xs">needed</span>
+                            <span className="text-amber-500/70 text-xs">{t("needed")}</span>
                         </div>
                     </div>
                 )}

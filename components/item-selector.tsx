@@ -34,6 +34,7 @@ import {
 import { ItemTooltip } from "@/components/ui/item-tooltip";
 import { getRelativeDate, cn } from "@/lib/utils";
 import { toast as sonnerToast } from "sonner";
+import { useLanguage } from "@/contexts/language-context";
 
 // Import Dropdown components
 import {
@@ -99,6 +100,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
     },
     ref
   ) => {
+    const { t } = useLanguage();
     // Validate that items is an array
     useEffect(() => {
       if (!Array.isArray(items)) {
@@ -424,13 +426,13 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       if (onCopyWithToast) {
         onCopyWithToast();
       } else {
-        sonnerToast("Name Copied", {
+        sonnerToast(t("Name Copied"), {
           description: selectedItem
-            ? `${selectedItem.name} copied to clipboard`
-            : "Item copied to clipboard",
+            ? t("{name} copied to clipboard", { name: selectedItem.name })
+            : t("Item copied to clipboard"),
         });
       }
-    }, [onCopy, onCopyWithToast, selectedItem]);
+    }, [onCopy, onCopyWithToast, selectedItem, t]);
 
     const acceptInlineSuggestion = useCallback(() => {
       if (!hasInlineSuggestion) return false;
@@ -586,7 +588,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                     isOverridden ? "text-amber-400/80" : "text-primary/90"
                   )}
                 >
-                  {priceMode === "flea" ? "Flea" : "Trader"}:{" "}
+                  {priceMode === "flea" ? t("Flea") : t("Trader")}:{" "}
                   {typeof displayedPrice === "number"
                     ? `₽${displayedPrice.toLocaleString()}`
                     : "N/A"}
@@ -655,7 +657,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                         value={searchTerm}
                         onKeyDown={handleInputKeyDown}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search items..."
+                        placeholder={t("Search items...")}
                         className="relative z-10 w-full bg-transparent text-sm text-white placeholder:text-white/20 outline-none font-medium"
                       />
                       {!isFocused && !searchTerm && (
@@ -672,10 +674,10 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                 {isFocused && hasInlineSuggestion && (
                   <div className="flex items-center gap-2 px-4 pt-2 text-[11px] text-white/50">
                     <span className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/70">
-                      Tab
+                      {t("Tab")}
                     </span>
                     <span className="truncate">
-                      Autocomplete to &quot;{inlineSuggestionText}&quot;
+                      {t('Autocomplete to "{value}"', { value: inlineSuggestionText })}
                     </span>
                   </div>
                 )}
@@ -708,7 +710,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                         </AutoSizer>
                         {filteredItems.length === 0 && (
                           <div className="p-8 text-center text-white/30 text-sm font-medium">
-                            No items matching your search
+                            {t("No items matching your search")}
                           </div>
                         )}
                       </div>
@@ -753,7 +755,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                       </h3>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs font-extrabold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-wider flex items-center shadow-[0_0_15px_rgba(16,185,129,0.05)] border border-emerald-500/20">
-                          Base: {(selectedItem.basePrice || 0).toLocaleString()}
+                          {t("Base")}: {(selectedItem.basePrice || 0).toLocaleString()}
                         </span>
                         <AnimatePresence mode="wait">
                           {isPriceOverrideActive ? (
@@ -786,7 +788,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                                   if (e.key === "Escape") clearPriceOverride();
                                 }}
                                 className="w-20 bg-transparent text-[10px] font-bold text-amber-400 outline-none placeholder:text-amber-400/30 font-mono"
-                                placeholder="Manual..."
+                                placeholder={t("Manual...")}
                               />
                               <button
                                 onClick={(e) => {
@@ -817,7 +819,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                               )}
                             >
                               <span className="text-[8px] text-white/60 mr-0.5">
-                                {priceMode === "flea" ? "Flea" : "Trader"}
+                                {priceMode === "flea" ? t("Flea") : t("Trader")}
                               </span>
                               <span>
                                 {((isPriceOverrideActive && priceOverride
@@ -860,7 +862,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                         <ActionButton
                           icon={<Copy className="h-3.5 w-3.5" />}
                           onClick={handleCopy}
-                          tooltip="Copy name"
+                          tooltip={t("Copy name")}
                         />
                         {selectedItem.link && (
                           <ActionButton
@@ -868,7 +870,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                             onClick={() =>
                               window.open(selectedItem.link, "_blank")
                             }
-                            tooltip="View on Tarkov.dev"
+                            tooltip={t("View on Tarkov.dev")}
                           />
                         )}
                         <div className="w-px h-4 bg-white/10 mx-0.5" />
@@ -893,8 +895,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                           activeClass="text-red-400 bg-red-500/10"
                           tooltip={
                             isExcluded
-                              ? "Include in auto-pick"
-                              : "Exclude from auto-pick"
+                              ? t("Include in auto-pick")
+                              : t("Exclude from auto-pick")
                           }
                         />
                       </div>
@@ -922,7 +924,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                               className="gap-2 text-white/70 focus:text-white focus:bg-white/10"
                             >
                               <Copy className="h-4 w-4" />
-                              <span>Copy Name</span>
+                              <span>{t("Copy Name")}</span>
                             </DropdownMenuItem>
                             {selectedItem.link && (
                               <DropdownMenuItem
@@ -932,7 +934,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                                 className="gap-2 text-white/70 focus:text-white focus:bg-white/10"
                               >
                                 <ExternalLink className="h-4 w-4" />
-                                <span>View on Tarkov.dev</span>
+                                <span>{t("View on Tarkov.dev")}</span>
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem
@@ -947,8 +949,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                               <CircleSlash className="h-4 w-4" />
                               <span>
                                 {isExcluded
-                                  ? "Include in Autopick"
-                                  : "Exclude from Autopick"}
+                                  ? t("Include in Autopick")
+                                  : t("Exclude from Autopick")}
                               </span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -960,7 +962,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                         icon={<Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                         onClick={handleRemove}
                         className="h-8 w-8 sm:h-7 sm:w-7 text-red-400 hover:bg-red-500/10"
-                        tooltip="Remove"
+                        tooltip={t("Remove")}
                       />
                     </div>
                   </div>
@@ -995,12 +997,14 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                     )}
                   {priceMode === "flea" && selectedItem.updated && (
                     <span>
-                      Updated {getRelativeDate(selectedItem.updated.toString())}
+                      {t("Updated {date}", {
+                        date: getRelativeDate(selectedItem.updated.toString()),
+                      })}
                     </span>
                   )}
                   {isExcluded && (
                     <span className="text-red-400 font-bold uppercase tracking-wider">
-                      Excluded from Autopick
+                      {t("Excluded from Autopick")}
                     </span>
                   )}
                 </div>
