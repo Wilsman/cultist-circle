@@ -1789,8 +1789,7 @@ function AppContent() {
                     </AlertTitle>
                     <AlertDescription className="mt-2 space-y-2 text-sm">
                       <p className="text-red-300/90">
-                        The selected items cannot be arranged in the Cultist
-                        Circle box (9×6).
+                        {t("The selected items cannot be arranged in the Cultist Circle box (9x6).")}
                       </p>
                       <PlacementPreviewInline
                         fitDebug={fitDebug}
@@ -1814,7 +1813,7 @@ function AppContent() {
                       : "bg-slate-700/30 border-slate-600/30 text-slate-500 hover:text-slate-400 hover:bg-slate-700/50"
                       }`}
                   >
-                    {ignoreFilters ? "⚠ Showing All Items" : "Bypass Filters"}
+                    {ignoreFilters ? `⚠ ${t("Showing All Items")}` : t("Bypass Filters")}
                   </Button>
                 </div>
 
@@ -2161,3 +2160,4 @@ export default AppContent;
 export function App() {
   return <AppContent />;
 }
+
