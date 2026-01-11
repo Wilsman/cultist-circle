@@ -47,7 +47,7 @@ const nextConfig = {
   webpack(config) {
     config.module.rules.push({
       test: /\.json5$/i,
-      type: "json",
+      type: "javascript/auto",
       use: "json5-loader",
     });
     return config;
