@@ -13,6 +13,7 @@ import cs from "./i18n/cs.json5";
 import hu from "./i18n/hu.json5";
 import ro from "./i18n/ro.json5";
 import sk from "./i18n/sk.json5";
+import tr from "./i18n/tr.json5";
 
 export const DEFAULT_LANGUAGE = "en";
 
@@ -34,6 +35,7 @@ export const MESSAGES: Record<string, MessageDictionary> = {
   hu: hu as MessageDictionary,
   ro: ro as MessageDictionary,
   sk: sk as MessageDictionary,
+  tr: tr as MessageDictionary,
 };
 
 export function getMessage(language: string, key: string): string {
