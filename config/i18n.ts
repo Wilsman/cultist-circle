@@ -6,6 +6,7 @@ import pt from "./i18n/pt.json5";
 import it from "./i18n/it.json5";
 import ru from "./i18n/ru.json5";
 import zh from "./i18n/zh.json5";
+import ja from "./i18n/ja.json5";
 
 export const DEFAULT_LANGUAGE = "en";
 
@@ -20,6 +21,7 @@ export const MESSAGES: Record<string, MessageDictionary> = {
   it: it as MessageDictionary,
   ru: ru as MessageDictionary,
   zh: zh as MessageDictionary,
+  ja: ja as MessageDictionary,
 };
 
 export function getMessage(language: string, key: string): string {
