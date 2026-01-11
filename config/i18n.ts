@@ -10,6 +10,7 @@ import ja from "./i18n/ja.json5";
 import ko from "./i18n/ko.json5";
 import pl from "./i18n/pl.json5";
 import cs from "./i18n/cs.json5";
+import hu from "./i18n/hu.json5";
 
 export const DEFAULT_LANGUAGE = "en";
 
@@ -28,6 +29,7 @@ export const MESSAGES: Record<string, MessageDictionary> = {
   ko: ko as MessageDictionary,
   pl: pl as MessageDictionary,
   cs: cs as MessageDictionary,
+  hu: hu as MessageDictionary,
 };
 
 export function getMessage(language: string, key: string): string {
