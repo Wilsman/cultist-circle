@@ -66,7 +66,7 @@ export function FooterSection({ onFeedbackClick }: FooterSectionProps) {
             Tarkov.dev
           </a>
         </div>
-        <span className="text-slate-700 select-none hidden sm:inline">ƒ?½</span>
+        <span className="text-slate-700 select-none hidden sm:inline">•</span>
         <div className="flex items-center gap-1.5">
           <span className="text-slate-500">{t("Research provided by")}</span>
           <a
