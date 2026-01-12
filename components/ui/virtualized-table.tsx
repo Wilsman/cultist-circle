@@ -369,7 +369,7 @@ export function VirtualizedTable({
         </div>
       );
     },
-    [items, Cell, onToggleFavorite, isFavorite]
+    [items, Cell, onToggleFavorite, isFavorite, t]
   );
 
   // Only render if we have items
