@@ -9,14 +9,23 @@ import {
   HelpCircle,
   Settings,
   Calculator,
+  Globe,
 } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
 
 export function SiteNav() {
   const pathname = usePathname();
   const isHome = pathname === "/";
-  const { t } = useLanguage();
+  const { t, language, setLanguage, supported } = useLanguage();
 
   const linkBase =
     "inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors";
@@ -113,9 +122,36 @@ export function SiteNav() {
             </Link>
           </div>
 
-          {/* Right: Settings */}
+          {/* Right: Language Selector & Settings */}
           {/* Reserve space to avoid layout shift when Settings is hidden */}
-          <div className="flex items-center gap-2 w-[44px] md:w-[128px] justify-end">
+          <div className="flex items-center gap-1 md:gap-2 w-[88px] md:w-[200px] justify-end">
+            {/* Language Selector */}
+            {ENABLE_LANGUAGE_FEATURE && (
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger
+                  className="h-9 w-[52px] md:w-[70px] bg-transparent border-0 hover:bg-gray-800/70 text-gray-300 hover:text-white transition-colors px-2 gap-1"
+                  aria-label={t("Select language")}
+                >
+                  <Globe className="h-4 w-4 shrink-0" />
+                  <SelectValue>
+                    <span className="uppercase text-xs font-medium">{language}</span>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1c20] border-white/10 text-white rounded-xl max-h-[300px]">
+                  {supported.map((l) => (
+                    <SelectItem
+                      key={l.code}
+                      value={l.code}
+                      className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
+                    >
+                      {l.label} ({l.code.toUpperCase()})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Settings Button */}
             {isHome ? (
               <button
                 onClick={() => {
