@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/language-context";
 
 interface FAQItemProps {
   id?: string;
@@ -31,6 +32,7 @@ interface FAQItemProps {
 }
 
 function FAQItem({ id, question, answer, icon }: FAQItemProps) {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ function FAQItem({ id, question, answer, icon }: FAQItemProps) {
     if (id && typeof window !== "undefined") {
       const url = `${window.location.origin}/faq#${id}`;
       navigator.clipboard.writeText(url);
-      toast.success("Link copied!");
+      toast.success(t("Link copied!"));
     }
   };
 
@@ -82,7 +84,7 @@ function FAQItem({ id, question, answer, icon }: FAQItemProps) {
           <button
             onClick={copyLink}
             className="p-3 hover:bg-white/5 text-gray-500 hover:text-yellow-400 transition-colors"
-            title="Copy link to this section"
+            title={t("Copy link to this section")}
           >
             <Link2 className="h-3.5 w-3.5" />
           </button>
@@ -98,6 +100,7 @@ function FAQItem({ id, question, answer, icon }: FAQItemProps) {
 }
 
 export default function FAQPage() {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
 
   const incompatibleItems = Array.from(DEFAULT_EXCLUDED_ITEMS).sort();
@@ -225,11 +228,10 @@ export default function FAQPage() {
       <div className="text-center mb-12">
         <div className="flex items-center justify-center gap-3 mb-4">
           <HelpCircle className="h-10 w-10 text-yellow-500" />
-          <h1 className="text-4xl font-bold tracking-tight">Help & FAQ</h1>
+          <h1 className="text-4xl font-bold tracking-tight">{t("Help & FAQ")}</h1>
         </div>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Everything you need to know about the Cultist Circle rituals, item
-          values, and calculator mechanics.
+          {t("Everything you need to know about the Cultist Circle rituals, item values, and calculator mechanics.")}
         </p>
       </div>
 
@@ -237,15 +239,15 @@ export default function FAQPage() {
         <TabsList className="grid w-full grid-cols-3 mb-8">
           <TabsTrigger value="general" className="gap-2">
             <Info className="h-4 w-4" />
-            General FAQ
+            {t("General FAQ")}
           </TabsTrigger>
           <TabsTrigger value="incompatible" className="gap-2">
             <Ban className="h-4 w-4" />
-            Incompatible Items
+            {t("Incompatible Items")}
           </TabsTrigger>
           <TabsTrigger value="ritual6h" className="gap-2">
             <Clock className="h-4 w-4" />
-            6h Exclusions
+            {t("6h Exclusions")}
           </TabsTrigger>
         </TabsList>
 
@@ -254,11 +256,11 @@ export default function FAQPage() {
             <section>
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-green-500">
                 <HelpCircle className="h-5 w-5" />
-                Calculator Guide
+                {t("Calculator Guide")}
               </h2>
               <FAQItem
                 id="how-to-use"
-                question="How do I use the calculator?"
+                question={t("How do I use the calculator?")}
                 answer={
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -311,7 +313,7 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="item-hints"
-                question="What are 'Item Hints'?"
+                question={t("What are 'Item Hints'?")}
                 answer={
                   <p>
                     Smart suggestions appear below empty slots with color-coded
@@ -325,11 +327,11 @@ export default function FAQPage() {
             <section>
               <h2 className="text-xl font-bold mb-4 mt-4 flex items-center gap-2 text-yellow-500">
                 <Target className="h-5 w-5" />
-                Ritual Mechanics
+                {t("Ritual Mechanics")}
               </h2>
               <FAQItem
                 id="durations"
-                question="How do ritual durations work?"
+                question={t("How do ritual durations work?")}
                 answer={
                   <div className="space-y-3">
                     <p>
@@ -364,7 +366,7 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="thresholds"
-                question="What are the value thresholds for a 6h ritual?"
+                question={t("What are the value thresholds for a 6h ritual?")}
                 answer={
                   <div className="space-y-2">
                     <p>
@@ -388,7 +390,7 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="base-value"
-                question="How is 'Base Value' calculated?"
+                question={t("How is 'Base Value' calculated?")}
                 answer={
                   <div className="space-y-2">
                     <p>
@@ -411,11 +413,11 @@ export default function FAQPage() {
             <section>
               <h2 className="text-xl font-bold mb-4 mt-4 flex items-center gap-2 text-blue-500">
                 <DollarSign className="h-5 w-5" />
-                Item & Category Issues
+                {t("Item & Category Issues")}
               </h2>
               <FAQItem
                 id="weapon-base-values"
-                question="Why do some weapons have such high Base Values?"
+                question={t("Why do some weapons have such high Base Values?")}
                 answer={
                   <div className="space-y-2">
                     <p>
@@ -436,7 +438,7 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="categories"
-                question="Why are some items hidden in 'Excluded Categories'?"
+                question={t("Why are some items hidden in 'Excluded Categories'?")}
                 answer={
                   <p>
                     In the <span className="font-bold">Settings</span> menu, you
@@ -450,7 +452,7 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="incompatible"
-                question="Why can't I use certain items in the ritual?"
+                question={t("Why can't I use certain items in the ritual?")}
                 answer={
                   <p>
                     Some items are hard-coded as{" "}
@@ -461,7 +463,7 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="weapons-hidden"
-                question="Why are weapons hidden by default?"
+                question={t("Why are weapons hidden by default?")}
                 answer={
                   <div className="space-y-2">
                     <p>
@@ -491,7 +493,7 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="6h-exclusions"
-                question="Why are some items excluded from 6h rewards?"
+                question={t("Why are some items excluded from 6h rewards?")}
                 answer={
                   <div className="space-y-2">
                     <p>
@@ -512,7 +514,7 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="hot-sacrifices"
-                question="What are 'Hot Sacrifices'?"
+                question={t("What are 'Hot Sacrifices'?")}
                 answer={
                   <div className="space-y-2">
                     <p>
@@ -534,7 +536,7 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="recipes"
-                question="What is the Recipes page?"
+                question={t("What is the Recipes page?")}
                 answer={
                   <div className="space-y-2">
                     <p>
@@ -560,11 +562,11 @@ export default function FAQPage() {
             <section>
               <h2 className="text-xl font-bold mb-4 mt-4 flex items-center gap-2 text-purple-500">
                 <Clock className="h-5 w-5" />
-                Tips & Tricks
+                {t("Tips & Tricks")}
               </h2>
               <FAQItem
                 id="optimization"
-                question="How can I optimize my sacrifices?"
+                question={t("How can I optimize my sacrifices?")}
                 answer={
                   <ul className="list-disc list-inside space-y-2 text-sm">
                     <li>
@@ -607,7 +609,7 @@ export default function FAQPage() {
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search incompatible items..."
+              placeholder={t("Search incompatible items...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 h-12 bg-white/5 border-white/10"
@@ -617,10 +619,10 @@ export default function FAQPage() {
           <Card className="border-red-500/20 bg-red-500/5">
             <CardHeader>
               <CardTitle className="text-lg text-red-400">
-                Total Restricted Items: {incompatibleItems.length}
+                {t("Total Restricted Items:")} {incompatibleItems.length}
               </CardTitle>
               <p className="text-sm text-gray-400">
-                These items are completely incompatible with ritual mechanics.
+                {t("These items are completely incompatible with ritual mechanics.")}
               </p>
             </CardHeader>
             <CardContent>
@@ -666,7 +668,7 @@ export default function FAQPage() {
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search 6h exclusions..."
+              placeholder={t("Search 6h exclusions...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 h-12 bg-white/5 border-white/10"
@@ -676,10 +678,10 @@ export default function FAQPage() {
           <Card className="border-blue-500/20 bg-blue-500/5">
             <CardHeader>
               <CardTitle className="text-lg text-blue-400">
-                Total Excluded from 6h: {ritual6hExclusions.length}
+                {t("Total Excluded from 6h:")} {ritual6hExclusions.length}
               </CardTitle>
               <p className="text-sm text-gray-400">
-                Items that can be sacrificed but never returned as 6h rewards.
+                {t("Items that can be sacrificed but never returned as 6h rewards.")}
               </p>
             </CardHeader>
             <CardContent>
@@ -695,10 +697,9 @@ export default function FAQPage() {
               </div>
               <div className="mt-6 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl text-xs text-yellow-300/80">
                 <span className="font-bold text-yellow-500 uppercase mr-2">
-                  Note:
+                  {t("Note:")}
                 </span>
-                These items can still be received as rewards from 14h rituals,
-                but never from the 6h &quot;Quest/Hideout&quot; ritual.
+                {t("These items can still be received as rewards from 14h rituals, but never from the 6h \"Quest/Hideout\" ritual.")}
               </div>
             </CardContent>
           </Card>
