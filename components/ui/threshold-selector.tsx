@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChevronUpIcon, ChevronDownIcon } from "@radix-ui/react-icons";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useLanguage } from "@/contexts/language-context";
 
 
 interface ThresholdSelectorProps {
@@ -20,6 +21,7 @@ export default function ThresholdSelector({
   onChange,
   embedded = false,
 }: ThresholdSelectorProps) {
+  const { t } = useLanguage();
   const [isCustom, setIsCustom] = useState(false);
   const [open, setOpen] = useState(false);
   // Buffer live slider/input changes locally to reduce re-layout churn
@@ -102,7 +104,7 @@ export default function ThresholdSelector({
               : "h-9 px-3 rounded-md bg-gray-800/50 border-gray-700 text-gray-200 hover:bg-gray-800"
           }
         >
-          <span className="text-xs mr-1.5">Threshold:</span>
+          <span className="text-xs mr-1.5">{t("Threshold:")}</span>
           <span className="text-sm font-medium">{formatValue(value)}</span>
           {open ? (
             <ChevronUpIcon className="ml-1 h-4 w-4" />
@@ -130,17 +132,17 @@ export default function ThresholdSelector({
               <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
                 <span className="text-sm font-bold">350,001+</span>
                 <span className="text-[10px] bg-yellow-500/20 px-1.5 py-0.5 rounded-full">
-                  Guaranteed
+                  {t("Guaranteed")}
                 </span>
               </AlertTitle>
               <AlertDescription className="mt-1 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
-                  <span>14h timer</span>
+                  <span>{t("14h timer")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
-                  <span>High value item(s)</span>
+                  <span>{t("High value item(s)")}</span>
                 </div>
               </AlertDescription>
             </Alert>
@@ -153,22 +155,22 @@ export default function ThresholdSelector({
               <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
                 <span className="text-sm font-bold">400,000+</span>
                 <span className="text-[10px] bg-yellow-500/20 px-1.5 py-0.5 rounded-full">
-                  Mixed Chances
+                  {t("Mixed Chances")}
                 </span>
               </AlertTitle>
               <AlertDescription className="mt-1 text-xs space-y-1.5">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-yellow-500/30" />
                   <span className="flex items-center gap-1">
-                    <span className="text-yellow-500/90">25%</span> 6h
-                    timer + Quest/Hideout items
+                    <span className="text-yellow-500/90">25%</span>{" "}
+                    {t("6h timer + Quest/Hideout items")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-yellow-500/90" />
                   <span className="flex items-center gap-1">
-                    <span className="text-yellow-500/90">75%</span> 14h
-                    High value item(s)
+                    <span className="text-yellow-500/90">75%</span>{" "}
+                    {t("14h High value item(s)")}
                   </span>
                 </div>
               </AlertDescription>

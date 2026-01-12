@@ -59,6 +59,7 @@ import NextItemHints from "@/components/next-item-hints";
 import { CURRENT_VERSION } from "@/config/changelog";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 import { IncompatibleItemsNotice } from "@/components/incompatible-items-notice";
+import { useLanguage } from "@/contexts/language-context";
 
 import {
   SacrificeCombo,
@@ -93,6 +94,7 @@ import type { ItemSelectorHandle } from "@/components/item-selector";
 function AppContent() {
   // Placement preview modal state
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const { t } = useLanguage();
   // Define state variables and hooks
   const [isPVE, setIsPVE] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -259,7 +261,7 @@ function AppContent() {
     window.addEventListener("storage", handleStorageChange);
 
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  }, [t]);
 
   // Build localized category list (ID -> localized name) from current items
   const allCategoriesLocalized: ItemCategory[] = useMemo(() => {
@@ -344,11 +346,11 @@ function AppContent() {
   // Handle error state
   useEffect(() => {
     if (hasError) {
-      sonnerToast("Error Loading Items", {
-        description: "Failed to load items. Please refresh the page.",
+      sonnerToast(t("Error Loading Items"), {
+        description: t("Failed to load items. Please refresh the page."),
       });
     }
-  }, [hasError]);
+  }, [hasError, t]);
 
   // Initialize client-side state (run once after data is available)
   useEffect(() => {
@@ -1122,10 +1124,14 @@ function AppContent() {
       const newPinnedCount = pinnedItems.filter(Boolean).length + 1;
       // Guardrail: prevent pinning all 5 when threshold is not met (would make auto-select impossible)
       if (newPinnedCount === 5 && total < threshold) {
-        sonnerToast.error("Cannot pin all 5 items", {
-          description: `Current total ${Math.floor(
-            total
-          ).toLocaleString()} is below threshold ${threshold.toLocaleString()}. Unpin one item or increase item values.`,
+        sonnerToast.error(t("Cannot pin all 5 items"), {
+          description: t(
+            "Current total {total} is below threshold {threshold}. Unpin one item or increase item values.",
+            {
+              total: Math.floor(total).toLocaleString(),
+              threshold: threshold.toLocaleString(),
+            }
+          ),
         });
         return;
       }
@@ -1218,8 +1224,11 @@ function AppContent() {
         if (candidates.length === 0) candidates = buildCandidates(15000);
 
         if (candidates.length === 0) {
-          sonnerToast.error("Auto Select", {
-            description: `No single item meets remaining base value of ${remainingThreshold.toLocaleString()} within +5k (+15k after relax). Unpin one item or lower threshold.`,
+          sonnerToast.error(t("Auto Select"), {
+            description: t(
+              "No single item meets remaining base value of {remaining} within +5k (+15k after relax). Unpin one item or lower threshold.",
+              { remaining: remainingThreshold.toLocaleString() }
+            ),
           });
           return;
         }
@@ -1263,17 +1272,21 @@ function AppContent() {
 
       if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
         if (!isPVE && priceMode === "flea") {
-          sonnerToast.error("Auto Select", {
-            description:
-              "No valid combo using Flea prices in PvP. Switch to Trader prices?",
+          sonnerToast.error(t("Auto Select"), {
+            description: t(
+              "No valid combo using Flea prices in PvP. Switch to Trader prices?"
+            ),
             action: {
-              label: "Use Traders",
+              label: t("Use Traders"),
               onClick: () => setPriceMode("trader"),
             },
           });
         } else {
-          sonnerToast.error("Auto Select", {
-            description: `Failed to find a valid combo for remaining ${remainingThreshold.toLocaleString()}. Try Trader prices, relax filters, or unpin one item.`,
+          sonnerToast.error(t("Auto Select"), {
+            description: t(
+              "Failed to find a valid combo for remaining {remaining}. Try Trader prices, relax filters, or unpin one item.",
+              { remaining: remainingThreshold.toLocaleString() }
+            ),
           });
         }
         return;
@@ -1321,6 +1334,7 @@ function AppContent() {
     priceMode,
     setPriceMode,
     ignoreFilters,
+    t,
   ]);
   // Function to find matching item by name - ALWAYS use rawItemsData to bypass UI filters
   const findMatchingItem = useCallback(
@@ -1466,22 +1480,26 @@ function AppContent() {
           }
         } else {
           // Show error toast if item not found
-          sonnerToast.error("Item not found", {
-            description: `Could not find "${ingredient.name}" in the available items data.`,
+          sonnerToast.error(t("Item not found"), {
+            description: t(
+              'Could not find "{name}" in the available items data.',
+              { name: ingredient.name }
+            ),
           });
         }
       }
 
       // Show success toast
       if (successItems.length > 0) {
-        sonnerToast.success("Hot sacrifice loaded", {
-          description: `Added ${successItems.length} items: ${successItems.join(
-            ", "
-          )}`,
+        sonnerToast.success(t("Hot sacrifice loaded"), {
+          description: t("Added {count} items: {items}", {
+            count: successItems.length,
+            items: successItems.join(", "),
+          }),
         });
       }
     },
-    [findMatchingItem, updateSelectedItem]
+    [findMatchingItem, t, updateSelectedItem]
   );
 
   const handleModeToggle = useCallback((checked: boolean): void => {
@@ -1521,18 +1539,22 @@ function AppContent() {
   // useEffect to trigger toast when threshold is met
   useEffect(() => {
     if (isThresholdMet && !toastShownRef.current) {
-      const title = `Threshold Met - ${threshold.toLocaleString()}!`;
+      const title = t("Threshold Met - {threshold}!", {
+        threshold: threshold.toLocaleString(),
+      });
       let description = "";
 
       if (threshold >= 400000) {
-        description =
-          "25% chance for 6-hour cooldown otherwise 14-hour cooldown for high-value items.";
+        description = t(
+          "25% chance for 6-hour cooldown otherwise 14-hour cooldown for high-value items."
+        );
       } else if (threshold >= 350000) {
         // Adjusted to 350000 to match initial state
-        description = "14-hour cooldown for high-value items.";
+        description = t("14-hour cooldown for high-value items.");
       } else {
-        description =
-          "You have met the threshold. A cooldown has been triggered.";
+        description = t(
+          "You have met the threshold. A cooldown has been triggered."
+        );
       }
 
       sonnerToast(title, {
@@ -1546,7 +1568,7 @@ function AppContent() {
     if (!isThresholdMet) {
       toastShownRef.current = false;
     }
-  }, [isThresholdMet, threshold]);
+  }, [isThresholdMet, threshold, t]);
 
   // Check if the app version has changed since the user last used it
   useEffect(() => {
@@ -1604,8 +1626,8 @@ function AppContent() {
     setHasAutoSelected(false);
     toastShownRef.current = false;
 
-    sonnerToast("Cleared Items", {
-      description: "All item fields have been cleared.",
+    sonnerToast(t("Cleared Items"), {
+      description: t("All item fields have been cleared."),
     });
   }, []);
 
@@ -1633,10 +1655,16 @@ function AppContent() {
       }
     }
 
-    sonnerToast("Reset Successful", {
-      description: `${clearedOverridesCount} overrides and ${clearedExcludedItemsCount} excluded items have been cleared.`,
+    sonnerToast(t("Reset Successful"), {
+      description: t(
+        "{overrides} overrides and {excluded} excluded items have been cleared.",
+        {
+          overrides: clearedOverridesCount,
+          excluded: clearedExcludedItemsCount,
+        }
+      ),
     });
-  }, [excludedItems, overriddenPrices]);
+  }, [excludedItems, overriddenPrices, t]);
 
   // Handler to toggle excluded items
   const toggleExcludedItem = useCallback((uid: string) => {
@@ -1757,12 +1785,11 @@ function AppContent() {
                   <Alert className="border-red-500/40 bg-red-950/30 backdrop-blur-sm">
                     <AlertTitle className="flex items-center gap-2 text-base font-bold text-red-200">
                       <span className="text-xl">⚠️</span>
-                      <span>Items Don&apos;t Fit in Circle</span>
+                      <span>{t("Items Don't Fit in Circle")}</span>
                     </AlertTitle>
                     <AlertDescription className="mt-2 space-y-2 text-sm">
                       <p className="text-red-300/90">
-                        The selected items cannot be arranged in the Cultist
-                        Circle box (9×6).
+                        {t("The selected items cannot be arranged in the Cultist Circle box (9x6).")}
                       </p>
                       <PlacementPreviewInline
                         fitDebug={fitDebug}
@@ -1775,7 +1802,7 @@ function AppContent() {
                 {/* Items Selection Area Headers */}
                 <div className="flex items-center justify-between px-1">
                   <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-                    Items
+                    {t("Items")}
                   </h3>
                   <Button
                     variant="ghost"
@@ -1786,7 +1813,7 @@ function AppContent() {
                       : "bg-slate-700/30 border-slate-600/30 text-slate-500 hover:text-slate-400 hover:bg-slate-700/50"
                       }`}
                   >
-                    {ignoreFilters ? "⚠ Showing All Items" : "Bypass Filters"}
+                    {ignoreFilters ? `⚠ ${t("Showing All Items")}` : t("Bypass Filters")}
                   </Button>
                 </div>
 
@@ -1805,14 +1832,14 @@ function AppContent() {
                     </div>
                   ) : hasError ? (
                     <div className="text-red-400 text-center p-6 text-sm">
-                      Failed to load items. Please refresh the page.
+                      {t("Failed to load items. Please refresh the page.")}
                     </div>
                   ) : rawItemsData.length === 0 ? (
                     <div className="text-slate-400 text-center p-6 flex flex-col items-center space-y-2">
                       {needsManualRetry ? (
                         <>
                           <AlertCircle className="h-6 w-6 text-amber-400" />
-                          <span className="text-sm">Failed to fetch items</span>
+                          <span className="text-sm">{t("Failed to fetch items")}</span>
                           <Button
                             onClick={() => {
                               resetRetryCount();
@@ -1821,13 +1848,13 @@ function AppContent() {
                             size="sm"
                             variant="outline"
                           >
-                            Try Again
+                            {t("Try Again")}
                           </Button>
                         </>
                       ) : (
                         <>
                           <Loader2 className="animate-spin h-6 w-6 text-slate-500" />
-                          <span className="text-sm">Loading items...</span>
+                          <span className="text-sm">{t("Loading items...")}</span>
                         </>
                       )}
                     </div>
@@ -1925,7 +1952,7 @@ function AppContent() {
                     size="sm"
                     className="flex-1"
                   >
-                    Preview
+                    {t("Preview")}
                   </Button>
                   <Button
                     id="clear-item-fields"
@@ -1935,7 +1962,7 @@ function AppContent() {
                     size="sm"
                     className="flex-1"
                   >
-                    Clear
+                    {t("Clear")}
                   </Button>
                   <Button
                     id="reset-overrides"
@@ -1945,7 +1972,7 @@ function AppContent() {
                     size="sm"
                     className="flex-1"
                   >
-                    Reset
+                    {t("Reset")}
                   </Button>
                 </div>
 
@@ -2038,9 +2065,10 @@ function AppContent() {
               setUseLevelFilter(DEFAULT_USE_LEVEL_FILTER);
               setPlayerLevel(DEFAULT_PLAYER_LEVEL);
 
-              sonnerToast("Data Cleared", {
-                description:
-                  "All data has been cleared. The app has been reset to its initial state.",
+              sonnerToast(t("Data Cleared"), {
+                description: t(
+                  "All data has been cleared. The app has been reset to its initial state."
+                ),
               });
             }}
             onExportData={() => {
@@ -2132,3 +2160,4 @@ export default AppContent;
 export function App() {
   return <AppContent />;
 }
+

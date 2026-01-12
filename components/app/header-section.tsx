@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { VersionInfo } from "@/components/version-info";
 import { CURRENT_VERSION } from "@/config/changelog";
+import { useLanguage } from "@/contexts/language-context";
 
 const ExternalLinkIcon = () => (
     <svg
@@ -42,12 +43,14 @@ const ExternalLink = ({ href, children }: ExternalLinkProps) => (
  * Extracted from app.tsx for better organization.
  */
 export function HeaderSection() {
+    const { t } = useLanguage();
+
     return (
         <div className="text-center space-y-3">
             <h1 className="flex items-center justify-center">
                 <Image
                     src="https://assets.cultistcircle.com/Cultist-Calulator.webp"
-                    alt="Cultist Circle Calculator"
+                    alt={t("Cultist Circle Calculator")}
                     width={640}
                     height={204}
                     priority={true}

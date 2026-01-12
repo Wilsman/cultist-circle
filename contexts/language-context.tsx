@@ -1,12 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
+import { DEFAULT_LANGUAGE, formatMessage, getMessage } from "@/config/i18n";
 
 export interface LanguageContextValue {
   language: string;
   setLanguage: (lang: string) => void;
   supported: { code: string; label: string }[];
+  t: (key: string, vars?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
@@ -32,17 +34,17 @@ const SUPPORTED_LANGUAGES: { code: string; label: string }[] = [
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<string>(() => {
-    if (!ENABLE_LANGUAGE_FEATURE) return "en";
+    if (!ENABLE_LANGUAGE_FEATURE) return DEFAULT_LANGUAGE;
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("language");
-      return saved || "en";
+      return saved || DEFAULT_LANGUAGE;
     }
-    return "en";
+    return DEFAULT_LANGUAGE;
   });
 
   const setLanguage = (lang: string) => {
     if (!ENABLE_LANGUAGE_FEATURE) {
-      setLanguageState("en");
+      setLanguageState(DEFAULT_LANGUAGE);
       return;
     }
     setLanguageState(lang);
@@ -51,10 +53,18 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
+
   const value = useMemo<LanguageContextValue>(() => ({
     language,
     setLanguage,
     supported: SUPPORTED_LANGUAGES,
+    t: (key: string, vars?: Record<string, string | number>) =>
+      formatMessage(getMessage(language, key), vars),
   }), [language]);
 
   return (

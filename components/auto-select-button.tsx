@@ -2,6 +2,7 @@
 import React, { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Dices, RefreshCw } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 interface AutoSelectButtonProps {
   isCalculating: boolean;
@@ -14,6 +15,8 @@ function AutoSelectButtonImpl({
   hasAutoSelected,
   handleAutoPick,
 }: AutoSelectButtonProps) {
+  const { t } = useLanguage();
+
   if (isCalculating) {
     return (
       <div className="flex justify-center items-center w-full">
@@ -23,7 +26,7 @@ function AutoSelectButtonImpl({
           className="w-full h-12 rounded-2xl bg-slate-800/60 border border-slate-700/40 text-slate-300 cursor-wait text-base"
         >
           <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-          <span className="font-semibold">Calculating...</span>
+          <span className="font-semibold">{t("Calculating...")}</span>
         </Button>
       </div>
     );
@@ -47,12 +50,12 @@ function AutoSelectButtonImpl({
         {hasAutoSelected ? (
           <>
             <RefreshCw className="mr-2 h-5 w-5" />
-            Re-roll Selection
+            {t("Re-roll Selection")}
           </>
         ) : (
           <>
             <Dices className="mr-2 h-5 w-5" />
-            Auto Select Items
+            {t("Auto Select Items")}
           </>
         )}
       </Button>

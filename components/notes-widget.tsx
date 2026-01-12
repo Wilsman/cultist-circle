@@ -11,11 +11,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useLanguage } from "@/contexts/language-context";
 
 const STORAGE_KEY = "taskTracker_notes";
 const POS_KEY = "taskTracker_notes_pos";
 
 export function NotesWidget(): JSX.Element {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
   const [value, setValue] = useState("");
@@ -190,7 +192,7 @@ export function NotesWidget(): JSX.Element {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Toggle notes"
+                aria-label={t("Toggle notes")}
                 className={cn(
                   "flex items-center gap-2 rounded-full border border-slate-800/50",
                   "bg-slate-900/80 text-slate-100 backdrop-blur px-4 py-2 shadow-lg",
@@ -212,11 +214,11 @@ export function NotesWidget(): JSX.Element {
               >
                 <StickyNote aria-hidden className="size-4" />
                 <span className="text-sm font-medium hidden sm:inline">
-                  Notes
+                  {t("Notes")}
                 </span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="left">Sticky Notes</TooltipContent>
+            <TooltipContent side="left">{t("Sticky Notes")}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -232,7 +234,9 @@ export function NotesWidget(): JSX.Element {
           >
             <div className="mb-2 flex items-center justify-between gap-2">
               <div className="flex min-w-0 flex-col">
-                <span className="truncate text-sm font-medium">Notes</span>
+                <span className="truncate text-sm font-medium">
+                  {t("Notes")}
+                </span>
                 <span className="flex items-center gap-1 text-xs text-slate-400">
                   {status === "saving" && (
                     <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
@@ -241,9 +245,9 @@ export function NotesWidget(): JSX.Element {
                     className={status === "saved" ? "animate-pulse" : undefined}
                   >
                     {status === "saving"
-                      ? "Saving…"
+                      ? t("Saving...")
                       : status === "saved"
-                      ? "Saved"
+                      ? t("Saved")
                       : ""}
                   </span>
                 </span>
@@ -253,29 +257,29 @@ export function NotesWidget(): JSX.Element {
                   {charCount}
                 </span>
                 <Button
-                  aria-label="Clear notes"
+                  aria-label={t("Clear notes")}
                   size="sm"
                   variant="ghost"
                   className="h-7 px-2"
                   onClick={onClear}
                 >
-                  Clear
+                  {t("Clear")}
                 </Button>
                 <Button
-                  aria-label="Close notes"
+                  aria-label={t("Close notes")}
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8"
                   onClick={() => setIsOpen(false)}
                 >
-                  ×
+                  <span aria-hidden>x</span>
                 </Button>
               </div>
             </div>
             <Textarea
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="Type your notes…"
+              placeholder={t("Type your notes...")}
               className="min-h-[140px] resize-y rounded-2xl bg-slate-900/70 text-slate-100 placeholder-slate-400 border-slate-800/50 focus-visible:ring-slate-400/60"
             />
           </div>

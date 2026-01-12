@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/contexts/language-context";
 
 const ExternalLinkIcon = () => (
   <svg
@@ -28,12 +29,14 @@ interface FooterSectionProps {
  * Extracted from app.tsx for better organization.
  */
 export function FooterSection({ onFeedbackClick }: FooterSectionProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="text-center space-y-5 mt-12 pb-10">
       {/* Primary Attribution */}
       <div className="flex flex-col items-center gap-1.5">
         <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold opacity-70">
-          Created By
+          {t("Created By")}
         </span>
         <motion.a
           href="https://github.com/Wilsman/"
@@ -53,7 +56,7 @@ export function FooterSection({ onFeedbackClick }: FooterSectionProps) {
       {/* Secondary Credits */}
       <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-1.5 text-[11px] text-slate-400 font-medium">
         <div className="flex items-center gap-1.5">
-          <span className="text-slate-500">Prices provided by</span>
+          <span className="text-slate-500">{t("Prices provided by")}</span>
           <a
             href="https://tarkov.dev/"
             target="_blank"
@@ -65,7 +68,7 @@ export function FooterSection({ onFeedbackClick }: FooterSectionProps) {
         </div>
         <span className="text-slate-700 select-none hidden sm:inline">•</span>
         <div className="flex items-center gap-1.5">
-          <span className="text-slate-500">Research provided by</span>
+          <span className="text-slate-500">{t("Research provided by")}</span>
           <a
             href="https://bio.link/verybadscav"
             target="_blank"
@@ -80,7 +83,7 @@ export function FooterSection({ onFeedbackClick }: FooterSectionProps) {
       {/* Footer Utility & Disclaimer */}
       <div className="space-y-5 pt-5 border-t border-white/5 max-w-lg mx-auto">
         <p className="text-[10px] text-slate-500 leading-relaxed uppercase tracking-widest font-medium opacity-60">
-          Fan-made tool · Not affiliated with Battlestate Games
+          {t("Fan-made tool - Not affiliated with Battlestate Games")}
         </p>
 
         <div className="flex justify-center items-center gap-4">
@@ -94,7 +97,7 @@ export function FooterSection({ onFeedbackClick }: FooterSectionProps) {
           >
             <img
               src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-              alt="Buy Me a Coffee"
+              alt={t("Buy Me a Coffee")}
               width="140"
               height="32"
               className="h-9 w-auto"
@@ -106,7 +109,7 @@ export function FooterSection({ onFeedbackClick }: FooterSectionProps) {
             size="sm"
             className="h-10 px-6 bg-[#5f7fff73] hover:bg-[#4a6fff73] text-white rounded-xl transition-all text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-blue-500/10"
           >
-            Feedback
+            {t("Feedback")}
           </Button>
         </div>
       </div>
