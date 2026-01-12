@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/language-context";
 
 interface FAQItemProps {
   id?: string;
@@ -31,6 +32,7 @@ interface FAQItemProps {
 }
 
 function FAQItem({ id, question, answer, icon }: FAQItemProps) {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ function FAQItem({ id, question, answer, icon }: FAQItemProps) {
     if (id && typeof window !== "undefined") {
       const url = `${window.location.origin}/faq#${id}`;
       navigator.clipboard.writeText(url);
-      toast.success("Link copied!");
+      toast.success(t("Link copied!"));
     }
   };
 
@@ -82,7 +84,7 @@ function FAQItem({ id, question, answer, icon }: FAQItemProps) {
           <button
             onClick={copyLink}
             className="p-3 hover:bg-white/5 text-gray-500 hover:text-yellow-400 transition-colors"
-            title="Copy link to this section"
+            title={t("Copy link to this section")}
           >
             <Link2 className="h-3.5 w-3.5" />
           </button>
@@ -98,6 +100,7 @@ function FAQItem({ id, question, answer, icon }: FAQItemProps) {
 }
 
 export default function FAQPage() {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
 
   const incompatibleItems = Array.from(DEFAULT_EXCLUDED_ITEMS).sort();
@@ -225,11 +228,10 @@ export default function FAQPage() {
       <div className="text-center mb-12">
         <div className="flex items-center justify-center gap-3 mb-4">
           <HelpCircle className="h-10 w-10 text-yellow-500" />
-          <h1 className="text-4xl font-bold tracking-tight">Help & FAQ</h1>
+          <h1 className="text-4xl font-bold tracking-tight">{t("Help & FAQ")}</h1>
         </div>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Everything you need to know about the Cultist Circle rituals, item
-          values, and calculator mechanics.
+          {t("Everything you need to know about the Cultist Circle rituals, item values, and calculator mechanics.")}
         </p>
       </div>
 
@@ -237,15 +239,15 @@ export default function FAQPage() {
         <TabsList className="grid w-full grid-cols-3 mb-8">
           <TabsTrigger value="general" className="gap-2">
             <Info className="h-4 w-4" />
-            General FAQ
+            {t("General FAQ")}
           </TabsTrigger>
           <TabsTrigger value="incompatible" className="gap-2">
             <Ban className="h-4 w-4" />
-            Incompatible Items
+            {t("Incompatible Items")}
           </TabsTrigger>
           <TabsTrigger value="ritual6h" className="gap-2">
             <Clock className="h-4 w-4" />
-            6h Exclusions
+            {t("6h Exclusions")}
           </TabsTrigger>
         </TabsList>
 
@@ -254,56 +256,53 @@ export default function FAQPage() {
             <section>
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-green-500">
                 <HelpCircle className="h-5 w-5" />
-                Calculator Guide
+                {t("Calculator Guide")}
               </h2>
               <FAQItem
                 id="how-to-use"
-                question="How do I use the calculator?"
+                question={t("How do I use the calculator?")}
                 answer={
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
                         <span className="font-semibold text-gray-200">
-                          1. Set Threshold
+                          {t("1. Set Threshold")}
                         </span>
                         <p className="text-xs">
-                          Select your target value (e.g., 400,000₽ for 6h
-                          ritual).
+                          {t("Select your target value (e.g., 400,000₽ for 6h ritual).")}
                         </p>
                       </div>
                       <div className="space-y-1">
                         <span className="font-semibold text-gray-200">
-                          2. Select Items
+                          {t("2. Select Items")}
                         </span>
                         <p className="text-xs">
-                          Search and add items to the 5 ritual slots.
+                          {t("Search and add items to the 5 ritual slots.")}
                         </p>
                       </div>
                       <div className="space-y-1">
                         <span className="font-semibold text-gray-200">
-                          3. Check Settings
+                          {t("3. Check Settings")}
                         </span>
                         <p className="text-xs">
-                          Configure excluded categories and price preferences.
+                          {t("Configure excluded categories and price preferences.")}
                         </p>
                       </div>
                       <div className="space-y-1">
                         <span className="font-semibold text-gray-200">
-                          4. Auto Select
+                          {t("4. Auto Select")}
                         </span>
                         <p className="text-xs">
-                          Let the app find the most cost-effective combination.
+                          {t("Let the app find the most cost-effective combination.")}
                         </p>
                       </div>
                     </div>
                     <div className="bg-yellow-500/5 border border-yellow-500/20 p-3 rounded-lg">
                       <p className="text-xs font-medium text-yellow-500 uppercase mb-1">
-                        ★ Key Feature: Pinning
+                        {t("★ Key Feature: Pinning")}
                       </p>
                       <p className="text-xs text-yellow-200/80">
-                        Click the Pin icon on an item to force the Auto Select
-                        feature to include it in the final calculation. Great
-                        for items you already have in your stash!
+                        {t("Click the Pin icon on an item to force the Auto Select feature to include it in the final calculation. Great for items you already have in your stash!")}
                       </p>
                     </div>
                   </div>
@@ -311,12 +310,10 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="item-hints"
-                question="What are 'Item Hints'?"
+                question={t("What are 'Item Hints'?")}
                 answer={
                   <p>
-                    Smart suggestions appear below empty slots with color-coded
-                    hints. They guide you toward items that will help you reach
-                    your current threshold efficiently.
+                    {t("Smart suggestions appear below empty slots with color-coded hints. They guide you toward items that will help you reach your current threshold efficiently.")}
                   </p>
                 }
               />
@@ -325,38 +322,34 @@ export default function FAQPage() {
             <section>
               <h2 className="text-xl font-bold mb-4 mt-4 flex items-center gap-2 text-yellow-500">
                 <Target className="h-5 w-5" />
-                Ritual Mechanics
+                {t("Ritual Mechanics")}
               </h2>
               <FAQItem
                 id="durations"
-                question="How do ritual durations work?"
+                question={t("How do ritual durations work?")}
                 answer={
                   <div className="space-y-3">
                     <p>
-                      Ritual duration determines the quality and type of rewards
-                      you receive:
+                      {t("Ritual duration determines the quality and type of rewards you receive:")}
                     </p>
                     <ul className="list-disc list-inside space-y-1">
                       <li>
                         <span className="text-blue-400 font-medium whitespace-nowrap">
-                          12 Hours:
+                          {t("12 Hours:")}
                         </span>{" "}
-                        Normal random loot. Triggered by sacrifices under
-                        350,001₽.
+                        {t("Normal random loot. Triggered by sacrifices under 350,001₽.")}
                       </li>
                       <li>
                         <span className="text-purple-400 font-medium whitespace-nowrap">
-                          14 Hours:
+                          {t("14 Hours:")}
                         </span>{" "}
-                        High-value loot. Triggered by sacrifices between
-                        350,001₽ and 399,999₽.
+                        {t("High-value loot. Triggered by sacrifices between 350,001₽ and 399,999₽.")}
                       </li>
                       <li>
                         <span className="text-yellow-400 font-medium whitespace-nowrap">
-                          6 Hours:
+                          {t("6 Hours:")}
                         </span>{" "}
-                        Quest & Hideout items. This is the most desirable
-                        outcome.
+                        {t("Quest & Hideout items. This is the most desirable outcome.")}
                       </li>
                     </ul>
                   </div>
@@ -364,44 +357,39 @@ export default function FAQPage() {
               />
               <FAQItem
                 id="thresholds"
-                question="What are the value thresholds for a 6h ritual?"
+                question={t("What are the value thresholds for a 6h ritual?")}
                 answer={
                   <div className="space-y-2">
                     <p>
-                      To have a chance at a 6-hour ritual, your total sacrifice
-                      must be{" "}
+                      {t("To have a chance at a 6-hour ritual, your total sacrifice must be")}{" "}
                       <span className="text-yellow-400 font-bold">
-                        400,000₽ or more
+                        {t("400,000₽ or more")}
                       </span>
                       .
                     </p>
                     <p className="bg-white/5 p-3 rounded-lg italic">
-                      Note: At 400k+, you have a{" "}
-                      <span className="text-green-400">25% chance</span> for a
-                      6h ritual and a{" "}
-                      <span className="text-purple-400">75% chance</span> for a
-                      14h ritual. Adding more value beyond 400k does NOT
-                      increase this 25% chance.
+                      {t("Note: At 400k+, you have a")}{" "}
+                      <span className="text-green-400">{t("25% chance")}</span>{" "}
+                      {t("for a 6h ritual and a")}{" "}
+                      <span className="text-purple-400">{t("75% chance")}</span>{" "}
+                      {t("for a 14h ritual. Adding more value beyond 400k does NOT increase this 25% chance.")}
                     </p>
                   </div>
                 }
               />
               <FAQItem
                 id="base-value"
-                question="How is 'Base Value' calculated?"
+                question={t("How is 'Base Value' calculated?")}
                 answer={
                   <div className="space-y-2">
                     <p>
-                      The Cultist Circle uses an internal &quot;base value&quot;
-                      for items, which is different from flea or trader prices.
+                      {t("The Cultist Circle uses an internal \"base value\" for items, which is different from flea or trader prices.")}
                     </p>
                     <div className="bg-gray-800/50 p-4 rounded-xl text-center font-mono border border-white/5">
-                      Base Value = Vendor Sell Price ÷ Vendor&apos;s Multiplier
+                      {t("Base Value = Vendor Sell Price ÷ Vendor's Multiplier")}
                     </div>
                     <p className="text-xs text-gray-500">
-                      Example: A Graphics Card sells to Therapist for 124,740₽.
-                      Her multiplier is 0.63. Base Value = 124,740 ÷ 0.63 =
-                      198,682₽.
+                      {t("Example: A Graphics Card sells to Therapist for 124,740₽. Her multiplier is 0.63. Base Value = 124,740 ÷ 0.63 = 198,682₽.")}
                     </p>
                   </div>
                 }
@@ -411,146 +399,127 @@ export default function FAQPage() {
             <section>
               <h2 className="text-xl font-bold mb-4 mt-4 flex items-center gap-2 text-blue-500">
                 <DollarSign className="h-5 w-5" />
-                Item & Category Issues
+                {t("Item & Category Issues")}
               </h2>
               <FAQItem
                 id="weapon-base-values"
-                question="Why do some weapons have such high Base Values?"
+                question={t("Why do some weapons have such high Base Values?")}
                 answer={
                   <div className="space-y-2">
                     <p>
-                      Weapon base values are tied to their trader sell prices.
-                      Rare or high-tier weapons like the{" "}
-                      <span className="text-yellow-400">HK G28</span> have very
-                      high sell values, making them extremely efficient for
-                      reaching the 400k threshold.
+                      {t("Weapon base values are tied to their trader sell prices. Rare or high-tier weapons like the")}{" "}
+                      <span className="text-yellow-400">{t("HK G28")}</span>{" "}
+                      {t("have very high sell values, making them extremely efficient for reaching the 400k threshold.")}
                     </p>
                     <p>
-                      However, many weapon &quot;mods&quot; or attachments have
-                      low base values, and the calculation for full weapon
-                      builds can be uncertain due to durability and the number
-                      of attached parts.
+                      {t("However, many weapon \"mods\" or attachments have low base values, and the calculation for full weapon builds can be uncertain due to durability and the number of attached parts.")}
                     </p>
                   </div>
                 }
               />
               <FAQItem
                 id="categories"
-                question="Why are some items hidden in 'Excluded Categories'?"
+                question={t("Why are some items hidden in 'Excluded Categories'?")}
                 answer={
                   <p>
-                    In the <span className="font-bold">Settings</span> menu, you
-                    can toggle which categories of items you are willing to
-                    sacrifice. If a category is unchecked, any items belonging
-                    to it will be hidden from the calculator and auto-select
-                    feature to prevent unintentional sacrifices of gear you
-                    &apos;d rather keep.
+                    {t("In the Settings menu, you can toggle which categories of items you are willing to sacrifice. If a category is unchecked, any items belonging to it will be hidden from the calculator and auto-select feature to prevent unintentional sacrifices of gear you'd rather keep.")}
                   </p>
                 }
               />
               <FAQItem
                 id="incompatible"
-                question="Why can't I use certain items in the ritual?"
+                question={t("Why can't I use certain items in the ritual?")}
                 answer={
                   <p>
-                    Some items are hard-coded as{" "}
-                    <span className="text-red-400">Incompatible</span> (see the
-                    Incompatible Items tab).
+                    {t("Some items are hard-coded as")}{" "}
+                    <span className="text-red-400">{t("Incompatible")}</span>{" "}
+                    {t("(see the Incompatible Items tab).")}
                   </p>
                 }
               />
               <FAQItem
                 id="weapons-hidden"
-                question="Why are weapons hidden by default?"
+                question={t("Why are weapons hidden by default?")}
                 answer={
                   <div className="space-y-2">
                     <p>
-                      The{" "}
-                      <span className="text-yellow-400 font-bold">Weapon</span>{" "}
-                      category is disabled by default for two main reasons:
+                      {t("The Weapon category is disabled by default for two main reasons:")}
                     </p>
                     <ul className="list-disc list-inside space-y-1">
                       <li>
                         <span className="font-semibold text-gray-200">
-                          Base Value Uncertainty:
+                          {t("Base Value Uncertainty:")}
                         </span>{" "}
-                        Weapon base values are complex and can vary based on
-                        durability and the specific combination of attached
-                        parts/mods.
+                        {t("Weapon base values are complex and can vary based on durability and the specific combination of attached parts/mods.")}
                       </li>
                     </ul>
                     <p>
-                      You can enable weapons in{" "}
+                      {t("You can enable weapons in")}{" "}
                       <span className="font-bold">
-                        Settings &gt; Categories
+                        {t("Settings > Categories")}
                       </span>{" "}
-                      if you have spares you&apos;re willing to sacrifice.
+                      {t("if you have spares you're willing to sacrifice.")}
                     </p>
                   </div>
                 }
               />
               <FAQItem
                 id="6h-exclusions"
-                question="Why are some items excluded from 6h rewards?"
+                question={t("Why are some items excluded from 6h rewards?")}
                 answer={
                   <div className="space-y-2">
                     <p>
-                      Certain high-value items can be sacrificed but will{" "}
+                      {t("Certain high-value items can be sacrificed but will")}{" "}
                       <span className="text-blue-400 font-bold">
-                        never be returned
+                        {t("never be returned")}
                       </span>{" "}
-                      as a reward from a 6h ritual. This prevents &quot;infinite
-                      loops&quot; of extremely rare items.
+                      {t("as a reward from a 6h ritual. This prevents \"infinite loops\" of extremely rare items.")}
                     </p>
                     <p className="bg-white/5 p-3 rounded-lg italic text-xs">
-                      Note: &quot;High Value&quot; in Tarkov is a broad term. It
-                      can refer to rare items like a{" "}
-                      <span className="text-yellow-400">LedX</span>.
+                      {t("Note: \"High Value\" in Tarkov is a broad term. It can refer to rare items like a")}{" "}
+                      <span className="text-yellow-400">{t("LedX")}</span>.
                     </p>
                   </div>
                 }
               />
               <FAQItem
                 id="hot-sacrifices"
-                question="What are 'Hot Sacrifices'?"
+                question={t("What are 'Hot Sacrifices'?")}
                 answer={
                   <div className="space-y-2">
                     <p>
                       <span className="text-indigo-400 font-semibold">
-                        Hot Sacrifices
+                        {t("Hot Sacrifices")}
                       </span>{" "}
-                      are community-tested weapon combos that use special
-                      internal base values to hit the 400k threshold cheaply.
+                      {t("are community-tested weapon combos that use special internal base values to hit the 400k threshold cheaply.")}
                     </p>
                     <p>
-                      You&apos;ll find them in the{" "}
-                      <span className="font-semibold">Hot Sacrifices</span>{" "}
-                      panel on the main calculator page. Click{" "}
-                      <span className="text-slate-200">Use</span> to auto-fill
-                      the slots.
+                      {t("You'll find them in the")}{" "}
+                      <span className="font-semibold">{t("Hot Sacrifices")}</span>{" "}
+                      {t("panel on the main calculator page. Click")}{" "}
+                      <span className="text-slate-200">{t("Use")}</span>{" "}
+                      {t("to auto-fill the slots.")}
                     </p>
                   </div>
                 }
               />
               <FAQItem
                 id="recipes"
-                question="What is the Recipes page?"
+                question={t("What is the Recipes page?")}
                 answer={
                   <div className="space-y-2">
                     <p>
-                      The{" "}
+                      {t("The")}{" "}
                       <Link
                         href="/recipes"
                         className="text-yellow-500 hover:underline"
                       >
-                        Recipes
+                        {t("Recipes")}
                       </Link>{" "}
-                      page is a dedicated view showing all known weapon combos
-                      and their expected ritual outcomes.
+                      {t("page is a dedicated view showing all known weapon combos and their expected ritual outcomes.")}
                     </p>
                     <p className="text-xs text-gray-500 italic">
-                      Note: Some recipes may only work once per profile or have
-                      specific conditions.
+                      {t("Note: Some recipes may only work once per profile or have specific conditions.")}
                     </p>
                   </div>
                 }
@@ -560,41 +529,37 @@ export default function FAQPage() {
             <section>
               <h2 className="text-xl font-bold mb-4 mt-4 flex items-center gap-2 text-purple-500">
                 <Clock className="h-5 w-5" />
-                Tips & Tricks
+                {t("Tips & Tricks")}
               </h2>
               <FAQItem
                 id="optimization"
-                question="How can I optimize my sacrifices?"
+                question={t("How can I optimize my sacrifices?")}
                 answer={
                   <ul className="list-disc list-inside space-y-2 text-sm">
                     <li>
                       <span className="font-semibold text-gray-200">
-                        Exact Thresholds:
+                        {t("Exact Thresholds:")}
                       </span>{" "}
-                      Aim for just over 400,001₽. Adding more value does NOT
-                      increase your 6h ritual chance.
+                      {t("Aim for just over 400,001₽. Adding more value does NOT increase your 6h ritual chance.")}
                     </li>
                     <li>
                       <span className="font-semibold text-gray-200">
-                        Check Your Quests:
+                        {t("Check Your Quests:")}
                       </span>{" "}
-                      For best results with the 6h ritual, ensure you have
-                      active quests on your character.
+                      {t("For best results with the 6h ritual, ensure you have active quests on your character.")}
                     </li>
                     <li>
                       <span className="font-semibold text-gray-200">
-                        Stable Prices:
+                        {t("Stable Prices:")}
                       </span>{" "}
-                      <span className="text-red-400">Red pricing</span>{" "}
-                      indicates unstable market data. Always verify these items
-                      in-game.
+                      <span className="text-red-400">{t("Red pricing")}</span>{" "}
+                      {t("indicates unstable market data. Always verify these items in-game.")}
                     </li>
                     <li>
                       <span className="font-semibold text-gray-200">
-                        Best Value vs Low Price:
+                        {t("Best Value vs Low Price:")}
                       </span>{" "}
-                      In settings, you can toggle between using the last low
-                      price or a weighted 24h average.
+                      {t("In settings, you can toggle between using the last low price or a weighted 24h average.")}
                     </li>
                   </ul>
                 }
@@ -607,7 +572,7 @@ export default function FAQPage() {
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search incompatible items..."
+              placeholder={t("Search incompatible items...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 h-12 bg-white/5 border-white/10"
@@ -617,10 +582,10 @@ export default function FAQPage() {
           <Card className="border-red-500/20 bg-red-500/5">
             <CardHeader>
               <CardTitle className="text-lg text-red-400">
-                Total Restricted Items: {incompatibleItems.length}
+                {t("Total Restricted Items:")} {incompatibleItems.length}
               </CardTitle>
               <p className="text-sm text-gray-400">
-                These items are completely incompatible with ritual mechanics.
+                {t("These items are completely incompatible with ritual mechanics.")}
               </p>
             </CardHeader>
             <CardContent>
@@ -666,7 +631,7 @@ export default function FAQPage() {
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search 6h exclusions..."
+              placeholder={t("Search 6h exclusions...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 h-12 bg-white/5 border-white/10"
@@ -676,10 +641,10 @@ export default function FAQPage() {
           <Card className="border-blue-500/20 bg-blue-500/5">
             <CardHeader>
               <CardTitle className="text-lg text-blue-400">
-                Total Excluded from 6h: {ritual6hExclusions.length}
+                {t("Total Excluded from 6h:")} {ritual6hExclusions.length}
               </CardTitle>
               <p className="text-sm text-gray-400">
-                Items that can be sacrificed but never returned as 6h rewards.
+                {t("Items that can be sacrificed but never returned as 6h rewards.")}
               </p>
             </CardHeader>
             <CardContent>
@@ -695,10 +660,9 @@ export default function FAQPage() {
               </div>
               <div className="mt-6 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl text-xs text-yellow-300/80">
                 <span className="font-bold text-yellow-500 uppercase mr-2">
-                  Note:
+                  {t("Note:")}
                 </span>
-                These items can still be received as rewards from 14h rituals,
-                but never from the 6h &quot;Quest/Hideout&quot; ritual.
+                {t("These items can still be received as rewards from 14h rituals, but never from the 6h \"Quest/Hideout\" ritual.")}
               </div>
             </CardContent>
           </Card>

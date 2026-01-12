@@ -1,6 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import Image from "next/image";
 import { VersionInfo } from "@/components/version-info";
 import { CURRENT_VERSION } from "@/config/changelog";
 import { useLanguage } from "@/contexts/language-context";
@@ -48,13 +48,14 @@ export function HeaderSection() {
     return (
         <div className="text-center space-y-3">
             <h1 className="flex items-center justify-center">
-                <Image
+                <img
                     src="https://assets.cultistcircle.com/Cultist-Calulator.webp"
                     alt={t("Cultist Circle Calculator")}
                     width={640}
                     height={204}
-                    priority={true}
                     className="w-auto h-32 sm:h-40"
+                    fetchPriority="low"
+                    loading="lazy"
                 />
             </h1>
             <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
@@ -68,12 +69,13 @@ export function HeaderSection() {
                     target="_blank"
                     className="flex items-center gap-1 text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 group"
                 >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src="https://img.shields.io/discord/1298971881776611470?color=7289DA&label=Discord&logo=discord&logoColor=white"
                         alt="Discord"
                         style={{ maxWidth: "100%" }}
                         className="h-5"
+                        fetchPriority="low"
+                        loading="lazy"
                     />
                 </a>
                 <ExternalLink href="https://kappas.pages.dev/">Kappas</ExternalLink>

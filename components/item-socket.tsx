@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -12,7 +13,6 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from "@radix-ui/react-icons";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { DiamondPlus } from "lucide-react";
@@ -42,13 +42,14 @@ const items: Item[] = [
     name: "Sacred Amulet",
     bonus: 15,
     icon: (
-      <Image
+      <img
         src="https://assets.tarkov.dev/64d0b40fbe2eed70e254e2d4-icon.webp"
         alt="Sacred Amulet"
         width={32}
         height={32}
         className="object-contain"
-        priority
+        fetchPriority="low"
+        loading="lazy"
       />
     ),
   },
@@ -99,11 +100,13 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
                 <div className="w-5 h-5 flex items-center justify-center">
                   {selectedItem ? (
                     typeof selectedItem.icon === "string" ? (
-                      <Image
+                      <img
                         src={selectedItem.icon}
                         alt={selectedItem.name}
                         width={20}
                         height={20}
+                        fetchPriority="low"
+                        loading="lazy"
                       />
                     ) : (
                       selectedItem.icon

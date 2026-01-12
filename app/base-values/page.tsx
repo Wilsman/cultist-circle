@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -127,6 +128,8 @@ export default function ItemsTablePage() {
 
   // Separate search input state from filter state
   const [searchInput, setSearchInput] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const [pvp, setPvp] = useState<MinimalItem[]>([]);
   const [pve, setPve] = useState<MinimalItem[]>([]);
@@ -216,6 +219,142 @@ export default function ItemsTablePage() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isEditable =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+
+      if (event.key === "/" && !isEditable) {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      if (event.key === "Escape" && searchInput && !isEditable) {
+        event.preventDefault();
+        setSearchInput("");
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      if (
+        event.key === "Escape" &&
+        searchInput &&
+        target === searchInputRef.current
+      ) {
+        event.preventDefault();
+        setSearchInput("");
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      if (event.key === "Enter" && event.shiftKey && !isEditable) {
+        event.preventDefault();
+        setIsAdvancedOpen((open) => !open);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [searchInput]);
+
+  const parsedQuery = useMemo(() => {
+    const tokens = debouncedSearchTerm.trim().split(/\s+/).filter(Boolean);
+    const textTerms: string[] = [];
+    const filters = {
+      baseMin: null as number | null,
+      baseMax: null as number | null,
+      lastLowMin: null as number | null,
+      lastLowMax: null as number | null,
+      avgMin: null as number | null,
+      avgMax: null as number | null,
+      category: null as string | null,
+      favoritesOnly: false,
+      traderOnly: false,
+      compatibleOnly: false,
+    };
+
+    const parseRangeToken = (token: string, prefix: string) => {
+      const match = token.match(
+        new RegExp(`^${prefix}([<>]=?|=)(\\d+)$`, "i")
+      );
+      if (!match) return null;
+      const op = match[1];
+      const value = Number(match[2]);
+      return { op, value };
+    };
+
+    for (const token of tokens) {
+      const lower = token.toLowerCase();
+      const baseToken = parseRangeToken(lower, "bp");
+      const lastLowToken = parseRangeToken(lower, "llp");
+      const avgToken = parseRangeToken(lower, "avg");
+
+      if (baseToken) {
+        if (baseToken.op === "<") filters.baseMax = baseToken.value - 1;
+        if (baseToken.op === "<=") filters.baseMax = baseToken.value;
+        if (baseToken.op === ">") filters.baseMin = baseToken.value + 1;
+        if (baseToken.op === ">=") filters.baseMin = baseToken.value;
+        if (baseToken.op === "=") {
+          filters.baseMin = baseToken.value;
+          filters.baseMax = baseToken.value;
+        }
+        continue;
+      }
+
+      if (lastLowToken) {
+        if (lastLowToken.op === "<") filters.lastLowMax = lastLowToken.value - 1;
+        if (lastLowToken.op === "<=") filters.lastLowMax = lastLowToken.value;
+        if (lastLowToken.op === ">") filters.lastLowMin = lastLowToken.value + 1;
+        if (lastLowToken.op === ">=") filters.lastLowMin = lastLowToken.value;
+        if (lastLowToken.op === "=") {
+          filters.lastLowMin = lastLowToken.value;
+          filters.lastLowMax = lastLowToken.value;
+        }
+        continue;
+      }
+
+      if (avgToken) {
+        if (avgToken.op === "<") filters.avgMax = avgToken.value - 1;
+        if (avgToken.op === "<=") filters.avgMax = avgToken.value;
+        if (avgToken.op === ">") filters.avgMin = avgToken.value + 1;
+        if (avgToken.op === ">=") filters.avgMin = avgToken.value;
+        if (avgToken.op === "=") {
+          filters.avgMin = avgToken.value;
+          filters.avgMax = avgToken.value;
+        }
+        continue;
+      }
+
+      if (lower.startsWith("cat:") || lower.startsWith("category:")) {
+        filters.category = token.split(":").slice(1).join(":").trim();
+        continue;
+      }
+
+      if (lower === "fav" || lower === "favorite" || lower === "favorites") {
+        filters.favoritesOnly = true;
+        continue;
+      }
+
+      if (lower === "trader") {
+        filters.traderOnly = true;
+        continue;
+      }
+
+      if (lower === "compat" || lower === "compatible") {
+        filters.compatibleOnly = true;
+        continue;
+      }
+
+      textTerms.push(token);
+    }
+
+    return { textTerms, filters };
+  }, [debouncedSearchTerm]);
 
   // Memoize the header sort handler to prevent recreating on each render
   const handleHeaderSort = useCallback(
@@ -413,8 +552,10 @@ export default function ItemsTablePage() {
     return Array.from(categorySet).sort();
   }, [items]);
   const filtered = useMemo(() => {
-    // Use debounced search term instead of directly using filter.name
-    const q = debouncedSearchTerm.trim().toLowerCase();
+    const qTerms = parsedQuery.textTerms.map((term) =>
+      term.trim().toLowerCase()
+    );
+    const parsedFilters = parsedQuery.filters;
 
     // Only filter if we have items and either search term or price filters
     if (!items.length) return [];
@@ -422,17 +563,56 @@ export default function ItemsTablePage() {
     let filteredItems = items;
 
     // Only apply name filter if search term exists
-    if (q) {
-      const searchTerms = q.split(/\s+/).filter((term) => term.length > 0);
-
+    if (qTerms.length) {
       filteredItems = filteredItems.filter((item) => {
         const lowerName = item.name.toLowerCase();
         const lowerShortName = item.shortName.toLowerCase();
 
         // Check if all search terms appear in either name or shortName
-        return searchTerms.every(
+        return qTerms.every(
           (term) => lowerName.includes(term) || lowerShortName.includes(term)
         );
+      });
+    }
+
+    if (parsedFilters.category) {
+      const match = parsedFilters.category.toLowerCase();
+      filteredItems = filteredItems.filter((item) =>
+        item.categories?.some((category) =>
+          category.name.toLowerCase().includes(match)
+        )
+      );
+    }
+
+    if (parsedFilters.favoritesOnly) {
+      filteredItems = filteredItems.filter((item) => isFavorite(item.id));
+    }
+
+    if (parsedFilters.compatibleOnly) {
+      filteredItems = filteredItems.filter((item) => {
+        const isExcluded = DEFAULT_EXCLUDED_ITEMS.has(item.id);
+        const hasValidPrice = item.basePrice > 0;
+        return !isExcluded && hasValidPrice;
+      });
+    }
+
+    if (parsedFilters.traderOnly) {
+      filteredItems = filteredItems.filter((item) => {
+        if (!item.buyFor || item.buyFor.length === 0) return false;
+
+        const bestBuyPrice = item.buyFor
+          .filter(
+            (offer) =>
+              offer?.vendor?.normalizedName !== "flea-market" &&
+              offer?.priceRUB != null
+          )
+          .reduce<(typeof item.buyFor)[0] | null>((prev, curr) => {
+            if (!prev) return curr;
+            if (!curr?.priceRUB) return prev;
+            return (prev?.priceRUB ?? 0) < curr.priceRUB ? prev : curr;
+          }, null);
+
+        return bestBuyPrice !== null;
       });
     }
 
@@ -441,12 +621,24 @@ export default function ItemsTablePage() {
       (item) =>
         item.basePrice >= filter.basePrice[0] &&
         item.basePrice <= filter.basePrice[1] &&
+        (parsedFilters.baseMin == null ||
+          item.basePrice >= parsedFilters.baseMin) &&
+        (parsedFilters.baseMax == null ||
+          item.basePrice <= parsedFilters.baseMax) &&
         (typeof item.lastLowPrice !== "number" ||
-          (item.lastLowPrice >= filter.lastLowPrice[0] &&
-            item.lastLowPrice <= filter.lastLowPrice[1])) &&
+          ((item.lastLowPrice >= filter.lastLowPrice[0] &&
+            item.lastLowPrice <= filter.lastLowPrice[1]) &&
+            (parsedFilters.lastLowMin == null ||
+              item.lastLowPrice >= parsedFilters.lastLowMin) &&
+            (parsedFilters.lastLowMax == null ||
+              item.lastLowPrice <= parsedFilters.lastLowMax))) &&
         (typeof item.avg24hPrice !== "number" ||
-          (item.avg24hPrice >= filter.avg24hPrice[0] &&
-            item.avg24hPrice <= filter.avg24hPrice[1]))
+          ((item.avg24hPrice >= filter.avg24hPrice[0] &&
+            item.avg24hPrice <= filter.avg24hPrice[1]) &&
+            (parsedFilters.avgMin == null ||
+              item.avg24hPrice >= parsedFilters.avgMin) &&
+            (parsedFilters.avgMax == null ||
+              item.avg24hPrice <= parsedFilters.avgMax)))
     );
 
     if (selectedCategory && selectedCategory !== "All Categories") {
@@ -556,118 +748,222 @@ export default function ItemsTablePage() {
     return filteredItems;
   }, [
     items,
-    debouncedSearchTerm, // Use debounced search term instead of filter.name
+    parsedQuery,
     filter.sort,
     filter.sortDir,
     filter.basePrice,
     filter.lastLowPrice,
     filter.avg24hPrice,
     selectedCategory,
+    isFavorite,
   ]); // Update dependencies
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto -mt-px">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
       {/* Header Section */}
-      <div className="mb-6 -mt-px">
-        <h1 className="text-center text-2xl sm:text-3xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-orange-300 to-yellow-300 drop-shadow">
+      <div className="mb-6 text-center space-y-2">
+        <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+          Base Values
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
           Item Base Values
         </h1>
+        <p className="text-sm text-muted-foreground">
+          Search fast. Base price first, extra details when you need them.
+        </p>
       </div>
 
-      {/* Search Bar Row */}
-      <div className="relative w-full sticky top-2 z-10 mb-4">
-        <Input
-          placeholder="Search items..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="h-11 w-full pl-11 bg-muted/40 border-border/60 focus:bg-background focus:border-primary/50 text-base shadow-sm transition-all rounded-xl"
-          aria-label="Search items"
-        />
-        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-          <Search className="h-5 w-5 opacity-50" />
-        </div>
-      </div>
-
-      {/* Main Filter Controls */}
-      <div className="space-y-4 mb-6">
-        {/* Price Range Filter - Full width */}
-        <div className="bg-muted/30 p-4 rounded-lg border">
-          <PriceRangeFilter
-            min={getMinMax(items, "basePrice")[0]}
-            max={getMinMax(items, "basePrice")[1]}
-            value={filter.basePrice}
-            onChange={(value) => {
-              startTransition(() => {
-                setFilter((f) => ({ ...f, basePrice: value }));
-              });
-            }}
-            onReset={() => {
-              startTransition(() => {
-                const [min, max] = getMinMax(items, "basePrice");
-                setFilter((f) => ({ ...f, basePrice: [min, max] }));
-              });
-            }}
-            label="Filter by Base Price"
-            className="w-full"
-          />
-        </div>
-
-        {/* Secondary Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Left side - View Toggles */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Mode Toggle */}
-            <div className="flex items-center gap-2 bg-muted/30 rounded-md p-1">
-              <span className="text-xs font-medium px-2 text-muted-foreground">
-                Mode:
-              </span>
-              <Button
-                variant={mode === "pvp" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => {
-                  startTransition(() => {
-                    const newMode = "pvp";
-                    setMode(newMode);
-                    const newItems = pvp;
-                    setFilter((f) => ({
-                      ...f,
-                      basePrice: getMinMax(newItems, "basePrice"),
-                      lastLowPrice: getMinMax(newItems, "lastLowPrice"),
-                      avg24hPrice: getMinMax(newItems, "avg24hPrice"),
-                    }));
-                  });
-                }}
-                className={`h-8 px-3 ${
-                  mode === "pvp" ? "bg-primary text-primary-foreground" : ""
-                }`}
-              >
-                PVP
-              </Button>
-              <Button
-                variant={mode === "pve" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => {
-                  startTransition(() => {
-                    const newMode = "pve";
-                    setMode(newMode);
-                    const newItems = pve;
-                    setFilter((f) => ({
-                      ...f,
-                      basePrice: getMinMax(newItems, "basePrice"),
-                      lastLowPrice: getMinMax(newItems, "lastLowPrice"),
-                      avg24hPrice: getMinMax(newItems, "avg24hPrice"),
-                    }));
-                  });
-                }}
-                className={`h-8 px-3 ${
-                  mode === "pve" ? "bg-primary text-primary-foreground" : ""
-                }`}
-              >
-                PVE
-              </Button>
+      {/* Primary Search Surface */}
+      <div className="sticky top-2 z-10 mb-6">
+        <div className="rounded-2xl border bg-background/85 backdrop-blur-md shadow-sm">
+          <div className="p-3 md:p-4 flex flex-col gap-3">
+            <div className="relative">
+              <Input
+                ref={searchInputRef}
+                placeholder="Search items by name or short name..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="h-12 w-full pl-11 pr-16 bg-muted/30 border-border/60 focus:bg-background focus:border-primary/50 text-base shadow-sm transition-all rounded-xl"
+                aria-label="Search items"
+              />
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                <Search className="h-5 w-5 opacity-50" />
+              </div>
+              {searchInput ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchInput("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-2 text-xs"
+                >
+                  Clear
+                </Button>
+              ) : null}
             </div>
 
-            {/* Favorites Toggle */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center rounded-full border bg-muted/40 p-1">
+                <Button
+                  variant={mode === "pvp" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    startTransition(() => {
+                      const newMode = "pvp";
+                      setMode(newMode);
+                      const newItems = pvp;
+                      setFilter((f) => ({
+                        ...f,
+                        basePrice: getMinMax(newItems, "basePrice"),
+                        lastLowPrice: getMinMax(newItems, "lastLowPrice"),
+                        avg24hPrice: getMinMax(newItems, "avg24hPrice"),
+                      }));
+                    });
+                  }}
+                  className="h-8 px-3 rounded-full"
+                >
+                  PVP
+                </Button>
+                <Button
+                  variant={mode === "pve" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    startTransition(() => {
+                      const newMode = "pve";
+                      setMode(newMode);
+                      const newItems = pve;
+                      setFilter((f) => ({
+                        ...f,
+                        basePrice: getMinMax(newItems, "basePrice"),
+                        lastLowPrice: getMinMax(newItems, "lastLowPrice"),
+                        avg24hPrice: getMinMax(newItems, "avg24hPrice"),
+                      }));
+                    });
+                  }}
+                  className="h-8 px-3 rounded-full"
+                >
+                  PVE
+                </Button>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                {isLoading
+                  ? "Loading items..."
+                  : `${filtered.length.toLocaleString()} items`}
+                {debouncedSearchTerm
+                  ? ` for "${debouncedSearchTerm}"`
+                  : ""}
+              </div>
+            </div>
+
+            <div className="text-[11px] text-muted-foreground">
+              Pro tips: use <span className="font-mono">bp&gt;50000</span>,{" "}
+              <span className="font-mono">avg&lt;200000</span>,{" "}
+              <span className="font-mono">cat:weapon</span>,{" "}
+              <span className="font-mono">trader</span>,{" "}
+              <span className="font-mono">fav</span>. Press{" "}
+              <span className="font-mono">/</span> to focus,{" "}
+              <span className="font-mono">Shift+Enter</span> to toggle filters.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters & Sorting */}
+      <details
+        className="mb-6 rounded-2xl border bg-muted/20"
+        open={isAdvancedOpen}
+        onToggle={(event) =>
+          setIsAdvancedOpen(event.currentTarget.open)
+        }
+      >
+        <summary className="list-none cursor-pointer px-4 py-3 text-sm font-medium flex items-center justify-between">
+          Filters and sorting
+          <span className="text-xs text-muted-foreground">
+            Expand for advanced controls
+          </span>
+        </summary>
+        <div className="border-t px-4 py-4 space-y-4">
+          <div className="bg-background/60 p-4 rounded-lg border">
+            <PriceRangeFilter
+              min={getMinMax(items, "basePrice")[0]}
+              max={getMinMax(items, "basePrice")[1]}
+              value={filter.basePrice}
+              onChange={(value) => {
+                startTransition(() => {
+                  setFilter((f) => ({ ...f, basePrice: value }));
+                });
+              }}
+              onReset={() => {
+                startTransition(() => {
+                  const [min, max] = getMinMax(items, "basePrice");
+                  setFilter((f) => ({ ...f, basePrice: [min, max] }));
+                });
+              }}
+              label="Filter by Base Price"
+              className="w-full"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Presets:</span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => {
+                startTransition(() => {
+                  const [min, max] = getMinMax(items, "basePrice");
+                  setFilter((f) => ({
+                    ...f,
+                    basePrice: [Math.max(min, 100000), max],
+                    sort: "basePrice",
+                    sortDir: "desc",
+                  }));
+                });
+              }}
+            >
+              High base
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => setShowTraderOnly(true)}
+            >
+              Trader only
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => setShowCompatibleOnly(true)}
+            >
+              Compatible
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => {
+                startTransition(() => {
+                  setFilter((f) => ({
+                    ...f,
+                    sort: "bestValue",
+                    sortDir: "desc",
+                  }));
+                });
+              }}
+            >
+              Best value
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             <Toggle
               variant="outline"
               aria-label="Show only favorites"
@@ -690,43 +986,34 @@ export default function ItemsTablePage() {
               <span className="text-xs font-medium">Favorites</span>
             </Toggle>
 
-            {/* Compatible Items Toggle */}
-            <div className="flex items-center space-x-2">
-              <Toggle
-                pressed={showCompatibleOnly}
-                onPressedChange={setShowCompatibleOnly}
-                variant="outline"
-                size="sm"
-                className="h-8"
-              >
-                <span className="text-xs">Compatible Only</span>
-              </Toggle>
-            </div>
+            <Toggle
+              pressed={showCompatibleOnly}
+              onPressedChange={setShowCompatibleOnly}
+              variant="outline"
+              size="sm"
+              className="h-8"
+            >
+              <span className="text-xs">Compatible Only</span>
+            </Toggle>
 
-            {/* Trader Only Toggle */}
-            <div className="flex items-center space-x-2">
-              <Toggle
-                pressed={showTraderOnly}
-                onPressedChange={setShowTraderOnly}
-                variant="outline"
-                size="sm"
-                className="h-8"
-              >
-                <span className="text-xs">Trader Only</span>
-              </Toggle>
-            </div>
+            <Toggle
+              pressed={showTraderOnly}
+              onPressedChange={setShowTraderOnly}
+              variant="outline"
+              size="sm"
+              className="h-8"
+            >
+              <span className="text-xs">Trader Only</span>
+            </Toggle>
           </div>
 
-          {/* Right side - Actions */}
-          <div className="flex items-center gap-2">
-            {/* Category Filter */}
+          <div className="flex flex-wrap items-center gap-3">
             <CategoryFilter
               categories={categories}
               selectedCategory={selectedCategory}
               onCategoryChange={setSelectedCategory}
             />
 
-            {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground whitespace-nowrap">
                 Sort by:
@@ -795,7 +1082,6 @@ export default function ItemsTablePage() {
               </Button>
             </div>
 
-            {/* Export Button */}
             <Button
               onClick={() => exportToExcel(filtered)}
               variant="outline"
@@ -807,7 +1093,7 @@ export default function ItemsTablePage() {
             </Button>
           </div>
         </div>
-      </div>
+      </details>
 
       {/* Multiplier Tester (Dev Tool) */}
       <div className="mb-6">

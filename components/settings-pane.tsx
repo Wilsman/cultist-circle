@@ -258,7 +258,7 @@ export default function SettingsPane({
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   className={cn(
-                    "flex items-center gap-2 sm:gap-3 px-3 sm:px-3 py-2 sm:py-2.5 rounded-xl transition-all duration-200 group relative whitespace-nowrap",
+                    "flex items-center gap-2 sm:gap-3 px-3 sm:px-3 py-2 sm:py-2.5 rounded-xl transition-all duration-100 group relative whitespace-nowrap",
                     isActive
                       ? "bg-white/10 text-white shadow-lg shadow-black/20"
                       : "text-gray-400 hover:text-white hover:bg-white/5"
@@ -271,7 +271,7 @@ export default function SettingsPane({
                       transition={{
                         type: "spring",
                         bounce: 0.2,
-                        duration: 0.6,
+                        duration: 0.3,
                       }}
                     />
                   )}
@@ -301,7 +301,7 @@ export default function SettingsPane({
             </DialogClose>
           </div>
 
-          <div className="hidden sm:flex pt-6 border-t border-white/5 flex flex-col gap-1 sm:mt-auto">
+          <div className="hidden sm:flex pt-6 border-t border-white/5 flex-col gap-1 sm:mt-auto">
             <p className="px-2 text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
               {t("Version")}
             </p>
@@ -336,7 +336,7 @@ export default function SettingsPane({
                 initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 exit={{ opacity: 0, y: -10, filter: "blur(8px)" }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.1 }}
                 className="p-8 pb-12"
               >
                 {activeTab === "general" && (

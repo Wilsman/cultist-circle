@@ -9,7 +9,6 @@ import React, {
   Suspense,
 } from "react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 // import Link from "next/link";
 import ItemSocket from "@/components/item-socket";
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -19,9 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import SettingsPane from "@/components/settings-pane";
 import { ModeThreshold } from "@/components/mode-threshold";
 import { AutoSelectButton } from "@/components/auto-select-button";
-import { VersionInfo } from "@/components/version-info";
 import { ShareButton } from "@/components/share-button";
-import { RewardsChart } from "@/components/rewards-chart";
 import {
   ALL_ITEM_CATEGORIES,
   DEFAULT_EXCLUDED_CATEGORY_IDS,
@@ -69,8 +66,7 @@ import { hashString, seededShuffle } from "@/lib/item-utils";
 import { HeaderSection } from "@/components/app/header-section";
 import { FooterSection } from "@/components/app/footer-section";
 import { SummarySection } from "@/components/app/summary-section";
-import { useAppSettings, type FleaPriceType, type PriceMode } from "@/hooks/use-app-settings";
-import { useFilteredItems } from "@/hooks/use-filtered-items";
+import { type FleaPriceType, type PriceMode } from "@/hooks/use-app-settings";
 
 
 
@@ -80,14 +76,19 @@ const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
 const PRICE_MODE_KEY = "priceMode";
 const TRADER_LEVELS_KEY = "traderLevels";
 
-const DynamicItemSelector = dynamic<any>(
+const DynamicItemSelector = dynamic(
   () => import("@/components/item-selector"),
   {
     ssr: false,
   }
-);
+) as React.ForwardRefExoticComponent<
+  ItemSelectorProps & React.RefAttributes<ItemSelectorHandle>
+>;
 
-import type { ItemSelectorHandle } from "@/components/item-selector";
+import type {
+  ItemSelectorHandle,
+  ItemSelectorProps,
+} from "@/components/item-selector";
 
 // FleaPriceType and PriceMode types are imported from use-app-settings
 

@@ -1,6 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import Image from "next/image";
 import { ChevronDown, Flame, Plus, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -230,7 +230,7 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
                     <div className="relative z-10 flex items-center gap-3">
                       <div className="relative">
                         <div className="absolute inset-0 bg-white/5 blur-sm rounded-md" />
-                        <Image
+                        <img
                           src={ingredient.imageUrl}
                           alt={ingredient.name}
                           width={48}
@@ -250,7 +250,7 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
                       {ingredient.vendor && (
                         <div className="flex items-center gap-1.5 pl-2 border-l border-white/10 ml-1 group/vendor">
                           <div className="relative">
-                            <Image
+                            <img
                               src={ingredient.vendor.imageUrl}
                               alt={ingredient.vendor.name}
                               width={18}

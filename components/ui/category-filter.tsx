@@ -3,6 +3,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 interface CategoryFilterProps {
   categories: string[];
@@ -11,21 +12,22 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({ categories, selectedCategory, onCategoryChange }: CategoryFilterProps) {
+  const { t } = useLanguage();
   const sortedCategories = [...categories].sort();
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground whitespace-nowrap">Category:</span>
+      <span className="text-xs text-muted-foreground whitespace-nowrap">{t("Category:")}</span>
       <div className="flex items-center gap-1">
         <Select
           value={selectedCategory || "all"}
           onValueChange={(value) => onCategoryChange(value === "all" ? null : value)}
         >
           <SelectTrigger className="h-8 w-[160px]">
-            <SelectValue placeholder="All Categories" />
+            <SelectValue placeholder={t("All Categories")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">{t("All Categories")}</SelectItem>
             {sortedCategories.map((category) => (
               <SelectItem key={category} value={category}>
                 {category}
@@ -39,7 +41,7 @@ export function CategoryFilter({ categories, selectedCategory, onCategoryChange 
             size="sm"
             onClick={() => onCategoryChange(null)}
             className="h-8 w-8 p-0"
-            aria-label="Clear category filter"
+            aria-label={t("Clear category filter")}
           >
             <X className="h-3 w-3" />
           </Button>
