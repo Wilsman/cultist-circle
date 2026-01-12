@@ -22,6 +22,7 @@ import {
   getItemLevelRequirement,
   getCategoryLevelRequirementByName,
 } from "@/config/flea-level-requirements";
+import { useLanguage } from "@/contexts/language-context";
 
 // Trader image mapping
 const TRADER_IMAGES: Record<string, string> = {
@@ -61,6 +62,7 @@ export function VirtualizedTable({
   onToggleFavorite,
   isFavorite,
 }: VirtualizedTableProps) {
+  const { t } = useLanguage();
   const [tableHeight, setTableHeight] = useState(0); // Default height, will be updated
 
   useEffect(() => {
@@ -158,14 +160,14 @@ export function VirtualizedTable({
                 className="text-muted-foreground hover:text-yellow-500 transition-colors relative group"
                 aria-label={
                   isFavorite(item.id)
-                    ? "Remove from favorites"
-                    : "Add to favorites"
+                    ? t("Remove from favorites")
+                    : t("Add to favorites")
                 }
               >
                 <span className="absolute hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 -mt-8 left-1/2 transform -translate-x-1/2 opacity-80">
                   {isFavorite(item.id)
-                    ? "Remove from favorites"
-                    : "Add to favorites"}
+                    ? t("Remove from favorites")
+                    : t("Add to favorites")}
                 </span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -295,13 +297,13 @@ export function VirtualizedTable({
                           String(item.basePrice)
                         );
                       }}
-                      aria-label="Copy base price"
+                      aria-label={t("Copy base price")}
                     >
                       <Copy className="h-3.5 w-3.5" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Copy base price</p>
+                    <p>{t("Copy base price")}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

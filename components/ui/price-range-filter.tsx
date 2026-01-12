@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RotateCcw } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 interface PriceRangeFilterProps {
   min: number;
@@ -36,6 +37,7 @@ export function PriceRangeFilter({
   className = "",
   label = "Price Range",
 }: PriceRangeFilterProps) {
+  const { t } = useLanguage();
   const [localValue, setLocalValue] = useState<[number, number]>(value);
   const [inputValues, setInputValues] = useState<[string, string]>([
     value[0].toString(),
@@ -167,10 +169,10 @@ export function PriceRangeFilter({
           onClick={onReset}
           disabled={isAtDefaults}
           className="h-6 px-2 text-xs"
-          aria-label="Reset price range"
+          aria-label={t("Reset price range")}
         >
           <RotateCcw className="h-3 w-3 mr-1" />
-          Reset
+          {t("Reset")}
         </Button>
       </div>
 
@@ -198,10 +200,10 @@ export function PriceRangeFilter({
             min={min}
             max={max}
             className="h-7 w-20 text-xs"
-            placeholder="Min"
-            aria-label="Minimum price"
+            placeholder={t("Min")}
+            aria-label={t("Minimum price")}
           />
-          <span className="text-xs text-muted-foreground">to</span>
+          <span className="text-xs text-muted-foreground">{t("to")}</span>
           <Input
             type="number"
             value={inputValues[1]}
@@ -210,8 +212,8 @@ export function PriceRangeFilter({
             min={min}
             max={max}
             className="h-7 w-20 text-xs"
-            placeholder="Max"
-            aria-label="Maximum price"
+            placeholder={t("Max")}
+            aria-label={t("Maximum price")}
           />
         </div>
         
