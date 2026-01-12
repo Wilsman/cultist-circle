@@ -12,6 +12,7 @@ import { Bell, Flame, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { SacrificeCombo } from "./hot-sacrifices-panel";
+import { useLanguage } from "@/contexts/language-context";
 
 interface InfoDashboardProps {
   selectedItems?: SimplifiedItem[];
@@ -25,6 +26,7 @@ export function InfoDashboard({
   onUseThis,
   sacrificeCosts = {},
 }: InfoDashboardProps) {
+  const { t } = useLanguage();
   const dynamicNotifications = useDynamicNotifications(selectedItems);
   const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications];
 
@@ -52,7 +54,7 @@ export function InfoDashboard({
             className="flex items-center justify-center gap-2 py-2.5 rounded-lg data-[state=active]:bg-slate-700/60 data-[state=active]:text-slate-100 data-[state=active]:shadow-sm transition-all duration-200 border-0 z-10"
           >
             <Bell className="h-4 w-4" />
-            Updates & Alerts
+            {t("Updates & Alerts")}
             {allNotifications.length > 0 && (
               <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-500">
                 {allNotifications.length}
@@ -76,7 +78,7 @@ export function InfoDashboard({
             >
               <Flame className="h-4 w-4" />
             </motion.div>
-            Hot Sacrifices
+            {t("Hot Sacrifices")}
           </TabsTrigger>
         </TabsList>
 
@@ -125,8 +127,8 @@ export function InfoDashboard({
                   className="text-[10px] font-medium text-slate-300 bg-slate-800/30 hover:bg-slate-800/60 hover:text-slate-200 h-6 px-3 border border-slate-700/30 rounded-full transition-all duration-200"
                 >
                   {updatesExpanded
-                    ? "Show Less"
-                    : `Show ${updatesTotalCount - 1} More`}
+                    ? t("Show Less")
+                    : t("Show {count} More", { count: updatesTotalCount - 1 })}
                   <ChevronDown
                     className={`ml-2 h-3 w-3 transition-transform duration-200 ${
                       updatesExpanded ? "rotate-180" : ""
@@ -166,7 +168,7 @@ export function InfoDashboard({
                 ))}
                 <div className="mt-3 pt-3 border-t border-slate-700/30 text-center">
                   <p className="text-[10px] text-slate-500">
-                    Values based on vendor sell prices and trading multipliers.
+                    {t("Values based on vendor sell prices and trading multipliers.")}
                   </p>
                 </div>
               </div>
@@ -178,8 +180,8 @@ export function InfoDashboard({
                   className="text-[10px] font-bold text-slate-400 bg-white/[0.03] hover:bg-indigo-500/10 hover:text-indigo-300 h-7 px-4 border border-white/5 hover:border-indigo-500/20 rounded-full transition-all duration-300"
                 >
                   {recipesExpanded
-                    ? "Show Less"
-                    : `Show ${recipesTotalCount - 1} More`}
+                    ? t("Show Less")
+                    : t("Show {count} More", { count: recipesTotalCount - 1 })}
                   <ChevronDown
                     className={`ml-2 h-3 w-3 transition-transform duration-300 ${
                       recipesExpanded ? "rotate-180" : ""

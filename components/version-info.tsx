@@ -1,6 +1,7 @@
 "use client";
 
 import { LAST_UPDATED } from "@/config/changelog";
+import { useLanguage } from "@/contexts/language-context";
 
 interface VersionInfoProps {
   version: string;
@@ -22,6 +23,8 @@ function formatDate(dateString: string): string {
 
 // Minimal inline badge with version and last updated date
 export function VersionInfo({ version }: VersionInfoProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="inline-flex items-center gap-3 justify-center">
       <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] text-slate-200 shadow-sm">
@@ -29,7 +32,7 @@ export function VersionInfo({ version }: VersionInfoProps) {
         v{version}
       </span>
       <span className="text-xs text-slate-400">
-        Last updated: {formatDate(LAST_UPDATED)}
+        {t("Last updated: {date}", { date: formatDate(LAST_UPDATED) })}
       </span>
     </div>
   );

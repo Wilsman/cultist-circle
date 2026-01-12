@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/language-context";
 
 interface RewardTier {
   threshold: string;
@@ -70,6 +71,8 @@ export function RewardsChart({
   currentTotal = 0,
   className,
 }: RewardsChartProps) {
+  const { t } = useLanguage();
+
   // Find current tier
   const getCurrentTierIndex = () => {
     for (let i = REWARD_TIERS.length - 1; i >= 0; i--) {
@@ -119,7 +122,7 @@ export function RewardsChart({
                     {isLastTier ? (
                       <span>
                         <span style={{ color: "#4ade80" }}>6 hours</span>
-                        <span className="text-white mx-1.5">or</span>
+                        <span className="text-white mx-1.5">{t("or")}</span>
                         <span style={{ color: "#3b8364" }}>14 hours</span>
                       </span>
                     ) : (
@@ -135,7 +138,7 @@ export function RewardsChart({
         {/* Info Note */}
         <div className="px-6 py-3 bg-white/[0.02] border-t border-white/5">
           <p className="text-[11px] text-white/40 leading-relaxed text-center italic">
-            * Higher thresholds increase the quality and rarity of returned items.
+            {t("* Higher thresholds increase the quality and rarity of returned items.")}
           </p>
         </div>
       </div>

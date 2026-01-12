@@ -105,10 +105,10 @@ interface SettingsPaneProps {
 }
 
 const NAV_ITEMS = [
-  { id: "general", label: "General", icon: LayoutGrid },
-  { id: "categories", label: "Categories", icon: ShieldCheck },
-  { id: "items", label: "Excluded Items", icon: Archive },
-  { id: "data", label: "Data & Reset", icon: Database },
+  { id: "general", labelKey: "General", icon: LayoutGrid },
+  { id: "categories", labelKey: "Categories", icon: ShieldCheck },
+  { id: "items", labelKey: "Excluded Items", icon: Archive },
+  { id: "data", labelKey: "Data & Reset", icon: Database },
 ];
 
 export default function SettingsPane({
@@ -151,7 +151,7 @@ export default function SettingsPane({
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
-  const { language, setLanguage, supported } = useLanguage();
+  const { language, setLanguage, supported, t } = useLanguage();
 
   // Update parent component when sortOption changes
   useEffect(() => {
@@ -215,12 +215,12 @@ export default function SettingsPane({
         try {
           const data = e.target?.result as string;
           onImportData(data);
-          sonnerToast("Success", {
-            description: "Data imported successfully",
+          sonnerToast(t("Success"), {
+            description: t("Data imported successfully"),
           });
         } catch {
-          sonnerToast("Error", {
-            description: "Failed to import data. Please check the file format.",
+          sonnerToast(t("Error"), {
+            description: t("Failed to import data. Please check the file format."),
           });
         }
       };
@@ -232,9 +232,9 @@ export default function SettingsPane({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-[#0f1115]/95 backdrop-blur-xl border-white/5 text-white max-w-4xl max-h-[90vh] sm:max-h-[85vh] h-[800px] sm:h-[700px] overflow-hidden p-0 gap-0 shadow-2xl flex flex-col sm:flex-row [&>button:last-child]:hidden sm:[&>button:last-child]:flex">
         <DialogHeader className="sr-only">
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>{t("Settings")}</DialogTitle>
           <DialogDescription>
-            Configure your preferences and manage your data
+            {t("Configure your preferences and manage your data")}
           </DialogDescription>
         </DialogHeader>
 
@@ -244,7 +244,9 @@ export default function SettingsPane({
             <div className="p-2 bg-yellow-400/10 rounded-xl">
               <SettingsIcon className="h-5 w-5 text-yellow-400" />
             </div>
-            <h2 className="text-lg font-semibold tracking-tight">Settings</h2>
+            <h2 className="text-lg font-semibold tracking-tight">
+              {t("Settings")}
+            </h2>
           </div>
 
           <nav className="flex flex-row sm:flex-col space-x-1 sm:space-x-0 sm:space-y-1 py-3 sm:py-0 px-4 sm:px-0">
@@ -282,7 +284,7 @@ export default function SettingsPane({
                     )}
                   />
                   <span className="text-xs sm:text-sm font-medium">
-                    {item.label}
+                    {t(item.labelKey)}
                   </span>
                   {isActive && (
                     <ChevronRight className="hidden sm:block ml-auto h-4 w-4 text-white/30" />
@@ -301,7 +303,7 @@ export default function SettingsPane({
 
           <div className="hidden sm:flex pt-6 border-t border-white/5 flex-col gap-1 sm:mt-auto">
             <p className="px-2 text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
-              Version
+              {t("Version")}
             </p>
             <div className="px-2 flex items-center justify-between">
               <Badge
@@ -310,7 +312,9 @@ export default function SettingsPane({
               >
                 v{CURRENT_VERSION}
               </Badge>
-              <span className="text-[10px] text-gray-600">Stable</span>
+              <span className="text-[10px] text-gray-600">
+                {t("Stable")}
+              </span>
             </div>
           </div>
         </div>
@@ -319,7 +323,9 @@ export default function SettingsPane({
         <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-transparent to-white/[0.02]">
           <div className="h-12 sm:h-14 flex items-center px-6 sm:px-8 border-b border-white/5">
             <h3 className="text-[10px] sm:text-sm font-medium text-gray-400 uppercase tracking-wider">
-              {NAV_ITEMS.find((i) => i.id === activeTab)?.label}
+              {NAV_ITEMS.find((i) => i.id === activeTab)
+                ? t(NAV_ITEMS.find((i) => i.id === activeTab)!.labelKey)
+                : ""}
             </h3>
           </div>
 
@@ -340,16 +346,16 @@ export default function SettingsPane({
                       <section className="space-y-4">
                         <div className="flex items-center gap-2">
                           <Label className="text-base font-semibold text-white">
-                            Language
+                            {t("Language")}
                           </Label>
                           <Badge className="bg-yellow-400/10 text-yellow-500 border-yellow-400/20 text-[10px] uppercase">
-                            WIP
+                            {t("WIP")}
                           </Badge>
                         </div>
                         <div className="w-64">
                           <Select value={language} onValueChange={setLanguage}>
                             <SelectTrigger className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-10 rounded-xl">
-                              <SelectValue placeholder="Select language" />
+                              <SelectValue placeholder={t("Select language")} />
                             </SelectTrigger>
                             <SelectContent className="bg-[#1a1c20] border-white/10 text-white rounded-xl">
                               {supported.map((l) => (
@@ -365,8 +371,7 @@ export default function SettingsPane({
                           </Select>
                         </div>
                         <p className="text-xs text-gray-400 leading-relaxed italic">
-                          Known issue: the &quot;Excluded Items&quot; list is
-                          still shown in English.
+                          {t('Known issue: the "Excluded Items" list is still shown in English.')}
                         </p>
                       </section>
                     )}
@@ -375,7 +380,7 @@ export default function SettingsPane({
                     <section className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Label className="text-base font-semibold text-white">
-                          Sort Options
+                          {t("Sort Options")}
                         </Label>
                       </div>
                       <div className="w-64">
@@ -384,38 +389,38 @@ export default function SettingsPane({
                           onValueChange={setSortOption}
                         >
                           <SelectTrigger className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-10 rounded-xl">
-                            <SelectValue placeholder="Sort by..." />
+                            <SelectValue placeholder={t("Sort by...")} />
                           </SelectTrigger>
                           <SelectContent className="bg-[#1a1c20] border-white/10 text-white rounded-xl text-xs">
                             <SelectItem
                               value="az"
                               className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
                             >
-                              Item name: A-Z
+                              {t("Item name: A-Z")}
                             </SelectItem>
                             <SelectItem
                               value="most-recent"
                               className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
                             >
-                              Most recently updated
+                              {t("Most recently updated")}
                             </SelectItem>
                             <SelectItem
                               value="base-value"
                               className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
                             >
-                              Base Value: Low to High
+                              {t("Base Value: Low to High")}
                             </SelectItem>
                             <SelectItem
                               value="base-value-desc"
                               className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
                             >
-                              Base Value: High to Low
+                              {t("Base Value: High to Low")}
                             </SelectItem>
                             <SelectItem
                               value="ratio"
                               className="rounded-lg focus:bg-yellow-400/10 focus:text-yellow-400"
                             >
-                              Best value for money
+                              {t("Best value for money")}
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -426,10 +431,10 @@ export default function SettingsPane({
                     <section className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Label className="text-base font-semibold text-white">
-                          Price Mode
+                          {t("Price Mode")}
                         </Label>
                         <Badge className="bg-yellow-400/10 text-yellow-500 border-yellow-400/20 text-[10px] uppercase">
-                          WIP
+                          {t("WIP")}
                         </Badge>
                       </div>
                       <RadioGroup
@@ -455,7 +460,7 @@ export default function SettingsPane({
                               className="sr-only"
                             />
                             <span className="text-sm font-medium">
-                              Flea Market
+                              {t("Flea Market")}
                             </span>
                           </div>
                           {currentPriceMode === "flea" && (
@@ -477,7 +482,9 @@ export default function SettingsPane({
                               id="mode-trader"
                               className="sr-only"
                             />
-                            <span className="text-sm font-medium">Trader</span>
+                            <span className="text-sm font-medium">
+                              {t("Trader")}
+                            </span>
                           </div>
                           {currentPriceMode === "trader" && (
                             <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
@@ -710,7 +717,7 @@ export default function SettingsPane({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold text-lg">
-                            Excluded Categories
+                            {t("Excluded Categories")}
                           </h4>
                           <Link href="/faq" target="_blank">
                             <Button
@@ -723,8 +730,7 @@ export default function SettingsPane({
                           </Link>
                         </div>
                         <p className="text-sm text-gray-400">
-                          Selection will be hidden from the auto-selector &
-                          items lists.
+                          {t("Selection will be hidden from the auto-selector and items lists.")}
                         </p>
                       </div>
                       <div className="w-full space-y-2 md:w-auto md:space-y-0">
@@ -735,7 +741,7 @@ export default function SettingsPane({
                               size="sm"
                               className="md:hidden h-10 w-full justify-between rounded-2xl border border-white/10 bg-white/5 text-sm text-gray-200 hover:bg-white/10"
                             >
-                              Quick Actions
+                              {t("Quick Actions")}
                               <ChevronDown className="h-4 w-4 opacity-70" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -748,21 +754,21 @@ export default function SettingsPane({
                               onSelect={handleTickAll}
                             >
                               <Check className="h-3.5 w-3.5 text-emerald-400" />
-                              Tick All
+                              {t("Tick All")}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="flex items-center gap-2 text-sm"
                               onSelect={handleUntickAll}
                             >
                               <Ban className="h-3.5 w-3.5 text-red-400" />
-                              Untick All
+                              {t("Untick All")}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="flex items-center gap-2 text-sm"
                               onSelect={handleResetCategories}
                             >
                               <RotateCcw className="h-3.5 w-3.5 text-yellow-400" />
-                              Reset Defaults
+                              {t("Reset Defaults")}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -775,7 +781,7 @@ export default function SettingsPane({
                             className="h-8 hover:bg-emerald-400/10 hover:text-emerald-400 text-xs rounded-xl"
                           >
                             <Check className="h-3.5 w-3.5 mr-2 text-emerald-400" />
-                            Tick All
+                            {t("Tick All")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -784,7 +790,7 @@ export default function SettingsPane({
                             className="h-8 hover:bg-red-400/10 hover:text-red-400 text-xs rounded-xl"
                           >
                             <Ban className="h-3.5 w-3.5 mr-2 text-red-400" />
-                            Untick All
+                            {t("Untick All")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -793,7 +799,7 @@ export default function SettingsPane({
                             className="h-8 hover:bg-white/10 text-xs rounded-xl"
                           >
                             <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
-                            Reset
+                            {t("Reset")}
                           </Button>
                         </div>
                       </div>
@@ -802,7 +808,7 @@ export default function SettingsPane({
                     <div className="relative group">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within:text-yellow-400 transition-colors" />
                       <Input
-                        placeholder="Search for categories..."
+                        placeholder={t("Search for categories...")}
                         className="pl-11 h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-yellow-400 focus:border-yellow-400 transition-all placeholder:text-gray-600"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -846,7 +852,7 @@ export default function SettingsPane({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold text-lg text-emerald-400">
-                            Compatibility Mode
+                            {t("Compatibility Mode")}
                           </h4>
                           <Link href="/faq" target="_blank">
                             <Button
@@ -859,7 +865,7 @@ export default function SettingsPane({
                           </Link>
                         </div>
                         <p className="text-sm text-gray-400">
-                          Exclude items invalid for the cultist circle.
+                          {t("Exclude items invalid for the cultist circle.")}
                         </p>
                       </div>
                       <Switch
@@ -873,35 +879,34 @@ export default function SettingsPane({
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <h4 className="text-base font-semibold">
-                            Individual Exclusions
+                            {t("Individual Exclusions")}
                           </h4>
                           <p className="text-xs text-gray-500">
-                            To add items, use the &quot;Exclude from Auto&quot;
-                            button in the selector.
+                            {t('To add items, use the "Exclude from Auto" button in the selector.')}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            onExcludedItemsChange(
-                              new Set(DEFAULT_EXCLUDED_ITEMS)
-                            );
-                            sonnerToast.success("Reset Complete", {
-                              description: "Defaults restored.",
-                            });
-                          }}
-                          className="h-8 hover:bg-white/10 text-xs rounded-xl"
-                        >
-                          <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
-                          Restore Defaults
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              onExcludedItemsChange(
+                                new Set(DEFAULT_EXCLUDED_ITEMS)
+                              );
+                              sonnerToast.success(t("Reset Complete"), {
+                                description: t("Defaults restored."),
+                              });
+                            }}
+                            className="h-8 hover:bg-white/10 text-xs rounded-xl"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
+                            {t("Restore Defaults")}
+                          </Button>
                       </div>
 
                       <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within:text-yellow-400 transition-colors" />
                         <Input
-                          placeholder="Find an excluded item..."
+                          placeholder={t("Find an excluded item...")}
                           className="pl-11 h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-yellow-400 focus:border-yellow-400 transition-all placeholder:text-gray-600"
                           value={excludedItemsSearch}
                           onChange={(e) =>
@@ -945,7 +950,7 @@ export default function SettingsPane({
                             <div className="h-40 flex flex-col items-center justify-center text-gray-600 gap-2">
                               <Archive className="h-8 w-8 opacity-20" />
                               <p className="text-xs font-medium uppercase tracking-widest opacity-50">
-                                Empty Archive
+                                {t("Empty Archive")}
                               </p>
                             </div>
                           )}
@@ -963,17 +968,16 @@ export default function SettingsPane({
                           <Download className="h-6 w-6 text-blue-400" />
                         </div>
                         <div className="space-y-1">
-                          <h4 className="font-semibold">Export Profile</h4>
+                          <h4 className="font-semibold">{t("Export Profile")}</h4>
                           <p className="text-xs text-gray-500 leading-relaxed">
-                            Save your custom exclusions and preferences as a
-                            JSON file.
+                            {t("Save your custom exclusions and preferences as a JSON file.")}
                           </p>
                         </div>
                         <Button
                           onClick={onExportData}
                           className="w-full h-10 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl transition-all shadow-sm"
                         >
-                          Export Configuration
+                          {t("Export Configuration")}
                         </Button>
                       </section>
 
@@ -982,10 +986,9 @@ export default function SettingsPane({
                           <Upload className="h-6 w-6 text-indigo-400" />
                         </div>
                         <div className="space-y-1">
-                          <h4 className="font-semibold">Import Profile</h4>
+                          <h4 className="font-semibold">{t("Import Profile")}</h4>
                           <p className="text-xs text-gray-500 leading-relaxed">
-                            Restore your configuration from a previously
-                            exported file.
+                            {t("Restore your configuration from a previously exported file.")}
                           </p>
                         </div>
                         <div className="relative">
@@ -999,7 +1002,7 @@ export default function SettingsPane({
                             variant="outline"
                             className="w-full h-10 border-white/10 text-white rounded-xl bg-white/5 hover:bg-white/10 shadow-sm"
                           >
-                            Upload File
+                            {t("Upload File")}
                           </Button>
                         </div>
                       </section>
@@ -1012,12 +1015,10 @@ export default function SettingsPane({
                         </div>
                         <div className="space-y-2">
                           <h4 className="text-lg font-bold text-red-400">
-                            System Hard Reset
+                            {t("System Hard Reset")}
                           </h4>
                           <p className="text-sm text-gray-400 leading-relaxed max-w-md">
-                            This will clear all localized storage including
-                            custom categories, exclusions, and preferred price
-                            modes.
+                            {t("This will clear all localized storage including custom categories, exclusions, and preferred price modes.")}
                           </p>
                         </div>
                       </div>
@@ -1025,7 +1026,7 @@ export default function SettingsPane({
                         onClick={() => setShowConfirmClear(true)}
                         className="w-full h-12 bg-red-400/10 hover:bg-red-400 text-red-100 font-semibold rounded-2xl border border-red-400/20 transition-all"
                       >
-                        Clear All Application Data
+                        {t("Clear All Application Data")}
                       </Button>
                     </section>
                   </div>
@@ -1044,11 +1045,10 @@ export default function SettingsPane({
               </div>
               <div className="text-center space-y-2">
                 <DialogTitle className="text-2xl font-bold">
-                  Clear All Data?
+                  {t("Clear All Data?")}
                 </DialogTitle>
                 <DialogDescription className="text-gray-400 text-sm leading-relaxed max-w-[320px] mx-auto">
-                  This action is irreversible. All your custom exclusions and
-                  settings will be permanently deleted.
+                  {t("This action is irreversible. All your custom exclusions and settings will be permanently deleted.")}
                 </DialogDescription>
               </div>
             </DialogHeader>
@@ -1062,14 +1062,14 @@ export default function SettingsPane({
                 }}
                 className="h-12 rounded-2xl font-bold bg-red-400 hover:bg-red-500 shadow-lg shadow-red-500/20"
               >
-                Yes, Delete Everything
+                {t("Yes, Delete Everything")}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setShowConfirmClear(false)}
                 className="h-12 rounded-2xl text-gray-400 hover:text-white hover:bg-white/5 transition-all"
               >
-                Cancel
+                {t("Cancel")}
               </Button>
             </div>
           </DialogContent>

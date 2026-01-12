@@ -10,8 +10,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useLanguage } from "@/contexts/language-context";
 
 export function SupportWidget() {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleKofiClick = () => {
@@ -37,7 +39,7 @@ export function SupportWidget() {
           >
             <div className="flex items-center justify-between px-1 mb-1">
               <span className="text-sm font-semibold text-slate-200">
-                Support the Project
+                {t("Support the Project")}
               </span>
               <Button
                 variant="ghost"
@@ -61,7 +63,7 @@ export function SupportWidget() {
                   Ko-fi
                 </span>
                 <span className="text-xs text-slate-400">
-                  Support via Ko-fi
+                  {t("Support via Ko-fi")}
                 </span>
               </div>
             </button>
@@ -75,9 +77,11 @@ export function SupportWidget() {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-slate-100">
-                  Buy Me a Coffee
+                  {t("Buy Me a Coffee")}
                 </span>
-                <span className="text-xs text-slate-400">Support via BMC</span>
+                <span className="text-xs text-slate-400">
+                  {t("Support via BMC")}
+                </span>
               </div>
             </button>
           </div>
@@ -104,7 +108,7 @@ export function SupportWidget() {
                     : "text-slate-400 group-hover:text-red-400"
                 )}
               />
-              <span className="text-sm font-medium">Support Me</span>
+              <span className="text-sm font-medium">{t("Support Me")}</span>
               {!isOpen && (
                 <span className="absolute -top-1 -right-1 flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -113,7 +117,7 @@ export function SupportWidget() {
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Support my work</TooltipContent>
+          <TooltipContent side="right">{t("Support my work")}</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

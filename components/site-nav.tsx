@@ -11,10 +11,12 @@ import {
   Calculator,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/language-context";
 
 export function SiteNav() {
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const { t } = useLanguage();
 
   const linkBase =
     "inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors";
@@ -65,7 +67,7 @@ export function SiteNav() {
             <Link href="/faq">
               <Button variant="ghost" size="sm" className="gap-2">
                 <HelpCircle className="h-4 w-4" />
-                <span className="hidden md:inline">Help & FAQ</span>
+                <span className="hidden md:inline">{t("Help & FAQ")}</span>
               </Button>
             </Link>
           </div>
@@ -74,18 +76,18 @@ export function SiteNav() {
           <div className="flex items-center justify-center gap-1 md:gap-2">
             <Link
               href="/"
-              aria-label="Calculator"
+              aria-label={t("Calculator")}
               className={`${linkBase} ${
                 pathname === "/" ? active : inactive
               } px-2 md:px-3`}
               aria-current={pathname === "/" ? "page" : undefined}
             >
               <Calculator className="h-4 w-4" />
-              <span className="hidden sm:inline">Calculator</span>
+              <span className="hidden sm:inline">{t("Calculator")}</span>
             </Link>
             <Link
               href="/recipes"
-              aria-label="Recipes"
+              aria-label={t("Recipes")}
               className={`${linkBase} ${
                 pathname?.startsWith("/recipes") ? active : inactive
               } px-2 md:px-3`}
@@ -94,11 +96,11 @@ export function SiteNav() {
               }
             >
               <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Recipes</span>
+              <span className="hidden sm:inline">{t("Recipes")}</span>
             </Link>
             <Link
               href="/base-values"
-              aria-label="Base Values"
+              aria-label={t("Base Values")}
               className={`${linkBase} ${
                 pathname?.startsWith("/base-values") ? active : inactive
               } px-2 md:px-3`}
@@ -107,7 +109,7 @@ export function SiteNav() {
               }
             >
               <Table className="h-4 w-4" />
-              <span className="hidden sm:inline">Base Values</span>
+              <span className="hidden sm:inline">{t("Base Values")}</span>
             </Link>
           </div>
 
@@ -122,7 +124,7 @@ export function SiteNav() {
                 className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md text-gray-300 hover:text-white hover:bg-gray-800/70"
               >
                 <Settings className="h-4 w-4" />
-                <span className="hidden md:inline">Settings</span>
+                <span className="hidden md:inline">{t("Settings")}</span>
               </button>
             ) : (
               <span
@@ -130,7 +132,7 @@ export function SiteNav() {
                 className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md invisible"
               >
                 <Settings className="h-4 w-4" />
-                <span className="hidden md:inline">Settings</span>
+                <span className="hidden md:inline">{t("Settings")}</span>
               </span>
             )}
           </div>

@@ -1,17 +1,28 @@
+"use client";
+
 import * as React from "react";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { FitItemsDebug } from "../lib/fit-items-in-box";
+import { useLanguage } from "@/contexts/language-context";
 
 interface PlacementPreviewInlineProps {
   fitDebug: FitItemsDebug | null | undefined;
   selectedItems: Array<SimplifiedItem | null>;
 }
 
-export function PlacementPreviewInline({ fitDebug, selectedItems }: PlacementPreviewInlineProps) {
+export function PlacementPreviewInline({
+  fitDebug,
+  selectedItems,
+}: PlacementPreviewInlineProps) {
+  const { t } = useLanguage();
   if (!fitDebug || !fitDebug.grid) return null;
   return (
     <div className="mt-3 flex flex-col items-center">
-      <div className="font-mono text-xs mb-1">Grid preview ({fitDebug.fit ? "Fit found" : "No fit"})</div>
+      <div className="font-mono text-xs mb-1">
+        {t("Grid preview ({status})", {
+          status: fitDebug.fit ? t("Fit found") : t("No fit"),
+        })}
+      </div>
       <div
         style={{
           display: "grid",
@@ -32,9 +43,7 @@ export function PlacementPreviewInline({ fitDebug, selectedItems }: PlacementPre
                 ? "#222"
                 : `hsl(${(itemIdx * 80) % 360},60%,45%)`;
             const label =
-              cell === 0
-                ? ""
-                : (selectedItems[itemIdx]?.name?.[0] ?? "");
+              cell === 0 ? "" : (selectedItems[itemIdx]?.name?.[0] ?? "");
             return (
               <div
                 key={`cell-${x}-${y}`}
@@ -63,14 +72,20 @@ export function PlacementPreviewInline({ fitDebug, selectedItems }: PlacementPre
         <div className="mt-2 text-xs text-gray-300">
           {fitDebug.placements.map((p, i) => (
             <div key={i}>
-              {p.name}: ({p.x + 1}, {p.y + 1}) {p.width}w × {p.height}h
+              {t("{name}: ({x}, {y}) {w}w x {h}h", {
+                name: p.name,
+                x: p.x + 1,
+                y: p.y + 1,
+                w: p.width,
+                h: p.height,
+              })}
             </div>
           ))}
         </div>
       )}
       {!fitDebug.fit && (
         <div className="mt-2 text-xs text-red-400">
-          {fitDebug.failReason || "No arrangement found"}
+          {fitDebug.failReason || t("No arrangement found")}
         </div>
       )}
     </div>

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Copy, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 interface NextItemHintsProps {
   items: SimplifiedItem[];
@@ -43,6 +44,7 @@ export function NextItemHints({
   prevItem,
   className,
 }: NextItemHintsProps) {
+  const { t } = useLanguage();
   if (!items || items.length === 0) return null;
 
   return (
@@ -67,14 +69,16 @@ export function NextItemHints({
               "bg-emerald-500/10 border-emerald-500/30 text-emerald-300",
               "hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all duration-300 shadow-sm shadow-emerald-500/5"
             )}
-            title={`Copy the same item from the slot above: ${prevItem.name}`}
+            title={t("Copy the same item from the slot above: {name}", {
+              name: prevItem.name,
+            })}
           >
             <div className="p-1 rounded-full bg-emerald-500/20 group-hover:bg-emerald-500/30 transition-colors">
               <Copy className="h-3 w-3 text-emerald-400" />
             </div>
             <div className="flex flex-col items-start leading-none">
               <span className="text-[9px] uppercase tracking-wider font-bold opacity-60 group-hover:opacity-100 transition-opacity">
-                Duplicate
+                {t("Duplicate")}
               </span>
               <span className="font-semibold text-[11px] truncate max-w-[120px]">
                 {prevItem.shortName || prevItem.name}
@@ -107,7 +111,7 @@ export function NextItemHints({
             )}
             <div className="flex flex-col items-start leading-none">
               <span className="text-[9px] uppercase tracking-wider font-bold opacity-40 group-hover:opacity-100 transition-opacity">
-                {i === 0 ? "Top Pick" : "Suggest"}
+                {i === 0 ? t("Top Pick") : t("Suggest")}
               </span>
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-[11px] truncate max-w-[120px] text-slate-100">
@@ -131,13 +135,13 @@ export function NextItemHints({
         className="flex items-center gap-1.5 ml-1 select-none pointer-events-none"
       >
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Press
+          {t("Press")}
         </span>
         <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-white/5 border border-white/10 rounded text-[10px] font-black text-white/50 font-mono shadow-sm">
           /
         </span>
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          to focus
+          {t("to focus")}
         </span>
       </motion.div>
     </motion.div>
