@@ -20,6 +20,7 @@ import {
   Search,
   ExternalLink,
   MoreHorizontal,
+  Lock,
 } from "lucide-react";
 import Fuse from "fuse.js";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
@@ -965,6 +966,14 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                         date: getRelativeDate(selectedItem.updated.toString()),
                       })}
                     </span>
+                  )}
+                  {selectedItem.minLevelForFlea && selectedItem.minLevelForFlea > 0 && (
+                    <div className="flex items-center gap-1 text-orange-400/80">
+                      <Lock className="h-3 w-3" />
+                      <span className="font-semibold">
+                        {t("Flea Lvl {level}", { level: selectedItem.minLevelForFlea })}
+                      </span>
+                    </div>
                   )}
                   {isExcluded && (
                     <span className="text-red-400 font-bold uppercase tracking-wider">
