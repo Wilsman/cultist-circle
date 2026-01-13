@@ -74,6 +74,7 @@ export async function fetchCombinedTarkovData(
         iconLink
         avg24hPrice
         link
+        minLevelForFlea
         categories {
           id
           name
@@ -101,6 +102,7 @@ export async function fetchCombinedTarkovData(
         avg24hPrice
         iconLink
         link
+        minLevelForFlea
         categories {
           id
           name
@@ -176,6 +178,7 @@ export async function fetchCombinedTarkovData(
       link: item.link,
       width: item.width,
       height: item.height,
+      minLevelForFlea: item.minLevelForFlea ?? 0,
       // Use language-agnostic category IDs for filtering logic
       // Non-null assertion is safe here because this query selects `id` for categories
       categories: item.categories.map(
@@ -288,6 +291,7 @@ export interface MinimalItem {
   basePrice: number;
   lastLowPrice: number | null;
   avg24hPrice: number | null;
+  minLevelForFlea?: number;
   categories: {
     name: string;
   }[];
@@ -338,6 +342,7 @@ export async function fetchMinimalTarkovData(
         basePrice
         lastLowPrice
         avg24hPrice
+        minLevelForFlea
         categories {
           name
         }
@@ -366,6 +371,7 @@ export async function fetchMinimalTarkovData(
         basePrice
         lastLowPrice
         avg24hPrice
+        minLevelForFlea
         categories {
           name
         }

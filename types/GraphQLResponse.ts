@@ -11,6 +11,7 @@ export interface TarkovItem {
   link?: string;
   height: number;
   width: number;
+  minLevelForFlea?: number;
   categories: Array<{
     id?: string;
     name: string;

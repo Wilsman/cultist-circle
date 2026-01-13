@@ -18,10 +18,6 @@ import {
   HoverCardContent,
 } from "@/components/ui/hover-card";
 import { Copy, Lock } from "lucide-react";
-import {
-  getItemLevelRequirement,
-  getCategoryLevelRequirementByName,
-} from "@/config/flea-level-requirements";
 import { useLanguage } from "@/contexts/language-context";
 
 // Trader image mapping
@@ -130,19 +126,8 @@ export function VirtualizedTable({
               }, null)
           : null;
 
-      // Calculate Flea Level Requirement
-      const itemLevelReq = getItemLevelRequirement(item.name);
-      
-      const categoryLevelReqs =
-        item.categories?.map((cat) => getCategoryLevelRequirementByName(cat.name)) ||
-        [];
-      
-      // Get the highest requirement from categories (if multiple)
-      const maxCategoryReq =
-        categoryLevelReqs.length > 0 ? Math.max(...categoryLevelReqs) : 0;
-      
-      // Item specific requirement takes precedence if defined, otherwise use category requirement
-      const fleaLevelRequirement = itemLevelReq ?? maxCategoryReq;
+      // Calculate Flea Level Requirement directly from the item's minLevelForFlea
+      const fleaLevelRequirement = item.minLevelForFlea ?? 0;
 
       return (
         <div
