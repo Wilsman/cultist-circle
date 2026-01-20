@@ -16,10 +16,12 @@ const config = [
   {
     name: "cultist-circle/ignores",
     ignores: [
+      ".next/**",
       "tests/**",
       "**/*.test.ts",
       "**/*.test.tsx",
       "**/__tests__/**",
+      "next-env.d.ts",
       "vitest.config.ts",
       "tests/setup.ts",
     ],

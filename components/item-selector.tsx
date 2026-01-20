@@ -605,6 +605,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         highlightedIndex,
         overriddenPrices,
         priceMode,
+        t,
       ]
     );
 

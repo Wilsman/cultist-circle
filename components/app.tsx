@@ -1603,7 +1603,7 @@ function AppContent() {
       // Force a page reload to ensure all state is properly reset
       window.location.reload();
     }
-  }, []);
+  }, [t]);
 
   // Move these useMemo hooks here, right after the state declarations
   const isClearButtonDisabled = useMemo(() => {
@@ -1630,7 +1630,7 @@ function AppContent() {
     sonnerToast(t("Cleared Items"), {
       description: t("All item fields have been cleared."),
     });
-  }, []);
+  }, [t]);
 
   // Add loading state
   const [loadingSlots, setLoadingSlots] = useState<boolean[]>(

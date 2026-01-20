@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ItemSelector from "@/components/item-selector";
+import { LanguageProvider } from '@/contexts/language-context';
 import { DEFAULT_EXCLUDED_ITEMS } from '@/config/excluded-items';
 import type { SimplifiedItem } from '@/types/SimplifiedItem';
 import type { TraderLevels } from '@/components/ui/trader-level-selector';
@@ -39,6 +40,21 @@ const defaultTraderLevels: TraderLevels = {
 
 describe('ItemSelector exclusions are language-agnostic', () => {
   const excludedItems = new Set(DEFAULT_EXCLUDED_ITEMS);
+  const renderWithLanguage = (
+    ui: React.ReactElement,
+    language?: string
+  ) => {
+    if (language) {
+      window.localStorage.setItem('language', language);
+    } else {
+      window.localStorage.removeItem('language');
+    }
+    return render(<LanguageProvider>{ui}</LanguageProvider>);
+  };
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
 
   const baseProps = {
     selectedItem: null,
@@ -46,6 +62,7 @@ describe('ItemSelector exclusions are language-agnostic', () => {
     onCopy: () => { },
     onPin: () => { },
     isPinned: false,
+    isAutoPickActive: false,
     overriddenPrices: {},
     isExcluded: false,
     onToggleExclude: () => { },
@@ -58,10 +75,10 @@ describe('ItemSelector exclusions are language-agnostic', () => {
   it('excludes a default English-named item when UI language is English (name === englishName)', () => {
     const items = [makeItem({ id: 'roubles', name: 'Roubles', englishName: 'Roubles' })];
 
-    render(<ItemSelector items={items} {...baseProps} />);
+    renderWithLanguage(<ItemSelector items={items} {...baseProps} />);
 
     // Focus search to show list with empty query
-    const input = screen.getByPlaceholderText('Search items...');
+    const input = screen.getByRole('textbox');
     fireEvent.mouseUp(input);
 
     // The item should NOT appear because it's in DEFAULT_EXCLUDED_ITEMS
@@ -73,10 +90,10 @@ describe('ItemSelector exclusions are language-agnostic', () => {
       makeItem({ id: 'roubles', name: 'Rubel', englishName: 'Roubles' }), // de localized label
     ];
 
-    render(<ItemSelector items={items} {...baseProps} />);
+    renderWithLanguage(<ItemSelector items={items} {...baseProps} />, 'de');
 
     // Focus search to show list with empty query
-    const input = screen.getByPlaceholderText('Search items...');
+    const input = screen.getByRole('textbox');
     fireEvent.mouseUp(input);
 
     // Should not show localized nor English name
