@@ -11,6 +11,7 @@ export interface Notification {
   title: string;
   description: string | React.ReactNode;
   actions?: NotificationAction[];
+  priority?: number;
 }
 
 export interface NotificationAction {
@@ -19,6 +20,21 @@ export interface NotificationAction {
 }
 
 export const NOTIFICATIONS: Notification[] = [
+  {
+    id: "six-hour-timer-warning",
+    type: "warning",
+    title: "6h Timer Rewards Are Not Guaranteed",
+    description: (
+      <>
+        Recent reports show more low-value drops from the <strong>6h timer</strong>.
+        At the moment, <strong>6h timers</strong> are not a 100% chance for
+        quest/hideout items. It is unclear if this is a bug or intended
+        behavior, so treat 6h rewards as inconsistent for quest/hideout
+        progress.
+      </>
+    ),
+    priority: 0,
+  },
   {
     id: "weapon-values-warning",
     type: "warning",
@@ -45,13 +61,18 @@ export const NOTIFICATIONS: Notification[] = [
 
 export function NotificationCard({
   notification,
+  onClick,
 }: {
   notification: Notification;
+  onClick?: () => void;
 }) {
+  const isPriority = notification.priority === 0;
+  const isInteractive = Boolean(onClick);
+
   return (
     <div
       className={`
-        rounded-xl px-4 py-3 backdrop-blur-sm
+        relative rounded-xl px-4 py-3 backdrop-blur-sm
         border transition-all duration-200
         ${
           notification.type === "success"
@@ -66,8 +87,18 @@ export function NotificationCard({
             ? "bg-amber-950/30 border-amber-500/20"
             : "bg-slate-800/40 border-slate-700/30"
         }
+        ${
+          isPriority
+            ? "ring-1 ring-amber-400/30 shadow-[0_0_24px_rgba(251,191,36,0.12)]"
+            : ""
+        }
+        ${isInteractive ? "cursor-pointer hover:border-white/20" : ""}
       `}
+      onClick={onClick}
     >
+      {isPriority && (
+        <div className="pointer-events-none absolute inset-0 rounded-xl border border-amber-400/30" />
+      )}
       <div className="flex items-start gap-3">
         {notification.icon && (
           <span className="text-lg mt-0.5 flex-shrink-0">
@@ -78,23 +109,30 @@ export function NotificationCard({
           <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
         )}
         <div className="flex-1 min-w-0">
-          <h3
-            className={`text-sm font-semibold mb-1 ${
-              notification.type === "success"
-                ? "text-emerald-200"
-                : notification.type === "warning"
-                ? "text-red-200"
-                : notification.type === "halloween"
-                ? "text-orange-200"
-                : notification.type === "hot-sacrifice"
-                ? "text-indigo-200"
-                : notification.type === "weapon-warning"
-                ? "text-amber-200"
-                : "text-slate-200"
-            }`}
-          >
-            {notification.title}
-          </h3>
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <h3
+              className={`text-sm font-semibold ${
+                notification.type === "success"
+                  ? "text-emerald-200"
+                  : notification.type === "warning"
+                  ? "text-red-200"
+                  : notification.type === "halloween"
+                  ? "text-orange-200"
+                  : notification.type === "hot-sacrifice"
+                  ? "text-indigo-200"
+                  : notification.type === "weapon-warning"
+                  ? "text-amber-200"
+                  : "text-slate-200"
+              }`}
+            >
+              {notification.title}
+            </h3>
+            {isPriority && (
+              <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-200 ring-1 ring-amber-400/40">
+                Priority
+              </span>
+            )}
+          </div>
           <div
             className={`text-xs leading-relaxed ${
               notification.type === "success"
@@ -118,7 +156,10 @@ export function NotificationCard({
               {notification.actions.map((action, index) => (
                 <button
                   key={index}
-                  onClick={action.action}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    action.action();
+                  }}
                   className={`text-xs px-2 py-1 rounded-md font-medium transition-colors ${
                     notification.type === "hot-sacrifice"
                       ? "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30"

@@ -16,7 +16,7 @@ export function MaintenanceNotice() {
     <Link
       href="/recipes"
       className={`
-        relative z-10 mx-auto block w-full max-w-xl cursor-pointer overflow-hidden rounded-xl
+        relative z-10 block w-full cursor-pointer overflow-hidden rounded-xl
         border border-sky-500/60 bg-gradient-to-br
         from-sky-400/20 via-slate-950/85 to-slate-950/95 px-4 py-3 text-left
         shadow-[0_18px_30px_-20px_rgba(0,0,0,0.8)]
