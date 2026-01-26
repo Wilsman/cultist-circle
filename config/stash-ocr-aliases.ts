@@ -12,7 +12,7 @@ export const STASH_OCR_ALIASES: Record<string, string> = {
   FIREKLEA: "FIREKLEAN",
   FIREKLEAN: "FIREKLEAN",
   RLASH: "FLASHDRIVE",
-  PAPAPAR: "PARACORD",
+  // PAPAPAR: "PARACORD", // Removed - causes false positives
   RFILTER: "WFILTER",
   HE: "HELIX",
   HOSEL: "HOSE",
@@ -96,7 +96,33 @@ export const STASH_OCR_ALIASES: Record<string, string> = {
   PLEXIGLA: "PLEXIGLASS",
   TOOLSE: "TOOLSET",
   REPELLEN: "REPELLENT",
-  DUCTTAP: "DUCTTAPE",
-  POWERBA: "POWERBANK",
-  POWERB: "POWERBANK",
+
+  // OCR misreads from screenshot2.png testing
+  MFO: "MFD", // MFD misread as MFO
+  RGW: "PGW", // PGW misread as RGW
+  DUCTYTAPE: "DUCTTAPE", // Duct tape misread
+  DUCKTAPE: "DUCTTAPE",
+  VEX: "VPX", // VPX misread as VEX
+  RLASHDRIV: "FLASHDRIVE", // Flash drive misread
+  BAKEZY: "BAKEEZY", // BakeEzy variations
+  BAKEEY: "BAKEEZY",
+  LOOTORD: "LOOTLORD",
+  DRLUPOSS: "DRLUPOS",
+  T0PLUG: "TPLUG", // T-Plug with zero instead of hyphen
+  SCREW: "SCREWS",
+  PFLLTER: "PFILTER", // PFilter misreads
+  PFLITER: "PFILTER",
+  PLIER: "PLIERS", // Pliers misreads
+  PLLERS: "PLIERS",
+  PILERS: "PLIERS",
+
+  // Additional misreads found in testing
+  SVRED: "SMT", // SMT misread as SVRED
+
+  // Loot Lord - OCR splits into two words
+  LOOT: "LOOTLORD",
+  LORD: "LOOTLORD",
+
+  // Additional misreads from website testing
+  SCNPEWS: "SCREWS",
 };

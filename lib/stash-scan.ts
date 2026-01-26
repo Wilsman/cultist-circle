@@ -26,6 +26,7 @@ export interface ComboResult {
 }
 
 const DEFAULT_MIN_TOKEN_LENGTH = 2;
+const MIN_FUZZY_TOKEN_LENGTH = 4; // Require longer tokens for fuzzy matching
 const MAX_POOL_SIZE = 120;
 
 export function normalizeOcrLabel(input: string): string {
@@ -64,7 +65,7 @@ function buildItemIndexes(items: SimplifiedItem[]) {
 
   const fuse = new Fuse(searchItems, {
     keys: ["normalizedShortName", "normalizedName", "shortName", "name"],
-    threshold: 0.28,
+    threshold: 0.18, // Tightened from 0.28 to reduce false positives
     includeScore: true,
   });
 
@@ -90,14 +91,17 @@ export function createOcrMatcher(items: SimplifiedItem[]) {
       return { item: exact, score: 0, method: "exact", normalized };
     }
 
-    const fuzzy = fuse.search(normalizedLookup, { limit: 1 })[0];
-    if (fuzzy) {
-      return {
-        item: fuzzy.item.item as SimplifiedItem,
-        score: fuzzy.score ?? 1,
-        method: "fuzzy",
-        normalized,
-      };
+    // Only allow fuzzy matching for longer tokens to avoid false positives
+    if (normalizedLookup.length >= MIN_FUZZY_TOKEN_LENGTH) {
+      const fuzzy = fuse.search(normalizedLookup, { limit: 1 })[0];
+      if (fuzzy && (fuzzy.score ?? 1) <= 0.18) {
+        return {
+          item: fuzzy.item.item as SimplifiedItem,
+          score: fuzzy.score ?? 1,
+          method: "fuzzy",
+          normalized,
+        };
+      }
     }
 
     return { score: 1, method: "none", normalized };
@@ -106,7 +110,7 @@ export function createOcrMatcher(items: SimplifiedItem[]) {
 
 export function matchOcrTokensToItems(
   tokens: string[],
-  items: SimplifiedItem[]
+  items: SimplifiedItem[],
 ): OcrMatchResult {
   const matchToken = createOcrMatcher(items);
   const matched = new Map<string, number>();
@@ -131,7 +135,7 @@ export function matchOcrTokensToItems(
 export function buildInventoryCounts(
   items: SimplifiedItem[],
   matched: Map<string, number>,
-  manualCounts: Record<string, number>
+  manualCounts: Record<string, number>,
 ): InventoryItemCount[] {
   const itemsById = new Map(items.map((item) => [item.id, item]));
   const inventory: InventoryItemCount[] = [];
@@ -160,7 +164,7 @@ export function buildInventoryCounts(
 
 function expandInventory(
   inventory: InventoryItemCount[],
-  maxItems: number
+  maxItems: number,
 ): SimplifiedItem[] {
   const expanded: SimplifiedItem[] = [];
   for (const { item, count } of inventory) {
@@ -185,7 +189,7 @@ function trimPool(items: SimplifiedItem[]): SimplifiedItem[] {
 export function pickOptimalCombo(
   inventory: InventoryItemCount[],
   threshold: number,
-  maxItems: number
+  maxItems: number,
 ): ComboResult | null {
   if (inventory.length === 0) return null;
   if (maxItems <= 0) return null;

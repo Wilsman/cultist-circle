@@ -176,15 +176,20 @@ function applyConvolution(
  */
 function parseRawTextToTokens(rawText: string): string[] {
   // Split by common delimiters found in OCR output
-  return rawText
-    .split(/[\s|,\[\](){}]+/)
-    .map((t) =>
-      t
-        .trim()
-        .replace(/[:.#@]+$/, "")
-        .replace(/^[:.#@]+/, ""),
-    )
-    .filter((t) => t.length >= 2 && /^[A-Za-z]/.test(t));
+  return (
+    rawText
+      .split(/[\s|,\[\](){}]+/)
+      .map((t) =>
+        t
+          .trim()
+          .replace(/[:.#@]+$/, "")
+          .replace(/^[:.#@]+/, ""),
+      )
+      // Allow tokens starting with letters OR digits (for items like 1GPhone)
+      .filter(
+        (t) => t.length >= 2 && /^[A-Za-z0-9]/.test(t) && /[A-Za-z]/.test(t),
+      )
+  );
 }
 
 /**
