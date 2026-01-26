@@ -11,7 +11,8 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "add-recipe": "bun tools/add-recipe.ts"
+    "add-recipe": "bun tools/add-recipe.ts",
+    "evals": "bun tools/ocr-eval.ts screenshot1.png screenshot2.png --gt-map data/stash-scan-ground-truth-map.json --conf 40"
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.9",
@@ -57,8 +58,8 @@
     "framer-motion": "^11.18.2",
     "fuse.js": "^7.1.0",
     "harden-react-markdown": "^1.0.4",
-    "json5": "^2.2.3",
     "js-cookie": "^3.0.5",
+    "json5": "^2.2.3",
     "katex": "^0.16.22",
     "lucide-react": "^0.441.0",
     "next": "^15.1.0",
@@ -74,10 +75,12 @@
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
+    "sharp": "^0.34.5",
     "sonner": "^2.0.7",
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "tesseract.js": "^7.0.0",
     "use-stick-to-bottom": "^1.1.1",
     "zod": "^3.25.76",
     "zustand": "^5.0.3"
