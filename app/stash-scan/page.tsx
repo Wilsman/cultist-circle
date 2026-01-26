@@ -3,17 +3,34 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useItemsData } from "@/hooks/use-items-data";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import ThresholdSelector from "@/components/ui/threshold-selector";
-import { TextSwitch } from "@/components/ui/text-switch";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ModeThreshold } from "@/components/mode-threshold";
 import {
   buildInventoryCounts,
   matchOcrTokensToItems,
   pickOptimalCombo,
 } from "@/lib/stash-scan";
-import { Loader2, ScanText, Trash2, Wand2, Zap } from "lucide-react";
-import { autoTuneOcr, quickScan } from "@/lib/ocr-utils";
+import {
+  ChevronDown,
+  ImagePlus,
+  Loader2,
+  Minus,
+  Plus,
+  Search,
+  Settings2,
+  Shuffle,
+  Trash2,
+  Upload,
+  Wand2,
+  X,
+  Zap,
+} from "lucide-react";
+import { quickScan } from "@/lib/ocr-utils";
 import { createOcrMatcher as createItemMatcher } from "@/lib/stash-scan";
 
 type UnmatchedEntry = {
@@ -50,8 +67,6 @@ export default function StashScanPage() {
     "idle" | "running" | "done" | "error"
   >("idle");
   const [ocrProgress, setOcrProgress] = useState<number>(0);
-  const [ocrPreset, setOcrPreset] = useState<string>("");
-  const [autoTuning, setAutoTuning] = useState<boolean>(false);
   const [ocrText, setOcrText] = useState<string>("");
   const [ocrLines, setOcrLines] = useState<OcrLineMatch[]>([]);
   const [matchedResult, setMatchedResult] = useState<ReturnType<
@@ -64,14 +79,17 @@ export default function StashScanPage() {
   const [threshold, setThreshold] = useState<number>(400000);
   const [maxItems, setMaxItems] = useState<number>(5);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
-  const [overlayReady, setOverlayReady] = useState<boolean>(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [shuffleSeed, setShuffleSeed] = useState(0);
   const previewImageRef = useRef<HTMLImageElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [imageSize, setImageSize] = useState<{
     naturalWidth: number;
     naturalHeight: number;
     renderedWidth: number;
     renderedHeight: number;
   } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (!file) {
@@ -96,31 +114,37 @@ export default function StashScanPage() {
     setSelectedLineId(null);
   };
 
-  // Create a matcher function that counts how many tokens match items
-  const countMatches = (tokens: string[]): number => {
-    if (!items) return 0;
-    const matcher = createItemMatcher(items);
-    let count = 0;
-    for (const token of tokens) {
-      const result = matcher(token);
-      if (
-        result.method === "exact" ||
-        (result.method === "fuzzy" && result.score <= 0.22)
-      ) {
-        count++;
-      }
+  // Auto-scan when file is uploaded and items are ready
+  useEffect(() => {
+    if (file && items && ocrStatus === "idle") {
+      runQuickScan();
     }
-    return count;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file, items]);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile?.type.startsWith("image/")) {
+      handleFileChange(droppedFile);
+    }
   };
 
-  // Quick scan with default settings
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
   const runQuickScan = async () => {
     if (!file || !items) return;
 
     setOcrStatus("running");
     setOcrProgress(0);
-    setOcrPreset("Quick Scan");
-    setAutoTuning(false);
     setOcrLines([]);
     setMatchedResult(null);
     setUnmatchedEntries([]);
@@ -138,43 +162,6 @@ export default function StashScanPage() {
     }
   };
 
-  // Auto-tune scan that tries multiple presets
-  const runAutoTuneScan = async () => {
-    if (!file || !items) return;
-
-    setOcrStatus("running");
-    setOcrProgress(0);
-    setAutoTuning(true);
-    setOcrLines([]);
-    setMatchedResult(null);
-    setUnmatchedEntries([]);
-
-    try {
-      const imageUrl = URL.createObjectURL(file);
-
-      const result = await autoTuneOcr(
-        imageUrl,
-        countMatches,
-        (preset, total, progress) => {
-          setOcrPreset(`Trying preset ${preset}/${total}`);
-          setOcrProgress(progress);
-        },
-      );
-
-      URL.revokeObjectURL(imageUrl);
-
-      setOcrPreset(`Best: ${result.matchedCount} items matched`);
-      processOcrResult(result.words, result.text);
-      setOcrStatus("done");
-      setAutoTuning(false);
-    } catch (error) {
-      setOcrStatus("error");
-      setAutoTuning(false);
-      console.error("OCR failed:", error);
-    }
-  };
-
-  // Process OCR result into lines and matches
   const processOcrResult = (
     words: Array<{
       text: string;
@@ -197,12 +184,10 @@ export default function StashScanPage() {
         bbox: w.bbox,
       }));
 
-    // Match tokens to items
     const tokens = lines.map((l) => l.text);
     const matchResult = matchOcrTokensToItems(tokens, items);
     setMatchedResult(matchResult);
 
-    // Update lines with match info using the matcher
     const matcher = createItemMatcher(items);
     const updatedLines = lines.map((line) => {
       const result = matcher(line.text);
@@ -222,7 +207,6 @@ export default function StashScanPage() {
 
     setOcrLines(updatedLines);
 
-    // Create unmatched entries (filter out very short tokens)
     const unmatchedTokens = matchResult.unmatched
       .filter((token) => token.length >= 3)
       .map((token, idx) => ({
@@ -243,17 +227,7 @@ export default function StashScanPage() {
       renderedWidth: img.width,
       renderedHeight: img.height,
     });
-    setOverlayReady(true);
   };
-
-  const ocrStatusLabel = {
-    idle: "Ready",
-    running: "Scanning",
-    done: "Complete",
-    error: "Failed",
-  }[ocrStatus];
-
-  const showHighlights = ocrLines.length > 0;
 
   const scaledLines = useMemo(() => {
     if (!imageSize || !previewImageRef.current) return [];
@@ -261,7 +235,6 @@ export default function StashScanPage() {
     const scaleX = imageSize.renderedWidth / imageSize.naturalWidth;
     const scaleY = imageSize.renderedHeight / imageSize.naturalHeight;
 
-    // Only include lines that have valid bounding boxes (not null/placeholder)
     return ocrLines
       .filter(
         (line) =>
@@ -281,7 +254,6 @@ export default function StashScanPage() {
   }, [imageSize, ocrLines]);
 
   const getConfidenceClass = (confidence: number) => {
-    // Outline-only styling (no fill)
     if (confidence >= 0.8) return "border-2 border-emerald-400";
     if (confidence >= 0.6) return "border-2 border-amber-400";
     if (confidence >= 0.4) return "border-2 border-rose-400";
@@ -297,30 +269,90 @@ export default function StashScanPage() {
       manualCounts,
     );
 
+    // Shuffle inventory order based on seed to get different combos
+    if (shuffleSeed > 0) {
+      const shuffled = [...inventory];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(
+          (((shuffleSeed * (i + 1) * 9301 + 49297) % 233280) / 233280) *
+            (i + 1),
+        );
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return pickOptimalCombo(shuffled, threshold, maxItems);
+    }
+
     return pickOptimalCombo(inventory, threshold, maxItems);
-  }, [matchedResult, items, manualCounts, threshold, maxItems]);
+  }, [matchedResult, items, manualCounts, threshold, maxItems, shuffleSeed]);
 
   const selectedLine = ocrLines.find((line) => line.id === selectedLineId);
   const [selectedOverride, setSelectedOverride] = useState<string>("");
-  const [manualAddItem, setManualAddItem] = useState<string>("");
+  const [itemSearchQuery, setItemSearchQuery] = useState<string>("");
+  const [showItemSearch, setShowItemSearch] = useState(false);
 
-  // Function to manually add an item to inventory
-  const handleManualAddItem = () => {
-    if (!manualAddItem) return;
+  const handleAddItem = (itemId: string) => {
+    if (!itemId) return;
 
     setMatchedResult((prev) => {
       if (!prev) {
         const newMatched = new Map<string, number>();
-        newMatched.set(manualAddItem, 1);
+        newMatched.set(itemId, 1);
         return { matched: newMatched, unmatched: [] };
       }
       const newMatched = new Map(prev.matched);
-      newMatched.set(manualAddItem, (newMatched.get(manualAddItem) ?? 0) + 1);
+      newMatched.set(itemId, (newMatched.get(itemId) ?? 0) + 1);
       return { ...prev, matched: newMatched };
     });
 
-    setManualAddItem("");
+    setItemSearchQuery("");
+    setShowItemSearch(false);
   };
+
+  const handleRemoveItem = (itemId: string) => {
+    setMatchedResult((prev) => {
+      if (!prev) return prev;
+      const newMatched = new Map(prev.matched);
+      newMatched.delete(itemId);
+      return { ...prev, matched: newMatched };
+    });
+    setManualCounts((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+  };
+
+  const handleIncrementItem = (itemId: string) => {
+    const item = matchedItems.find((m) => m.item?.id === itemId);
+    if (!item?.item) return;
+    const currentCount = manualCounts[itemId] ?? item.count;
+    setManualCounts((prev) => ({ ...prev, [itemId]: currentCount + 1 }));
+  };
+
+  const handleDecrementItem = (itemId: string) => {
+    const item = matchedItems.find((m) => m.item?.id === itemId);
+    if (!item?.item) return;
+    const currentCount = manualCounts[itemId] ?? item.count;
+    if (currentCount <= 1) {
+      handleRemoveItem(itemId);
+    } else {
+      setManualCounts((prev) => ({ ...prev, [itemId]: currentCount - 1 }));
+    }
+  };
+
+  const filteredSearchItems = useMemo(() => {
+    if (!items || !itemSearchQuery.trim()) return [];
+    const query = itemSearchQuery.toLowerCase();
+    return items
+      .filter(
+        (item) =>
+          item &&
+          item.basePrice != null &&
+          (item.shortName?.toLowerCase().includes(query) ||
+            item.name?.toLowerCase().includes(query)),
+      )
+      .slice(0, 8);
+  }, [items, itemSearchQuery]);
 
   const itemOptions = useMemo(() => {
     if (!items) return [];
@@ -335,7 +367,6 @@ export default function StashScanPage() {
   const applySelectedOverride = () => {
     if (!selectedOverride || !selectedLine) return;
 
-    // Update the line match
     setOcrLines((prev) =>
       prev.map((line) =>
         line.id === selectedLineId
@@ -354,7 +385,6 @@ export default function StashScanPage() {
       ),
     );
 
-    // Also update matchedResult to include this item
     setMatchedResult((prev) => {
       if (!prev) {
         const newMatched = new Map<string, number>();
@@ -371,16 +401,6 @@ export default function StashScanPage() {
 
     setSelectedOverride("");
     setSelectedLineId(null);
-  };
-
-  const handleManualCountChange = (itemId: string, value: string) => {
-    const count = Number(value);
-    if (!Number.isFinite(count) || count < 0) return;
-
-    setManualCounts((prev) => ({
-      ...prev,
-      [itemId]: count,
-    }));
   };
 
   const matchedItems = useMemo(() => {
@@ -403,7 +423,6 @@ export default function StashScanPage() {
     const entry = unmatchedEntries.find((e) => e.id === entryId);
     if (!entry || !entry.assignedItemId) return;
 
-    // Add to matchedResult so it shows in combo calculation
     setMatchedResult((prev) => {
       if (!prev) {
         const newMatched = new Map<string, number>();
@@ -415,468 +434,614 @@ export default function StashScanPage() {
         entry.assignedItemId,
         (newMatched.get(entry.assignedItemId) ?? 0) + 1,
       );
-      // Remove from unmatched list in result
       const newUnmatched = prev.unmatched.filter((t) => t !== entry.token);
       return { matched: newMatched, unmatched: newUnmatched };
     });
 
-    // Remove from unmatched entries UI
     setUnmatchedEntries((prev) => prev.filter((e) => e.id !== entryId));
   };
 
+  const matchedCount = matchedResult?.matched.size ?? 0;
+  const totalValue = combo?.total ?? 0;
+  const meetsThreshold = totalValue >= threshold;
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#1a1f23,_#0b0e0f_45%)] text-slate-100">
-      <div className="mx-auto max-w-7xl px-4 pb-12 pt-8 space-y-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-amber-300/80">
-              <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1">
-                Items OCR
-              </span>
-              <span className="text-slate-500">Stash capture pipeline</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-semibold text-slate-100">
-              Stash Screenshot Scan
-            </h1>
-            <p className="text-sm text-slate-400 max-w-2xl">
-              Upload a stash screenshot, extract item labels, and assemble the
-              best combo to hit your ritual threshold. OCR is best-effort - you
-              can correct mismatches below.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/60 px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
-            <div className="text-xs text-slate-400">Mode</div>
-            <TextSwitch
-              checked={isPVE}
-              onCheckedChange={(value) => setIsPVE(Boolean(value))}
-              labelLeft="PVP"
-              labelRight="PVE"
-              rootClassName="h-9 w-24"
-              thumbClassName="h-7 w-10"
-            />
-            <div className="hidden h-9 w-px bg-slate-700/60 sm:block" />
-            <ThresholdSelector value={threshold} onChange={setThreshold} />
-          </div>
+      <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
+        {/* Header - Minimal */}
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-semibold text-slate-100">Stash Scan</h1>
+          <p className="text-sm text-slate-400">
+            Upload a screenshot → Get optimal ritual combo
+          </p>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.35fr,0.65fr]">
-          <Card className="bg-slate-900/70 border-slate-800/80 shadow-[0_30px_60px_rgba(0,0,0,0.45)]">
-            <CardHeader className="space-y-3 border-b border-slate-800/60">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <CardTitle className="text-lg">Stash OCR Console</CardTitle>
-                  <p className="text-xs text-slate-400">
-                    Best results: 1920x1080, UI scale 100%, stash fully visible.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                  <span
-                    className={`rounded-full border px-2.5 py-1 uppercase tracking-[0.2em] ${
-                      ocrStatus === "running"
-                        ? "border-emerald-400/50 bg-emerald-500/10 text-emerald-200"
-                        : ocrStatus === "error"
-                          ? "border-rose-400/50 bg-rose-500/10 text-rose-200"
-                          : "border-slate-600/60 bg-slate-900/70 text-slate-400"
-                    }`}
-                  >
-                    {ocrStatusLabel}
-                  </span>
-                  {unmatchedEntries.length > 0 && (
-                    <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-amber-200">
-                      {unmatchedEntries.length} unmatched
-                    </span>
-                  )}
-                </div>
+        {/* Mode/Threshold Controls - Compact pill */}
+        <div className="flex justify-center">
+          <ModeThreshold
+            isPVE={isPVE}
+            onModeToggle={(val) => setIsPVE(val)}
+            threshold={threshold}
+            onThresholdChange={setThreshold}
+          />
+        </div>
+
+        {/* Hero Upload Zone */}
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => !file && fileInputRef.current?.click()}
+          className={`relative rounded-2xl border-2 border-dashed transition-all duration-200 ${
+            isDragging
+              ? "border-emerald-400 bg-emerald-500/10"
+              : file
+                ? "border-slate-700 bg-slate-900/50"
+                : "border-slate-700 bg-slate-900/30 hover:border-slate-600 hover:bg-slate-900/50 cursor-pointer"
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+            className="hidden"
+          />
+
+          {!file ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="rounded-full bg-slate-800/60 p-4 mb-4">
+                <ImagePlus className="h-8 w-8 text-slate-400" />
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) =>
-                    handleFileChange(event.target.files?.[0] ?? null)
-                  }
-                  className="bg-slate-950 border-slate-800 text-slate-200"
+              <p className="text-slate-300 font-medium mb-1">
+                Drop stash screenshot here
+              </p>
+              <p className="text-xs text-slate-500">or click to browse</p>
+            </div>
+          ) : (
+            <div className="p-3">
+              {/* Image Preview with Overlays */}
+              <div className="relative overflow-hidden rounded-xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  ref={previewImageRef}
+                  src={previewUrl!}
+                  alt="Stash preview"
+                  className="w-full rounded-xl"
+                  onLoad={handleImageLoaded}
                 />
-                <Button
-                  onClick={runQuickScan}
-                  disabled={!file || isLoading || ocrStatus === "running"}
-                  className="bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/30"
-                >
-                  {ocrStatus === "running" && !autoTuning ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Scanning {ocrProgress}%
-                    </>
-                  ) : (
-                    <>
-                      <ScanText className="mr-2 h-4 w-4" />
-                      Quick Scan
-                    </>
+                {imageSize &&
+                  scaledLines.map(
+                    ({ line, left, top, width, height, confidence }) => (
+                      <button
+                        key={line.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedLineId(line.id);
+                        }}
+                        className={`absolute rounded bg-transparent ${getConfidenceClass(
+                          confidence,
+                        )} ${selectedLineId === line.id ? "ring-2 ring-blue-400/80" : ""}`}
+                        style={{ left, top, width, height }}
+                        title={`${line.text} -> ${line.match?.label ?? "Unmatched"}`}
+                      />
+                    ),
                   )}
-                </Button>
-                <Button
-                  onClick={runAutoTuneScan}
-                  disabled={!file || isLoading || ocrStatus === "running"}
-                  className="bg-amber-500/20 text-amber-200 border border-amber-500/30 hover:bg-amber-500/30"
-                >
-                  {ocrStatus === "running" && autoTuning ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {ocrPreset || `${ocrProgress}%`}
-                    </>
+              </div>
+
+              {/* Scan Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+                <div className="flex flex-wrap gap-2">
+                  {ocrStatus === "running" ? (
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFileChange(null);
+                      }}
+                      size="sm"
+                      className="bg-rose-500/20 text-rose-200 border border-rose-500/30 hover:bg-rose-500/30"
+                    >
+                      <X className="mr-1.5 h-3.5 w-3.5" />
+                      Cancel
+                    </Button>
                   ) : (
-                    <>
-                      <Zap className="mr-2 h-4 w-4" />
-                      Auto-Tune
-                    </>
+                    <Button
+                      onClick={runQuickScan}
+                      disabled={isLoading}
+                      size="sm"
+                      className="bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/30"
+                    >
+                      <Zap className="mr-1.5 h-3.5 w-3.5" />
+                      Scan Again
+                    </Button>
                   )}
-                </Button>
-                {file && (
+                </div>
+                {ocrStatus === "running" && (
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Scanning... {ocrProgress}%</span>
+                  </div>
+                )}
+                {ocrStatus !== "running" && (
                   <Button
                     variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFileChange(null);
+                    }}
                     className="text-slate-400 hover:text-slate-200"
-                    onClick={() => handleFileChange(null)}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                     Clear
                   </Button>
                 )}
               </div>
-              {!overlayReady && showHighlights && ocrStatus === "done" && (
-                <div className="text-xs text-slate-500">
-                  Rendering overlays...
+            </div>
+          )}
+        </div>
+
+        {/* Result Card - Only shows after scan */}
+        {ocrStatus === "done" &&
+          combo &&
+          (() => {
+            // Group duplicate items
+            const groupedItems = combo.items.reduce(
+              (acc, item) => {
+                if (!item) return acc;
+                const existing = acc.find((g) => g.item.id === item.id);
+                if (existing) {
+                  existing.count++;
+                } else {
+                  acc.push({ item, count: 1 });
+                }
+                return acc;
+              },
+              [] as {
+                item: NonNullable<(typeof combo.items)[0]>;
+                count: number;
+              }[],
+            );
+
+            // Calculate estimated cost (sum of lastLowPrice for all items)
+            const estCost = combo.items.reduce((sum, item) => {
+              if (!item) return sum;
+              return sum + (item.lastLowPrice ?? item.basePrice ?? 0);
+            }, 0);
+
+            return (
+              <div
+                className={`rounded-2xl border p-5 transition-all ${
+                  meetsThreshold
+                    ? "border-emerald-500/30 bg-emerald-500/10"
+                    : "border-amber-500/30 bg-amber-500/10"
+                }`}
+              >
+                {/* Header with value comparison */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <div className="text-xs text-slate-400 mb-1">
+                        Base Value
+                      </div>
+                      <span
+                        className={`text-3xl font-bold ${meetsThreshold ? "text-emerald-300" : "text-amber-300"}`}
+                      >
+                        ₽{totalValue.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-2xl text-slate-600">/</div>
+                    <div>
+                      <div className="text-xs text-slate-400 mb-1">
+                        Threshold
+                      </div>
+                      <span className="text-2xl font-semibold text-slate-400">
+                        ₽{threshold.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">
+                      {matchedCount} in inventory
+                    </span>
+                    <span
+                      className={`text-xs px-3 py-1.5 rounded-full font-medium ${
+                        meetsThreshold
+                          ? "bg-emerald-500/20 text-emerald-200 border border-emerald-500/30"
+                          : "bg-amber-500/20 text-amber-200 border border-amber-500/30"
+                      }`}
+                    >
+                      {meetsThreshold ? "✓ Threshold met" : "Below threshold"}
+                    </span>
+                  </div>
                 </div>
-              )}
-              {hasError && (
-                <p className="text-sm text-rose-400">
-                  Failed to load item list. Try refreshing.
-                </p>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {previewUrl ? (
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-2">
-                  <div className="relative overflow-hidden rounded-xl border border-slate-900">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      ref={previewImageRef}
-                      src={previewUrl}
-                      alt="Stash preview"
-                      className="w-full rounded-xl"
-                      onLoad={handleImageLoaded}
-                    />
-                    {imageSize &&
-                      scaledLines.map(
-                        ({ line, left, top, width, height, confidence }) => (
-                          <button
-                            key={line.id}
-                            type="button"
-                            onClick={() => setSelectedLineId(line.id)}
-                            className={`absolute rounded bg-transparent ${getConfidenceClass(
-                              confidence,
-                            )} ${selectedLineId === line.id ? "ring-2 ring-blue-400/80" : ""}`}
-                            style={{
-                              left,
-                              top,
-                              width,
-                              height,
-                            }}
-                            title={`${line.text} -> ${line.match?.label ?? "Unmatched"}`}
-                          >
-                            {selectedLineId === line.id && (
-                              <span className="absolute left-0 top-0 translate-y-[-100%] rounded bg-slate-950/80 px-1 py-0.5 text-[10px] text-slate-100">
-                                {line.match?.label ?? "Unmatched"}{" "}
-                                {confidence > 0
-                                  ? `${Math.round(confidence * 100)}%`
-                                  : ""}
+
+                {groupedItems.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-slate-400 uppercase tracking-wider">
+                        Optimal Combo · {combo.items.length} items
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShuffleSeed((s) => s + 1)}
+                        className="h-7 px-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                      >
+                        <Shuffle className="h-3.5 w-3.5 mr-1.5" />
+                        Shuffle
+                      </Button>
+                    </div>
+                    <div className="grid gap-1.5">
+                      {groupedItems.map(({ item, count }) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between rounded-lg bg-slate-900/40 px-3 py-2"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            {item.iconLink && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.iconLink}
+                                alt=""
+                                className="w-7 h-7 rounded object-contain bg-slate-950"
+                              />
+                            )}
+                            <span className="text-sm text-slate-200">
+                              {item.shortName}
+                              {count > 1 && (
+                                <span className="text-emerald-400/80 ml-1.5 font-medium">
+                                  ×{count}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="text-right text-sm">
+                            <span className="text-slate-300">
+                              ₽
+                              {((item.basePrice ?? 0) * count).toLocaleString()}
+                            </span>
+                            {item.lastLowPrice && (
+                              <span className="text-slate-500 ml-2">
+                                (~₽
+                                {(
+                                  (item.lastLowPrice ?? 0) * count
+                                ).toLocaleString()}
+                                )
                               </span>
                             )}
-                          </button>
-                        ),
-                      )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Summary row */}
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-700/30 text-sm">
+                      <span className="text-slate-400">Est. Flea Cost</span>
+                      <span className="text-slate-300 font-medium">
+                        ~₽{estCost.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-                    <span>Overlay boxes: {scaledLines.length}</span>
-                    <span>Hover + click to validate</span>
-                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+        {/* Error State */}
+        {ocrStatus === "error" && (
+          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-center">
+            <p className="text-sm text-rose-200">
+              OCR failed. Try a clearer screenshot.
+            </p>
+          </div>
+        )}
+
+        {hasError && (
+          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-center">
+            <p className="text-sm text-rose-200">
+              Failed to load items. Try refreshing.
+            </p>
+          </div>
+        )}
+
+        {/* Advanced Section - Collapsible */}
+        {ocrStatus === "done" && (
+          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+            <CollapsibleTrigger asChild>
+              <button className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm text-slate-300 hover:bg-slate-900/70 transition-colors">
+                <div className="flex items-center gap-2">
+                  <Settings2 className="h-4 w-4 text-slate-400" />
+                  <span>Advanced Options</span>
+                  {unmatchedEntries.length > 0 && (
+                    <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-200">
+                      {unmatchedEntries.length} unmatched
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-800/70 bg-slate-950/40 p-8 text-center text-sm text-slate-500">
-                  Drop a stash screenshot to preview the OCR overlay.
-                </div>
-              )}
-
-              {ocrStatus === "error" && (
-                <p className="text-sm text-rose-400">
-                  OCR failed. Try a clearer screenshot or re-run the scan.
-                </p>
-              )}
-
-              {ocrText && (
-                <details className="text-xs text-slate-400">
-                  <summary className="cursor-pointer">
-                    Raw OCR output (debug)
-                  </summary>
-                  <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-slate-950/60 p-3 text-[11px] leading-relaxed">
-                    {ocrText}
-                  </pre>
-                </details>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="space-y-6">
-            <Card className="bg-slate-900/70 border-slate-800/80">
-              <CardHeader className="space-y-2 border-b border-slate-800/60">
-                <CardTitle className="text-lg">Tracker Console</CardTitle>
-                <p className="text-xs text-slate-400">
-                  Prioritize the cleanest combo and audit OCR selections.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="rounded-xl border border-slate-800/70 bg-slate-950/60 p-4 space-y-3">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Max items</span>
-                    <span className="text-slate-500">1-5</span>
-                  </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-slate-400 transition-transform ${advancedOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-4">
+              {/* Max Items */}
+              <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Max items</span>
                   <Input
                     type="number"
                     min={1}
                     max={5}
                     value={maxItems}
-                    onChange={(event) => {
-                      const next = Number(event.target.value);
-                      if (!Number.isFinite(next)) return;
-                      setMaxItems(Math.min(5, Math.max(1, next)));
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      if (Number.isFinite(next))
+                        setMaxItems(Math.min(5, Math.max(1, next)));
                     }}
-                    className="w-24 bg-slate-950 border-slate-800 text-slate-200"
+                    className="w-20 h-8 bg-slate-950 border-slate-700 text-slate-200 text-center"
                   />
                 </div>
+              </div>
 
-                {combo && combo.items.length > 0 ? (
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-emerald-100">Total base value</span>
-                      <span className="font-semibold text-emerald-300">
-                        ₽{(combo.total ?? 0).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      {combo.items.map((item, index) => {
-                        if (!item) return null;
-                        return (
-                          <div
-                            key={`${item.id}-${index}`}
-                            className="flex items-center justify-between gap-3"
-                          >
-                            <span className="text-slate-100">
-                              {item.shortName ?? "Unknown"}
-                            </span>
-                            <span className="text-slate-400">
-                              ₽{(item.basePrice ?? 0).toLocaleString()}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
+              {/* Selected Label Override */}
+              {selectedLine && (
+                <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-3">
+                  <div className="text-xs text-slate-400 uppercase tracking-wider">
+                    Selected Label
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-500">
-                    Scan a stash to see suggested items.
-                  </p>
-                )}
+                  <div className="text-sm">
+                    <span className="text-slate-400">OCR: </span>
+                    <span className="text-slate-200">{selectedLine.text}</span>
+                    <span className="text-slate-500 mx-2">→</span>
+                    <span className="text-slate-200">
+                      {selectedLine.match?.label ?? "Unmatched"}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedOverride}
+                      onChange={(e) => setSelectedOverride(e.target.value)}
+                      className="flex-1 h-8 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200"
+                    >
+                      <option value="">Assign item...</option>
+                      {itemOptions.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      size="sm"
+                      onClick={applySelectedOverride}
+                      disabled={!selectedOverride}
+                      className="bg-blue-500/20 text-blue-200 border border-blue-500/30 hover:bg-blue-500/30"
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-                <div className="rounded-xl border border-slate-800/70 bg-slate-950/60 p-4 space-y-3">
-                  <div className="text-xs text-slate-400 uppercase tracking-[0.2em]">
-                    Highlighted label
+              {/* Unmatched Labels */}
+              {unmatchedEntries.length > 0 && (
+                <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-3">
+                  <div className="text-xs text-slate-400 uppercase tracking-wider">
+                    Unmatched Labels
                   </div>
-                  {selectedLine ? (
-                    <div className="space-y-3 text-xs text-slate-400">
-                      <div>
-                        OCR token:{" "}
-                        <span className="text-slate-200 font-semibold">
-                          {selectedLine.text}
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {unmatchedEntries.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <span className="text-slate-400 min-w-[80px] truncate">
+                          {entry.token}
                         </span>
-                      </div>
-                      <div>
-                        Match:{" "}
-                        <span className="text-slate-200 font-semibold">
-                          {selectedLine.match?.label ?? "Unmatched"}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <select
-                          value={selectedOverride}
-                          onChange={(event) =>
-                            setSelectedOverride(event.target.value)
+                          value={entry.assignedItemId}
+                          onChange={(e) =>
+                            setUnmatchedEntries((prev) =>
+                              prev.map((item) =>
+                                item.id === entry.id
+                                  ? { ...item, assignedItemId: e.target.value }
+                                  : item,
+                              ),
+                            )
                           }
-                          className="h-9 rounded-md border border-slate-800 bg-slate-950 px-2 text-xs text-slate-200"
+                          className="flex-1 h-7 rounded border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200"
                         >
-                          <option value="">Assign item...</option>
-                          {itemOptions.map((option) => (
-                            <option key={option.id} value={option.id}>
-                              {option.label}
+                          <option value="">Match...</option>
+                          {itemOptions.map((opt) => (
+                            <option key={opt.id} value={opt.id}>
+                              {opt.label}
                             </option>
                           ))}
                         </select>
                         <Button
                           size="sm"
-                          onClick={applySelectedOverride}
-                          disabled={!selectedOverride}
-                          className="bg-blue-500/20 text-blue-200 border border-blue-500/30 hover:bg-blue-500/30"
+                          onClick={() => handleAssignUnmatched(entry.id)}
+                          disabled={!entry.assignedItemId}
+                          className="h-7 px-2 bg-slate-700/50 text-slate-300 hover:bg-slate-700"
                         >
-                          Add +1
+                          <Wand2 className="h-3 w-3" />
                         </Button>
                       </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-500">
-                      Click a highlighted label to inspect or correct it.
-                    </p>
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              )}
 
-        <Card className="bg-slate-900/70 border-slate-800/80">
-          <CardHeader className="space-y-2 border-b border-slate-800/60">
-            <CardTitle className="text-lg">Inventory Tracker</CardTitle>
-            <p className="text-xs text-slate-400">
-              Adjust counts or add unmatched labels to improve accuracy.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Manual item addition */}
-            <div className="rounded-xl border border-slate-800/70 bg-slate-950/60 p-4 space-y-3">
-              <div className="text-xs text-slate-400 uppercase tracking-[0.2em]">
-                Add item manually
+              {/* Raw OCR Debug */}
+              {ocrText && (
+                <details className="text-xs text-slate-400">
+                  <summary className="cursor-pointer hover:text-slate-300">
+                    Raw OCR output
+                  </summary>
+                  <pre className="mt-2 max-h-32 overflow-auto rounded-lg bg-slate-950/60 p-3 text-[11px]">
+                    {ocrText}
+                  </pre>
+                </details>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Inventory Section - Always visible when items exist */}
+        {(matchedItems.length > 0 || ocrStatus === "done") && (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-slate-300">
+                <Upload className="h-4 w-4 text-slate-400" />
+                <span>Inventory ({matchedItems.length} items)</span>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <select
-                  value={manualAddItem}
-                  onChange={(e) => setManualAddItem(e.target.value)}
-                  className="flex-1 h-9 rounded-md border border-slate-800 bg-slate-950 px-2 text-xs text-slate-200"
-                >
-                  <option value="">Select item to add...</option>
-                  {itemOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+              {matchedItems.length > 0 && (
                 <Button
+                  variant="ghost"
                   size="sm"
-                  onClick={handleManualAddItem}
-                  disabled={!manualAddItem}
-                  className="bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/30"
+                  onClick={() => {
+                    setMatchedResult(null);
+                    setManualCounts({});
+                  }}
+                  className="h-7 text-xs text-slate-400 hover:text-slate-200"
                 >
-                  Add Item
+                  Clear all
                 </Button>
-              </div>
+              )}
             </div>
 
-            {matchedItems.length === 0 ? (
-              <p className="text-xs text-slate-500">
-                No matched items yet. Run a scan or add items manually.
-              </p>
-            ) : (
-              <div className="grid gap-3 lg:grid-cols-2">
-                {matchedItems.map(({ item, count }) => {
-                  if (!item) return null;
-                  const displayCount = manualCounts[item.id] ?? count;
-                  return (
-                    <div
+            {/* Search to Add Item */}
+            <div className="relative">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <input
+                  type="text"
+                  value={itemSearchQuery}
+                  onChange={(e) => {
+                    setItemSearchQuery(e.target.value);
+                    setShowItemSearch(true);
+                  }}
+                  onFocus={() => setShowItemSearch(true)}
+                  placeholder="Search items to add..."
+                  className="w-full h-10 pl-10 pr-4 rounded-lg border border-slate-700 bg-slate-950 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+                />
+                {itemSearchQuery && (
+                  <button
+                    onClick={() => {
+                      setItemSearchQuery("");
+                      setShowItemSearch(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Search Results Dropdown */}
+              {showItemSearch && filteredSearchItems.length > 0 && (
+                <div className="absolute z-20 w-full mt-1 rounded-lg border border-slate-700 bg-slate-900 shadow-xl max-h-64 overflow-y-auto">
+                  {filteredSearchItems.map((item) => (
+                    <button
                       key={item.id}
-                      className="flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-950/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+                      onClick={() => handleAddItem(item.id)}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-800 transition-colors text-left"
                     >
-                      <div>
-                        <div className="text-sm text-slate-200">
+                      {item.iconLink && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.iconLink}
+                          alt=""
+                          className="w-8 h-8 rounded object-contain bg-slate-950"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-slate-200 truncate">
                           {item.shortName}
                         </div>
                         <div className="text-xs text-slate-500">
                           ₽{(item.basePrice ?? 0).toLocaleString()}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Input
-                          type="number"
-                          min={0}
-                          value={displayCount}
-                          onChange={(event) =>
-                            handleManualCountChange(item.id, event.target.value)
-                          }
-                          className="w-20 bg-slate-950 border-slate-800 text-slate-200"
+                      <Plus className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Item Grid - 2 columns */}
+            {matchedItems.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {matchedItems.map(({ item, count }) =>
+                  item ? (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/50 p-2"
+                    >
+                      {/* Item Icon */}
+                      {item.iconLink && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.iconLink}
+                          alt=""
+                          className="w-10 h-10 rounded object-contain bg-slate-900 flex-shrink-0"
                         />
-                        <span className="text-xs text-slate-500">detected</span>
+                      )}
+
+                      {/* Item Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-slate-200 truncate">
+                          {item.shortName}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          ₽{(item.basePrice ?? 0).toLocaleString()}
+                        </div>
+                      </div>
+
+                      {/* Count Controls */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => handleDecrementItem(item.id)}
+                          className="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="w-8 text-center text-sm text-slate-200 font-medium">
+                          {manualCounts[item.id] ?? count}
+                        </span>
+                        <button
+                          onClick={() => handleIncrementItem(item.id)}
+                          className="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="w-7 h-7 rounded bg-rose-500/20 hover:bg-rose-500/30 flex items-center justify-center text-rose-300 transition-colors ml-1"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
-                <div className="lg:col-span-2">
-                  <Button
-                    variant="ghost"
-                    className="text-slate-400 hover:text-slate-200"
-                    onClick={() => setManualCounts({})}
-                  >
-                    Reset manual counts
-                  </Button>
-                </div>
+                  ) : null,
+                )}
               </div>
             )}
 
-            {unmatchedEntries.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-200">
-                  Unmatched labels
-                </h3>
-                {unmatchedEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="text-xs text-slate-400">{entry.token}</div>
-                    <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                      <select
-                        value={entry.assignedItemId}
-                        onChange={(event) =>
-                          setUnmatchedEntries((prev) =>
-                            prev.map((item) =>
-                              item.id === entry.id
-                                ? {
-                                    ...item,
-                                    assignedItemId: event.target.value,
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                        className="h-9 rounded-md border border-slate-800 bg-slate-950 px-2 text-xs text-slate-200"
-                      >
-                        <option value="">Match item…</option>
-                        {itemOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <Button
-                        size="sm"
-                        onClick={() => handleAssignUnmatched(entry.id)}
-                        disabled={!entry.assignedItemId}
-                        className="bg-blue-500/20 text-blue-200 border border-blue-500/30 hover:bg-blue-500/30"
-                      >
-                        <Wand2 className="mr-2 h-3.5 w-3.5" />
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {matchedItems.length === 0 && (
+              <p className="text-center text-sm text-slate-500 py-4">
+                No items found. Search above to add items manually.
+              </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        )}
+
+        {/* Footer hint */}
+        <p className="text-center text-xs text-slate-500">
+          Best results: 1920×1080, UI scale 100%, stash fully visible
+        </p>
       </div>
     </div>
   );
