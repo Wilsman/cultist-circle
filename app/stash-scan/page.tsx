@@ -58,6 +58,59 @@ type OcrLineMatch = {
 
 const MAX_OVERLAY_LINES = 120;
 
+// Cool shuffle button with loading animation
+function ShuffleButton({
+  isShuffling,
+  onClick,
+}: {
+  isShuffling: boolean;
+  onClick: () => void;
+}) {
+  const [dots, setDots] = useState("");
+
+  useEffect(() => {
+    if (!isShuffling) {
+      setDots("");
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
+    }, 400);
+
+    return () => clearInterval(interval);
+  }, [isShuffling]);
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={isShuffling}
+      className={`
+        group relative h-8 px-4 rounded-full overflow-hidden text-xs font-medium
+        bg-gradient-to-r from-violet-600 to-indigo-600
+        hover:from-violet-500 hover:to-indigo-500
+        disabled:opacity-70 disabled:cursor-not-allowed
+        transition-all duration-300 ease-out
+        shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50
+        hover:scale-105 active:scale-95
+        text-white
+        border border-white/10
+      `}
+    >
+      {/* Shimmer effect */}
+      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_ease-in-out]" />
+
+      {/* Content */}
+      <span className="relative flex items-center gap-2">
+        <Shuffle
+          className={`h-3.5 w-3.5 transition-all duration-500 ${isShuffling ? "animate-spin" : "group-hover:rotate-180"}`}
+        />
+        <span>{isShuffling ? `Shuffling${dots}` : "Shuffle"}</span>
+      </span>
+    </button>
+  );
+}
+
 // Helper function to check if an item is in the excluded list
 function isItemExcluded(item: SimplifiedItem | null | undefined): boolean {
   if (!item) return false;
@@ -709,21 +762,13 @@ export default function StashScanPage() {
                           );
                         })()}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <ShuffleButton
+                        isShuffling={isShuffling}
                         onClick={() => {
                           flushSync(() => setIsShuffling(true));
                           setTimeout(() => setShuffleSeed((s) => s + 1), 50);
                         }}
-                        disabled={isShuffling}
-                        className="h-7 px-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 disabled:opacity-50"
-                      >
-                        <Shuffle
-                          className={`h-3.5 w-3.5 mr-1.5 ${isShuffling ? "animate-spin" : ""}`}
-                        />
-                        {isShuffling ? "Shuffling..." : "Shuffle"}
-                      </Button>
+                      />
                     </div>
                     <div
                       className={`grid gap-1.5 ${isShuffling ? "opacity-50" : "opacity-100"} transition-opacity duration-300`}
@@ -737,11 +782,13 @@ export default function StashScanPage() {
                           <div className="flex items-center gap-2.5">
                             {item.iconLink && (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={item.iconLink}
-                                alt=""
-                                className="w-7 h-7 rounded object-contain bg-slate-950"
-                              />
+                              <div className="relative w-7 h-7 overflow-visible">
+                                <img
+                                  src={item.iconLink}
+                                  alt=""
+                                  className="w-7 h-7 rounded object-contain bg-slate-950 transition-all duration-300 ease-out hover:scale-[2.5] hover:z-50 hover:relative hover:rounded-lg hover:shadow-2xl cursor-zoom-in"
+                                />
+                              </div>
                             )}
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm text-slate-200">
@@ -1049,11 +1096,13 @@ export default function StashScanPage() {
                       {/* Item Icon */}
                       {item.iconLink && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={item.iconLink}
-                          alt=""
-                          className="w-10 h-10 rounded object-contain bg-slate-900 flex-shrink-0"
-                        />
+                        <div className="relative w-10 h-10 overflow-visible flex-shrink-0">
+                          <img
+                            src={item.iconLink}
+                            alt=""
+                            className="w-10 h-10 rounded object-contain bg-slate-900 transition-all duration-300 ease-out hover:scale-[2] hover:z-50 hover:relative hover:rounded-lg hover:shadow-2xl cursor-zoom-in"
+                          />
+                        </div>
                       )}
 
                       {/* Item Info */}
