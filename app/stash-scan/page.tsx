@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useItemsData } from "@/hooks/use-items-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import {
   pickOptimalCombo,
 } from "@/lib/stash-scan";
 import {
+  AlertTriangle,
   ChevronDown,
   ImagePlus,
   Loader2,
@@ -32,6 +34,8 @@ import {
 } from "lucide-react";
 import { quickScan } from "@/lib/ocr-utils";
 import { createOcrMatcher as createItemMatcher } from "@/lib/stash-scan";
+import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
+import { SimplifiedItem } from "@/types/SimplifiedItem";
 
 type UnmatchedEntry = {
   id: string;
@@ -53,6 +57,21 @@ type OcrLineMatch = {
 };
 
 const MAX_OVERLAY_LINES = 120;
+
+// Helper function to check if an item is in the excluded list
+function isItemExcluded(item: SimplifiedItem | null | undefined): boolean {
+  if (!item) return false;
+  // Check against name and shortName (case-insensitive)
+  const namesToCheck = [
+    item.name,
+    item.shortName,
+    item.englishName,
+    item.englishShortName,
+  ].filter(Boolean);
+  return namesToCheck.some((name) =>
+    DEFAULT_EXCLUDED_ITEMS.has(name as string),
+  );
+}
 
 export default function StashScanPage() {
   const [isPVE, setIsPVE] = useState<boolean>(() => {
@@ -81,6 +100,7 @@ export default function StashScanPage() {
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [shuffleSeed, setShuffleSeed] = useState(0);
+  const [isShuffling, setIsShuffling] = useState(false);
   const previewImageRef = useRef<HTMLImageElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [imageSize, setImageSize] = useState<{
@@ -269,21 +289,17 @@ export default function StashScanPage() {
       manualCounts,
     );
 
-    // Shuffle inventory order based on seed to get different combos
-    if (shuffleSeed > 0) {
-      const shuffled = [...inventory];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(
-          (((shuffleSeed * (i + 1) * 9301 + 49297) % 233280) / 233280) *
-            (i + 1),
-        );
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return pickOptimalCombo(shuffled, threshold, maxItems);
-    }
-
-    return pickOptimalCombo(inventory, threshold, maxItems);
+    // Pass shuffleSeed to get different combo variations
+    return pickOptimalCombo(inventory, threshold, maxItems, shuffleSeed);
   }, [matchedResult, items, manualCounts, threshold, maxItems, shuffleSeed]);
+
+  // Clear shuffling state when combo updates
+  useEffect(() => {
+    if (isShuffling) {
+      const timer = setTimeout(() => setIsShuffling(false), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [combo, isShuffling]);
 
   const selectedLine = ocrLines.find((line) => line.id === selectedLineId);
   const [selectedOverride, setSelectedOverride] = useState<string>("");
@@ -633,8 +649,15 @@ export default function StashScanPage() {
                     </div>
                     <div className="text-2xl text-slate-600">/</div>
                     <div>
-                      <div className="text-xs text-slate-400 mb-1">
+                      <div className="text-xs text-slate-400 mb-1 flex items-center gap-1">
                         Threshold
+                        <button
+                          onClick={() => setAdvancedOpen(true)}
+                          className="inline-flex items-center justify-center w-4 h-4 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-colors"
+                          title="Edit threshold setting"
+                        >
+                          <Settings2 className="h-3 w-3" />
+                        </button>
                       </div>
                       <span className="text-2xl font-semibold text-slate-400">
                         ₽{threshold.toLocaleString()}
@@ -660,24 +683,56 @@ export default function StashScanPage() {
                 {groupedItems.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">
-                        Optimal Combo · {combo.items.length} items
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                          Optimal Combo · {combo.items.length} items
+                          <button
+                            onClick={() => setAdvancedOpen(true)}
+                            className="inline-flex items-center justify-center w-5 h-5 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-colors"
+                            title="Edit max items setting (current: {maxItems})"
+                          >
+                            <Settings2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                        {(() => {
+                          const excludedCount =
+                            combo.items.filter(isItemExcluded).length;
+                          if (excludedCount === 0) return null;
+                          return (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                              title={`${excludedCount} excluded item${excludedCount > 1 ? "s" : ""} in combo`}
+                            >
+                              <AlertTriangle className="h-3 w-3" />
+                              {excludedCount} excluded
+                            </span>
+                          );
+                        })()}
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShuffleSeed((s) => s + 1)}
-                        className="h-7 px-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                        onClick={() => {
+                          flushSync(() => setIsShuffling(true));
+                          setTimeout(() => setShuffleSeed((s) => s + 1), 50);
+                        }}
+                        disabled={isShuffling}
+                        className="h-7 px-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 disabled:opacity-50"
                       >
-                        <Shuffle className="h-3.5 w-3.5 mr-1.5" />
-                        Shuffle
+                        <Shuffle
+                          className={`h-3.5 w-3.5 mr-1.5 ${isShuffling ? "animate-spin" : ""}`}
+                        />
+                        {isShuffling ? "Shuffling..." : "Shuffle"}
                       </Button>
                     </div>
-                    <div className="grid gap-1.5">
-                      {groupedItems.map(({ item, count }) => (
+                    <div
+                      className={`grid gap-1.5 ${isShuffling ? "opacity-50" : "opacity-100"} transition-opacity duration-300`}
+                    >
+                      {groupedItems.map(({ item, count }, index) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between rounded-lg bg-slate-900/40 px-3 py-2"
+                          className={`flex items-center justify-between rounded-lg bg-slate-900/40 px-3 py-2 ${isShuffling ? "animate-pulse" : ""}`}
+                          style={{ animationDelay: `${index * 100}ms` }}
                         >
                           <div className="flex items-center gap-2.5">
                             {item.iconLink && (
@@ -688,14 +743,25 @@ export default function StashScanPage() {
                                 className="w-7 h-7 rounded object-contain bg-slate-950"
                               />
                             )}
-                            <span className="text-sm text-slate-200">
-                              {item.shortName}
-                              {count > 1 && (
-                                <span className="text-emerald-400/80 ml-1.5 font-medium">
-                                  ×{count}
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm text-slate-200">
+                                {item.shortName}
+                                {count > 1 && (
+                                  <span className="text-emerald-400/80 ml-1.5 font-medium">
+                                    ×{count}
+                                  </span>
+                                )}
+                              </span>
+                              {isItemExcluded(item) && (
+                                <span
+                                  className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                                  title="This item is excluded from the Cultist Circle"
+                                >
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Excluded
                                 </span>
                               )}
-                            </span>
+                            </div>
                           </div>
                           <div className="text-right text-sm">
                             <span className="text-slate-300">
@@ -992,8 +1058,19 @@ export default function StashScanPage() {
 
                       {/* Item Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-slate-200 truncate">
-                          {item.shortName}
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-sm text-slate-200 truncate">
+                            {item.shortName}
+                          </div>
+                          {isItemExcluded(item) && (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                              title="This item is excluded from the Cultist Circle"
+                            >
+                              <AlertTriangle className="h-3 w-3" />
+                              Excluded
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-slate-500">
                           ₽{(item.basePrice ?? 0).toLocaleString()}

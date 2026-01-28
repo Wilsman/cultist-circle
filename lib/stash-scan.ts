@@ -23,6 +23,7 @@ export interface ComboResult {
   items: SimplifiedItem[];
   total: number;
   threshold: number;
+  fleaCost: number;
 }
 
 const DEFAULT_MIN_TOKEN_LENGTH = 2;
@@ -186,35 +187,115 @@ function trimPool(items: SimplifiedItem[]): SimplifiedItem[] {
   return combined.slice(0, MAX_POOL_SIZE);
 }
 
+// Reward tier upper bounds - prevent crossing into next bracket
+const REWARD_TIER_BOUNDS = [
+  10000, // 0-10k
+  25000, // 10k-25k
+  50000, // 25k-50k
+  100000, // 50k-100k
+  200000, // 100k-200k
+  350000, // 200k-350k
+  400000, // 350k-400k (special tier)
+  Infinity, // 400k+
+];
+
+function getUpperBound(threshold: number): number {
+  for (const bound of REWARD_TIER_BOUNDS) {
+    if (threshold < bound) {
+      return bound;
+    }
+  }
+  return Infinity;
+}
+
 export function pickOptimalCombo(
   inventory: InventoryItemCount[],
   threshold: number,
   maxItems: number,
+  seed = 0,
 ): ComboResult | null {
   if (inventory.length === 0) return null;
   if (maxItems <= 0) return null;
 
-  const expanded = trimPool(expandInventory(inventory, maxItems));
+  let expanded = trimPool(expandInventory(inventory, maxItems));
   if (expanded.length === 0) return null;
 
-  let bestAbove: ComboResult | null = null;
+  // Shuffle the expanded array based on seed to explore different combos first
+  if (seed > 0) {
+    expanded = [...expanded];
+    for (let i = expanded.length - 1; i > 0; i--) {
+      const j = Math.floor(
+        (((seed * (i + 1) * 9301 + 49297) % 233280) / 233280) * (i + 1),
+      );
+      [expanded[i], expanded[j]] = [expanded[j], expanded[i]];
+    }
+  }
+
+  // Get upper bound to stay within reward tier
+  const upperBound = getUpperBound(threshold);
+
+  // Helper to calculate flea cost for a combination
+  const calcFleaCost = (items: SimplifiedItem[]): number =>
+    items.reduce(
+      (sum, item) => sum + (item.lastLowPrice ?? item.basePrice ?? 0),
+      0,
+    );
+
+  const aboveThreshold: ComboResult[] = [];
   let bestBelow: ComboResult | null = null;
+  let minFleaCost = Infinity;
+  const MAX_CANDIDATES = 20;
+  const MAX_TIME_MS = 100; // Stop after 100ms to keep UI responsive
+  const startTime = Date.now();
 
   const dfs = (start: number, chosen: SimplifiedItem[], total: number) => {
+    // Time limit check
+    if (Date.now() - startTime > MAX_TIME_MS) return;
+
+    const fleaCost = calcFleaCost(chosen);
+
     if (total >= threshold) {
-      if (!bestAbove || total < bestAbove.total) {
-        bestAbove = { items: [...chosen], total, threshold };
+      // Only store if we stay within the upper bound (reward tier)
+      if (total < upperBound) {
+        if (aboveThreshold.length < MAX_CANDIDATES) {
+          aboveThreshold.push({
+            items: [...chosen],
+            total,
+            threshold,
+            fleaCost,
+          });
+          if (fleaCost < minFleaCost) minFleaCost = fleaCost;
+        } else if (fleaCost < minFleaCost) {
+          // Replace worst candidate if this is better
+          aboveThreshold.sort((a, b) => a.fleaCost - b.fleaCost);
+          aboveThreshold.pop();
+          aboveThreshold.push({
+            items: [...chosen],
+            total,
+            threshold,
+            fleaCost,
+          });
+          minFleaCost = aboveThreshold[aboveThreshold.length - 1].fleaCost;
+        }
       }
       return;
     }
+
+    // Track best below-threshold combo (closest to threshold by base price)
     if (!bestBelow || total > bestBelow.total) {
-      bestBelow = { items: [...chosen], total, threshold };
+      bestBelow = { items: [...chosen], total, threshold, fleaCost };
     }
+
     if (chosen.length >= maxItems) return;
 
     for (let i = start; i < expanded.length; i += 1) {
+      // Time limit check in loop
+      if (Date.now() - startTime > MAX_TIME_MS) return;
+
       const nextTotal = total + expanded[i].basePrice;
-      if (bestAbove && nextTotal >= bestAbove.total) continue;
+      // Pruning: skip if we're already way over the best found
+      if (aboveThreshold.length >= MAX_CANDIDATES && nextTotal > threshold * 2)
+        continue;
       chosen.push(expanded[i]);
       dfs(i + 1, chosen, nextTotal);
       chosen.pop();
@@ -222,5 +303,39 @@ export function pickOptimalCombo(
   };
 
   dfs(0, [], 0);
-  return bestAbove ?? bestBelow;
+
+  if (aboveThreshold.length === 0) {
+    return bestBelow;
+  }
+
+  // Deduplicate combos
+  const seen = new Set<string>();
+  const uniqueCombos: ComboResult[] = [];
+  for (const combo of aboveThreshold) {
+    const key = combo.items.map((i) => i.id).join(",");
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueCombos.push(combo);
+    }
+  }
+
+  if (seed === 0) {
+    // No seed: sort by flea cost and return the best
+    uniqueCombos.sort((a, b) => a.fleaCost - b.fleaCost);
+    return uniqueCombos[0];
+  }
+
+  // With seed: pick a different combo than before if possible
+  // Don't sort - keep in discovery order (which is randomized by seed)
+  // This gives variety when shuffling
+  if (uniqueCombos.length === 1) {
+    return uniqueCombos[0]; // Only one valid combo exists
+  }
+
+  // Use seed to deterministically pick from available unique combos
+  // Prefer returning a different combo than the "best" one
+  const rng = (((seed * 9301 + 49297) % 233280) / 233280) * uniqueCombos.length;
+  const selectedIndex = Math.floor(rng);
+
+  return uniqueCombos[selectedIndex];
 }
