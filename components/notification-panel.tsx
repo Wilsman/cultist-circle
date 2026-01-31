@@ -413,20 +413,6 @@ export function NotificationCard({
               : notification.description}
           </div>
 
-          {notification.estimatedCost !== undefined && (
-            <div className="flex items-center justify-between gap-4 bg-slate-800/40 rounded-lg px-4 py-2.5 border border-white/5 mt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-cyan-400/60" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
-                  Est. Cost
-                </span>
-              </div>
-              <span className="text-sm font-bold text-cyan-400 tabular-nums">
-                ₽{notification.estimatedCost?.toLocaleString() || "Loading..."}
-              </span>
-            </div>
-          )}
-
           {notification.actions && notification.actions.length > 0 && (
             <div className="flex gap-2 mt-3 pt-2 border-t border-current/10">
               {notification.actions.map((action, index) => (
