@@ -1,17 +1,31 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState } from "react";
 import { ChevronDown, Bell, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface Notification {
   id: string;
-  type: "success" | "warning" | "info" | "halloween" | "hot-sacrifice" | "weapon-warning";
+  type:
+    | "success"
+    | "warning"
+    | "info"
+    | "halloween"
+    | "hot-sacrifice"
+    | "weapon-warning";
   icon?: string;
   title: string;
   description: string | React.ReactNode;
   actions?: NotificationAction[];
   priority?: number;
+  estimatedCost?: number;
 }
 
 export interface NotificationAction {
@@ -21,19 +35,155 @@ export interface NotificationAction {
 
 export const NOTIFICATIONS: Notification[] = [
   {
+    id: "new-sas-thor-combo",
+    type: "hot-sacrifice",
+    title: "🔥 New: SAS → THOR Armor",
+    description: (
+      <>
+        <div className="flex items-center gap-4 mt-2">
+          {/* Input */}
+          <div className="flex items-center gap-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative cursor-help">
+                    <div className="absolute inset-0 bg-white/10 blur-md rounded-lg" />
+                    <img
+                      src="https://assets.tarkov.dev/590c37d286f77443be3d7827-icon.webp"
+                      alt="SAS drive"
+                      className="w-10 h-10 rounded-lg relative z-10 shadow-xl"
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="bottom"
+                  className="bg-slate-950 border-white/10 text-slate-200 p-3 shadow-2xl rounded-xl max-w-[260px] z-[100]"
+                >
+                  <p className="font-bold text-sm mb-1 text-slate-100 leading-snug">
+                    SAS drive
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">
+                Barter
+              </span>
+              <span className="text-sm font-bold text-slate-100">
+                SAS drive
+              </span>
+            </div>
+          </div>
+
+          {/* Arrow */}
+          <div className="flex flex-col items-center text-indigo-400">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14 5l7 7m0 0l-7 7m7-7H3"
+              />
+            </svg>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mt-0.5">
+              1×
+            </span>
+          </div>
+
+          {/* Output */}
+          <div className="flex items-center gap-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative cursor-help">
+                    <div className="absolute inset-0 bg-indigo-500/30 blur-md rounded-lg" />
+                    <img
+                      src="https://assets.tarkov.dev/60a283193cb70855c43a381d-icon.webp"
+                      alt="THOR IC"
+                      className="w-10 h-10 rounded-lg relative z-10 shadow-xl ring-2 ring-indigo-500/50"
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="bottom"
+                  className="bg-slate-950 border border-white/10 text-slate-200 p-3 shadow-2xl rounded-xl max-w-[260px] z-[100]"
+                >
+                  <p className="font-bold text-sm mb-1 text-slate-100 leading-snug">
+                    NFM THOR Integrated Carrier body armor
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-white/5">
+                    <span className="opacity-60">Buy from:</span>
+                    <div className="flex items-center gap-1.5">
+                      <img
+                        src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
+                        alt="Peacekeeper"
+                        className="w-5 h-5 rounded-full"
+                      />
+                      <span className="text-indigo-300 font-semibold">
+                        Peacekeeper{" "}
+                        <span className="text-indigo-300/60 font-medium">
+                          (LL4)
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <div className="flex flex-col">
+              <span className="text-xs text-indigo-400 font-medium uppercase tracking-wide">
+                Reward
+              </span>
+              <span className="text-sm font-bold text-white">
+                THOR IC Armor
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Peacekeeper LL4
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Value */}
+        <div className="mt-3 flex items-center gap-3 pt-2 border-t border-white/5">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-bold text-emerald-400">
+              400K+ Value
+            </span>
+          </div>
+          <div className="flex gap-1.5">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
+              6H
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
+              14H
+            </span>
+          </div>
+        </div>
+      </>
+    ),
+    priority: 0,
+  },
+  {
     id: "six-hour-timer-warning",
     type: "warning",
     title: "6h Timer Rewards Are Not Guaranteed",
     description: (
       <>
-        Recent reports show more low-value drops from the <strong>6h timer</strong>.
-        At the moment, <strong>6h timers</strong> are not a 100% chance for
-        quest/hideout items. It is unclear if this is a bug or intended
-        behavior, so treat 6h rewards as inconsistent for quest/hideout
-        progress.
+        Recent reports show more low-value drops from the{" "}
+        <strong>6h timer</strong>. At the moment, <strong>6h timers</strong> are
+        not a 100% chance for quest/hideout items. It is unclear if this is a
+        bug or intended behavior, so treat 6h rewards as inconsistent for
+        quest/hideout progress.
       </>
     ),
-    priority: 0,
+    priority: 1,
   },
   {
     id: "weapon-values-warning",
@@ -78,14 +228,14 @@ export function NotificationCard({
           notification.type === "success"
             ? "bg-emerald-950/30 border-emerald-500/20"
             : notification.type === "warning"
-            ? "bg-red-950/30 border-red-500/20"
-            : notification.type === "halloween"
-            ? "bg-orange-950/30 border-orange-500/20"
-            : notification.type === "hot-sacrifice"
-            ? "bg-indigo-950/30 border-indigo-500/20"
-            : notification.type === "weapon-warning"
-            ? "bg-amber-950/30 border-amber-500/20"
-            : "bg-slate-800/40 border-slate-700/30"
+              ? "bg-red-950/30 border-red-500/20"
+              : notification.type === "halloween"
+                ? "bg-orange-950/30 border-orange-500/20"
+                : notification.type === "hot-sacrifice"
+                  ? "bg-indigo-950/60 border-indigo-500/20"
+                  : notification.type === "weapon-warning"
+                    ? "bg-amber-950/30 border-amber-500/20"
+                    : "bg-slate-800/40 border-slate-700/30"
         }
         ${
           isPriority
@@ -115,21 +265,21 @@ export function NotificationCard({
                 notification.type === "success"
                   ? "text-emerald-200"
                   : notification.type === "warning"
-                  ? "text-red-200"
-                  : notification.type === "halloween"
-                  ? "text-orange-200"
-                  : notification.type === "hot-sacrifice"
-                  ? "text-indigo-200"
-                  : notification.type === "weapon-warning"
-                  ? "text-amber-200"
-                  : "text-slate-200"
+                    ? "text-red-200"
+                    : notification.type === "halloween"
+                      ? "text-orange-200"
+                      : notification.type === "hot-sacrifice"
+                        ? "text-indigo-200"
+                        : notification.type === "weapon-warning"
+                          ? "text-amber-200"
+                          : "text-slate-200"
               }`}
             >
               {notification.title}
             </h3>
             {isPriority && (
               <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-200 ring-1 ring-amber-400/40">
-                Priority
+                NEW
               </span>
             )}
           </div>
@@ -138,19 +288,30 @@ export function NotificationCard({
               notification.type === "success"
                 ? "text-emerald-300/90"
                 : notification.type === "warning"
-                ? "text-red-300/90"
-                : notification.type === "halloween"
-                ? "text-orange-300/90"
-                : notification.type === "hot-sacrifice"
-                ? "text-indigo-300/90"
-                : notification.type === "weapon-warning"
-                ? "text-amber-300/90"
-                : "text-slate-300/90"
+                  ? "text-red-300/90"
+                  : notification.type === "halloween"
+                    ? "text-orange-300/90"
+                    : notification.type === "hot-sacrifice"
+                      ? "text-indigo-300/90"
+                      : notification.type === "weapon-warning"
+                        ? "text-amber-300/90"
+                        : "text-slate-300/90"
             }`}
           >
             {notification.description}
           </div>
-          
+
+          {notification.estimatedCost !== undefined && (
+            <div className="flex items-baseline gap-1.5 mt-2 opacity-80">
+              <span className="text-[9px] uppercase tracking-tighter text-slate-500 font-bold whitespace-nowrap">
+                Est. Cost:
+              </span>
+              <span className="text-[11px] font-black text-cyan-400/90 tabular-nums whitespace-nowrap">
+                ₽{notification.estimatedCost.toLocaleString()}
+              </span>
+            </div>
+          )}
+
           {notification.actions && notification.actions.length > 0 && (
             <div className="flex gap-2 mt-3 pt-2 border-t border-current/10">
               {notification.actions.map((action, index) => (
@@ -164,8 +325,8 @@ export function NotificationCard({
                     notification.type === "hot-sacrifice"
                       ? "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30"
                       : notification.type === "weapon-warning"
-                      ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
-                      : "bg-slate-500/20 text-slate-300 hover:bg-slate-500/30"
+                        ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+                        : "bg-slate-500/20 text-slate-300 hover:bg-slate-500/30"
                   }`}
                 >
                   {action.label}
@@ -179,15 +340,15 @@ export function NotificationCard({
   );
 }
 
-export function NotificationPanel({ 
+export function NotificationPanel({
   dynamicNotifications = [],
-  totalNotifications 
-}: { 
+  totalNotifications,
+}: {
   dynamicNotifications?: Notification[];
   totalNotifications?: number;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   // Combine static and dynamic notifications
   const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications];
   const notificationCount = totalNotifications ?? allNotifications.length;
@@ -210,8 +371,8 @@ export function NotificationPanel({
           transition-all duration-300 ease-out
           ${
             isExpanded
-              ? "bg-slate-800/60 border-slate-600/40 rounded-2xl"
-              : "bg-slate-800/40 border-slate-700/30 hover:bg-slate-800/50 hover:border-slate-600/40"
+              ? "bg-slate-800 border-slate-600/40 rounded-2xl"
+              : "bg-slate-800 border-slate-700/30 hover:bg-slate-700 hover:border-slate-600/40"
           }
         `}
         >

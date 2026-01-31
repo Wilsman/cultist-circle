@@ -3,7 +3,7 @@
 
 import { ChevronDown, Flame, Plus, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -186,6 +186,32 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
     resultText: "400K+ (6h & 14h)",
     separator: "➡️",
   },
+  {
+    id: "sas-thor",
+    ingredients: [
+      {
+        name: "SAS drive",
+        shortName: "SAS",
+        count: 1,
+        imageUrl:
+          "https://assets.tarkov.dev/590c37d286f77443be3d7827-icon.webp",
+      },
+      {
+        name: "NFM THOR Integrated Carrier body armor",
+        shortName: "THOR IC",
+        count: 1,
+        imageUrl:
+          "https://assets.tarkov.dev/60a283193cb70855c43a381d-icon.webp",
+        vendor: {
+          name: "Peacekeeper",
+          level: "LL4",
+          imageUrl: "https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp",
+        },
+      },
+    ],
+    resultText: "400K+ (6h & 14h)",
+    separator: "➡️",
+  },
 ];
 
 interface ComboRowProps {
@@ -357,8 +383,22 @@ export function HotSacrificesPanel({
   sacrificeCosts = {},
 }: HotSacrificesPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const featuredCombo = HOT_SACRIFICES[0];
-  const remainingCombos = HOT_SACRIFICES.slice(1);
+  
+  // Sort sacrifices by estimated cost (lowest to highest)
+  const sortedSacrifices = useMemo(() => {
+    return [...HOT_SACRIFICES].sort((a, b) => {
+      const costA = sacrificeCosts[a.id] ?? 0;
+      const costB = sacrificeCosts[b.id] ?? 0;
+      // Sort by cost ascending (lowest first)
+      if (costA === 0 && costB === 0) return 0;
+      if (costA === 0) return 1;
+      if (costB === 0) return -1;
+      return costA - costB;
+    });
+  }, [sacrificeCosts]);
+  
+  const featuredCombo = sortedSacrifices[0];
+  const remainingCombos = sortedSacrifices.slice(1);
 
   return (
     <div className="w-full max-w-3xl mx-auto mb-4" data-hot-sacrifices>
@@ -436,6 +476,9 @@ export function HotSacrificesPanel({
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-slate-800/80 text-[10px] font-black border border-white/5 text-indigo-300">
                   {remainingCombos.length}
+                </span>
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-[9px] font-black border border-amber-500/30 text-amber-400 animate-pulse">
+                  1 NEW
                 </span>
               </div>
               <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 group-hover:text-indigo-400 transition-all">
