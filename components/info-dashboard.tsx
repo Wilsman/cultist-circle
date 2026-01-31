@@ -47,20 +47,23 @@ export function InfoDashboard({
   const maintenanceCount = SHOW_MAINTENANCE_NOTICE ? 1 : 0;
   const updatesTotalCount = maintenanceCount + allNotifications.length;
   const priorityNotifications = allNotifications.filter(
-    (notification) => notification.priority === 0
+    (notification) => notification.priority === 0,
   );
   const primaryNotifications =
     priorityNotifications.length > 0
       ? priorityNotifications
       : allNotifications.slice(0, 2);
-  const primaryIds = new Set(primaryNotifications.map((notification) => notification.id));
+  const primaryIds = new Set(
+    primaryNotifications.map((notification) => notification.id),
+  );
   const remainingNotifications = allNotifications.filter(
-    (notification) => !primaryIds.has(notification.id)
+    (notification) => !primaryIds.has(notification.id),
   );
   const showMaintenanceInPrimary =
     primaryNotifications.length === 0 && maintenanceCount > 0;
   const remainingUpdatesCount =
-    remainingNotifications.length + (showMaintenanceInPrimary ? 0 : maintenanceCount);
+    remainingNotifications.length +
+    (showMaintenanceInPrimary ? 0 : maintenanceCount);
   const showUpdatesExpand = remainingUpdatesCount > 0;
 
   // Recipes logic
@@ -76,7 +79,8 @@ export function InfoDashboard({
             className="relative flex items-center justify-center gap-2 py-2.5 rounded-lg data-[state=active]:bg-slate-700/70 data-[state=active]:text-slate-100 data-[state=active]:shadow-[0_0_20px_rgba(251,191,36,0.15)] transition-all duration-200 border-0 z-10"
           >
             <Bell className="h-4 w-4" />
-            {t("Updates & Alerts")}
+            <span className="hidden sm:inline">{t("Updates & Alerts")}</span>
+            <span className="sm:hidden">{t("Updates")}</span>
             {updatesTotalCount > 0 && (
               <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-500 ring-1 ring-amber-400/40">
                 {updatesTotalCount}
@@ -100,7 +104,8 @@ export function InfoDashboard({
             >
               <Flame className="h-4 w-4" />
             </motion.div>
-            {t("Hot Sacrifices")}
+            <span className="hidden sm:inline">{t("Hot Sacrifices")}</span>
+            <span className="sm:hidden">{t("Recipes")}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -186,7 +191,9 @@ export function InfoDashboard({
                 ))}
                 <div className="mt-3 pt-3 border-t border-slate-700/30 text-center">
                   <p className="text-[10px] text-slate-500">
-                    {t("Values based on vendor sell prices and trading multipliers.")}
+                    {t(
+                      "Values based on vendor sell prices and trading multipliers.",
+                    )}
                   </p>
                 </div>
               </div>
