@@ -136,9 +136,6 @@ export const NOTIFICATIONS: Notification[] = [
               </Tooltip>
             </TooltipProvider>
             <div className="flex flex-col">
-              <span className="text-xs text-indigo-400 font-medium uppercase tracking-wide">
-                Reward
-              </span>
               <span className="text-sm font-bold text-white">
                 THOR IC Armor
               </span>
