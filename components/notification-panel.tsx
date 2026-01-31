@@ -37,133 +37,240 @@ export const NOTIFICATIONS: Notification[] = [
   {
     id: "new-sas-thor-combo",
     type: "hot-sacrifice",
-    title: "🔥 New: SAS → THOR Armor",
+    title: "🔥 Sacrifice: THOR Armor",
     description: (
-      <>
-        <div className="flex items-center gap-4 mt-2">
-          {/* Input */}
-          <div className="flex items-center gap-3">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="relative cursor-help">
-                    <div className="absolute inset-0 bg-white/10 blur-md rounded-lg" />
-                    <img
-                      src="https://assets.tarkov.dev/590c37d286f77443be3d7827-icon.webp"
-                      alt="SAS drive"
-                      className="w-10 h-10 rounded-lg relative z-10 shadow-xl"
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="bottom"
-                  className="bg-slate-950 border-white/10 text-slate-200 p-3 shadow-2xl rounded-xl max-w-[260px] z-[100]"
-                >
-                  <p className="font-bold text-sm mb-1 text-slate-100 leading-snug">
-                    SAS drive
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <div className="flex flex-col">
-              <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">
-                Barter
-              </span>
-              <span className="text-sm font-bold text-slate-100">
-                SAS drive
-              </span>
+      <div className="mt-4 space-y-4">
+        {/* Main Content - THOR IC Armor Section */}
+        <div className="flex gap-4 items-start">
+          {/* Left: Item Info */}
+          <div className="flex-1">
+            {/* Item Header */}
+            <div className="flex gap-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="relative cursor-help flex-shrink-0 group">
+                      <div className="absolute -inset-1 bg-gradient-to-br from-indigo-500/30 to-purple-500/20 rounded-xl blur-md opacity-60 group-hover:opacity-100 transition-opacity" />
+                      <img
+                        src="https://assets.tarkov.dev/60a283193cb70855c43a381d-icon.webp"
+                        alt="THOR IC Armor"
+                        className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl relative z-10 shadow-xl ring-1 ring-white/10"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    className="bg-slate-950 border border-white/10 text-slate-200 p-3 shadow-2xl rounded-xl max-w-[280px] z-[100]"
+                  >
+                    <p className="font-bold text-sm text-slate-100">
+                      NFM THOR Integrated Carrier body armor
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Heavy armor with integrated plate carrier system
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <div className="flex-1 min-w-0 py-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-lg font-bold text-white">
+                    THOR IC Armor
+                  </h4>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+                    New
+                  </span>
+                </div>
+                <p className="text-sm text-slate-400 mt-1 leading-relaxed">
+                  Sacrifice this armor in the Cultist Circle ritual
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Arrow */}
-          <div className="flex flex-col items-center text-indigo-400">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M14 5l7 7m0 0l-7 7m7-7H3"
-              />
-            </svg>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mt-0.5">
-              1×
-            </span>
-          </div>
-
-          {/* Output */}
-          <div className="flex items-center gap-3">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="relative cursor-help">
-                    <div className="absolute inset-0 bg-indigo-500/30 blur-md rounded-lg" />
-                    <img
-                      src="https://assets.tarkov.dev/60a283193cb70855c43a381d-icon.webp"
-                      alt="THOR IC"
-                      className="w-10 h-10 rounded-lg relative z-10 shadow-xl ring-2 ring-indigo-500/50"
-                    />
+          {/* Right: Stats - Combined Triggers & Cost */}
+          <div className="flex flex-col gap-3 flex-shrink-0 min-w-0">
+            {/* Combined Stats Row */}
+            <div className="bg-slate-800/40 rounded-lg px-4 py-2.5 border border-white/5">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400/60 animate-pulse" />
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                    Triggers
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="text-[11px] font-bold text-emerald-300">
+                      6H
+                    </span>
                   </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="bottom"
-                  className="bg-slate-950 border border-white/10 text-slate-200 p-3 shadow-2xl rounded-xl max-w-[260px] z-[100]"
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="text-[11px] font-bold text-emerald-300">
+                      14H
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-cyan-400/60" />
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                    Est. Cost
+                  </span>
+                </div>
+                <span className="text-sm font-bold text-cyan-400 tabular-nums">
+                  ₽64,998
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* How to Obtain Section - Single Line */}
+        <div className="bg-slate-800/30 rounded-xl px-6 py-3 border border-white/5">
+          <div className="flex items-center justify-center gap-6 w-full">
+            {/* Header */}
+            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest whitespace-nowrap">
+              How to Obtain
+            </span>
+
+            {/* Trade Flow */}
+            <div className="flex items-center gap-4 flex-1 justify-center">
+              {/* Input Item */}
+              <div className="flex items-center gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative cursor-help flex-shrink-0 group">
+                        <div className="absolute -inset-0.5 bg-indigo-500/20 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <img
+                          src="https://assets.tarkov.dev/590c37d286f77443be3d7827-icon.webp"
+                          alt="SAS drive"
+                          className="w-8 h-8 rounded-lg relative z-10 shadow-md bg-slate-900/50"
+                        />
+                        <div className="absolute -top-1 -left-1 w-4 h-4 bg-indigo-500 rounded-full border-2 border-slate-900 flex items-center justify-center z-20">
+                          <span className="text-[9px] font-bold text-white">
+                            1
+                          </span>
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      className="bg-slate-950 border border-white/10 text-slate-200 p-3 shadow-2xl rounded-xl max-w-[320px] z-[100]"
+                    >
+                      <p className="font-bold text-sm text-slate-100">
+                        SAS drive
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Solid-state drive used for data storage
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-slate-300 whitespace-nowrap">
+                    SAS drive
+                  </span>
+                  <div className="flex items-center gap-1 bg-slate-800/40 rounded-md px-1.5 py-0.5 border border-white/5">
+                    <div className="w-1 h-1 rounded-full bg-cyan-400/60" />
+                    <span className="text-[10px] font-bold text-cyan-400 tabular-nums">
+                      ₽64,998
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Arrow */}
+              <div className="text-indigo-400/70">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <p className="font-bold text-sm mb-1 text-slate-100 leading-snug">
-                    NFM THOR Integrated Carrier body armor
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-white/5">
-                    <span className="opacity-60">Buy from:</span>
-                    <div className="flex items-center gap-1.5">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
+                </svg>
+              </div>
+
+              {/* Output Item */}
+              <div className="flex items-center gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative cursor-help flex-shrink-0 group">
+                        <div className="absolute -inset-0.5 bg-emerald-500/20 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <img
+                          src="https://assets.tarkov.dev/60a283193cb70855c43a381d-icon.webp"
+                          alt="THOR"
+                          className="w-8 h-8 rounded-lg relative z-10 shadow-md ring-1 ring-emerald-500/30"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      className="bg-slate-950 border border-white/10 text-slate-200 p-3 shadow-2xl rounded-xl max-w-[320px] z-[100]"
+                    >
+                      <p className="font-bold text-sm text-slate-100">
+                        NFM THOR Integrated Carrier body armor
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Heavy armor with integrated plate carrier system
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <span className="text-[10px] font-medium text-emerald-300 whitespace-nowrap">
+                  THOR
+                </span>
+              </div>
+            </div>
+
+            {/* Trader Badge */}
+            <div className="flex items-center gap-2 whitespace-nowrap">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="relative cursor-help flex-shrink-0 group">
+                      <div className="absolute -inset-0.5 bg-indigo-500/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
                       <img
                         src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
                         alt="Peacekeeper"
-                        className="w-5 h-5 rounded-full"
+                        className="w-5 h-5 rounded-full relative z-10 ring-1 ring-indigo-500/30"
                       />
-                      <span className="text-indigo-300 font-semibold">
-                        Peacekeeper{" "}
-                        <span className="text-indigo-300/60 font-medium">
-                          (LL4)
-                        </span>
-                      </span>
                     </div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-white">
-                THOR IC Armor
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Peacekeeper LL4
-              </span>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    className="bg-slate-950 border border-white/10 text-slate-200 p-3 shadow-2xl rounded-xl max-w-[320px] z-[100]"
+                  >
+                    <p className="font-bold text-sm text-slate-100">
+                      Peacekeeper
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      UN peacekeeper trader - offers military gear and weapons
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <div>
+                <span className="text-[10px] font-semibold text-indigo-300">
+                  Peacekeeper
+                </span>
+                <span className="text-[9px] text-slate-500 ml-1">LL4</span>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Value */}
-        <div className="mt-3 flex items-center gap-3 pt-2 border-t border-white/5">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-bold text-emerald-400">
-              400K+ Value
-            </span>
-          </div>
-          <div className="flex gap-1.5">
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
-              6H
-            </span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
-              14H
-            </span>
-          </div>
-        </div>
-      </>
+      </div>
     ),
     priority: 0,
   },
@@ -298,16 +405,20 @@ export function NotificationCard({
             {notification.description}
           </div>
 
-          {notification.estimatedCost !== undefined && (
-            <div className="flex items-baseline gap-1.5 mt-2 opacity-80">
-              <span className="text-[9px] uppercase tracking-tighter text-slate-500 font-bold whitespace-nowrap">
-                Est. Cost:
-              </span>
-              <span className="text-[11px] font-black text-cyan-400/90 tabular-nums whitespace-nowrap">
-                ₽{notification.estimatedCost.toLocaleString()}
-              </span>
-            </div>
-          )}
+          {notification.estimatedCost !== undefined &&
+            notification.type !== "hot-sacrifice" && (
+              <div className="flex items-center justify-between gap-4 bg-slate-800/40 rounded-lg px-4 py-2.5 border border-white/5 mt-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-cyan-400/60" />
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                    Est. Cost
+                  </span>
+                </div>
+                <span className="text-sm font-bold text-cyan-400 tabular-nums">
+                  ₽{notification.estimatedCost.toLocaleString()}
+                </span>
+              </div>
+            )}
 
           {notification.actions && notification.actions.length > 0 && (
             <div className="flex gap-2 mt-3 pt-2 border-t border-current/10">
