@@ -22,7 +22,10 @@ export interface Notification {
     | "weapon-warning";
   icon?: string;
   title: string;
-  description: string | React.ReactNode;
+  description:
+    | string
+    | React.ReactNode
+    | ((notification: Notification) => React.ReactNode);
   actions?: NotificationAction[];
   priority?: number;
   estimatedCost?: number;
@@ -38,7 +41,7 @@ export const NOTIFICATIONS: Notification[] = [
     id: "new-sas-thor-combo",
     type: "hot-sacrifice",
     title: "🔥 Sacrifice: THOR Armor",
-    description: (
+    description: (notification: Notification) => (
       <div className="mt-4 space-y-4">
         {/* Main Content - THOR IC Armor Section */}
         <div className="flex gap-4 items-start">
@@ -122,7 +125,8 @@ export const NOTIFICATIONS: Notification[] = [
                   </span>
                 </div>
                 <span className="text-sm font-bold text-cyan-400 tabular-nums">
-                  ₽64,998
+                  ₽
+                  {notification.estimatedCost?.toLocaleString() || "Loading..."}
                 </span>
               </div>
             </div>
@@ -178,7 +182,9 @@ export const NOTIFICATIONS: Notification[] = [
                   <div className="flex items-center gap-1 bg-slate-800/40 rounded-md px-1.5 py-0.5 border border-white/5">
                     <div className="w-1 h-1 rounded-full bg-cyan-400/60" />
                     <span className="text-[10px] font-bold text-cyan-400 tabular-nums">
-                      ₽64,998
+                      ₽
+                      {notification.estimatedCost?.toLocaleString() ||
+                        "Loading..."}
                     </span>
                   </div>
                 </div>
@@ -402,23 +408,24 @@ export function NotificationCard({
                         : "text-slate-300/90"
             }`}
           >
-            {notification.description}
+            {typeof notification.description === "function"
+              ? notification.description(notification)
+              : notification.description}
           </div>
 
-          {notification.estimatedCost !== undefined &&
-            notification.type !== "hot-sacrifice" && (
-              <div className="flex items-center justify-between gap-4 bg-slate-800/40 rounded-lg px-4 py-2.5 border border-white/5 mt-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-cyan-400/60" />
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
-                    Est. Cost
-                  </span>
-                </div>
-                <span className="text-sm font-bold text-cyan-400 tabular-nums">
-                  ₽{notification.estimatedCost.toLocaleString()}
+          {notification.estimatedCost !== undefined && (
+            <div className="flex items-center justify-between gap-4 bg-slate-800/40 rounded-lg px-4 py-2.5 border border-white/5 mt-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-cyan-400/60" />
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                  Est. Cost
                 </span>
               </div>
-            )}
+              <span className="text-sm font-bold text-cyan-400 tabular-nums">
+                ₽{notification.estimatedCost?.toLocaleString() || "Loading..."}
+              </span>
+            </div>
+          )}
 
           {notification.actions && notification.actions.length > 0 && (
             <div className="flex gap-2 mt-3 pt-2 border-t border-current/10">
