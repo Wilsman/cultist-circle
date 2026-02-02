@@ -186,4 +186,6 @@ export const recipeIconMap: Record<string, string> = {
   "1x Baseball cap": "https://assets.tarkov.dev/572b7d8524597762b472f9d1-icon.webp",
   "1x Labrys research notes": "https://assets.tarkov.dev/679b992329acd1f2f60985a5-icon.webp",
   "1x Labrys access keycard": "https://assets.tarkov.dev/679b9819a2f2dd4da9023512-icon.webp",
+  "1x Old house toilet key":
+    "https://assets.tarkov.dev/6939948dc2ceb9acd7082eb2-icon.webp",
 };
