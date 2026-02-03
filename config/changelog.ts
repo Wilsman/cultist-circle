@@ -1,3 +1,3 @@
 // Simple version configuration
 export const CURRENT_VERSION = "2.1.2";
-export const LAST_UPDATED = "2026-01-20";
+export const LAST_UPDATED = "2026-02-03";
