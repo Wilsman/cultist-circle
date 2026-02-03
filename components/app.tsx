@@ -44,6 +44,7 @@ import {
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
 import { WeaponWarning } from "./weapon-warning";
+import { RecipeWarning } from "./recipe-warning";
 import { InfoDashboard } from "./info-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
@@ -1773,6 +1774,13 @@ function AppContent() {
                   onOpenChange={setPreviewModalOpen}
                   fitDebug={fitDebug}
                   selectedItems={selectedItems}
+                />
+
+{/* Recipe Detection Warning */}
+                <RecipeWarning
+                  selectedItems={
+                    selectedItems.filter(Boolean) as SimplifiedItem[]
+                  }
                 />
 
                 {/* Items Don't Fit Warning */}
