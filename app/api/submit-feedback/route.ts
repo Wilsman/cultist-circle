@@ -1,21 +1,61 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabaseClient";
+import { createRateLimiter } from "@/app/lib/rateLimiter";
 
-export const runtime = 'edge'
+export const runtime = "edge";
 
-export async function POST(request: Request) {
-  const { type, description, version } = await request.json();
+const feedbackPayloadSchema = z.object({
+  type: z.enum(["Issue", "Feature", "Suggestion", "Recipe"]),
+  description: z.string().trim().min(3).max(2000),
+  version: z.string().trim().min(1).max(64).optional(),
+});
+
+const rateLimiter = createRateLimiter({
+  uniqueTokenPerInterval: 500,
+  interval: 60_000,
+  tokensPerInterval: 5,
+  timeout: 60_000,
+});
+
+export async function POST(request: NextRequest) {
+  const rateLimitResponse = rateLimiter(request);
+  if (rateLimitResponse) {
+    return NextResponse.json(
+      { success: false, error: "Too many requests. Please try again shortly." },
+      { status: 429 }
+    );
+  }
+
+  const payload = await request.json().catch(() => null);
+  const parsedPayload = feedbackPayloadSchema.safeParse(payload);
+
+  if (!parsedPayload.success) {
+    return NextResponse.json(
+      { success: false, error: "Invalid feedback payload." },
+      { status: 400 }
+    );
+  }
+
+  const { type, description, version } = parsedPayload.data;
 
   try {
-    const { data, error } = await supabase
-      .from('feedback')
-      .insert([{ feedback_type: type, description, app_version: version }]);
+    const feedbackRecord = {
+      feedback_type: type,
+      description,
+      ...(version ? { app_version: version } : {}),
+    };
+
+    const { data, error } = await supabase.from("feedback").insert([feedbackRecord]);
 
     if (error) throw error;
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error submitting feedback:', error);
-    return NextResponse.json({ success: false, error: 'Failed to submit feedback' }, { status: 500 });
+    console.error("Error submitting feedback:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to submit feedback" },
+      { status: 500 }
+    );
   }
 }

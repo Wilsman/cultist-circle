@@ -45,6 +45,8 @@ next-env.d.ts
 /public/all_items_*
 repomix-output.txt
 CCC.md
+/.opencode/skills
+/.agents/skills
 
 # vscode
 /.vscode
@@ -59,3 +61,6 @@ CLAUDE.md
 .env.local
 # Sentry Config File
 .env.sentry-build-plugin
+
+# supabase cli local metadata
+supabase/.temp/
