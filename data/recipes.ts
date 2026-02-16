@@ -20,6 +20,12 @@ export interface Recipe {
  * Escape from Tarkov Cultist Circle crafting recipes
  */
 export const tarkovRecipes: Recipe[] = [
+  {
+    requiredItems: ["1x Duck figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["5x Can of duck pate"],
+    isNew: true,
+  },
     {
         requiredItems: ["1x Labrys research notes"],
         craftingTime: "66 mins",
