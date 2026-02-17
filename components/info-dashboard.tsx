@@ -29,16 +29,7 @@ export function InfoDashboard({
   const { t } = useLanguage();
   const dynamicNotifications = useDynamicNotifications(selectedItems);
 
-  // Enrich notifications with estimated costs
-  const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications].map((notification) => {
-    if (notification.id === "new-sas-thor-combo") {
-      return {
-        ...notification,
-        estimatedCost: sacrificeCosts["sas-thor"],
-      };
-    }
-    return notification;
-  });
+  const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications];
 
   const hasUpdates = SHOW_MAINTENANCE_NOTICE || allNotifications.length > 0;
   const defaultTab = hasUpdates ? "updates" : "recipes";
