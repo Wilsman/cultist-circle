@@ -26,13 +26,18 @@ export const tarkovRecipes: Recipe[] = [
     producedItems: ["5x Can of duck pate"],
     isNew: true,
   },
+  {
+    requiredItems: ["5x Can of duck pate"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Duck figurine"],
+    isNew: true,
+  },
     {
         requiredItems: ["1x Labrys research notes"],
         craftingTime: "66 mins",
         producedItems: [
             "1x Labrys access keycard"
         ],
-        isNew: true,
     },
     {
         requiredItems: ["1x Elvisvista figurine"],
@@ -41,7 +46,6 @@ export const tarkovRecipes: Recipe[] = [
             "1x Elvisvista figurine",
             "1x Baseball cap"
         ],
-        isNew: true,
     },
   {
     requiredItems: [
@@ -51,7 +55,6 @@ export const tarkovRecipes: Recipe[] = [
     ],
     craftingTime: "66 mins",
     producedItems: ["1x Ded Moroz hat", "1x Ded Moroz figurine"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Mastichin figurine"],
@@ -61,13 +64,11 @@ export const tarkovRecipes: Recipe[] = [
       "1x Note with code word Voron",
       "1x Raven",
     ],
-    isNew: true,
   },
   {
     requiredItems: ["1x 6-STEN-140-M military battery"],
     craftingTime: "66 mins",
     producedItems: ["1x Old house toilet key"],
-    isNew: true,
     roomInfo: {
       itemName: "Old house toilet key",
       spawnInfo: "Room has 100% spawn chance for 6-STEN-140-M military battery",
@@ -81,7 +82,6 @@ export const tarkovRecipes: Recipe[] = [
       "1x ZiD SP-81 26x75 signal pistol",
       "1x Bottle of Dan Jackiel whiskey",
     ],
-    isNew: true,
   },
   {
     requiredItems: ["1x Nut sack"],
@@ -109,43 +109,36 @@ export const tarkovRecipes: Recipe[] = [
         explanation: "Outcome 2: Different headwear set",
       },
     ],
-    isNew: true,
   },
   {
     requiredItems: ["1x Christmas tree ornament (White)"],
     craftingTime: "66 mins",
     producedItems: ["1x Christmas tree ornament (Violet)"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Christmas tree ornament (Violet)"],
     craftingTime: "66 mins",
     producedItems: ["1x Christmas tree ornament (Red)"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Christmas tree ornament (Red)"],
     craftingTime: "66 mins",
     producedItems: ["1x Christmas tree ornament (White)"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Tigzresq splint"],
     craftingTime: "66 mins",
     producedItems: ["1x Golden egg"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Mazoni golden dumbbell"],
     craftingTime: "66 mins",
     producedItems: ["1x Mazoni golden dumbbell"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Augmentin antibiotic pills"],
     craftingTime: "66 mins",
     producedItems: ["1x xTG-12 antidote injector"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Pumpkin with sweets"],
