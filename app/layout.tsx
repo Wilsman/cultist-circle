@@ -92,6 +92,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark antialiased" suppressHydrationWarning>
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {/* Google Analytics */}
         <Script
@@ -106,13 +113,6 @@ export default function RootLayout({
             gtag('config', 'G-MDQ1Z37Y5M');
           `}
         </Script>
-
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
 
         <CookieConsentProvider>
           <LanguageProvider>

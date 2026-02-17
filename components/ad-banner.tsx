@@ -24,6 +24,9 @@ const AdBanner: React.FC<AdBannerProps> = ({
 
   useEffect(() => {
     if (isAdLoaded.current) return;
+    let retryTimeout: number | undefined;
+    let retries = 0;
+    const maxRetries = 20;
 
     const loadAd = () => {
       try {
@@ -39,15 +42,23 @@ const AdBanner: React.FC<AdBannerProps> = ({
     if (window.adsbygoogle) {
       loadAd();
     } else {
-      const script = document.createElement("script");
-      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065`;
-      script.async = true;
-      script.onload = loadAd;
-      document.head.appendChild(script);
+      const retryLoad = () => {
+        retries += 1;
+        if (window.adsbygoogle) {
+          loadAd();
+          return;
+        }
+        if (retries < maxRetries) {
+          retryTimeout = window.setTimeout(retryLoad, 250);
+        }
+      };
+      retryTimeout = window.setTimeout(retryLoad, 250);
     }
 
     return () => {
-      isAdLoaded.current = false;
+      if (retryTimeout) {
+        window.clearTimeout(retryTimeout);
+      }
     };
   }, []);
 
