@@ -93,6 +93,22 @@ const NewBadge = React.memo(function NewBadge() {
   );
 });
 
+const ModeRestrictionBadge = React.memo(function ModeRestrictionBadge({
+  modeRestriction,
+}: {
+  modeRestriction: Recipe["modeRestriction"];
+}) {
+  if (modeRestriction !== "pvp-only") {
+    return null;
+  }
+
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 absolute -top-2 -right-2 shadow-lg z-10">
+      PVP ONLY
+    </span>
+  );
+});
+
 const ItemBadge = React.memo(function ItemBadge({
   itemName,
   isOutput = false,
@@ -315,6 +331,7 @@ const RecipeCard = React.memo(function RecipeCard({
   return (
     <div className="relative rounded-xl border border-gray-700/50 bg-gray-800/40 p-4 lg:p-5 backdrop-blur-sm transition-all duration-200 hover:bg-gray-800/60 hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20 group">
       {recipe.isNew && <NewBadge />}
+      <ModeRestrictionBadge modeRestriction={recipe.modeRestriction} />
 
       <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
         {/* Inputs Column */}

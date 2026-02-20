@@ -10,6 +10,7 @@ export interface Recipe {
     | string[]
     | { type: "multiple_possible"; items: string[]; explanation: string }[];
   isNew?: boolean;
+  modeRestriction?: "pvp-only";
   roomInfo?: {
     itemName: string;
     spawnInfo: string;
@@ -25,6 +26,7 @@ export const tarkovRecipes: Recipe[] = [
     craftingTime: "66 mins",
     producedItems: ["5x Can of duck pate"],
     isNew: true,
+    modeRestriction: "pvp-only",
   },
   {
     requiredItems: ["5x Can of duck pate"],

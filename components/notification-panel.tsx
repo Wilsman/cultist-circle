@@ -55,7 +55,7 @@ export const NOTIFICATIONS: Notification[] = [
               </span>
             </div>
             <div className="inline-flex w-full items-center rounded-lg border border-gray-700 bg-gray-800/60 px-2 py-1.5 text-xs font-medium text-gray-200">
-              1x Duck figurine
+              5x Can of duck pate
             </div>
           </div>
 
@@ -81,7 +81,7 @@ export const NOTIFICATIONS: Notification[] = [
               </span>
             </div>
             <div className="inline-flex w-full items-center rounded-lg border border-green-700/40 bg-green-900/30 px-2 py-1.5 text-xs font-medium text-green-300">
-              5x Can of duck pate
+              1x Duck figurine
             </div>
           </div>
         </div>
