@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState } from "react";
@@ -39,9 +40,9 @@ export interface NotificationAction {
 
 export const NOTIFICATIONS: Notification[] = [
   {
-    id: "new-duck-figurine-recipe",
+    id: "new-hideout-cat-figurine-recipe",
     type: "hot-sacrifice",
-    title: "New Recipe: Duck Figurine",
+    title: "New Recipe: Cat Figurine",
     description: (
       <div className="mt-3 rounded-xl border border-gray-700/50 bg-gray-800/40 p-3 backdrop-blur-sm">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
@@ -55,7 +56,15 @@ export const NOTIFICATIONS: Notification[] = [
               </span>
             </div>
             <div className="inline-flex w-full items-center rounded-lg border border-gray-700 bg-gray-800/60 px-2 py-1.5 text-xs font-medium text-gray-200">
-              5x Can of duck pate
+              <img
+                src="https://assets.tarkov.dev/68f260d7b84c6e1f8a09cffd-icon.webp"
+                alt="Hideout Cat figurine"
+                width={24}
+                height={24}
+                className="mr-2 rounded"
+                loading="lazy"
+              />
+              1x Hideout Cat figurine
             </div>
           </div>
 
@@ -81,7 +90,15 @@ export const NOTIFICATIONS: Notification[] = [
               </span>
             </div>
             <div className="inline-flex w-full items-center rounded-lg border border-green-700/40 bg-green-900/30 px-2 py-1.5 text-xs font-medium text-green-300">
-              1x Duck figurine
+              <img
+                src="https://assets.tarkov.dev/59e3658a86f7741776641ac4-icon.webp"
+                alt="Cat figurine"
+                width={24}
+                height={24}
+                className="mr-2 rounded"
+                loading="lazy"
+              />
+              1x Cat figurine
             </div>
           </div>
         </div>
