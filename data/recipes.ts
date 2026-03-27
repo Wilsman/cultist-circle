@@ -31,82 +31,61 @@ export const tarkovRecipes: Recipe[] = [
     requiredItems: ["1x Duck figurine"],
     craftingTime: "66 mins",
     producedItems: ["5x Can of duck pate"],
-    isNew: true,
     modeRestriction: "pvp-only",
   },
   {
     requiredItems: ["5x Can of duck pate"],
     craftingTime: "66 mins",
     producedItems: ["1x Duck figurine"],
-    isNew: true,
   },
-    {
-        requiredItems: ["1x Labrys research notes"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "1x Labrys access keycard"
-        ],
-    },
-    {
-        requiredItems: ["1x Elvisvista figurine"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "1x Elvisvista figurine",
-            "1x Baseball cap"
-        ],
-    },
-    {
-        requiredItems: ["1x Fence figurine"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "3x Fence figurine"
-        ],
-    },
-    {
-        requiredItems: ["1x Mechanic figurine"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "2x Screw nuts",
-            "1x Leatherman Multitool"
-        ],
-    },
-    {
-        requiredItems: ["1x Peacekeeper figurine"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "2x MF-UNTAR body armor"
-        ],
-    },
-    {
-        requiredItems: ["1x Prapor figurine"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "1x 42 Signature Blend English Tea"
-        ],
-    },
-    {
-        requiredItems: ["1x Skier figurine"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "1x Pompon hat",
-            "1x Broken GPhone smartphone"
-        ],
-    },
-    {
-        requiredItems: ["1x Therapist figurine"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "1x Salewa first aid kit"
-        ],
-    },
-    {
-        requiredItems: ["1x Walking Tank figurine"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "2x BNTI Module-3M body armor",
-            "2x Kalashnikov AK-74 5.45x39 assault rifle"
-        ],
-    },
+  {
+    requiredItems: ["1x Labrys research notes"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Labrys access keycard"],
+  },
+  {
+    requiredItems: ["1x Elvisvista figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Elvisvista figurine", "1x Baseball cap"],
+  },
+  {
+    requiredItems: ["1x Fence figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["3x Fence figurine"],
+  },
+  {
+    requiredItems: ["1x Mechanic figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["2x Screw nuts", "1x Leatherman Multitool"],
+  },
+  {
+    requiredItems: ["1x Peacekeeper figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["2x MF-UNTAR body armor"],
+  },
+  {
+    requiredItems: ["1x Prapor figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x 42 Signature Blend English Tea"],
+  },
+  {
+    requiredItems: ["1x Skier figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Pompon hat", "1x Broken GPhone smartphone"],
+  },
+  {
+    requiredItems: ["1x Therapist figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Salewa first aid kit"],
+  },
+  {
+    requiredItems: ["1x Walking Tank figurine"],
+    craftingTime: "66 mins",
+    producedItems: [
+      "2x BNTI Module-3M body armor",
+      "2x Kalashnikov AK-74 5.45x39 assault rifle",
+    ],
+  },
   {
     requiredItems: [
       "1x Christmas tree ornament (Silver)",
