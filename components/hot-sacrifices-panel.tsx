@@ -3,7 +3,7 @@
 
 import { ChevronDown, Flame, Plus, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -30,6 +30,7 @@ export interface SacrificeCombo {
   resultText: string;
   highlight?: boolean;
   separator?: string; // For custom separators like "➡️"
+  availabilityNote?: string;
 }
 
 export const HOT_SACRIFICES: SacrificeCombo[] = [
@@ -211,6 +212,8 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
     ],
     resultText: "400K+ (6h & 14h)",
     separator: "➡️",
+    availabilityNote:
+      "PVP no longer works after the THOR IC base value change. PVE still works.",
   },
 ];
 
@@ -223,6 +226,7 @@ interface ComboRowProps {
 export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
   const isHighValue =
     combo.resultText.includes("400K") || combo.resultText.includes("6h");
+  const hasAvailabilityNote = Boolean(combo.availabilityNote);
 
   return (
     <motion.div
@@ -346,6 +350,12 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
                 ₽{estimatedCost.toLocaleString()}
               </span>
             </div>
+          )}
+
+          {hasAvailabilityNote && (
+            <p className="max-w-[260px] text-right sm:text-left text-[10px] leading-snug font-semibold text-amber-300/90">
+              {combo.availabilityNote}
+            </p>
           )}
         </div>
 

@@ -22,6 +22,12 @@ export interface Recipe {
  */
 export const tarkovRecipes: Recipe[] = [
   {
+    requiredItems: ["1x BTR figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x OFZ 30x165mm shell"],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Hideout Cat figurine"],
     craftingTime: "66 mins",
     producedItems: ["1x Cat figurine"],

@@ -4,6 +4,10 @@ export const recipeIconMap: Record<string, string> = {
   Soap: "https://assets.tarkov.dev/5c13cd2486f774072c757944-icon.webp",
   Awl: "https://assets.tarkov.dev/62a0a098de7ac8199358053b-icon.webp",
   "Scav Vest": "https://assets.tarkov.dev/572b7adb24597762ae139821-icon.webp",
+  "1x BTR figurine":
+    "https://assets.tarkov.dev/68f2608301fb9de974058be6-icon.webp",
+  "1x OFZ 30x165mm shell":
+    "https://assets.tarkov.dev/5d0379a886f77420407aa271-icon.webp",
   "1x Fence figurine":
     "https://assets.tarkov.dev/68f25da3b84c6e1f8a09cffb-icon.webp",
   "3x Fence figurine":

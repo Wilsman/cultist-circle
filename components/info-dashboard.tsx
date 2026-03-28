@@ -3,11 +3,9 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
-import { MaintenanceNotice } from "./maintenance-notice";
 import { NOTIFICATIONS, NotificationCard } from "./notification-panel";
 import { HOT_SACRIFICES, ComboRow } from "./hot-sacrifices-panel";
 import { useDynamicNotifications } from "./dynamic-notification-system";
-import { SHOW_MAINTENANCE_NOTICE } from "@/config/maintenance";
 import { Bell, Flame, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
@@ -31,7 +29,7 @@ export function InfoDashboard({
 
   const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications];
 
-  const hasUpdates = SHOW_MAINTENANCE_NOTICE || allNotifications.length > 0;
+  const hasUpdates = allNotifications.length > 0;
   const defaultTab = hasUpdates ? "updates" : "recipes";
 
   const [updatesExpanded, setUpdatesExpanded] = useState(false);
@@ -45,8 +43,7 @@ export function InfoDashboard({
   };
 
   // Updates logic
-  const maintenanceCount = SHOW_MAINTENANCE_NOTICE ? 1 : 0;
-  const updatesTotalCount = maintenanceCount + allNotifications.length;
+  const updatesTotalCount = allNotifications.length;
   const priorityNotifications = allNotifications.filter(
     (notification) => notification.priority === 0
   );
@@ -58,10 +55,7 @@ export function InfoDashboard({
   const remainingNotifications = allNotifications.filter(
     (notification) => !primaryIds.has(notification.id)
   );
-  const showMaintenanceInPrimary =
-    primaryNotifications.length === 0 && maintenanceCount > 0;
-  const remainingUpdatesCount =
-    remainingNotifications.length + (showMaintenanceInPrimary ? 0 : maintenanceCount);
+  const remainingUpdatesCount = remainingNotifications.length;
   const showUpdatesExpand = remainingUpdatesCount > 0;
 
   // Recipes logic
@@ -109,8 +103,6 @@ export function InfoDashboard({
           value="updates"
           className="space-y-3 focus-visible:ring-0 mt-0"
         >
-          {/* Always show priority items */}
-          {showMaintenanceInPrimary && <MaintenanceNotice />}
           {primaryNotifications.map((notification) => (
             <NotificationCard
               key={notification.id}
@@ -125,9 +117,6 @@ export function InfoDashboard({
               <div
                 className={`space-y-2 ${updatesExpanded ? "block" : "hidden"}`}
               >
-                {!showMaintenanceInPrimary && SHOW_MAINTENANCE_NOTICE && (
-                  <MaintenanceNotice />
-                )}
                 {remainingNotifications.map((notification) => (
                   <NotificationCard
                     key={notification.id}

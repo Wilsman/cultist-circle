@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { createElement, type ReactNode, useState, useEffect, useCallback } from "react";
+import { AlertTriangle } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 
 interface Notification {
@@ -8,8 +9,9 @@ interface Notification {
   title: string;
   description: string;
   version: string;
-  type: "info" | "welcome" | "feature";
+  type: "info" | "welcome" | "feature" | "warning";
   createdAt: string;
+  icon?: ReactNode;
 }
 
 interface ToastNotificationsState {
@@ -21,28 +23,21 @@ interface ToastNotificationsState {
 const NOTIFICATIONS_STORAGE_KEY = "cultist_toast_notifications";
 const CURRENT_APP_VERSION = "2.1.2";
 
-// NextItemHints explanation notification
-const NEXT_ITEM_HINTS_NOTIFICATION: Notification = {
-  id: "next-item-hints-explanation",
-  title: "🚀 Smart Item Suggestions",
-  description: `✨ Smart suggestions appear below empty slots! 🟢 → Copy as slot above 🟡 → Single item to reach threshold ⚫ → Other options`,
+const THOR_PVP_WARNING_NOTIFICATION: Notification = {
+  id: "thor-hot-sacrifice-pvp-warning",
+  title: "THOR Hot Sacrifice No Longer Works in PVP",
+  description:
+    "The NFM THOR Integrated Carrier body armor hot sacrifice no longer reaches the target value in PVP because its base value changed there. PVE still works.",
   version: CURRENT_APP_VERSION,
-  type: "feature",
+  type: "warning",
   createdAt: new Date().toISOString(),
+  icon: createElement(AlertTriangle, {
+    className: "h-4 w-4 text-amber-400",
+    "aria-hidden": true,
+  }),
 };
 
-// PVP Flea Market prices notification
-const PVP_FLEA_MARKET_NOTIFICATION: Notification = {
-  id: "pvp-flea-market-online",
-  title: "🛒 PVP Flea Market Online",
-  description: `PVP Flea Market prices are back online and can be used now! Make sure to have the correct prices set in the settings for accurate calculations.`,
-  version: CURRENT_APP_VERSION,
-  type: "info",
-  createdAt: new Date().toISOString(),
-};
-
-// Collection of all available notifications (ordered by priority)
-const AVAILABLE_NOTIFICATIONS = [NEXT_ITEM_HINTS_NOTIFICATION, PVP_FLEA_MARKET_NOTIFICATION];
+const AVAILABLE_NOTIFICATIONS = [THOR_PVP_WARNING_NOTIFICATION];
 
 export function useToastNotifications() {
   const [state, setState] = useState<ToastNotificationsState>({
@@ -147,6 +142,7 @@ export function useToastNotifications() {
 
       sonnerToast(notification.title, {
         description: notification.description,
+        icon: notification.icon,
         duration: 10000, // 10 seconds for feature explanations
         action: {
           label: "Got it!",
@@ -172,14 +168,6 @@ export function useToastNotifications() {
       dismissNotification,
     ]
   );
-
-  const showNextItemHintsExplanation = useCallback(() => {
-    showNotification(NEXT_ITEM_HINTS_NOTIFICATION);
-  }, [showNotification]);
-
-  const showPvpFleaMarketNotification = useCallback(() => {
-    showNotification(PVP_FLEA_MARKET_NOTIFICATION);
-  }, [showNotification]);
 
   // Auto-show notifications on app load (for new users or new versions)
   const triggerNewNotifications = useCallback(() => {
@@ -241,8 +229,6 @@ export function useToastNotifications() {
   return {
     showNotification,
     dismissNotification,
-    showNextItemHintsExplanation,
-    showPvpFleaMarketNotification,
     triggerNewNotifications,
     resetNotifications,
     // Utility functions
