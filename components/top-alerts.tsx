@@ -22,39 +22,35 @@ export function TopAlerts() {
           w-full max-w-3xl
         "
       >
-        {/* Ambient glow sweep */}
         <div className="pointer-events-none absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
           <div className="absolute -top-1/3 right-0 h-[200%] w-1/2 rotate-12 bg-gradient-to-b from-amber-400/10 via-transparent to-transparent blur-2xl" />
         </div>
 
-        {/* Compact header row(s) */}
         <div className="flex flex-col gap-1 px-2.5 sm:px-3.5 pt-2">
-          {/* New Recipes Announcement */}
           <div className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/40 dark:to-orange-950/40 px-3 py-1.5 text-[11px] sm:text-[12px] text-red-800 dark:text-red-200 ring-1 ring-red-500/20 dark:ring-red-400/20">
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-red-500/15 text-red-600 dark:text-red-300 ring-1 ring-red-500/20">
-              🎄
+            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded bg-red-500/15 px-1 text-[9px] font-bold text-red-600 dark:text-red-300 ring-1 ring-red-500/20">
+              NEW
             </span>
             <span className="truncate font-semibold whitespace-pre-wrap">
               <span className="text-red-700 dark:text-red-300">
-                🎉 New recipes added! Christmas ornaments, golden items, medical
-                supplies, and more are now craftable.
+                Latest recipe update: Hideout Cat figurine now crafts into Cat
+                figurine in 66 mins.
                 <br />
-                Added in Patch 1.0.1.0 (24/12/2025).{" "}
+                Updated on March 27, 2026.{" "}
                 <Link
                   href="/recipes"
                   className="underline hover:text-red-600 dark:hover:text-red-300 transition-colors"
                 >
-                  Visit the Recipes page to check them out!
+                  Visit the Recipes page to see all recipes.
                 </Link>
               </span>
             </span>
           </div>
 
-          {/* New special task announcement (hidden) */}
           {false && (
             <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/20">
-                🔥
+              <span className="inline-flex h-4 min-w-4 items-center justify-center rounded bg-amber-500/15 px-1 text-[9px] font-bold text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/20">
+                TIP
               </span>
               <span className="truncate font-semibold">
                 Weapon base values can be found in the{" "}
@@ -64,14 +60,12 @@ export function TopAlerts() {
                 >
                   Base Values lookup
                 </Link>{" "}
-                - search by weapon name or use &quot;&lt;weapon&gt;
-                default&quot; for trader prices. Values may vary; updates are
-                ongoing.
+                - search by weapon name or use &quot;&lt;weapon&gt; default&quot;
+                for trader prices. Values may vary; updates are ongoing.
               </span>
             </div>
           )}
 
-          {/* Combined Base Values and Settings tip */}
           <div className="flex items-start gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
             <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
             <div className="min-w-0">
@@ -84,7 +78,7 @@ export function TopAlerts() {
                 >
                   Base Values lookup
                 </Link>{" "}
-                page. To display weapons in the calculator, go to Settings →
+                page. To display weapons in the calculator, go to Settings -&gt;
                 Excluded Categories and uncheck &quot;Weapon&quot;.
               </span>
               <span className="block text-[10px] leading-tight text-red-600 dark:text-red-400 mt-0.5">
@@ -93,7 +87,7 @@ export function TopAlerts() {
               </span>
             </div>
           </div>
-          {/* First combo preview (always visible) */}
+
           <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
             <img
               src="https://assets.tarkov.dev/59411aa786f7747aeb37f9a5-icon.webp"
@@ -104,7 +98,7 @@ export function TopAlerts() {
               fetchPriority="low"
               loading="lazy"
             />
-            <span className="font-semibold">5× MP5</span>
+            <span className="font-semibold">5x MP5</span>
             <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
               <img
                 src="https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp"
@@ -127,7 +121,7 @@ export function TopAlerts() {
           <summary className="flex items-center justify-between cursor-pointer list-none p-2 sm:p-2.5">
             <div className="flex items-center gap-2 min-w-0">
               <span className="hidden sm:inline text-[10px] font-medium text-slate-500/90 ml-1 truncate">
-                Expand to view featured new recipes from Patch 1.0.1.0
+                Expand to view featured recipe updates
               </span>
             </div>
             <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 group-open:rotate-180" />
@@ -136,11 +130,10 @@ export function TopAlerts() {
             <div className="flex flex-col items-start gap-3 sm:gap-4">
               <div className="min-w-0 w-full">
                 <AlertDescription className="mt-1 space-y-2">
-                  {/* New Recipe Examples */}
                   <div className="inline-flex items-center gap-2 rounded-lg bg-white/60 dark:bg-white/5 px-3 py-1.5 text-[11px] sm:text-[12px] text-slate-800 dark:text-slate-200 ring-1 ring-black/5 dark:ring-white/10">
                     <img
-                      src="https://assets.tarkov.dev/5df8a72c86f77412640e2e83-icon.webp"
-                      alt="Christmas tree ornament (White)"
+                      src="https://assets.tarkov.dev/68f260d7b84c6e1f8a09cffd-icon.webp"
+                      alt="Hideout Cat figurine"
                       width={32}
                       height={32}
                       className="rounded"
@@ -148,21 +141,19 @@ export function TopAlerts() {
                       loading="lazy"
                     />
                     <span className="font-semibold">
-                      1× Christmas ornament (White)
+                      1x Hideout Cat figurine
                     </span>
-                    <span className="opacity-60">➡️</span>
+                    <span className="opacity-60">-&gt;</span>
                     <img
-                      src="https://assets.tarkov.dev/5df8a77486f77412672a1e3f-icon.webp"
-                      alt="Christmas tree ornament (Violet)"
+                      src="https://assets.tarkov.dev/59e3658a86f7741776641ac4-icon.webp"
+                      alt="Cat figurine"
                       width={32}
                       height={32}
                       className="rounded"
                       fetchPriority="low"
                       loading="lazy"
                     />
-                    <span className="font-semibold">
-                      1× Christmas ornament (Violet)
-                    </span>
+                    <span className="font-semibold">1x Cat figurine</span>
                     <span className="ml-auto font-bold text-blue-600 dark:text-blue-400">
                       66 mins
                     </span>
@@ -176,8 +167,8 @@ export function TopAlerts() {
                       height={32}
                       className="rounded"
                     />
-                    <span className="font-semibold">1× Tigzresq splint</span>
-                    <span className="opacity-60">➡️</span>
+                    <span className="font-semibold">1x Tigzresq splint</span>
+                    <span className="opacity-60">-&gt;</span>
                     <img
                       src="https://assets.tarkov.dev/62a09cfe4f842e1bd12da3e4-icon.webp"
                       alt="Golden egg"
@@ -185,7 +176,7 @@ export function TopAlerts() {
                       height={32}
                       className="rounded"
                     />
-                    <span className="font-semibold">1× Golden egg</span>
+                    <span className="font-semibold">1x Golden egg</span>
                     <span className="ml-auto font-bold text-blue-600 dark:text-blue-400">
                       66 mins
                     </span>
@@ -202,9 +193,9 @@ export function TopAlerts() {
                       loading="lazy"
                     />
                     <span className="font-semibold">
-                      1× Augmentin antibiotic pills
+                      1x Augmentin antibiotic pills
                     </span>
-                    <span className="opacity-60">➡️</span>
+                    <span className="opacity-60">-&gt;</span>
                     <img
                       src="https://assets.tarkov.dev/5fca138c2a7b221b2852a5c6-icon.webp"
                       alt="xTG-12 antidote injector"
@@ -215,7 +206,7 @@ export function TopAlerts() {
                       loading="lazy"
                     />
                     <span className="font-semibold">
-                      1× xTG-12 antidote injector
+                      1x xTG-12 antidote injector
                     </span>
                     <span className="ml-auto font-bold text-blue-600 dark:text-blue-400">
                       66 mins
@@ -227,7 +218,6 @@ export function TopAlerts() {
           </div>
         </details>
 
-        {/* Precision underline + progress shimmer */}
         <div className="relative mx-3 sm:mx-4 md:mx-5 mb-1 mt-1">
           <div className="h-px w-full rounded-full bg-gradient-to-r from-transparent via-slate-400/40 to-transparent dark:via-slate-300/20" />
           <div className="pointer-events-none absolute inset-x-0 -top-[1px] h-[2px] overflow-hidden">

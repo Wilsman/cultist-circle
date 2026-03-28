@@ -735,6 +735,15 @@ export default function RecipesPage() {
               >
                 Escape from Tarkov Wiki
               </a>
+              {" "}and our{" "}
+              <a
+                href="https://discord.com/invite/3dFmr5qaJK"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline transition-colors"
+              >
+                Cultist Circle Discord
+              </a>
               . Thank you to all contributors!
             </p>
           </CardFooter>

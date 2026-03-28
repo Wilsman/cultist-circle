@@ -22,33 +22,106 @@ export interface Recipe {
  */
 export const tarkovRecipes: Recipe[] = [
   {
+    requiredItems: ["1x Jaeger figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x MTs-255-12 12ga shotgun", "1x Salty Dog beef sausage"],
+    isNew: true,
+  },
+  {
+    requiredItems: ["1x Lightkeeper figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Sacred Amulet"],
+    isNew: true,
+  },
+  {
+    requiredItems: ["1x Ragman figurine"],
+    craftingTime: "66 mins",
+    producedItems: [
+      {
+        type: "multiple_possible",
+        items: [
+          "1x Shemagh (Green)",
+          "1x Round frame sunglasses",
+          "1x RayBench Hipster Reserve sunglasses",
+          "1x Ghost balaclava",
+        ],
+        explanation:
+          "You always get 4 items from this pool. Possible combinations can include duplicates.",
+      },
+    ],
+    isNew: true,
+  },
+  {
+    requiredItems: ["1x BTR figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x OFZ 30x165mm shell"],
+    isNew: true,
+  },
+  {
+    requiredItems: ["1x Hideout Cat figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Cat figurine"],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Duck figurine"],
     craftingTime: "66 mins",
     producedItems: ["5x Can of duck pate"],
-    isNew: true,
     modeRestriction: "pvp-only",
   },
   {
     requiredItems: ["5x Can of duck pate"],
     craftingTime: "66 mins",
     producedItems: ["1x Duck figurine"],
-    isNew: true,
   },
-    {
-        requiredItems: ["1x Labrys research notes"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "1x Labrys access keycard"
-        ],
-    },
-    {
-        requiredItems: ["1x Elvisvista figurine"],
-        craftingTime: "66 mins",
-        producedItems: [
-            "1x Elvisvista figurine",
-            "1x Baseball cap"
-        ],
-    },
+  {
+    requiredItems: ["1x Labrys research notes"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Labrys access keycard"],
+  },
+  {
+    requiredItems: ["1x Elvisvista figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Elvisvista figurine", "1x Baseball cap"],
+  },
+  {
+    requiredItems: ["1x Fence figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["3x Fence figurine"],
+  },
+  {
+    requiredItems: ["1x Mechanic figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["2x Screw nuts", "1x Leatherman Multitool"],
+  },
+  {
+    requiredItems: ["1x Peacekeeper figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["2x MF-UNTAR body armor"],
+  },
+  {
+    requiredItems: ["1x Prapor figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x 42 Signature Blend English Tea"],
+  },
+  {
+    requiredItems: ["1x Skier figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Pompon hat", "1x Broken GPhone smartphone"],
+  },
+  {
+    requiredItems: ["1x Therapist figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Salewa first aid kit"],
+  },
+  {
+    requiredItems: ["1x Walking Tank figurine"],
+    craftingTime: "66 mins",
+    producedItems: [
+      "2x BNTI Module-3M body armor",
+      "2x Kalashnikov AK-74 5.45x39 assault rifle",
+    ],
+  },
   {
     requiredItems: [
       "1x Christmas tree ornament (Silver)",
@@ -113,7 +186,12 @@ export const tarkovRecipes: Recipe[] = [
     ],
   },
   {
-    requiredItems: ["1x Christmas tree ornament (White)"],
+    requiredItems: ["1x Christmas tree ornament (Red)"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Christmas tree ornament (Silver)"],
+  },
+  {
+    requiredItems: ["1x Christmas tree ornament (Silver)"],
     craftingTime: "66 mins",
     producedItems: ["1x Christmas tree ornament (Violet)"],
   },
@@ -121,11 +199,6 @@ export const tarkovRecipes: Recipe[] = [
     requiredItems: ["1x Christmas tree ornament (Violet)"],
     craftingTime: "66 mins",
     producedItems: ["1x Christmas tree ornament (Red)"],
-  },
-  {
-    requiredItems: ["1x Christmas tree ornament (Red)"],
-    craftingTime: "66 mins",
-    producedItems: ["1x Christmas tree ornament (White)"],
   },
   {
     requiredItems: ["1x Tigzresq splint"],
@@ -329,5 +402,28 @@ export const tarkovRecipes: Recipe[] = [
     requiredItems: ["LEDX Skin Transilluminator"],
     craftingTime: "666 mins",
     producedItems: ['TerraGroup "Blue Folders" materials'],
+  },
+  {
+    requiredItems: ["1x Left half of a Physical Bitcoin"],
+    craftingTime: "11 mins 6 secs",
+    producedItems: ["1x Right half of a Physical Bitcoin"],
+  },
+  {
+    requiredItems: ["1x Right half of a Physical Bitcoin"],
+    craftingTime: "11 mins 6 secs",
+    producedItems: ["1x Left half of a Physical Bitcoin"],
+  },
+  {
+    requiredItems: [
+      "1x Left half of a Physical Bitcoin",
+      "1x Right half of a Physical Bitcoin",
+    ],
+    craftingTime: "11 mins 6 secs",
+    producedItems: ["1x Physical Bitcoin"],
+  },
+  {
+    requiredItems: ["1x Secure container Gamma (Loui Peeton)"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Secure container Gamma (Loui Peeton)"],
   },
 ];

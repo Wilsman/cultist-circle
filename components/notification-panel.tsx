@@ -1,14 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   ChevronDown,
   Bell,
   AlertTriangle,
-  Package,
-  CheckCircle2,
-  ArrowRight,
-  Clock3,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -39,53 +35,43 @@ export interface NotificationAction {
 
 export const NOTIFICATIONS: Notification[] = [
   {
-    id: "new-duck-figurine-recipe",
-    type: "hot-sacrifice",
-    title: "New Recipe: Duck Figurine",
+    id: "thor-hot-sacrifice-pvp-warning",
+    type: "warning",
+    title: "THOR Hot Sacrifice No Longer Works in PVP",
     description: (
-      <div className="mt-3 rounded-xl border border-gray-700/50 bg-gray-800/40 p-3 backdrop-blur-sm">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center gap-2 border-b border-gray-700/50 pb-2">
-              <div className="rounded-lg bg-red-500/10 p-1.5">
-                <Package className="h-3.5 w-3.5 text-red-400" />
-              </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-red-300">
-                Sacrifice
-              </span>
-            </div>
-            <div className="inline-flex w-full items-center rounded-lg border border-gray-700 bg-gray-800/60 px-2 py-1.5 text-xs font-medium text-gray-200">
-              5x Can of duck pate
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center justify-center gap-1 sm:border-x sm:border-gray-700/50 sm:px-4">
-            <div className="flex items-center gap-1">
-              <ArrowRight className="h-3 w-3 text-green-400/60" />
-              <ArrowRight className="h-3 w-3 text-green-400/80" />
-              <ArrowRight className="h-3 w-3 text-green-400" />
-            </div>
-            <div className="flex items-center gap-2 rounded-full border border-gray-700/50 bg-gray-900/60 px-3 py-1.5">
-              <Clock3 className="h-3.5 w-3.5 text-gray-400" />
-              <span className="text-xs font-medium text-gray-200">66 mins</span>
-            </div>
-          </div>
-
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center gap-2 border-b border-gray-700/50 pb-2">
-              <div className="rounded-lg bg-green-500/10 p-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
-              </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-green-300">
-                Rewards
-              </span>
-            </div>
-            <div className="inline-flex w-full items-center rounded-lg border border-green-700/40 bg-green-900/30 px-2 py-1.5 text-xs font-medium text-green-300">
-              1x Duck figurine
-            </div>
-          </div>
-        </div>
-      </div>
+      <>
+        The <strong>NFM THOR Integrated Carrier body armor</strong> hot
+        sacrifice no longer reaches the target value in <strong>PVP</strong>{" "}
+        because its base value changed there. <strong>PVE</strong> still works
+        as expected.
+      </>
+    ),
+    actions: [
+      {
+        label: "Check Hot Sacrifices",
+        action: () => {
+          const element = document.querySelector("[data-hot-sacrifices]");
+          element?.scrollIntoView({ behavior: "smooth", block: "center" });
+        },
+      },
+    ],
+    priority: 0,
+  },
+  {
+    id: "new-figurine-recipes-round",
+    type: "hot-sacrifice",
+    title: "New Figurine Recipes Round",
+    description: (
+      <>
+        Multiple new figurine recipes have been added. Check the{" "}
+        <Link
+          href="/recipes"
+          className="underline hover:text-indigo-200 transition-colors font-semibold"
+        >
+          Recipes page
+        </Link>{" "}
+        for the latest additions.
+      </>
     ),
     priority: 0,
   },

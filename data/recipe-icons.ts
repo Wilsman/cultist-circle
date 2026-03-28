@@ -4,6 +4,76 @@ export const recipeIconMap: Record<string, string> = {
   Soap: "https://assets.tarkov.dev/5c13cd2486f774072c757944-icon.webp",
   Awl: "https://assets.tarkov.dev/62a0a098de7ac8199358053b-icon.webp",
   "Scav Vest": "https://assets.tarkov.dev/572b7adb24597762ae139821-icon.webp",
+  "1x BTR figurine":
+    "https://assets.tarkov.dev/68f2608301fb9de974058be6-icon.webp",
+  "1x OFZ 30x165mm shell":
+    "https://assets.tarkov.dev/5d0379a886f77420407aa271-icon.webp",
+  "1x Fence figurine":
+    "https://assets.tarkov.dev/68f25da3b84c6e1f8a09cffb-icon.webp",
+  "3x Fence figurine":
+    "https://assets.tarkov.dev/68f25da3b84c6e1f8a09cffb-icon.webp",
+  "1x Mechanic figurine":
+    "https://assets.tarkov.dev/68f25f1201fb9de974058be4-icon.webp",
+  "2x Screw nuts":
+    "https://assets.tarkov.dev/57347c77245977448d35f6e2-icon.webp",
+  "1x Leatherman Multitool":
+    "https://assets.tarkov.dev/544fb5454bdc2df8738b456a-icon.webp",
+  "1x Peacekeeper figurine":
+    "https://assets.tarkov.dev/68f25eef19a2b503d70dc291-icon.webp",
+  "2x MF-UNTAR body armor":
+    "https://assets.tarkov.dev/5ab8e4ed86f7742d8e50c7fa-icon.webp",
+  "1x Prapor figurine":
+    "https://assets.tarkov.dev/68f25c64b2b53abd200b954f-icon.webp",
+  "1x 42 Signature Blend English Tea":
+    "https://assets.tarkov.dev/5bc9be8fd4351e00334cae6e-icon.webp",
+  "1x Skier figurine":
+    "https://assets.tarkov.dev/68f25eba19a2b503d70dc28f-icon.webp",
+  "1x Pompon hat":
+    "https://assets.tarkov.dev/5b4329075acfc400153b78ff-icon.webp",
+  "1x Broken GPhone smartphone":
+    "https://assets.tarkov.dev/56742c324bdc2d150f8b456d-icon.webp",
+  "1x Therapist figurine":
+    "https://assets.tarkov.dev/68f25ce9b2b53abd200b9551-icon.webp",
+  "1x Salewa first aid kit":
+    "https://assets.tarkov.dev/544fb45d4bdc2dee738b4568-icon.webp",
+  "1x Walking Tank figurine":
+    "https://assets.tarkov.dev/68f26124b84c6e1f8a09cfff-icon.webp",
+  "2x BNTI Module-3M body armor":
+    "https://assets.tarkov.dev/59e7635f86f7742cbf2c1095-icon.webp",
+  "2x Kalashnikov AK-74 5.45x39 assault rifle":
+    "https://assets.tarkov.dev/5bf3e03b0db834001d2c4a9c-icon.webp",
+  "1x Jaeger figurine":
+    "https://assets.tarkov.dev/68f25faa22c8979ee308f4da-icon.webp",
+  "1x MTs-255-12 12ga shotgun":
+    "https://assets.tarkov.dev/6198e2ddef80673cae5d1c87-icon.webp",
+  "1x Salty Dog beef sausage":
+    "https://assets.tarkov.dev/635a758bfefc88a93f021b8a-icon.webp",
+  "1x Lightkeeper figurine":
+    "https://assets.tarkov.dev/68f25fdf928cd23ddf0471fb-icon.webp",
+  "1x Sacred Amulet":
+    "https://assets.tarkov.dev/64d0b40fbe2eed70e254e2d4-icon.webp",
+  "1x Ragman figurine":
+    "https://assets.tarkov.dev/68f25f3a5d977110860c3350-icon.webp",
+  "1x Shemagh (Green)":
+    "https://assets.tarkov.dev/5ab8f85d86f7745cd93a1cf5-icon.webp",
+  "1x Round frame sunglasses":
+    "https://assets.tarkov.dev/5aa2b923e5b5b000137b7589-icon.webp",
+  "1x RayBench Hipster Reserve sunglasses":
+    "https://assets.tarkov.dev/5aa2b9aee5b5b00015693121-icon.webp",
+  "1x Ghost balaclava":
+    "https://assets.tarkov.dev/5ab8f4ff86f77431c60d91ba-icon.webp",
+  "1x Left half of a Physical Bitcoin":
+    "https://assets.tarkov.dev/68f11adfcd0babab2c0fb003-icon.webp",
+  "1x Right half of a Physical Bitcoin":
+    "https://assets.tarkov.dev/68f119c6121d878a2303eee3-icon.webp",
+  "1x Physical Bitcoin":
+    "https://assets.tarkov.dev/59faff1d86f7746c51718c9c-icon.webp",
+  "1x Secure container Gamma (Loui Peeton)":
+    "https://assets.tarkov.dev/68f117b8121d878a2303eee0-icon.webp",
+  "1x Hideout Cat figurine":
+    "https://assets.tarkov.dev/68f260d7b84c6e1f8a09cffd-icon.webp",
+  "1x Cat figurine":
+    "https://assets.tarkov.dev/59e3658a86f7741776641ac4-icon.webp",
   "1x WD-40 (400ml)":
     "https://assets.tarkov.dev/590c5c9f86f77477c91c36e7-icon.webp",
   "WD-40 (100ml)":
