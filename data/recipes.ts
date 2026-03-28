@@ -22,6 +22,36 @@ export interface Recipe {
  */
 export const tarkovRecipes: Recipe[] = [
   {
+    requiredItems: ["1x Jaeger figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x MTs-255-12 12ga shotgun", "1x Salty Dog beef sausage"],
+    isNew: true,
+  },
+  {
+    requiredItems: ["1x Lightkeeper figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x Sacred Amulet"],
+    isNew: true,
+  },
+  {
+    requiredItems: ["1x Ragman figurine"],
+    craftingTime: "66 mins",
+    producedItems: [
+      {
+        type: "multiple_possible",
+        items: [
+          "1x Shemagh (Green)",
+          "1x Round frame sunglasses",
+          "1x RayBench Hipster Reserve sunglasses",
+          "1x Ghost balaclava",
+        ],
+        explanation:
+          "You always get 4 items from this pool. Possible combinations can include duplicates.",
+      },
+    ],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x BTR figurine"],
     craftingTime: "66 mins",
     producedItems: ["1x OFZ 30x165mm shell"],

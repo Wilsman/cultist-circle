@@ -42,6 +42,26 @@ export const recipeIconMap: Record<string, string> = {
     "https://assets.tarkov.dev/59e7635f86f7742cbf2c1095-icon.webp",
   "2x Kalashnikov AK-74 5.45x39 assault rifle":
     "https://assets.tarkov.dev/5bf3e03b0db834001d2c4a9c-icon.webp",
+  "1x Jaeger figurine":
+    "https://assets.tarkov.dev/68f25faa22c8979ee308f4da-icon.webp",
+  "1x MTs-255-12 12ga shotgun":
+    "https://assets.tarkov.dev/6198e2ddef80673cae5d1c87-icon.webp",
+  "1x Salty Dog beef sausage":
+    "https://assets.tarkov.dev/635a758bfefc88a93f021b8a-icon.webp",
+  "1x Lightkeeper figurine":
+    "https://assets.tarkov.dev/68f25fdf928cd23ddf0471fb-icon.webp",
+  "1x Sacred Amulet":
+    "https://assets.tarkov.dev/64d0b40fbe2eed70e254e2d4-icon.webp",
+  "1x Ragman figurine":
+    "https://assets.tarkov.dev/68f25f3a5d977110860c3350-icon.webp",
+  "1x Shemagh (Green)":
+    "https://assets.tarkov.dev/5ab8f85d86f7745cd93a1cf5-icon.webp",
+  "1x Round frame sunglasses":
+    "https://assets.tarkov.dev/5aa2b923e5b5b000137b7589-icon.webp",
+  "1x RayBench Hipster Reserve sunglasses":
+    "https://assets.tarkov.dev/5aa2b9aee5b5b00015693121-icon.webp",
+  "1x Ghost balaclava":
+    "https://assets.tarkov.dev/5ab8f4ff86f77431c60d91ba-icon.webp",
   "1x Left half of a Physical Bitcoin":
     "https://assets.tarkov.dev/68f11adfcd0babab2c0fb003-icon.webp",
   "1x Right half of a Physical Bitcoin":
