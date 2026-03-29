@@ -18,6 +18,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/language-context";
 
 const STORAGE_KEY = "cc_onboarding_seen_v1";
 
@@ -40,6 +41,7 @@ function Slide({ title, children }: SlideProps) {
 }
 
 export function OnboardingDialog() {
+  const { t } = useLanguage();
   const [open, setOpen] = React.useState(false);
   const [index, setIndex] = React.useState(0);
   const carouselApi = React.useRef<CarouselApi | null>(null);
@@ -175,13 +177,13 @@ export function OnboardingDialog() {
                       <thead>
                         <tr className="border-b border-border/50 bg-muted/20">
                           <th className="text-left py-2.5 px-4 font-semibold">
-                            Range (Base Value)
+                            {t("Range (Base Value)")}
                           </th>
                           <th className="text-left py-2.5 px-4 font-semibold">
-                            Time
+                            {t("Time")}
                           </th>
                           <th className="text-left py-2.5 px-4 font-semibold">
-                            Results
+                            {t("Results")}
                           </th>
                         </tr>
                       </thead>
@@ -191,6 +193,7 @@ export function OnboardingDialog() {
                             range: string;
                             time: string;
                             result: string;
+                            isHighValue?: boolean;
                           }
                           const data: Row[] = [
                             {
@@ -227,12 +230,14 @@ export function OnboardingDialog() {
                               range: "≥ 350,001",
                               time: "14 hours",
                               result: "High value item",
+                              isHighValue: true,
                             },
                             {
                               range: "≥ 400,000",
                               time: "14 or 6 hours",
                               result:
                                 "14h(high-value) or 25% chance for 6h (Quest/Hideout)",
+                              isHighValue: true,
                             },
                           ];
                           return [...data].reverse().map((row, idx) => (
@@ -241,24 +246,24 @@ export function OnboardingDialog() {
                               className="border-b border-border/30 hover:bg-muted/10 transition-colors duration-200"
                             >
                               <td className="py-2.5 px-4 font-medium">
-                                {row.range}
+                                {t(row.range)}
                               </td>
                               <td className="py-2.5 px-4 text-muted-foreground">
-                                {row.time}
+                                {t(row.time)}
                               </td>
                               <td className="py-2.5 px-4">
                                 <span
                                   className={cn(
                                     // Mobile: plain text only
                                     "text-xs font-medium",
-                                    row.result.includes("High value") || row.result.includes("14h")
+                                    row.isHighValue
                                       ? "text-amber-400 sm:bg-amber-500/20 sm:border-amber-500/30"
                                       : "text-blue-400 sm:bg-blue-500/20 sm:border-blue-500/30",
                                     // Desktop: show bubble
                                     "sm:inline-flex sm:items-center sm:px-2.5 sm:py-1 sm:rounded-full sm:border"
                                   )}
                                 >
-                                  {row.result}
+                                  {t(row.result)}
                                 </span>
                               </td>
                             </tr>

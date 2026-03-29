@@ -9,6 +9,7 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useContext,
 } from "react";
 import {
   Card,
@@ -28,6 +29,7 @@ import {
 import { ItemTooltip } from "@/components/ui/item-tooltip";
 import { recipeIconMap } from "@/data/recipe-icons";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
+import { useLanguage } from "@/contexts/language-context";
 import { tarkovRecipes, type Recipe } from "@/data/recipes";
 import {
   Package,
@@ -271,11 +273,13 @@ interface RecipeCardProps {
   getItemByName: (
     name: string,
   ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
+  t: (key: string) => string;
 }
 
 const RecipeCard = React.memo(function RecipeCard({
   recipe,
   getItemByName,
+  t,
 }: RecipeCardProps) {
   const processOutputs = useCallback((): ProcessedOutput[] => {
     const outputs: ProcessedOutput[] = [];
@@ -418,7 +422,7 @@ const RecipeCard = React.memo(function RecipeCard({
                 Rewards
               </span>
               <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
-                (Found in Raid)
+                ({t("Found in Raid")})
               </span>
               <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
                 {outputCount}
@@ -479,6 +483,8 @@ export default function RecipesPage() {
   });
 
   const { getItemByName } = useRecipeItemData(isPVE);
+  const languageContext = useLanguage();
+  const t = (key: string) => languageContext.t(key);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [showFilters, setShowFilters] = useState(false);
@@ -720,6 +726,7 @@ export default function RecipesPage() {
                     key={`${recipe.requiredItems.join("-")}-${index}`}
                     recipe={recipe}
                     getItemByName={getItemByName}
+                    t={t}
                   />
                 ))}
               </div>

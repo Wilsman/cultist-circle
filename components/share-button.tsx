@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { useLanguage } from "@/contexts/language-context";
 // Clock icon removed - not used
 
 interface ShareButtonProps {
@@ -88,6 +89,7 @@ export function ShareButton({
   sacred,
   onItemsLoaded,
 }: ShareButtonProps) {
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [currentCode, setCurrentCode] = useState("");
 
@@ -101,8 +103,8 @@ export function ShareButton({
 
   const handleCopyCode = () => {
     if (!currentCode) {
-      sonnerToast("No Items Selected", {
-        description: "Please select at least one item to share.",
+      sonnerToast(t("No Items Selected"), {
+        description: t("Please select at least one item to share."),
       });
       return;
     }
@@ -112,16 +114,14 @@ export function ShareButton({
       .writeText(currentCode)
       .then(() => {
         const itemCount = selectedItems.filter((item) => item !== null).length;
-        sonnerToast("Code Copied!", {
-          description: `Shareable code copied to clipboard. ${itemCount} item${
-            itemCount > 1 ? "s" : ""
-          } included.`,
+        sonnerToast(t("Code Copied!"), {
+          description: `${t("Shareable code copied to clipboard.")} (${itemCount})`,
         });
       })
       .catch((err) => {
         console.error("Failed to copy code:", err);
-        sonnerToast("Failed to Copy Code", {
-          description: "Please try again or manually copy the code.",
+        sonnerToast(t("Failed to Copy Code"), {
+          description: t("Please try again or manually copy the code."),
         });
       })
       .finally(() => {
@@ -135,8 +135,8 @@ export function ShareButton({
       (item): item is SimplifiedItem => item !== null
     );
     if (filteredItems.length === 0) {
-      sonnerToast("No Items Selected", {
-        description: "Please select at least one item to share.",
+      sonnerToast(t("No Items Selected"), {
+        description: t("Please select at least one item to share."),
       });
       return;
     }
@@ -356,13 +356,13 @@ __Output__:
       if (!blob) throw new Error("Failed to encode PNG");
       const item = new ClipboardItem({ "image/png": blob });
       await navigator.clipboard.write([item]);
-      sonnerToast("Share card copied", {
-        description: "PNG image placed in your clipboard.",
+      sonnerToast(t("Share card copied"), {
+        description: t("PNG image placed in your clipboard."),
       });
     } catch (e) {
       console.error(e);
-      sonnerToast("Failed to copy", {
-        description: "Your browser may block clipboard images. Try again.",
+      sonnerToast(t("Failed to copy"), {
+        description: t("Your browser may block clipboard images. Try again."),
       });
     } finally {
       setIsLoading(false);
@@ -382,7 +382,7 @@ __Output__:
             disabled={isLoading}
           >
             <ShareIcon className="mr-1.5 h-4 w-4" />
-            Share
+            {t("Share")}
             <ChevronDown className="ml-1 h-3.5 w-3.5" />
           </Button>
         </DropdownMenuTrigger>
@@ -396,10 +396,10 @@ __Output__:
             className="cursor-pointer"
           >
             <ImageIcon className="h-4 w-4 mr-2" />
-            Copy Image Card
+            {t("Copy Image Card")}
           </DropdownMenuItem>
           <DropdownMenuLabel className="text-xs text-slate-400 font-normal px-2">
-            Copy for Discord (select timer):
+            {t("Copy for Discord (select timer):")}
           </DropdownMenuLabel>
           {TIMER_OPTIONS.map((option) => (
             <DropdownMenuItem
@@ -419,7 +419,7 @@ __Output__:
             className="cursor-pointer"
           >
             <CopyIcon className="h-4 w-4 mr-2" />
-            Copy Code Only
+            {t("Copy Code Only")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-slate-700/50" />
           <DropdownMenuItem
@@ -427,7 +427,7 @@ __Output__:
             className="cursor-pointer text-emerald-400"
           >
             <ClipboardIcon className="h-4 w-4 mr-2" />
-            Load from Clipboard
+            {t("Load from Clipboard")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

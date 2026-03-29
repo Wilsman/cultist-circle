@@ -107,7 +107,7 @@ export function RewardsChart({
                     "text-sm font-medium",
                     isCurrentTier ? "text-white" : "text-white/60"
                   )}>
-                    {tier.threshold}
+                    {t(tier.threshold)}
                   </span>
                 </div>
 
@@ -121,12 +121,12 @@ export function RewardsChart({
                   >
                     {isLastTier ? (
                       <span>
-                        <span style={{ color: "#4ade80" }}>6 hours</span>
+                        <span style={{ color: "#4ade80" }}>{t("6 hours")}</span>
                         <span className="text-white mx-1.5">{t("or")}</span>
-                        <span style={{ color: "#3b8364" }}>14 hours</span>
+                        <span style={{ color: "#3b8364" }}>{t("14 hours")}</span>
                       </span>
                     ) : (
-                      tier.timer
+                      t(tier.timer)
                     )}
                   </span>
                 </div>
