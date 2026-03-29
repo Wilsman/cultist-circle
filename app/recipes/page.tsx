@@ -417,6 +417,9 @@ const RecipeCard = React.memo(function RecipeCard({
               <span className="text-xs font-bold uppercase tracking-wider text-green-300">
                 Rewards
               </span>
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
+                (Found in Raid)
+              </span>
               <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
                 {outputCount}
               </span>
