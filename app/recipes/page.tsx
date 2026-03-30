@@ -67,8 +67,11 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 function parseCraftingTime(timeStr: string): number {
   const hours = timeStr.match(/(\d+)\s*hour/i);
   const minutes = timeStr.match(/(\d+)\s*min/i);
+  const seconds = timeStr.match(/(\d+)\s*sec/i);
   return (
-    (hours ? parseInt(hours[1]) * 60 : 0) + (minutes ? parseInt(minutes[1]) : 0)
+    (hours ? parseInt(hours[1], 10) * 3600 : 0) +
+    (minutes ? parseInt(minutes[1], 10) * 60 : 0) +
+    (seconds ? parseInt(seconds[1], 10) : 0)
   );
 }
 
@@ -118,8 +121,21 @@ const RepeatableBadge = React.memo(function RepeatableBadge() {
             Repeatable
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[220px] text-xs whitespace-normal leading-relaxed">
-          The sacrifices listed below can be repeated indefinitely.
+        <TooltipContent
+          side="top"
+          sideOffset={8}
+          className="w-[250px] overflow-hidden rounded-lg border border-gray-700/80 bg-gray-900/98 p-0 text-left text-xs text-gray-200 shadow-2xl backdrop-blur-md"
+        >
+          <div className="space-y-2 p-3">
+            <div className="border-b border-gray-700/60 pb-2">
+              <p className="text-sm font-semibold text-sky-300">
+                Repeatable recipe
+              </p>
+            </div>
+            <p className="whitespace-normal leading-relaxed text-gray-300">
+              The sacrifices listed below can be repeated indefinitely.
+            </p>
+          </div>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
