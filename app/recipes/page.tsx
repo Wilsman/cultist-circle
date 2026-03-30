@@ -103,9 +103,26 @@ const ModeRestrictionBadge = React.memo(function ModeRestrictionBadge({
   }
 
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 absolute -top-2 -right-2 shadow-lg z-10">
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 shadow-lg">
       PVP ONLY
     </span>
+  );
+});
+
+const RepeatableBadge = React.memo(function RepeatableBadge() {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex cursor-help items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-sky-500/15 border border-sky-400/35 text-sky-200 shadow-lg">
+            Repeatable
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[220px] text-xs whitespace-normal leading-relaxed">
+          The sacrifices listed below can be repeated indefinitely.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 });
 
@@ -331,7 +348,12 @@ const RecipeCard = React.memo(function RecipeCard({
   return (
     <div className="relative rounded-xl border border-gray-700/50 bg-gray-800/40 p-4 lg:p-5 backdrop-blur-sm transition-all duration-200 hover:bg-gray-800/60 hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20 group">
       {recipe.isNew && <NewBadge />}
-      <ModeRestrictionBadge modeRestriction={recipe.modeRestriction} />
+      {(recipe.modeRestriction || recipe.isRepeatable) && (
+        <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
+          <ModeRestrictionBadge modeRestriction={recipe.modeRestriction} />
+          {recipe.isRepeatable && <RepeatableBadge />}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
         {/* Inputs Column */}
