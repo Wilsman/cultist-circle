@@ -64,3 +64,6 @@ CLAUDE.md
 
 # supabase cli local metadata
 supabase/.temp/
+
+# dev screenshots
+output/

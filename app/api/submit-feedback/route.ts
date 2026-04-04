@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  createSupabaseClient,
+  isSupabaseConfigured,
+} from "@/lib/supabaseClient";
 import { createRateLimiter } from "@/app/lib/rateLimiter";
 
 export const runtime = "edge";
@@ -39,7 +42,18 @@ export async function POST(request: NextRequest) {
 
   const { type, description, version } = parsedPayload.data;
 
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Feedback submission is not configured for this deployment.",
+      },
+      { status: 503 }
+    );
+  }
+
   try {
+    const supabase = createSupabaseClient();
     const feedbackRecord = {
       feedback_type: type,
       description,
