@@ -28,6 +28,7 @@ import {
 import { ItemTooltip } from "@/components/ui/item-tooltip";
 import { recipeIconMap } from "@/data/recipe-icons";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
+import { useLanguage } from "@/contexts/language-context";
 import { tarkovRecipes, type Recipe } from "@/data/recipes";
 import {
   Package,
@@ -40,6 +41,7 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
+  Repeat2,
 } from "lucide-react";
 
 // ============================================================================
@@ -97,8 +99,10 @@ const NewBadge = React.memo(function NewBadge() {
 });
 
 const ModeRestrictionBadge = React.memo(function ModeRestrictionBadge({
+  t,
   modeRestriction,
 }: {
+  t: (key: string) => string;
   modeRestriction: Recipe["modeRestriction"];
 }) {
   if (modeRestriction !== "pvp-only") {
@@ -106,9 +110,43 @@ const ModeRestrictionBadge = React.memo(function ModeRestrictionBadge({
   }
 
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 shadow-lg">
-      PVP ONLY
-    </span>
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex cursor-help items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 shadow-lg">
+            {t("PVP ONLY")}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {t("This recipe is available in PvP mode only.")}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+});
+
+const FoundInRaidBadge = React.memo(function FoundInRaidBadge({
+  t,
+}: {
+  t: (key: string) => string;
+}) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className="inline-flex cursor-help items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-500/20 border border-blue-400/40 text-blue-200 shadow-lg"
+            aria-label={t("Found in Raid")}
+            title={t("Found in Raid")}
+          >
+            {t("FiR")}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {t("Found in Raid")}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 });
 
@@ -117,8 +155,12 @@ const RepeatableBadge = React.memo(function RepeatableBadge() {
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex cursor-help items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-sky-500/15 border border-sky-400/35 text-sky-200 shadow-lg">
-            Repeatable
+          <span
+            className="inline-flex cursor-help items-center justify-center rounded border border-sky-400/35 bg-sky-500/15 p-1 text-sky-200 shadow-lg"
+            aria-label="Repeatable"
+            title="Repeatable"
+          >
+            <Repeat2 className="h-3.5 w-3.5" />
           </span>
         </TooltipTrigger>
         <TooltipContent
@@ -304,11 +346,13 @@ interface RecipeCardProps {
   getItemByName: (
     name: string,
   ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
+  t: (key: string) => string;
 }
 
 const RecipeCard = React.memo(function RecipeCard({
   recipe,
   getItemByName,
+  t,
 }: RecipeCardProps) {
   const processOutputs = useCallback((): ProcessedOutput[] => {
     const outputs: ProcessedOutput[] = [];
@@ -364,12 +408,11 @@ const RecipeCard = React.memo(function RecipeCard({
   return (
     <div className="relative rounded-xl border border-gray-700/50 bg-gray-800/40 p-4 lg:p-5 backdrop-blur-sm transition-all duration-200 hover:bg-gray-800/60 hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20 group">
       {recipe.isNew && <NewBadge />}
-      {(recipe.modeRestriction || recipe.isRepeatable) && (
-        <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
-          <ModeRestrictionBadge modeRestriction={recipe.modeRestriction} />
-          {recipe.isRepeatable && <RepeatableBadge />}
-        </div>
-      )}
+      <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
+        <FoundInRaidBadge t={t} />
+        <ModeRestrictionBadge t={t} modeRestriction={recipe.modeRestriction} />
+        {recipe.isRepeatable && <RepeatableBadge />}
+      </div>
 
       <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
         {/* Inputs Column */}
@@ -514,6 +557,7 @@ export default function RecipesPage() {
   });
 
   const { getItemByName } = useRecipeItemData(isPVE);
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [showFilters, setShowFilters] = useState(false);
@@ -755,6 +799,7 @@ export default function RecipesPage() {
                     key={`${recipe.requiredItems.join("-")}-${index}`}
                     recipe={recipe}
                     getItemByName={getItemByName}
+                    t={t}
                   />
                 ))}
               </div>

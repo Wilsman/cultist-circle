@@ -11,6 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/language-context";
 
 export interface Ingredient {
   name: string;
@@ -224,6 +225,7 @@ interface ComboRowProps {
 }
 
 export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
+  const { t } = useLanguage();
   const isHighValue =
     combo.resultText.includes("400K") || combo.resultText.includes("6h");
   const hasAvailabilityNote = Boolean(combo.availabilityNote);
@@ -303,7 +305,7 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
                   </p>
                   {ingredient.vendor && (
                     <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-white/5">
-                      <span className="opacity-60">Buy from:</span>
+                      <span className="opacity-60">{t("Buy from:")}</span>
                       <span className="text-indigo-300 font-semibold">
                         {ingredient.vendor.name}{" "}
                         <span className="text-indigo-300/60 font-medium">
@@ -344,7 +346,7 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
           {estimatedCost !== undefined && (
             <div className="flex items-baseline gap-1.5 px-1 opacity-80 group-hover:opacity-100 transition-opacity">
               <span className="text-[9px] uppercase tracking-tighter text-slate-500 font-bold whitespace-nowrap">
-                Est. Cost:
+                {t("Est. Cost:")}
               </span>
               <span className="text-[11px] font-black text-cyan-400/90 tabular-nums whitespace-nowrap">
                 ₽{estimatedCost.toLocaleString()}
@@ -369,11 +371,11 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
                   onClick={() => onUseThis(combo)}
                   className="h-8 px-4 text-[11px] font-semibold tracking-wide rounded-full border border-white/10 bg-transparent text-slate-200 hover:border-indigo-300/60 hover:text-white hover:bg-white/5 transition duration-200 focus-visible:ring-0 focus-visible:ring-offset-0"
                 >
-                  Use
+                  {t("Use")}
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900/95 backdrop-blur-md border-white/10 text-slate-200 text-xs">
-                <p>Auto-populate items for this combo</p>
+                <p>{t("Auto-populate items for this combo")}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

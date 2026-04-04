@@ -40,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PriceRangeFilter } from "@/components/ui/price-range-filter";
 import { Button } from "@/components/ui/button";
 import { CategoryFilter } from "@/components/ui/category-filter";
+import { useLanguage } from "@/contexts/language-context";
 
 interface FilterState {
   name: string;
@@ -123,6 +124,7 @@ const TableSkeleton = () => (
 );
 
 export default function ItemsTablePage() {
+  const { t, language } = useLanguage();
   // Add isPending state for transitions
   const [isPending, startTransition] = useTransition();
 
@@ -199,7 +201,7 @@ export default function ItemsTablePage() {
 
   useEffect(() => {
     let isMounted = true;
-    fetchMinimalTarkovData().then(
+    fetchMinimalTarkovData(language).then(
       (data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }) => {
         if (isMounted) {
           setPvp(data.pvpItems || []);
@@ -218,7 +220,7 @@ export default function ItemsTablePage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -763,13 +765,13 @@ export default function ItemsTablePage() {
       {/* Header Section */}
       <div className="mb-6 text-center space-y-2">
         <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-          Base Values
+          {t("Base Values")}
         </div>
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-          Item Base Values
+          {t("Item Base Values")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Search fast. Base price first, extra details when you need them.
+          {t("Search fast. Base price first, extra details when you need them.")}
         </p>
       </div>
 
@@ -780,11 +782,11 @@ export default function ItemsTablePage() {
             <div className="relative">
               <Input
                 ref={searchInputRef}
-                placeholder="Search items by name or short name..."
+                placeholder={t("Search items by name or short name...")}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="h-12 w-full pl-11 pr-16 bg-muted/30 border-border/60 focus:bg-background focus:border-primary/50 text-base shadow-sm transition-all rounded-xl"
-                aria-label="Search items"
+                aria-label={t("Search items")}
               />
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
                 <Search className="h-5 w-5 opacity-50" />
@@ -797,7 +799,7 @@ export default function ItemsTablePage() {
                   onClick={() => setSearchInput("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-2 text-xs"
                 >
-                  Clear
+                  {t("Clear")}
                 </Button>
               ) : null}
             </div>
