@@ -69,8 +69,11 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 function parseCraftingTime(timeStr: string): number {
   const hours = timeStr.match(/(\d+)\s*hour/i);
   const minutes = timeStr.match(/(\d+)\s*min/i);
+  const seconds = timeStr.match(/(\d+)\s*sec/i);
   return (
-    (hours ? parseInt(hours[1]) * 60 : 0) + (minutes ? parseInt(minutes[1]) : 0)
+    (hours ? parseInt(hours[1], 10) * 3600 : 0) +
+    (minutes ? parseInt(minutes[1], 10) * 60 : 0) +
+    (seconds ? parseInt(seconds[1], 10) : 0)
   );
 }
 
@@ -105,9 +108,39 @@ const ModeRestrictionBadge = React.memo(function ModeRestrictionBadge({
   }
 
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 absolute -top-2 -right-2 shadow-lg z-10">
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 shadow-lg">
       PVP ONLY
     </span>
+  );
+});
+
+const RepeatableBadge = React.memo(function RepeatableBadge() {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex cursor-help items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-sky-500/15 border border-sky-400/35 text-sky-200 shadow-lg">
+            Repeatable
+          </span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          sideOffset={8}
+          className="w-[250px] overflow-hidden rounded-lg border border-gray-700/80 bg-gray-900/98 p-0 text-left text-xs text-gray-200 shadow-2xl backdrop-blur-md"
+        >
+          <div className="space-y-2 p-3">
+            <div className="border-b border-gray-700/60 pb-2">
+              <p className="text-sm font-semibold text-sky-300">
+                Repeatable recipe
+              </p>
+            </div>
+            <p className="whitespace-normal leading-relaxed text-gray-300">
+              The sacrifices listed below can be repeated indefinitely.
+            </p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 });
 
@@ -335,7 +368,12 @@ const RecipeCard = React.memo(function RecipeCard({
   return (
     <div className="relative rounded-xl border border-gray-700/50 bg-gray-800/40 p-4 lg:p-5 backdrop-blur-sm transition-all duration-200 hover:bg-gray-800/60 hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20 group">
       {recipe.isNew && <NewBadge />}
-      <ModeRestrictionBadge modeRestriction={recipe.modeRestriction} />
+      {(recipe.modeRestriction || recipe.isRepeatable) && (
+        <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
+          <ModeRestrictionBadge modeRestriction={recipe.modeRestriction} />
+          {recipe.isRepeatable && <RepeatableBadge />}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
         {/* Inputs Column */}

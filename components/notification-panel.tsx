@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  ChevronDown,
-  Bell,
-  AlertTriangle,
-} from "lucide-react";
+import { ChevronDown, Bell, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 export interface Notification {
@@ -40,21 +36,21 @@ export const NOTIFICATIONS: Notification[] = [
     title: "THOR Hot Sacrifice No Longer Works in PVP",
     description: (
       <>
-        The <strong>NFM THOR Integrated Carrier body armor</strong> hot
-        sacrifice no longer reaches the target value in <strong>PVP</strong>{" "}
-        because its base value changed there. <strong>PVE</strong> still works
-        as expected.
+        <span className="block text-[13px] leading-6 text-red-100">
+          The <strong>NFM THOR Integrated Carrier body armor</strong> no longer
+          hits the target value in <strong>PVP</strong> because its{" "}
+          <strong>PVP base value changed</strong>. <strong>PVE</strong> still
+          works as expected.
+        </span>
+        <div className="mt-1 rounded-lg border border-amber-300/35 bg-amber-200/10 px-1 py-1 shadow-sm">
+          <span className="m-1 block text-[12px] font-semibold leading-relaxed text-amber-50">
+            Big love to everyone testing this in <strong>Discord</strong> and
+            people sending reports through the <strong>feedback form</strong>.
+            You lot find stuff fast. 💖
+          </span>
+        </div>
       </>
     ),
-    actions: [
-      {
-        label: "Check Hot Sacrifices",
-        action: () => {
-          const element = document.querySelector("[data-hot-sacrifices]");
-          element?.scrollIntoView({ behavior: "smooth", block: "center" });
-        },
-      },
-    ],
     priority: 0,
   },
   {
@@ -313,4 +309,3 @@ export function NotificationPanel({
     </div>
   );
 }
-

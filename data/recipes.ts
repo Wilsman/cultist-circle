@@ -10,6 +10,7 @@ export interface Recipe {
     | string[]
     | { type: "multiple_possible"; items: string[]; explanation: string }[];
   isNew?: boolean;
+  isRepeatable?: boolean;
   modeRestriction?: "pvp-only";
   roomInfo?: {
     itemName: string;
@@ -405,25 +406,29 @@ export const tarkovRecipes: Recipe[] = [
   },
   {
     requiredItems: ["1x Left half of a Physical Bitcoin"],
-    craftingTime: "11 mins 6 secs",
+    craftingTime: "666 seconds",
     producedItems: ["1x Right half of a Physical Bitcoin"],
+    isRepeatable: true,
   },
   {
     requiredItems: ["1x Right half of a Physical Bitcoin"],
-    craftingTime: "11 mins 6 secs",
+    craftingTime: "666 seconds",
     producedItems: ["1x Left half of a Physical Bitcoin"],
+    isRepeatable: true,
   },
   {
     requiredItems: [
       "1x Left half of a Physical Bitcoin",
       "1x Right half of a Physical Bitcoin",
     ],
-    craftingTime: "11 mins 6 secs",
+    craftingTime: "666 seconds",
     producedItems: ["1x Physical Bitcoin"],
+    isRepeatable: true,
   },
   {
     requiredItems: ["1x Secure container Gamma (Loui Peeton)"],
     craftingTime: "66 mins",
     producedItems: ["1x Secure container Gamma (Loui Peeton)"],
+    isRepeatable: true,
   },
 ];
