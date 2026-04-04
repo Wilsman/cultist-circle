@@ -298,5 +298,8 @@
   "indicates unstable market data. Always verify these items in-game.": "indicates unstable market data. Always verify these items in-game.",
   "Best Value vs Low Price:": "Best Value vs Low Price:",
   "In settings, you can toggle between using the last low price or a weighted 24h average.": "In settings, you can toggle between using the last low price or a weighted 24h average.",
-  "Found in Raid": "습격에서 발견됨"
+  "Found in Raid": "습격에서 발견됨",
+  "FiR": "FiR",
+  "PVP ONLY": "PVP 전용",
+  "This recipe is available in PvP mode only.": "이 레시피는 PvP 모드에서만 사용할 수 있습니다."
 }

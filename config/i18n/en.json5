@@ -1,4 +1,7 @@
 {
   // English falls back to keys by default.
+  "FiR": "FiR",
   "Found in Raid": "Found in Raid",
+  "PVP ONLY": "PVP ONLY",
+  "This recipe is available in PvP mode only.": "This recipe is available in PvP mode only.",
 }

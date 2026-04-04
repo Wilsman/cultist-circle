@@ -303,15 +303,8 @@
   "Something went wrong": "出错了",
   "Buy from:": "购买自：",
   "Auto-populate items for this combo": "自动填充此组合的项目",
-  "needed": "需要",
   "Thinking...": "思考中...",
   "Thought for {duration} seconds": "思考了 {duration} 秒",
-  "Research provided by": "研究由以下机构提供",
-  "25% chance": "25% 机率",
-  "75% chance": "75% 机率",
-  "HK G28": "HK G28",
-  "Incompatible": "不兼容",
-  "LedX": "LedX",
   "Use": "使用",
   "Red pricing indicates unstable market data. Always verify these items in-game.": "红色定价表示市场数据不稳定。始终在游戏中验证这些物品。",
   "Local Storage": "本地存储",
@@ -322,5 +315,8 @@
   "Paste into Discord and add your output items.": "粘贴到 Discord 并添加您的输出项。",
   "Failed to Copy": "复制失败",
   "New recipes added! Christmas ornaments, golden items, medical supplies, and more are now craftable. Added in Patch 1.0.1.0 (24/12/2025). Visit the Recipes page to check them out!": "添加了新食谱！圣诞装饰品、金色物品、医疗用品等现已可制作。在补丁 1.0.1.0 (24/12/2025) 中添加。访问配方页面查看它们！",
-  "Pro tips: use": "专业提示：使用"
+  "Pro tips: use": "专业提示：使用",
+  "FiR": "FiR",
+  "PVP ONLY": "仅限 PVP",
+  "This recipe is available in PvP mode only.": "此配方仅可在 PvP 模式中使用。"
 }

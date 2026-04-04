@@ -303,15 +303,8 @@
   "Something went wrong": "Algo deu errado",
   "Buy from:": "Comprar de:",
   "Auto-populate items for this combo": "Preencher automaticamente itens para esta combinação",
-  "needed": "necessário",
   "Thinking...": "Pensando...",
   "Thought for {duration} seconds": "Pensado por {duration} segundos",
-  "Research provided by": "Pesquisa fornecida por",
-  "25% chance": "Chance de 25%",
-  "75% chance": "Chance de 75%",
-  "HK G28": "HK G28",
-  "Incompatible": "Incompatível",
-  "LedX": "LedX",
   "Use": "Usar",
   "Red pricing indicates unstable market data. Always verify these items in-game.": "Preços em vermelho indicam dados de mercado instáveis. Sempre verifique esses itens no jogo.",
   "Local Storage": "Armazenamento local",
@@ -322,5 +315,8 @@
   "Paste into Discord and add your output items.": "Cole no Discord e adicione seus itens de saída.",
   "Failed to Copy": "Falha ao copiar",
   "New recipes added! Christmas ornaments, golden items, medical supplies, and more are now craftable. Added in Patch 1.0.1.0 (24/12/2025). Visit the Recipes page to check them out!": "Novas receitas adicionadas! Enfeites de Natal, itens dourados, suprimentos médicos e muito mais são agora fabricáveis. Adicionado no Patch 1.0.1.0 (24/12/2025). Visite a página Receitas para conferi-los!",
-  "Pro tips: use": "Dicas profissionais: use"
+  "Pro tips: use": "Dicas profissionais: use",
+  "FiR": "FiR",
+  "PVP ONLY": "APENAS PVP",
+  "This recipe is available in PvP mode only.": "Esta receita está disponível apenas no modo PvP."
 }
