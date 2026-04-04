@@ -2,26 +2,18 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { GitHubContributor } from "@/lib/github-contributors";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/language-context";
 
-const ExternalLinkIcon = () => (
-  <svg
-    className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-    />
-  </svg>
-);
-
 interface FooterSectionProps {
+  contributors?: GitHubContributor[];
   onFeedbackClick: () => void;
 }
 
@@ -29,89 +21,127 @@ interface FooterSectionProps {
  * Footer section with disclaimer, credits, buy-me-coffee, and feedback button.
  * Extracted from app.tsx for better organization.
  */
-export function FooterSection({ onFeedbackClick }: FooterSectionProps) {
+export function FooterSection({
+  contributors = [],
+  onFeedbackClick,
+}: FooterSectionProps) {
   const { t } = useLanguage();
 
   return (
-    <div className="text-center space-y-5 mt-12 pb-10">
-      {/* Primary Attribution */}
-      <div className="flex flex-col items-center gap-1.5">
-        <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold opacity-70">
-          {t("Created By")}
-        </span>
-        <motion.a
-          href="https://github.com/Wilsman/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-2xl font-black text-white hover:text-blue-400 transition-all duration-300 flex items-center gap-2 group"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Wilsman77
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 text-blue-400">
-            <ExternalLinkIcon />
+    <div className="mt-12 pb-10">
+      <div className="mx-auto w-full max-w-lg text-center">
+        {contributors.length > 0 && (
+          <div className="rounded-xl border border-white/8 bg-slate-950/28 px-4 py-3 backdrop-blur-sm">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                {t("Contributors")}
+              </span>
+              <span className="inline-flex min-w-6 items-center justify-center rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-300">
+                {contributors.length}
+              </span>
+            </div>
+
+            <TooltipProvider>
+              <div className="mt-3 flex items-center justify-center">
+                {contributors.map((contributor, index) => (
+                  <Tooltip key={contributor.login}>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={contributor.htmlUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${contributor.login} on GitHub`}
+                        className={`relative block transition-opacity duration-150 hover:opacity-100 ${
+                          index === 0 ? "" : "-ml-2.5"
+                        }`}
+                        style={{ zIndex: contributors.length - index }}
+                      >
+                        <img
+                          src={contributor.avatarUrl}
+                          alt={`${contributor.login} GitHub avatar`}
+                          className="h-9 w-9 rounded-full border border-slate-800 bg-slate-900 object-cover"
+                        />
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-center">
+                      <div className="font-semibold text-slate-100">
+                        {contributor.login}
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        {contributor.contributions} contribution
+                        {contributor.contributions === 1 ? "" : "s"}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </TooltipProvider>
+
+            <p className="mx-auto mt-3 max-w-md text-[11px] leading-relaxed text-slate-400">
+              {t(
+                "Thanks to everyone helping with fixes, testing, and recipe updates.",
+              )}
+            </p>
           </div>
-        </motion.a>
-      </div>
+        )}
 
-      {/* Secondary Credits */}
-      <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-1.5 text-[11px] text-slate-400 font-medium">
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-500">{t("Prices provided by")}</span>
-          <a
-            href="https://tarkov.dev/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 hover:underline transition-colors font-bold"
-          >
-            Tarkov.dev
-          </a>
-        </div>
-        <span className="text-slate-700 select-none hidden sm:inline">•</span>
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-500">{t("Research provided by")}</span>
-          <a
-            href="https://bio.link/verybadscav"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 hover:underline transition-colors font-bold"
-          >
-            VeryBadSCAV
-          </a>
-        </div>
-      </div>
+        <div className="mt-3 rounded-xl border border-white/8 bg-black/18 px-4 py-3 backdrop-blur-sm">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] font-medium text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500">{t("Prices provided by")}</span>
+              <a
+                href="https://tarkov.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-slate-200 transition-colors hover:text-white"
+              >
+                Tarkov.dev
+              </a>
+            </div>
+            <span className="hidden select-none text-slate-700 sm:inline">•</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500">{t("Research provided by")}</span>
+              <a
+                href="https://bio.link/verybadscav"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-slate-200 transition-colors hover:text-white"
+              >
+                VeryBadSCAV
+              </a>
+            </div>
+          </div>
 
-      {/* Footer Utility & Disclaimer */}
-      <div className="space-y-5 pt-5 border-t border-white/5 max-w-lg mx-auto">
-        <p className="text-[10px] text-slate-500 leading-relaxed uppercase tracking-widest font-medium opacity-60">
-          {t("Fan-made tool - Not affiliated with Battlestate Games")}
-        </p>
+          <p className="mt-3 text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">
+            {t("Fan-made tool - Not affiliated with Battlestate Games")}
+          </p>
 
-        <div className="flex justify-center items-center gap-4">
-          <motion.a
-            href="https://www.buymeacoffee.com/wilsman77"
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.05, y: -1 }}
-            whileTap={{ scale: 0.95 }}
-            className="block"
-          >
-            <img
-              src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-              alt={t("Buy Me a Coffee")}
-              width="140"
-              height="32"
-              className="h-9 w-auto"
-            />
-          </motion.a>
+          <div className="mt-3 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
+            <motion.a
+              href="https://www.buymeacoffee.com/wilsman77"
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              className="block"
+            >
+              <img
+                src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+                alt={t("Buy Me a Coffee")}
+                width="140"
+                height="32"
+                className="h-9 w-auto rounded-md"
+              />
+            </motion.a>
 
-          <Button
-            onClick={onFeedbackClick}
-            size="sm"
-            className="h-10 px-6 bg-[#5f7fff73] hover:bg-[#4a6fff73] text-white rounded-xl transition-all text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-blue-500/10"
-          >
-            {t("Feedback")}
-          </Button>
+            <Button
+              onClick={onFeedbackClick}
+              size="sm"
+              className="h-9 min-w-[140px] rounded-lg border border-white/10 bg-white/5 px-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-100 transition-colors hover:bg-white/10"
+            >
+              {t("Feedback")}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

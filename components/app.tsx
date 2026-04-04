@@ -68,8 +68,10 @@ import { HeaderSection } from "@/components/app/header-section";
 import { FooterSection } from "@/components/app/footer-section";
 import { SummarySection } from "@/components/app/summary-section";
 import { type FleaPriceType, type PriceMode } from "@/hooks/use-app-settings";
-
-
+import { type GitHubContributor } from "@/lib/github-contributors";
+interface AppProps {
+  contributors?: GitHubContributor[];
+}
 
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
@@ -81,7 +83,7 @@ const DynamicItemSelector = dynamic(
   () => import("@/components/item-selector"),
   {
     ssr: false,
-  }
+  },
 ) as React.ForwardRefExoticComponent<
   ItemSelectorProps & React.RefAttributes<ItemSelectorHandle>
 >;
@@ -93,7 +95,7 @@ import type {
 
 // FleaPriceType and PriceMode types are imported from use-app-settings
 
-function AppContent() {
+function AppContent({ contributors = [] }: AppProps) {
   // Placement preview modal state
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const { t } = useLanguage();
@@ -113,7 +115,7 @@ function AppContent() {
       selectedItems.filter(Boolean) as SimplifiedItem[],
       9,
       6,
-      true // debug mode
+      true, // debug mode
     );
     return typeof result === "object" && result !== null ? result : null;
   }, [selectedItems]);
@@ -121,7 +123,7 @@ function AppContent() {
   const [isFeedbackFormVisible, setIsFeedbackFormVisible] =
     useState<boolean>(false);
   const [pinnedItems, setPinnedItems] = useState<boolean[]>(
-    Array(5).fill(false)
+    Array(5).fill(false),
   );
   const [isSettingsPaneVisible, setIsSettingsPaneVisible] =
     useState<boolean>(false);
@@ -136,7 +138,7 @@ function AppContent() {
   const [fleaPriceType, setFleaPriceType] = useState<FleaPriceType>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(
-        FLEA_PRICE_TYPE_KEY
+        FLEA_PRICE_TYPE_KEY,
       ) as FleaPriceType | null;
       if (saved === "lastLowPrice" || saved === "avg24hPrice") {
         console.log("Loading flea price type from localStorage:", saved);
@@ -144,7 +146,7 @@ function AppContent() {
       }
     }
     console.log(
-      "No valid saved flea price type found, using default: lastLowPrice"
+      "No valid saved flea price type found, using default: lastLowPrice",
     );
     return "lastLowPrice";
   });
@@ -200,7 +202,7 @@ function AppContent() {
     return DEFAULT_PLAYER_LEVEL;
   });
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [threshold, setThreshold] = useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -274,7 +276,7 @@ function AppContent() {
       for (const c of cats) {
         const id =
           c.id ??
-          (c.name ? CATEGORY_ID_BY_NAME.get(c.name) ?? undefined : undefined);
+          (c.name ? (CATEGORY_ID_BY_NAME.get(c.name) ?? undefined) : undefined);
         if (!id) continue;
         // Prefer first-seen localized name for this language
         if (!byId.has(id)) byId.set(id, c.name);
@@ -322,11 +324,11 @@ function AppContent() {
     if (typeof window !== "undefined") {
       localStorage.setItem(
         USE_LAST_OFFER_COUNT_FILTER_KEY,
-        useLastOfferCountFilter.toString()
+        useLastOfferCountFilter.toString(),
       );
       console.log(
         "Saved useLastOfferCountFilter to localStorage:",
-        useLastOfferCountFilter
+        useLastOfferCountFilter,
       );
     }
   }, [useLastOfferCountFilter]);
@@ -394,7 +396,7 @@ function AppContent() {
         } else {
           console.error(
             "Saved excludedCategories is not an array:",
-            parsedCategories
+            parsedCategories,
           );
           setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
         }
@@ -430,7 +432,7 @@ function AppContent() {
         const savedItems = new Set<string>(JSON.parse(saved) as string[]);
         // Merge with defaults to ensure defaults are always included
         Array.from(DEFAULT_EXCLUDED_ITEMS).forEach((item) =>
-          savedItems.add(item)
+          savedItems.add(item),
         );
         setExcludedItems(savedItems);
       } else {
@@ -494,7 +496,7 @@ function AppContent() {
       try {
         localStorage.setItem(
           "excludedCategories",
-          JSON.stringify(Array.from(excludedCategories))
+          JSON.stringify(Array.from(excludedCategories)),
         );
       } catch (e) {
         console.error("Error saving excludedCategories to localStorage", e);
@@ -512,7 +514,7 @@ function AppContent() {
     if (typeof window !== "undefined") {
       localStorage.setItem(
         "excludeIncompatible",
-        JSON.stringify(excludeIncompatible)
+        JSON.stringify(excludeIncompatible),
       );
     }
   }, [excludeIncompatible]);
@@ -522,7 +524,7 @@ function AppContent() {
     if (typeof window !== "undefined") {
       localStorage.setItem(
         "excludedItems",
-        JSON.stringify(Array.from(excludedItems))
+        JSON.stringify(Array.from(excludedItems)),
       );
     }
   }, [excludedItems]);
@@ -533,7 +535,7 @@ function AppContent() {
       try {
         localStorage.setItem(
           OVERRIDDEN_PRICES_KEY,
-          JSON.stringify(overriddenPrices)
+          JSON.stringify(overriddenPrices),
         );
       } catch (e) {
         console.error("Error saving overriddenPrices to localStorage", e);
@@ -548,7 +550,7 @@ function AppContent() {
       if (
         e.key === "/" &&
         !["INPUT", "TEXTAREA", "SELECT"].includes(
-          (e.target as HTMLElement).tagName
+          (e.target as HTMLElement).tagName,
         )
       ) {
         e.preventDefault();
@@ -601,7 +603,7 @@ function AppContent() {
       },
       DEFAULT_EXCLUDED_CATEGORY_IDS,
       setUseLevelFilter,
-      setPlayerLevel
+      setPlayerLevel,
     );
   }, [
     setSelectedItems,
@@ -640,62 +642,62 @@ function AppContent() {
         item.categories && item.categories.length > 0
           ? item.categories
           : (item.categories_display_en ?? [])
-            .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
-            .filter((x): x is string => Boolean(x));
+              .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
+              .filter((x): x is string => Boolean(x));
       return !ids.some((id) => excludedCategories.has(id));
     });
 
     // Then filter by player level (flea market access)
     const levelFiltered = useLevelFilter
       ? categoryFiltered.filter((item: SimplifiedItem) => {
-        // First check individual item requirements (takes priority)
-        const itemNames = [
-          item.englishName,
-          item.name,
-          item.englishShortName,
-          item.shortName,
-        ].filter(Boolean) as string[];
+          // First check individual item requirements (takes priority)
+          const itemNames = [
+            item.englishName,
+            item.name,
+            item.englishShortName,
+            item.shortName,
+          ].filter(Boolean) as string[];
 
-        for (const name of itemNames) {
-          const itemReq = getItemLevelRequirement(name);
-          if (itemReq !== undefined) {
-            // Item has a specific level requirement
-            return playerLevel >= itemReq;
+          for (const name of itemNames) {
+            const itemReq = getItemLevelRequirement(name);
+            if (itemReq !== undefined) {
+              // Item has a specific level requirement
+              return playerLevel >= itemReq;
+            }
           }
-        }
 
-        // Fall back to category-level filtering
-        const ids =
-          item.categories && item.categories.length > 0
-            ? item.categories
-            : (item.categories_display_en ?? [])
-              .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
-              .filter((x): x is string => Boolean(x));
-        // Get categories that are inaccessible at current level
-        const inaccessibleCategories =
-          getInaccessibleCategoriesAtLevel(playerLevel);
-        // Item passes if none of its categories are inaccessible
-        return !ids.some((id) => inaccessibleCategories.includes(id));
-      })
+          // Fall back to category-level filtering
+          const ids =
+            item.categories && item.categories.length > 0
+              ? item.categories
+              : (item.categories_display_en ?? [])
+                  .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
+                  .filter((x): x is string => Boolean(x));
+          // Get categories that are inaccessible at current level
+          const inaccessibleCategories =
+            getInaccessibleCategoriesAtLevel(playerLevel);
+          // Item passes if none of its categories are inaccessible
+          return !ids.some((id) => inaccessibleCategories.includes(id));
+        })
       : categoryFiltered;
 
     // Then filter out individually excluded items (case-insensitive, language-agnostic)
     const excludedItemNames = new Set(
-      Array.from(excludedItems, (name) => name.toLowerCase())
+      Array.from(excludedItems, (name) => name.toLowerCase()),
     );
     const excludedFiltered = excludeIncompatible
       ? levelFiltered.filter((item: SimplifiedItem) => {
-        if (ignoreFilters) return true; // Bypass individual exclusions
-        const candidates = [
-          item.name,
-          item.shortName,
-          item.englishName,
-          item.englishShortName,
-        ].filter(Boolean) as string[];
-        return !candidates.some((n) =>
-          excludedItemNames.has(n.toLowerCase())
-        );
-      })
+          if (ignoreFilters) return true; // Bypass individual exclusions
+          const candidates = [
+            item.name,
+            item.shortName,
+            item.englishName,
+            item.englishShortName,
+          ].filter(Boolean) as string[];
+          return !candidates.some((n) =>
+            excludedItemNames.has(n.toLowerCase()),
+          );
+        })
       : levelFiltered;
 
     // Sorting logic...
@@ -767,7 +769,7 @@ function AppContent() {
       }
       return best;
     },
-    [fleaPriceType, overriddenPrices, priceMode, traderLevels]
+    [fleaPriceType, overriddenPrices, priceMode, traderLevels],
   );
 
   // Function to find the best combination of items
@@ -775,7 +777,7 @@ function AppContent() {
     (
       validItems: SimplifiedItem[],
       threshold: number,
-      maxItems: number
+      maxItems: number,
     ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
       // Apply the bonus to the baseValue of each item for calculation
       const bonusMultiplier = 1 + itemBonus / 100;
@@ -881,7 +883,7 @@ function AppContent() {
         // Take only top 5 for random selection
         const topCombinations = validCombinations.slice(
           0,
-          Math.min(5, validCombinations.length)
+          Math.min(5, validCombinations.length),
         );
 
         // Select one randomly from top combinations
@@ -905,7 +907,7 @@ function AppContent() {
         return { selected: [], totalFleaCost: 0 };
       }
     },
-    [itemBonus, useLastOfferCountFilter, getEffectivePrice]
+    [itemBonus, useLastOfferCountFilter, getEffectivePrice],
   );
 
   // Memoized total and flea costs
@@ -921,7 +923,7 @@ function AppContent() {
 
   const fleaCosts = useMemo(() => {
     return selectedItems.map((item) =>
-      item ? getEffectivePrice(item) ?? 0 : 0
+      item ? (getEffectivePrice(item) ?? 0) : 0,
     );
   }, [selectedItems, getEffectivePrice]);
 
@@ -939,7 +941,7 @@ function AppContent() {
     () =>
       (selectedItems.some(Boolean) && total < threshold) ||
       selectedItems.every((it) => !it),
-    [selectedItems, total, threshold]
+    [selectedItems, total, threshold],
   );
 
   // check if selected items fit in the cultist circle box (9x6) and collect debug info
@@ -960,7 +962,7 @@ function AppContent() {
       }))
       .filter(
         ({ item, price }) =>
-          Number.isFinite(price) && price > 0 && item.basePrice > 0
+          Number.isFinite(price) && price > 0 && item.basePrice > 0,
       )
       .sort((a, b) => a.price - b.price);
 
@@ -979,7 +981,7 @@ function AppContent() {
       // Add slight randomness within the top window
       const windowed = seededShuffle(
         source.slice(0, Math.min(12, source.length)),
-        hashString(selKey)
+        hashString(selKey),
       ).concat(source.slice(12));
       for (const c of windowed) {
         if (plan.length >= k) break;
@@ -990,7 +992,7 @@ function AppContent() {
       if (acc < need && source === eligible) {
         // eligible too strict, try again with all candidates but prefer larger base contributors
         const byBaseDesc = [...candidates].sort(
-          (a, b) => b.adjBase - a.adjBase
+          (a, b) => b.adjBase - a.adjBase,
         );
         plan.length = 0;
         acc = 0;
@@ -1011,7 +1013,7 @@ function AppContent() {
       const subtotalExSlot = selectedItems.reduce(
         (s, it, i) =>
           i === idx || !it ? s : s + it.basePrice * bonusMultiplier,
-        0
+        0,
       );
       const need = Math.max(0, threshold - subtotalExSlot);
       if (need <= 0) {
@@ -1019,7 +1021,7 @@ function AppContent() {
         const seed = hashString(selKey + `:${idx}`);
         return seededShuffle(
           candidates.slice(0, Math.min(8, candidates.length)),
-          seed
+          seed,
         )
           .slice(0, 3)
           .map((c) => c.item);
@@ -1037,7 +1039,7 @@ function AppContent() {
       // Multi-pick plan up to remainingSlots items; enforce meaningful per-item contribution when possible
       const perItemMin = Math.ceil(need / remainingSlots);
       const plan = buildPlan(need, remainingSlots, perItemMin).map(
-        (c) => c.item
+        (c) => c.item,
       );
 
       const out: SimplifiedItem[] = [];
@@ -1058,7 +1060,7 @@ function AppContent() {
     (
       index: number,
       item: SimplifiedItem | null,
-      overriddenPrice?: number | null
+      overriddenPrice?: number | null,
     ) => {
       setLoadingSlots((prev) => {
         const newState = [...prev];
@@ -1104,19 +1106,19 @@ function AppContent() {
         }
       }, 150);
     },
-    [selectedItems]
+    [selectedItems],
   );
 
   const updateSelectedItem = useCallback(
     (
       item: SimplifiedItem | null,
       index: number,
-      overriddenPrice?: number | null
+      overriddenPrice?: number | null,
     ) => {
       setHasAutoSelected(false); // Reset Auto Select when user changes selection
       handleItemSelect(index, item, overriddenPrice);
     },
-    [handleItemSelect]
+    [handleItemSelect],
   );
 
   // Handler to pin/unpin items
@@ -1132,7 +1134,7 @@ function AppContent() {
             {
               total: Math.floor(total).toLocaleString(),
               threshold: threshold.toLocaleString(),
-            }
+            },
           ),
         });
         return;
@@ -1165,7 +1167,7 @@ function AppContent() {
             price !== undefined &&
             price > 0 &&
             item.basePrice >= threshold * 0.1 &&
-            (ignoreFilters || !excludedItems.has(item.name.toLowerCase()))
+            (ignoreFilters || !excludedItems.has(item.name.toLowerCase())),
         )
         .sort((a, b) => b.efficiency - a.efficiency);
 
@@ -1179,7 +1181,7 @@ function AppContent() {
       const pinnedTotal = selectedItems.reduce(
         (sum, item, index) =>
           sum + (pinnedItems[index] && item ? item.basePrice : 0),
-        0
+        0,
       );
 
       const remainingThreshold = Math.max(0, threshold - pinnedTotal);
@@ -1193,8 +1195,8 @@ function AppContent() {
       const filteredItems = validItems.filter(
         (item) =>
           !selectedItems.some(
-            (selected, index) => pinnedItems[index] && selected?.id === item.id
-          )
+            (selected, index) => pinnedItems[index] && selected?.id === item.id,
+          ),
       );
 
       // Adjust prices in filteredItems to use overridden prices where applicable
@@ -1202,7 +1204,7 @@ function AppContent() {
 
       // Shuffle the adjusted items to increase randomness
       const shuffledAdjustedItems = [...adjustedItems].sort(
-        () => Math.random() - 0.5
+        () => Math.random() - 0.5,
       );
 
       // If only one slot is left, run a deterministic single-slot resolver
@@ -1213,11 +1215,11 @@ function AppContent() {
             .filter(
               (it) =>
                 it.basePrice >= remainingThreshold &&
-                it.basePrice <= remainingThreshold + window
+                it.basePrice <= remainingThreshold + window,
             )
             .map((it) => ({ it, price: getEffectivePrice(it) }))
             .filter(
-              ({ price }) => typeof price === "number" && (price as number) > 0
+              ({ price }) => typeof price === "number" && (price as number) > 0,
             )
             .sort((a, b) => (a.price as number) - (b.price as number))
             .map(({ it }) => it);
@@ -1229,7 +1231,7 @@ function AppContent() {
           sonnerToast.error(t("Auto Select"), {
             description: t(
               "No single item meets remaining base value of {remaining} within +5k (+15k after relax). Unpin one item or lower threshold.",
-              { remaining: remainingThreshold.toLocaleString() }
+              { remaining: remainingThreshold.toLocaleString() },
             ),
           });
           return;
@@ -1269,14 +1271,14 @@ function AppContent() {
       const bestCombination = findBestCombination(
         shuffledAdjustedItems,
         remainingThreshold,
-        slotsLeft
+        slotsLeft,
       );
 
       if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
         if (!isPVE && priceMode === "flea") {
           sonnerToast.error(t("Auto Select"), {
             description: t(
-              "No valid combo using Flea prices in PvP. Switch to Trader prices?"
+              "No valid combo using Flea prices in PvP. Switch to Trader prices?",
             ),
             action: {
               label: t("Use Traders"),
@@ -1287,7 +1289,7 @@ function AppContent() {
           sonnerToast.error(t("Auto Select"), {
             description: t(
               "Failed to find a valid combo for remaining {remaining}. Try Trader prices, relax filters, or unpin one item.",
-              { remaining: remainingThreshold.toLocaleString() }
+              { remaining: remainingThreshold.toLocaleString() },
             ),
           });
         }
@@ -1349,7 +1351,7 @@ function AppContent() {
           item.name === ingredientName ||
           item.englishName === ingredientName ||
           item.shortName === ingredientName ||
-          item.englishShortName === ingredientName
+          item.englishShortName === ingredientName,
       );
 
       if (exactMatch) return exactMatch;
@@ -1364,12 +1366,12 @@ function AppContent() {
             .includes(ingredientName.toLowerCase()) ||
           ingredientName
             .toLowerCase()
-            .includes(item.englishName?.toLowerCase() || "")
+            .includes(item.englishName?.toLowerCase() || ""),
       );
 
       return partialMatch || null;
     },
-    [rawItemsData]
+    [rawItemsData],
   );
 
   // Memoized calculation of sacrifice costs
@@ -1485,7 +1487,7 @@ function AppContent() {
           sonnerToast.error(t("Item not found"), {
             description: t(
               'Could not find "{name}" in the available items data.',
-              { name: ingredient.name }
+              { name: ingredient.name },
             ),
           });
         }
@@ -1501,7 +1503,7 @@ function AppContent() {
         });
       }
     },
-    [findMatchingItem, t, updateSelectedItem]
+    [findMatchingItem, t, updateSelectedItem],
   );
 
   const handleModeToggle = useCallback((checked: boolean): void => {
@@ -1533,7 +1535,7 @@ function AppContent() {
         },
         (err) => {
           console.error("Failed to copy text: ", err);
-        }
+        },
       );
     }
   };
@@ -1548,14 +1550,14 @@ function AppContent() {
 
       if (threshold >= 400000) {
         description = t(
-          "25% chance for 6-hour cooldown otherwise 14-hour cooldown for high-value items."
+          "25% chance for 6-hour cooldown otherwise 14-hour cooldown for high-value items.",
         );
       } else if (threshold >= 350000) {
         // Adjusted to 350000 to match initial state
         description = t("14-hour cooldown for high-value items.");
       } else {
         description = t(
-          "You have met the threshold. A cooldown has been triggered."
+          "You have met the threshold. A cooldown has been triggered.",
         );
       }
 
@@ -1580,8 +1582,9 @@ function AppContent() {
     if (storedVersion !== CURRENT_VERSION) {
       // Print a message to the console to let us know that the version has changed
       console.log(
-        `App version changed from ${storedVersion || "none"
-        } to ${CURRENT_VERSION}`
+        `App version changed from ${
+          storedVersion || "none"
+        } to ${CURRENT_VERSION}`,
       );
       // If the version has changed, we want to clear out most of the items in local storage
       // We don't want to clear out the cookie consent, as that is a user preference
@@ -1635,7 +1638,7 @@ function AppContent() {
 
   // Add loading state
   const [loadingSlots, setLoadingSlots] = useState<boolean[]>(
-    Array(5).fill(false)
+    Array(5).fill(false),
   );
 
   // Reset overrides and exclusions
@@ -1663,7 +1666,7 @@ function AppContent() {
         {
           overrides: clearedOverridesCount,
           excluded: clearedExcludedItemsCount,
-        }
+        },
       ),
     });
   }, [excludedItems, overriddenPrices, t]);
@@ -1698,7 +1701,7 @@ function AppContent() {
     (newState: boolean) => {
       setUseLastOfferCountFilter(newState);
     },
-    []
+    [],
   );
 
   // Listen for global nav events to open settings from SiteNav
@@ -1708,12 +1711,12 @@ function AppContent() {
     }
     document.addEventListener(
       "cc:open-settings",
-      openSettings as EventListener
+      openSettings as EventListener,
     );
     return () =>
       document.removeEventListener(
         "cc:open-settings",
-        openSettings as EventListener
+        openSettings as EventListener,
       );
   }, []);
 
@@ -1721,7 +1724,6 @@ function AppContent() {
   return (
     <>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto relative">
-
         <div className="flex items-start justify-center gap-4 max-w-[1600px] mx-auto">
           {/* Left Ad Rail - Desktop Only */}
           <aside className="hidden xl:block w-[160px] flex-shrink-0">
@@ -1776,7 +1778,7 @@ function AppContent() {
                   selectedItems={selectedItems}
                 />
 
-{/* Recipe Detection Warning */}
+                {/* Recipe Detection Warning */}
                 <RecipeWarning
                   selectedItems={
                     selectedItems.filter(Boolean) as SimplifiedItem[]
@@ -1798,7 +1800,9 @@ function AppContent() {
                     </AlertTitle>
                     <AlertDescription className="mt-2 space-y-2 text-sm">
                       <p className="text-red-300/90">
-                        {t("The selected items cannot be arranged in the Cultist Circle box (9x6).")}
+                        {t(
+                          "The selected items cannot be arranged in the Cultist Circle box (9x6).",
+                        )}
                       </p>
                       <PlacementPreviewInline
                         fitDebug={fitDebug}
@@ -1817,12 +1821,15 @@ function AppContent() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIgnoreFilters(!ignoreFilters)}
-                    className={`h-7 px-2 text-[10px] uppercase font-bold transition-all duration-200 rounded-md border ${ignoreFilters
-                      ? "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
-                      : "bg-slate-700/30 border-slate-600/30 text-slate-500 hover:text-slate-400 hover:bg-slate-700/50"
-                      }`}
+                    className={`h-7 px-2 text-[10px] uppercase font-bold transition-all duration-200 rounded-md border ${
+                      ignoreFilters
+                        ? "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
+                        : "bg-slate-700/30 border-slate-600/30 text-slate-500 hover:text-slate-400 hover:bg-slate-700/50"
+                    }`}
                   >
-                    {ignoreFilters ? `⚠ ${t("Showing All Items")}` : t("Bypass Filters")}
+                    {ignoreFilters
+                      ? `⚠ ${t("Showing All Items")}`
+                      : t("Bypass Filters")}
                   </Button>
                 </div>
 
@@ -1848,7 +1855,9 @@ function AppContent() {
                       {needsManualRetry ? (
                         <>
                           <AlertCircle className="h-6 w-6 text-amber-400" />
-                          <span className="text-sm">{t("Failed to fetch items")}</span>
+                          <span className="text-sm">
+                            {t("Failed to fetch items")}
+                          </span>
                           <Button
                             onClick={() => {
                               resetRetryCount();
@@ -1863,7 +1872,9 @@ function AppContent() {
                       ) : (
                         <>
                           <Loader2 className="animate-spin h-6 w-6 text-slate-500" />
-                          <span className="text-sm">{t("Loading items...")}</span>
+                          <span className="text-sm">
+                            {t("Loading items...")}
+                          </span>
                         </>
                       )}
                     </div>
@@ -1871,8 +1882,9 @@ function AppContent() {
                     selectedItems.map((item, index) => (
                       <div
                         key={`selector-${index}`}
-                        className={`animate-fade-in transition-all duration-200 ${loadingSlots[index] ? "opacity-50" : ""
-                          }`}
+                        className={`animate-fade-in transition-all duration-200 ${
+                          loadingSlots[index] ? "opacity-50" : ""
+                        }`}
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <React.Fragment>
@@ -1885,7 +1897,7 @@ function AppContent() {
                               selectedItem={item}
                               onSelect={(
                                 sel: SimplifiedItem | null,
-                                op: number | null | undefined
+                                op: number | null | undefined,
                               ) => updateSelectedItem(sel, index, op)}
                               onCopy={() => handleCopyToClipboard(index)}
                               onPin={() => handlePinItem(index)}
@@ -1908,37 +1920,37 @@ function AppContent() {
                             />
                           </Suspense>
                           {showHintPills &&
-                            !item &&
-                            nextItemSuggestions[index] &&
-                            nextItemSuggestions[index].length > 0 &&
-                            (index === selectedItems.findIndex((it) => !it) ||
-                              (selectedItems.every((it) => !it) &&
-                                index === 0)) ? (
+                          !item &&
+                          nextItemSuggestions[index] &&
+                          nextItemSuggestions[index].length > 0 &&
+                          (index === selectedItems.findIndex((it) => !it) ||
+                            (selectedItems.every((it) => !it) &&
+                              index === 0)) ? (
                             <NextItemHints
                               items={
                                 selectedItems.every((it) => !it) && index === 0
                                   ? (() => {
-                                    const divisorOptions = [5, 4, 3, 2];
-                                    let filteredSuggestions: SimplifiedItem[] =
-                                      [];
-                                    for (const divisor of divisorOptions) {
-                                      filteredSuggestions =
-                                        nextItemSuggestions[index].filter(
-                                          (it) =>
-                                            it.basePrice >=
-                                            threshold / divisor
-                                        );
-                                      if (filteredSuggestions.length >= 3)
-                                        break;
-                                    }
-                                    return filteredSuggestions
-                                      .sort(
-                                        (a, b) =>
-                                          (getEffectivePrice(a) ?? 0) -
-                                          (getEffectivePrice(b) ?? 0)
-                                      )
-                                      .slice(0, 3);
-                                  })()
+                                      const divisorOptions = [5, 4, 3, 2];
+                                      let filteredSuggestions: SimplifiedItem[] =
+                                        [];
+                                      for (const divisor of divisorOptions) {
+                                        filteredSuggestions =
+                                          nextItemSuggestions[index].filter(
+                                            (it) =>
+                                              it.basePrice >=
+                                              threshold / divisor,
+                                          );
+                                        if (filteredSuggestions.length >= 3)
+                                          break;
+                                      }
+                                      return filteredSuggestions
+                                        .sort(
+                                          (a, b) =>
+                                            (getEffectivePrice(a) ?? 0) -
+                                            (getEffectivePrice(b) ?? 0),
+                                        )
+                                        .slice(0, 3);
+                                    })()
                                   : nextItemSuggestions[index]
                               }
                               prevItem={
@@ -2033,7 +2045,10 @@ function AppContent() {
             </Card>
 
             {/* Footer Section */}
-            <FooterSection onFeedbackClick={() => setIsFeedbackFormVisible(true)} />
+            <FooterSection
+              contributors={contributors}
+              onFeedbackClick={() => setIsFeedbackFormVisible(true)}
+            />
           </div>
 
           {/* Right Ad Rail - Desktop Only */}
@@ -2076,7 +2091,7 @@ function AppContent() {
 
               sonnerToast(t("Data Cleared"), {
                 description: t(
-                  "All data has been cleared. The app has been reset to its initial state."
+                  "All data has been cleared. The app has been reset to its initial state.",
                 ),
               });
             }}
@@ -2166,7 +2181,6 @@ function AppContent() {
 
 export default AppContent;
 
-export function App() {
-  return <AppContent />;
+export function App({ contributors = [] }: AppProps) {
+  return <AppContent contributors={contributors} />;
 }
-
