@@ -9,7 +9,6 @@ import React, {
   useState,
   useMemo,
   useCallback,
-  useContext,
 } from "react";
 import {
   Card,
@@ -99,8 +98,10 @@ const NewBadge = React.memo(function NewBadge() {
 });
 
 const ModeRestrictionBadge = React.memo(function ModeRestrictionBadge({
+  t,
   modeRestriction,
 }: {
+  t: (key: string) => string;
   modeRestriction: Recipe["modeRestriction"];
 }) {
   if (modeRestriction !== "pvp-only") {
@@ -108,36 +109,36 @@ const ModeRestrictionBadge = React.memo(function ModeRestrictionBadge({
   }
 
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 shadow-lg">
-      PVP ONLY
-    </span>
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex cursor-help items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 shadow-lg">
+            {t("PVP ONLY")}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {t("This recipe is available in PvP mode only.")}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 });
 
-const RepeatableBadge = React.memo(function RepeatableBadge() {
+const FoundInRaidBadge = React.memo(function FoundInRaidBadge({
+  t,
+}: {
+  t: (key: string) => string;
+}) {
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex cursor-help items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-sky-500/15 border border-sky-400/35 text-sky-200 shadow-lg">
-            Repeatable
+          <span className="inline-flex cursor-help items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-500/20 border border-blue-400/40 text-blue-200 shadow-lg">
+                {t("FiR")}
           </span>
         </TooltipTrigger>
-        <TooltipContent
-          side="top"
-          sideOffset={8}
-          className="w-[250px] overflow-hidden rounded-lg border border-gray-700/80 bg-gray-900/98 p-0 text-left text-xs text-gray-200 shadow-2xl backdrop-blur-md"
-        >
-          <div className="space-y-2 p-3">
-            <div className="border-b border-gray-700/60 pb-2">
-              <p className="text-sm font-semibold text-sky-300">
-                Repeatable recipe
-              </p>
-            </div>
-            <p className="whitespace-normal leading-relaxed text-gray-300">
-              The sacrifices listed below can be repeated indefinitely.
-            </p>
-          </div>
+        <TooltipContent side="top" className="text-xs">
+          {t("Found in Raid")}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -368,12 +369,10 @@ const RecipeCard = React.memo(function RecipeCard({
   return (
     <div className="relative rounded-xl border border-gray-700/50 bg-gray-800/40 p-4 lg:p-5 backdrop-blur-sm transition-all duration-200 hover:bg-gray-800/60 hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20 group">
       {recipe.isNew && <NewBadge />}
-      {(recipe.modeRestriction || recipe.isRepeatable) && (
-        <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
-          <ModeRestrictionBadge modeRestriction={recipe.modeRestriction} />
-          {recipe.isRepeatable && <RepeatableBadge />}
-        </div>
-      )}
+      <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
+        <FoundInRaidBadge t={t} />
+        <ModeRestrictionBadge t={t} modeRestriction={recipe.modeRestriction} />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
         {/* Inputs Column */}
@@ -458,9 +457,6 @@ const RecipeCard = React.memo(function RecipeCard({
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-green-300">
                 Rewards
-              </span>
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
-                ({t("Found in Raid")})
               </span>
               <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
                 {outputCount}
