@@ -134,8 +134,12 @@ const FoundInRaidBadge = React.memo(function FoundInRaidBadge({
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex cursor-help items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-500/20 border border-blue-400/40 text-blue-200 shadow-lg">
-                {t("FiR")}
+          <span
+            className="inline-flex cursor-help items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-500/20 border border-blue-400/40 text-blue-200 shadow-lg"
+            aria-label={t("Found in Raid")}
+            title={t("Found in Raid")}
+          >
+            {t("FiR")}
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
