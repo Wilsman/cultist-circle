@@ -1,5 +1,6 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
+import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import CookieConsent from "@/components/cookie-consent";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
@@ -10,6 +11,11 @@ import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { NotesWidget } from "@/components/notes-widget";
 import { SupportWidget } from "@/components/support-widget";
 import { SiteNav } from "@/components/site-nav";
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -99,7 +105,9 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body
+        className={`${geistMono.className} min-h-screen bg-background text-foreground antialiased`}
+      >
         {/* Google Analytics */}
         <Script
           async

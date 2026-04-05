@@ -66,6 +66,7 @@ import {
 import { hashString, seededShuffle } from "@/lib/item-utils";
 import { HeaderSection } from "@/components/app/header-section";
 import { FooterSection } from "@/components/app/footer-section";
+import { SelectorSettingsPopover } from "@/components/app/selector-settings-popover";
 import { SummarySection } from "@/components/app/summary-section";
 import { type FleaPriceType, type PriceMode } from "@/hooks/use-app-settings";
 import { type GitHubContributor } from "@/lib/github-contributors";
@@ -1817,20 +1818,22 @@ function AppContent({ contributors = [] }: AppProps) {
                   <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
                     {t("Items")}
                   </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIgnoreFilters(!ignoreFilters)}
-                    className={`h-7 px-2 text-[10px] uppercase font-bold transition-all duration-200 rounded-md border ${
-                      ignoreFilters
-                        ? "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
-                        : "bg-slate-700/30 border-slate-600/30 text-slate-500 hover:text-slate-400 hover:bg-slate-700/50"
-                    }`}
-                  >
-                    {ignoreFilters
-                      ? `⚠ ${t("Showing All Items")}`
-                      : t("Bypass Filters")}
-                  </Button>
+                  <SelectorSettingsPopover
+                    sortOption={sortOption}
+                    onSortChange={handleSortChange}
+                    priceMode={priceMode}
+                    onPriceModeChange={handlePriceModeChange}
+                    traderLevels={traderLevels}
+                    onTraderLevelsChange={handleTraderLevelsChange}
+                    fleaPriceType={fleaPriceType}
+                    onFleaPriceTypeChange={handleFleaPriceTypeChange}
+                    useLevelFilter={useLevelFilter}
+                    onUseLevelFilterChange={setUseLevelFilter}
+                    playerLevel={playerLevel}
+                    onPlayerLevelChange={setPlayerLevel}
+                    ignoreFilters={ignoreFilters}
+                    onIgnoreFiltersChange={setIgnoreFilters}
+                  />
                 </div>
 
                 {/* Item Selection Area */}
