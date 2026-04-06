@@ -79,6 +79,7 @@ const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
 const PRICE_MODE_KEY = "priceMode";
 const TRADER_LEVELS_KEY = "traderLevels";
+const LOW_OFFER_COUNT_THRESHOLD = 5;
 
 const DynamicItemSelector = dynamic(
   () => import("@/components/item-selector"),
@@ -625,14 +626,24 @@ function AppContent({ contributors = [] }: AppProps) {
     toastShownRef.current = false; // Reset toast shown flag when threshold changes
   };
 
-  const items: SimplifiedItem[] = useMemo(() => {
+  const selectorFilterState = useMemo(() => {
     if (loading || !rawItemsData) {
-      return [];
+      return {
+        items: [] as SimplifiedItem[],
+        fleaLevelFilteredCount: 0,
+        lowOfferCountFilteredCount: 0,
+        incompatibleFilteredCount: 0,
+      };
     }
 
     if (!Array.isArray(rawItemsData)) {
       console.error("rawItemsData is not an array:", rawItemsData);
-      return [];
+      return {
+        items: [] as SimplifiedItem[],
+        fleaLevelFilteredCount: 0,
+        lowOfferCountFilteredCount: 0,
+        incompatibleFilteredCount: 0,
+      };
     }
 
     // First filter by excluded categories (by category ID)
@@ -681,13 +692,30 @@ function AppContent({ contributors = [] }: AppProps) {
           return !ids.some((id) => inaccessibleCategories.includes(id));
         })
       : categoryFiltered;
+    const fleaLevelFilteredCount =
+      useLevelFilter && !ignoreFilters
+        ? categoryFiltered.length - levelFiltered.length
+        : 0;
+
+    const lowOfferFiltered =
+      priceMode === "flea" && useLastOfferCountFilter && !ignoreFilters
+        ? levelFiltered.filter(
+            (item: SimplifiedItem) =>
+              typeof item.lastOfferCount !== "number" ||
+              item.lastOfferCount >= LOW_OFFER_COUNT_THRESHOLD,
+          )
+        : levelFiltered;
+    const lowOfferCountFilteredCount =
+      priceMode === "flea" && useLastOfferCountFilter && !ignoreFilters
+        ? levelFiltered.length - lowOfferFiltered.length
+        : 0;
 
     // Then filter out individually excluded items (case-insensitive, language-agnostic)
     const excludedItemNames = new Set(
       Array.from(excludedItems, (name) => name.toLowerCase()),
     );
     const excludedFiltered = excludeIncompatible
-      ? levelFiltered.filter((item: SimplifiedItem) => {
+      ? lowOfferFiltered.filter((item: SimplifiedItem) => {
           if (ignoreFilters) return true; // Bypass individual exclusions
           const candidates = [
             item.name,
@@ -699,7 +727,11 @@ function AppContent({ contributors = [] }: AppProps) {
             excludedItemNames.has(n.toLowerCase()),
           );
         })
-      : levelFiltered;
+      : lowOfferFiltered;
+    const incompatibleFilteredCount =
+      excludeIncompatible && !ignoreFilters
+        ? lowOfferFiltered.length - excludedFiltered.length
+        : 0;
 
     // Sorting logic...
     const sortedItems = [...excludedFiltered];
@@ -726,7 +758,12 @@ function AppContent({ contributors = [] }: AppProps) {
       });
     }
 
-    return sortedItems;
+    return {
+      items: sortedItems,
+      fleaLevelFilteredCount,
+      lowOfferCountFilteredCount,
+      incompatibleFilteredCount,
+    };
   }, [
     rawItemsData,
     sortOption,
@@ -737,7 +774,15 @@ function AppContent({ contributors = [] }: AppProps) {
     useLevelFilter,
     playerLevel,
     ignoreFilters,
+    priceMode,
+    useLastOfferCountFilter,
   ]);
+  const items = selectorFilterState.items;
+  const fleaLevelFilteredCount = selectorFilterState.fleaLevelFilteredCount;
+  const lowOfferCountFilteredCount =
+    selectorFilterState.lowOfferCountFilteredCount;
+  const incompatibleFilteredCount =
+    selectorFilterState.incompatibleFilteredCount;
 
   // Helper: compute effective price for an item given current mode and overrides
   const getEffectivePrice = useCallback(
@@ -829,9 +874,10 @@ function AppContent({ contributors = [] }: AppProps) {
             basePrice <= 0 ||
             typeof fleaPrice !== "number" ||
             fleaPrice < 0 ||
-            (useLastOfferCountFilter &&
+            (priceMode === "flea" &&
+              useLastOfferCountFilter &&
               typeof item.lastOfferCount === "number" &&
-              item.lastOfferCount < 5)
+              item.lastOfferCount < LOW_OFFER_COUNT_THRESHOLD)
           ) {
             continue;
           }
@@ -908,7 +954,7 @@ function AppContent({ contributors = [] }: AppProps) {
         return { selected: [], totalFleaCost: 0 };
       }
     },
-    [itemBonus, useLastOfferCountFilter, getEffectivePrice],
+    [itemBonus, priceMode, useLastOfferCountFilter, getEffectivePrice],
   );
 
   // Memoized total and flea costs
@@ -1827,8 +1873,17 @@ function AppContent({ contributors = [] }: AppProps) {
                     onTraderLevelsChange={handleTraderLevelsChange}
                     fleaPriceType={fleaPriceType}
                     onFleaPriceTypeChange={handleFleaPriceTypeChange}
+                    excludeIncompatible={excludeIncompatible}
+                    onExcludeIncompatibleChange={setExcludeIncompatible}
+                    incompatibleFilteredCount={incompatibleFilteredCount}
                     useLevelFilter={useLevelFilter}
                     onUseLevelFilterChange={setUseLevelFilter}
+                    fleaLevelFilteredCount={fleaLevelFilteredCount}
+                    useLastOfferCountFilter={useLastOfferCountFilter}
+                    onUseLastOfferCountFilterChange={
+                      handleUseLastOfferCountFilterChange
+                    }
+                    lowOfferCountFilteredCount={lowOfferCountFilteredCount}
                     playerLevel={playerLevel}
                     onPlayerLevelChange={setPlayerLevel}
                     ignoreFilters={ignoreFilters}
@@ -2171,6 +2226,7 @@ function AppContent({ contributors = [] }: AppProps) {
             onUseLastOfferCountFilterChange={
               handleUseLastOfferCountFilterChange
             }
+            lowOfferCountFilteredCount={lowOfferCountFilteredCount}
             useLevelFilter={useLevelFilter}
             onUseLevelFilterChange={setUseLevelFilter}
             playerLevel={playerLevel}

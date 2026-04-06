@@ -98,6 +98,7 @@ interface SettingsPaneProps {
   onClearLocalStorage: () => void;
   useLastOfferCountFilter: boolean;
   onUseLastOfferCountFilterChange: (value: boolean) => void;
+  lowOfferCountFilteredCount: number;
   useLevelFilter: boolean;
   onUseLevelFilterChange: (value: boolean) => void;
   playerLevel: number;
@@ -134,6 +135,7 @@ export default function SettingsPane({
   onHardReset,
   useLastOfferCountFilter,
   onUseLastOfferCountFilterChange,
+  lowOfferCountFilteredCount,
   useLevelFilter,
   onUseLevelFilterChange,
   playerLevel,
@@ -577,31 +579,52 @@ export default function SettingsPane({
                       </RadioGroup>
                     </section>
 
-                    {/* Market Offer Count Filter (Temporarily Disabled) */}
-                    <section className="space-y-4 pt-6 border-t border-white/5 opacity-50 cursor-not-allowed">
+                    {/* Market Offer Count Filter */}
+                    <section className="space-y-4 pt-6 border-t border-white/5">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <Label className="text-base font-semibold text-gray-400">
+                            <Label className="text-base font-semibold text-white">
                               Exclude Low Offer Count Items
                             </Label>
-                            <Badge
-                              variant="outline"
-                              className="bg-white/5 border-white/10 text-[10px] text-gray-500 uppercase px-2 py-0"
-                            >
-                              Disabled
-                            </Badge>
+                            {currentPriceMode !== "flea" && (
+                              <Badge
+                                variant="outline"
+                                className="bg-white/5 border-white/10 text-[10px] text-gray-400 uppercase px-2 py-0"
+                              >
+                                Flea Only
+                              </Badge>
+                            )}
                           </div>
-                          <p className="text-xs text-gray-500 leading-relaxed">
-                            Items with fewer than 5 offers on the Flea Market
-                            will not be excluded from calculations.
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            Items with fewer than 5 active flea offers will be
+                            excluded from calculations.
                           </p>
+                          {currentPriceMode !== "flea" && (
+                            <p className="text-xs text-gray-500 leading-relaxed">
+                              Only applies when Price Mode is set to Flea
+                              Market.
+                            </p>
+                          )}
+                          {currentPriceMode === "flea" &&
+                            currentUseLastOfferCountFilter &&
+                            lowOfferCountFilteredCount > 0 && (
+                              <p className="text-xs font-medium text-yellow-400 leading-relaxed">
+                                Filtered{" "}
+                                {lowOfferCountFilteredCount.toLocaleString()}{" "}
+                                low-offer{" "}
+                                {lowOfferCountFilteredCount === 1
+                                  ? "item"
+                                  : "items"}
+                              </p>
+                            )}
                         </div>
                         <Switch
                           id="use-last-offer-count-filter"
-                          checked={false}
-                          disabled={true}
-                          className="data-[state=unchecked]:bg-white/10"
+                          checked={currentUseLastOfferCountFilter}
+                          disabled={currentPriceMode !== "flea"}
+                          onCheckedChange={setCurrentUseLastOfferCountFilter}
+                          className="data-[state=checked]:bg-yellow-400 data-[state=unchecked]:bg-white/10 disabled:opacity-60"
                         />
                       </div>
                     </section>

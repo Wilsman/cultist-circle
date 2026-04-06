@@ -5,7 +5,11 @@ import { useMemo } from "react";
 import { ChevronDown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -29,8 +33,15 @@ interface SelectorSettingsPopoverProps {
   onTraderLevelsChange: (levels: TraderLevels) => void;
   fleaPriceType: FleaPriceType;
   onFleaPriceTypeChange: (type: FleaPriceType) => void;
+  excludeIncompatible: boolean;
+  onExcludeIncompatibleChange: (value: boolean) => void;
+  incompatibleFilteredCount: number;
   useLevelFilter: boolean;
   onUseLevelFilterChange: (value: boolean) => void;
+  fleaLevelFilteredCount: number;
+  useLastOfferCountFilter: boolean;
+  onUseLastOfferCountFilterChange: (value: boolean) => void;
+  lowOfferCountFilteredCount: number;
   playerLevel: number;
   onPlayerLevelChange: (level: number) => void;
   ignoreFilters: boolean;
@@ -96,14 +107,22 @@ export function SelectorSettingsPopover({
   onTraderLevelsChange,
   fleaPriceType,
   onFleaPriceTypeChange,
+  excludeIncompatible,
+  onExcludeIncompatibleChange,
+  incompatibleFilteredCount,
   useLevelFilter,
   onUseLevelFilterChange,
+  fleaLevelFilteredCount,
+  useLastOfferCountFilter,
+  onUseLastOfferCountFilterChange,
+  lowOfferCountFilteredCount,
   playerLevel,
   onPlayerLevelChange,
   ignoreFilters,
   onIgnoreFiltersChange,
 }: SelectorSettingsPopoverProps) {
   const { t } = useLanguage();
+  const filtersAreOverridden = ignoreFilters;
 
   const normalizedLevel = useMemo(
     () => Math.min(79, Math.max(1, playerLevel)),
@@ -116,7 +135,10 @@ export function SelectorSettingsPopover({
     onPlayerLevelChange(Math.min(79, Math.max(1, parsed)));
   };
 
-  const handleTraderLevelChange = (trader: keyof TraderLevels, level: string) => {
+  const handleTraderLevelChange = (
+    trader: keyof TraderLevels,
+    level: string,
+  ) => {
     onTraderLevelsChange({
       ...traderLevels,
       [trader]: Number.parseInt(level, 10),
@@ -131,14 +153,19 @@ export function SelectorSettingsPopover({
           size="sm"
           className={cn(
             "h-7 gap-2 rounded-md border px-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors",
-            ignoreFilters
+            filtersAreOverridden
               ? "border-amber-500/40 bg-amber-500/12 text-amber-200 hover:border-amber-400/60 hover:bg-amber-500/18"
               : "border-slate-600/40 bg-slate-900/70 text-slate-300 hover:border-slate-500/60 hover:bg-slate-800/80 hover:text-slate-100",
           )}
           aria-label={t("Open selector settings")}
         >
           <Settings className="h-3.5 w-3.5" />
-          <span>{t("Settings")}</span>
+          <span>{t("Quick Settings")}</span>
+          {filtersAreOverridden && (
+            <span className="rounded-full border border-amber-300/40 bg-amber-200/12 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-[0.14em] text-amber-100">
+              {t("All Items")}
+            </span>
+          )}
           <ChevronDown className="h-3 w-3 opacity-70" />
         </Button>
       </PopoverTrigger>
@@ -151,6 +178,17 @@ export function SelectorSettingsPopover({
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
             {t("Settings")}
           </p>
+
+          {filtersAreOverridden && (
+            <div className="mb-3 rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2">
+              <p className="text-[11px] font-medium text-amber-200">
+                {t("All selector filters are currently bypassed")}
+              </p>
+              <p className="mt-1 text-[10px] text-amber-100/80">
+                {t("Every item is shown in the selector list")}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
             <section className="space-y-1.5">
@@ -175,13 +213,13 @@ export function SelectorSettingsPopover({
 
             <section className="rounded-md border border-slate-700 bg-slate-900/70 p-2.5">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] text-slate-300">{t("Price Mode")}</span>
+                <span className="text-[11px] text-slate-300">
+                  {t("Price Mode")}
+                </span>
               </div>
               <RadioGroup
                 value={priceMode}
-                onValueChange={(value) =>
-                  onPriceModeChange(value as PriceMode)
-                }
+                onValueChange={(value) => onPriceModeChange(value as PriceMode)}
                 className="grid grid-cols-2 gap-2"
               >
                 {(["flea", "trader"] as const).map((value) => (
@@ -197,7 +235,10 @@ export function SelectorSettingsPopover({
                     <span className="font-medium">
                       {value === "flea" ? t("Flea") : t("Trader")}
                     </span>
-                    <RadioGroupItem value={value} className="border-current text-current" />
+                    <RadioGroupItem
+                      value={value}
+                      className="border-current text-current"
+                    />
                   </label>
                 ))}
               </RadioGroup>
@@ -275,7 +316,9 @@ export function SelectorSettingsPopover({
                 </label>
                 <label className="flex cursor-pointer items-center justify-between rounded-md border border-slate-800 bg-slate-950/70 px-2.5 py-2 text-[11px] text-slate-200 hover:border-slate-600">
                   <div className="flex flex-col">
-                    <span className="font-medium">{t("Average 24h Price")}</span>
+                    <span className="font-medium">
+                      {t("Average 24h Price")}
+                    </span>
                     <span className="text-[10px] text-slate-500">
                       {t("Weighted average over the last 24h")}
                     </span>
@@ -288,7 +331,44 @@ export function SelectorSettingsPopover({
               </RadioGroup>
             </section>
 
-            <section className="rounded-md border border-slate-700 bg-slate-900/70 p-2.5">
+            <section
+              className={cn(
+                "rounded-md border border-slate-700 bg-slate-900/70 p-2.5 transition-opacity",
+                filtersAreOverridden && "opacity-55",
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-slate-300">
+                    {t("Exclude incompatible items")}
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    {t("Exclude items invalid for the cultist circle")}
+                  </span>
+                  {excludeIncompatible &&
+                    !filtersAreOverridden &&
+                    incompatibleFilteredCount > 0 && (
+                      <span className="mt-1 text-[10px] font-medium text-amber-300">
+                        {t("Filtered {count} incompatible items", {
+                          count: incompatibleFilteredCount.toLocaleString(),
+                        })}
+                      </span>
+                    )}
+                </div>
+                <Switch
+                  checked={excludeIncompatible}
+                  onCheckedChange={onExcludeIncompatibleChange}
+                  className="data-[state=checked]:bg-amber-400 data-[state=unchecked]:bg-slate-700"
+                />
+              </div>
+            </section>
+
+            <section
+              className={cn(
+                "rounded-md border border-slate-700 bg-slate-900/70 p-2.5 transition-opacity",
+                filtersAreOverridden && "opacity-55",
+              )}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-[11px] text-slate-300">
@@ -297,6 +377,15 @@ export function SelectorSettingsPopover({
                   <span className="text-[10px] text-slate-500">
                     {t("Hide items you cannot access at your current level")}
                   </span>
+                  {useLevelFilter &&
+                    !filtersAreOverridden &&
+                    fleaLevelFilteredCount > 0 && (
+                      <span className="mt-1 text-[10px] font-medium text-amber-300">
+                        {t("Filtered {count} inaccessible items", {
+                          count: fleaLevelFilteredCount.toLocaleString(),
+                        })}
+                      </span>
+                    )}
                 </div>
                 <Switch
                   checked={useLevelFilter}
@@ -327,20 +416,58 @@ export function SelectorSettingsPopover({
               )}
             </section>
 
+            {priceMode === "flea" && (
+              <section
+                className={cn(
+                  "rounded-md border border-slate-700 bg-slate-900/70 p-2.5 transition-opacity",
+                  filtersAreOverridden && "opacity-55",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-slate-300">
+                      {t("Exclude Low Offer Count")}
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      {t("Filters items with fewer than 5 active flea offers")}
+                    </span>
+                    {useLastOfferCountFilter &&
+                      !filtersAreOverridden &&
+                      lowOfferCountFilteredCount > 0 && (
+                        <span className="mt-1 text-[10px] font-medium text-amber-300">
+                          {t("Filtered {count} low-offer items", {
+                            count: lowOfferCountFilteredCount.toLocaleString(),
+                          })}
+                        </span>
+                      )}
+                  </div>
+                  <Switch
+                    checked={useLastOfferCountFilter}
+                    onCheckedChange={onUseLastOfferCountFilterChange}
+                    className="data-[state=checked]:bg-amber-400 data-[state=unchecked]:bg-slate-700"
+                  />
+                </div>
+              </section>
+            )}
+
             <section className="rounded-md border border-slate-700 bg-slate-900/70 p-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-[11px] text-slate-300">
-                    {t("Bypass Filters")}
+                    {t("Show all items")}
                   </span>
                   <span className="text-[10px] text-slate-500">
-                    {ignoreFilters
-                      ? t("Showing all items, including excluded ones")
-                      : t("Keep item and category filters active")}
+                    {filtersAreOverridden
+                      ? t(
+                          "All item-list filters are ignored and every item is shown",
+                        )
+                      : t(
+                          "Only items allowed by your current filters are shown",
+                        )}
                   </span>
                 </div>
                 <Switch
-                  checked={ignoreFilters}
+                  checked={filtersAreOverridden}
                   onCheckedChange={onIgnoreFiltersChange}
                   className="data-[state=checked]:bg-amber-400 data-[state=unchecked]:bg-slate-700"
                 />

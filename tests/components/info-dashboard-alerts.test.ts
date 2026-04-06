@@ -23,16 +23,16 @@ describe('Info dashboard THOR PvP warning', () => {
     expect(thorAlert?.id).toBe('thor-hot-sacrifice-pvp-warning');
     expect(thorAlert?.title).toContain('THOR');
     expect(thorAlert?.priority).toBe(0);
-    expect(thorAlert?.actions).toHaveLength(1);
+    expect(thorAlert?.actions).toBeUndefined();
   });
 
-  it('renames the old cat update to the figurine recipes round notice', () => {
+  it('renames the old cat update to the figurine recipes found notice', () => {
     const figurineAlert = NOTIFICATIONS.find(
       (notification) => notification.id === 'new-figurine-recipes-round'
     );
 
     expect(figurineAlert).toBeDefined();
-    expect(figurineAlert?.title).toBe('New Figurine Recipes Round');
+    expect(figurineAlert?.title).toBe('New Figurine Recipes Found');
   });
 
   it('marks the THOR hot sacrifice as unavailable in PVP but working in PVE', () => {

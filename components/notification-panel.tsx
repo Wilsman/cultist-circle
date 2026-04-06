@@ -56,7 +56,7 @@ export const NOTIFICATIONS: Notification[] = [
   {
     id: "new-figurine-recipes-round",
     type: "hot-sacrifice",
-    title: "New Figurine Recipes Round",
+    title: "New Figurine Recipes Found",
     description: (
       <>
         Multiple new figurine recipes have been added. Check the{" "}
