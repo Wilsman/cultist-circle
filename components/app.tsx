@@ -70,6 +70,12 @@ import { SelectorSettingsPopover } from "@/components/app/selector-settings-popo
 import { SummarySection } from "@/components/app/summary-section";
 import { type FleaPriceType, type PriceMode } from "@/hooks/use-app-settings";
 import { type GitHubContributor } from "@/lib/github-contributors";
+import {
+  getPersistedSelectedItemIds,
+  parsePersistedSelectedItemIds,
+  restoreSelectedItemsFromIds,
+  SELECTED_ITEM_IDS_STORAGE_KEY,
+} from "@/lib/persisted-selected-items";
 interface AppProps {
   contributors?: GitHubContributor[];
 }
@@ -457,6 +463,13 @@ function AppContent({ contributors = [] }: AppProps) {
       console.error("Error loading overriddenPrices from localStorage", e);
     }
 
+    const persistedSelectedItemIds = parsePersistedSelectedItemIds(
+      localStorage.getItem(SELECTED_ITEM_IDS_STORAGE_KEY),
+    );
+    setSelectedItems(
+      restoreSelectedItemsFromIds(persistedSelectedItemIds, rawItemsData),
+    );
+
     // Mark initialization complete
     didInitStateRef.current = true;
   }, [rawItemsData]);
@@ -544,6 +557,22 @@ function AppContent({ contributors = [] }: AppProps) {
       }
     }
   }, [overriddenPrices]);
+
+  // Save selected item slots to localStorage after initial hydration completes.
+  useEffect(() => {
+    if (!didInitStateRef.current || typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        SELECTED_ITEM_IDS_STORAGE_KEY,
+        JSON.stringify(getPersistedSelectedItemIds(selectedItems)),
+      );
+    } catch (e) {
+      console.error("Error saving selectedItems to localStorage", e);
+    }
+  }, [selectedItems]);
 
   // Global keyboard shortcut to jump to the first empty item selector
   useEffect(() => {
