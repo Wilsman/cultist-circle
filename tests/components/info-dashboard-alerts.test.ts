@@ -26,13 +26,13 @@ describe('Info dashboard THOR PvP warning', () => {
     expect(thorAlert?.actions).toBeUndefined();
   });
 
-  it('renames the old cat update to the figurine recipes found notice', () => {
+  it('renames the old cat update to the Ded Moroz recipe update notice', () => {
     const figurineAlert = NOTIFICATIONS.find(
       (notification) => notification.id === 'new-figurine-recipes-round'
     );
 
     expect(figurineAlert).toBeDefined();
-    expect(figurineAlert?.title).toBe('New Figurine Recipes Found');
+    expect(figurineAlert?.title).toBe('Ded Moroz Ornament Recipe Updated');
   });
 
   it('marks the THOR hot sacrifice as unavailable in PVP but working in PVE', () => {

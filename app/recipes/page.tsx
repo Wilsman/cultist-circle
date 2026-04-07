@@ -90,10 +90,22 @@ function useDebounce<T>(value: T, delay: number): T {
 // Components
 // ============================================================================
 
-const NewBadge = React.memo(function NewBadge() {
+const StatusBadge = React.memo(function StatusBadge({
+  variant,
+}: {
+  variant: "new" | "updated";
+}) {
+  const badgeLabel = variant === "updated" ? "UPDATED" : "NEW";
+  const badgeClassName =
+    variant === "updated"
+      ? "bg-gradient-to-r from-amber-500 to-orange-500"
+      : "bg-gradient-to-r from-red-500 to-pink-500";
+
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gradient-to-r from-red-500 to-pink-500 text-white absolute -top-2 -left-2 shadow-lg animate-pulse z-10">
-      NEW
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold text-white absolute -top-2 -left-2 shadow-lg animate-pulse z-10 ${badgeClassName}`}
+    >
+      {badgeLabel}
     </span>
   );
 });
@@ -407,7 +419,11 @@ const RecipeCard = React.memo(function RecipeCard({
 
   return (
     <div className="relative rounded-xl border border-gray-700/50 bg-gray-800/40 p-4 lg:p-5 backdrop-blur-sm transition-all duration-200 hover:bg-gray-800/60 hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20 group">
-      {recipe.isNew && <NewBadge />}
+      {recipe.isUpdated ? (
+        <StatusBadge variant="updated" />
+      ) : recipe.isNew ? (
+        <StatusBadge variant="new" />
+      ) : null}
       <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
         <FoundInRaidBadge t={t} />
         <ModeRestrictionBadge t={t} modeRestriction={recipe.modeRestriction} />
@@ -633,7 +649,9 @@ export default function RecipesPage() {
         break;
       case "newest":
         filtered = [...filtered].sort(
-          (a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0),
+          (a, b) =>
+            (Number(Boolean(b.isUpdated)) * 2 + Number(Boolean(b.isNew))) -
+            (Number(Boolean(a.isUpdated)) * 2 + Number(Boolean(a.isNew))),
         );
         break;
     }
