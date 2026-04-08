@@ -47,7 +47,7 @@ A powerful and intuitive tool for Escape from Tarkov players to calculate the to
 - **Recipe Page**: Explore various in-game recipes and their outcomes.
 - **Feedback System**: Built-in form for user feedback and bug reports.
 - **Tour Overlay**: Interactive guide for new users.
-- **Analytics Integration**: Track usage with Google Analytics.
+- **Analytics Integration**: Track usage with Google Analytics and PostHog.
 
 ## 🤝 Contributing
 

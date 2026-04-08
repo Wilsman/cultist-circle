@@ -108,7 +108,6 @@ export default function RootLayout({
       <body
         className={`${geistMono.className} min-h-screen bg-background text-foreground antialiased`}
       >
-        {/* Google Analytics */}
         <Script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-MDQ1Z37Y5M"
@@ -117,11 +116,11 @@ export default function RootLayout({
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){ dataLayer.push(arguments); }
+            window.gtag = gtag;
             gtag('js', new Date());
             gtag('config', 'G-MDQ1Z37Y5M');
           `}
         </Script>
-
         <CookieConsentProvider>
           <LanguageProvider>
             <main className="relative min-h-screen">

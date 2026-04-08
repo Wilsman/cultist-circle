@@ -49,7 +49,7 @@ npm run lint
 - **UI Components**: Shadcn UI + Radix UI primitives
 - **State Management**: React Context + custom hooks, LocalStorage persistence
 - **Data Fetching**: SWR with custom persistence middleware
-- **Analytics**: Google Analytics
+- **Analytics**: Google Analytics and PostHog
 - **Testing**: Vitest + Testing Library
 
 ### Project Structure

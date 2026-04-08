@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
             <div className="p-3 bg-gray-800/90 rounded-lg shadow-md">
               <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">Analytics</h2>
               <p className="text-gray-100 text-sm leading-relaxed">
-                We use Google Analytics to understand how players use our calculator. This helps us improve features like item filtering, price thresholds, and category management. We only collect anonymous usage data and basic performance metrics.
+                We use Google Analytics and PostHog to understand how players use our calculator. This helps us improve features like item filtering, price thresholds, and category management. Analytics only run when you allow them through the cookie preferences panel.
               </p>
             </div>
 

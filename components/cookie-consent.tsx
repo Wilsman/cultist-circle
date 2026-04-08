@@ -13,13 +13,41 @@ import {
 import { Switch } from "./ui/switch";
 import { useCookieConsent } from "@/contexts/cookie-consent-context";
 import { useLanguage } from "@/contexts/language-context";
+import {
+  DEFAULT_COOKIE_PREFERENCES,
+  getStoredCookiePreferences,
+  saveCookiePreferences,
+  type CookiePreferences,
+} from "@/lib/cookie-consent";
+import { syncPostHogConsentFromPreferences } from "@/lib/posthog-client";
 
 interface CookieType {
-  id: string;
+  id: keyof CookiePreferences;
   name: string;
   description: string;
   required?: boolean;
   defaultValue?: boolean;
+}
+
+function syncGoogleAnalyticsConsent(preferences: CookiePreferences): void {
+  window.gtag?.("consent", "update", {
+    analytics_storage: preferences.analytics ? "granted" : "denied",
+    ad_storage: preferences.advertising ? "granted" : "denied",
+    ad_user_data: preferences.advertising ? "granted" : "denied",
+    ad_personalization: preferences.advertising ? "granted" : "denied",
+  });
+
+  if (preferences.analytics) {
+    window.dataLayer?.push({
+      event: "consent_accepted_analytics",
+    });
+  }
+
+  if (preferences.advertising) {
+    window.dataLayer?.push({
+      event: "consent_accepted_advertising",
+    });
+  }
 }
 
 export default function CookieConsent() {
@@ -28,7 +56,9 @@ export default function CookieConsent() {
   const [isVisible, setIsVisible] = useState<boolean | null>(null);
   const [showPreferences, setShowPreferences] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
-  const [preferences, setPreferences] = useState<Record<string, boolean>>({});
+  const [preferences, setPreferences] = useState<CookiePreferences>(
+    DEFAULT_COOKIE_PREFERENCES
+  );
 
   const cookieTypes: CookieType[] = useMemo(
     () => [
@@ -39,7 +69,7 @@ export default function CookieConsent() {
           "These cookies are necessary for the website to function properly and cannot be switched off."
         ),
         required: true,
-        defaultValue: true,
+        defaultValue: DEFAULT_COOKIE_PREFERENCES.necessary,
       },
       {
         id: "analytics",
@@ -47,7 +77,7 @@ export default function CookieConsent() {
         description: t(
           "These cookies help us improve the site by tracking which pages are most popular and how visitors move around the site."
         ),
-        defaultValue: true,
+        defaultValue: DEFAULT_COOKIE_PREFERENCES.analytics,
       },
       {
         id: "advertising",
@@ -55,7 +85,7 @@ export default function CookieConsent() {
         description: t(
           "These cookies are used to make advertising messages more relevant to you and your interests."
         ),
-        defaultValue: false,
+        defaultValue: DEFAULT_COOKIE_PREFERENCES.advertising,
       },
     ],
     [t]
@@ -65,33 +95,22 @@ export default function CookieConsent() {
     let cancelled = false;
     Promise.resolve().then(() => {
       if (cancelled) return;
-      const consent = localStorage.getItem("cookieConsent");
-      if (!consent) {
+      const savedPreferences = getStoredCookiePreferences();
+      if (!savedPreferences) {
         setIsVisible(true);
-        // Initialize preferences with default values
-        const initialPreferences = cookieTypes.reduce(
-          (acc, type) => ({
-            ...acc,
-            [type.id]: type.defaultValue ?? false,
-          }),
-          {}
-        );
-        setPreferences(initialPreferences);
+        setPreferences(DEFAULT_COOKIE_PREFERENCES);
       } else {
         setIsVisible(false);
         setHasConsent(true);
-        try {
-          const savedPreferences = JSON.parse(consent);
-          setPreferences(savedPreferences);
-        } catch (e) {
-          console.error("Error parsing cookie preferences:", e);
-        }
+        setPreferences(savedPreferences);
+        syncGoogleAnalyticsConsent(savedPreferences);
+        syncPostHogConsentFromPreferences(savedPreferences);
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [cookieTypes, setHasConsent]);
+  }, [setHasConsent]);
 
   const handleAcceptAll = () => {
     const allAccepted = cookieTypes.reduce(
@@ -99,24 +118,35 @@ export default function CookieConsent() {
         ...acc,
         [type.id]: true,
       }),
-      {}
+      {} as Record<string, boolean>
     );
-    saveConsent(allAccepted);
+    saveConsent({
+      necessary: true,
+      analytics: Boolean(allAccepted.analytics),
+      advertising: Boolean(allAccepted.advertising),
+    });
   };
 
   const handleDismiss = () => {
-    // Dismiss with default preferences (essential cookies only)
-    const essentialOnly = cookieTypes.reduce(
+    // Dismiss with the banner's default preferences.
+    const defaultPreferences = cookieTypes.reduce(
       (acc, type) => ({
         ...acc,
         [type.id]: type.defaultValue ?? false,
       }),
-      {}
+      {} as Record<string, boolean>
     );
-    saveConsent(essentialOnly);
+    saveConsent({
+      necessary: true,
+      analytics: Boolean(defaultPreferences.analytics),
+      advertising: Boolean(defaultPreferences.advertising),
+    });
   };
 
-  const handlePreferenceChange = (typeId: string, value: boolean) => {
+  const handlePreferenceChange = (
+    typeId: keyof CookiePreferences,
+    value: boolean
+  ) => {
     setPreferences((prev) => ({
       ...prev,
       [typeId]: value,
@@ -127,43 +157,14 @@ export default function CookieConsent() {
     saveConsent(preferences);
   };
 
-  const saveConsent = (prefs: Record<string, boolean>) => {
-    localStorage.setItem("cookieConsent", JSON.stringify(prefs));
+  const saveConsent = (prefs: CookiePreferences) => {
+    saveCookiePreferences(prefs);
     setIsVisible(false);
     setShowPreferences(false);
     setHasConsent(true);
-
-    // Handle analytics consent
-    if (prefs.analytics) {
-      window.gtag?.("consent", "update", {
-        analytics_storage: "granted",
-      });
-      window.dataLayer?.push({
-        event: "consent_accepted_analytics",
-      });
-    } else {
-      window.gtag?.("consent", "update", {
-        analytics_storage: "denied",
-      });
-    }
-
-    // Handle advertising consent
-    if (prefs.advertising) {
-      window.gtag?.("consent", "update", {
-        ad_storage: "granted",
-        ad_user_data: "granted",
-        ad_personalization: "granted",
-      });
-      window.dataLayer?.push({
-        event: "consent_accepted_advertising",
-      });
-    } else {
-      window.gtag?.("consent", "update", {
-        ad_storage: "denied",
-        ad_user_data: "denied",
-        ad_personalization: "denied",
-      });
-    }
+    setPreferences(prefs);
+    syncGoogleAnalyticsConsent(prefs);
+    syncPostHogConsentFromPreferences(prefs);
   };
 
   if (isVisible !== true) return null;
