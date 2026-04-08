@@ -1,6 +1,7 @@
 import {
   getPersistedSelectedItemIds,
   parsePersistedSelectedItemIds,
+  remapSelectedItemsToCurrentData,
   restoreSelectedItemsFromIds,
   SELECTED_ITEM_SLOT_COUNT,
 } from "@/lib/persisted-selected-items";
@@ -53,5 +54,23 @@ describe("persisted selected items", () => {
         items,
       ),
     ).toEqual([items[1], null, null, items[0], null]);
+  });
+
+  it("remaps persisted selections onto the latest item objects", () => {
+    const englishSelectedItems = [
+      createItem("item-1", "Antique Vase"),
+      null,
+      createItem("item-3", "Roler"),
+      null,
+      null,
+    ];
+    const localizedItems = [
+      createItem("item-1", "Antike Vase"),
+      createItem("item-3", "Roler (DE)"),
+    ];
+
+    expect(
+      remapSelectedItemsToCurrentData(englishSelectedItems, localizedItems),
+    ).toEqual([localizedItems[0], null, localizedItems[1], null, null]);
   });
 });

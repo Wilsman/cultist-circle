@@ -56,3 +56,13 @@ export function restoreSelectedItemsFromIds(
     return itemsById.get(itemId) ?? null;
   });
 }
+
+export function remapSelectedItemsToCurrentData(
+  selectedItems: Array<SimplifiedItem | null>,
+  items: SimplifiedItem[],
+): Array<SimplifiedItem | null> {
+  return restoreSelectedItemsFromIds(
+    getPersistedSelectedItemIds(selectedItems),
+    items,
+  );
+}
