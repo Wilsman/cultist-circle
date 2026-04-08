@@ -73,6 +73,7 @@ import { type GitHubContributor } from "@/lib/github-contributors";
 import {
   getPersistedSelectedItemIds,
   parsePersistedSelectedItemIds,
+  remapSelectedItemsToCurrentData,
   restoreSelectedItemsFromIds,
   SELECTED_ITEM_IDS_STORAGE_KEY,
 } from "@/lib/persisted-selected-items";
@@ -472,6 +473,29 @@ function AppContent({ contributors = [] }: AppProps) {
 
     // Mark initialization complete
     didInitStateRef.current = true;
+  }, [rawItemsData]);
+
+  useEffect(() => {
+    if (!didInitStateRef.current) {
+      return;
+    }
+
+    if (!rawItemsData || rawItemsData.length === 0) {
+      return;
+    }
+
+    setSelectedItems((currentSelectedItems) => {
+      const remappedSelectedItems = remapSelectedItemsToCurrentData(
+        currentSelectedItems,
+        rawItemsData,
+      );
+
+      const hasChanged = remappedSelectedItems.some(
+        (item, index) => item !== currentSelectedItems[index],
+      );
+
+      return hasChanged ? remappedSelectedItems : currentSelectedItems;
+    });
   }, [rawItemsData]);
 
   // Auto-trigger notifications after onboarding completion and data load
