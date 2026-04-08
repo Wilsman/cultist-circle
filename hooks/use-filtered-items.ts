@@ -3,10 +3,6 @@
 import { useMemo } from "react";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { CATEGORY_ID_BY_NAME } from "@/config/item-categories";
-import {
-    getItemLevelRequirement,
-    getInaccessibleCategoriesAtLevel,
-} from "@/config/flea-level-requirements";
 
 export interface FilteredItemsOptions {
     /** Raw items data from API */
@@ -67,31 +63,12 @@ export function useFilteredItems({
             return !ids.some((id) => excludedCategories.has(id));
         });
 
-        // Step 2: Filter by player level
+        // Step 2: Filter by player level using minLevelForFlea from the API
         const levelFiltered = useLevelFilter
             ? categoryFiltered.filter((item: SimplifiedItem) => {
-                const itemNames = [
-                    item.englishName,
-                    item.name,
-                    item.englishShortName,
-                    item.shortName,
-                ].filter(Boolean) as string[];
-
-                for (const name of itemNames) {
-                    const itemReq = getItemLevelRequirement(name);
-                    if (itemReq !== undefined) {
-                        return playerLevel >= itemReq;
-                    }
-                }
-
-                const ids =
-                    item.categories && item.categories.length > 0
-                        ? item.categories
-                        : (item.categories_display_en ?? [])
-                            .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
-                            .filter((x): x is string => Boolean(x));
-                const inaccessibleCategories = getInaccessibleCategoriesAtLevel(playerLevel);
-                return !ids.some((id) => inaccessibleCategories.includes(id));
+                // Use the minLevelForFlea directly from the item (from Tarkov Dev API)
+                const itemReq = item.minLevelForFlea ?? 0;
+                return playerLevel >= itemReq;
             })
             : categoryFiltered;
 

@@ -28,6 +28,8 @@ export interface SimplifiedItem {
   iconLink?: string;
   avg24hPrice?: number;
   link?: string;
+  // Minimum player level required to purchase this item on the Flea Market
+  minLevelForFlea?: number;
   // Trader offers (buy prices from traders). Present when fetched via minimal data merge.
   buyFor?: TraderBuyOffer[];
 

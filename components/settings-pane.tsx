@@ -12,7 +12,6 @@ import {
   Database,
   ChevronRight,
   ChevronDown,
-  Info,
   HelpCircle,
   Settings as SettingsIcon,
   X,
@@ -59,13 +58,7 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
 import { useLanguage } from "@/contexts/language-context";
-import { CATEGORY_LEVEL_REQUIREMENTS } from "@/config/flea-level-requirements";
 import Link from "next/link";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -614,46 +607,6 @@ export default function SettingsPane({
                             <Label className="text-base font-semibold text-white">
                               Flea Market Level Filter
                             </Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <button className="text-gray-500 hover:text-white transition-colors">
-                                  <Info className="h-4 w-4" />
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                side="right"
-                                className="w-80 bg-[#1a1c20] border-white/10 p-4 shadow-2xl rounded-2xl"
-                              >
-                                <div className="space-y-4">
-                                  <h4 className="text-sm font-semibold text-yellow-400 lowercase tracking-wider">
-                                    Level Requirements
-                                  </h4>
-                                  <ScrollArea className="h-48">
-                                    <div className="space-y-2 pr-4">
-                                      {[...CATEGORY_LEVEL_REQUIREMENTS]
-                                        .sort(
-                                          (a, b) =>
-                                            a.levelRequirement -
-                                            b.levelRequirement
-                                        )
-                                        .map((cat) => (
-                                          <div
-                                            key={cat.categoryId}
-                                            className="flex justify-between text-xs py-1 border-b border-white/5 last:border-0"
-                                          >
-                                            <span className="text-gray-400">
-                                              {cat.categoryName}
-                                            </span>
-                                            <span className="text-yellow-400 font-mono">
-                                              Lv.{cat.levelRequirement}
-                                            </span>
-                                          </div>
-                                        ))}
-                                    </div>
-                                  </ScrollArea>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
                           </div>
                           <p className="text-xs text-gray-400">
                             Filter items you can&apos;t buy yet based on your
