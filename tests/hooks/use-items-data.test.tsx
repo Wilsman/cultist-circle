@@ -20,41 +20,31 @@ function Harness({ isPVE = false }: { isPVE?: boolean }) {
   return <pre data-testid="out">{JSON.stringify(data)}</pre>;
 }
 
-describe('useItemsData dual-fetch + merge', () => {
+describe('useItemsData single-fetch localized mapping', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
     localStorage.clear();
   });
 
-  test('fetches en + localized and merges correctly (name/shortName localized, englishName retained)', async () => {
-    // Arrange english and german fixtures
-    const enItems: SimplifiedItem[] = [
-      {
-        id: 'itm1',
-        name: 'Antique Vase',
-        shortName: 'Vase',
-        basePrice: 67800,
-        categories: ['Barter item'],
-        categories_display: [{ name: 'Barter item' }],
-      },
-    ];
-
+  test('fetches localized items once and uses english fallback fields from the payload', async () => {
     const deItems: SimplifiedItem[] = [
       {
         id: 'itm1',
         name: 'Antike Vase',
         shortName: 'Vase',
+        englishName: 'Antique Vase',
+        englishShortName: 'Vase',
         basePrice: 67800,
-        categories: ['Barter item (de)'],
+        categories: ['barter-item'],
         categories_display: [{ name: 'Tauschgegenstand' }],
+        categories_display_en: [{ name: 'Barter item' }],
         iconLink: 'de-icon.png',
       },
     ];
 
     (fetchTarkovData as unknown as any).mockImplementation((mode: 'pve' | 'regular', lang: string) => {
-      const items = lang === 'en' ? enItems : deItems;
-      return Promise.resolve({ items, meta: { totalItems: items.length, validItems: items.length, processTime: 1, categories: 1, mode: mode === 'pve' ? 'pve' : 'pvp' } });
+      return Promise.resolve({ items: deItems, meta: { totalItems: deItems.length, validItems: deItems.length, processTime: 1, categories: 1, mode: mode === 'pve' ? 'pve' : 'pvp' } });
     });
 
     // Force language to de via localStorage so LanguageProvider initializes with it
@@ -78,16 +68,15 @@ describe('useItemsData dual-fetch + merge', () => {
       // English fields retained for filtering
       expect(item.englishName).toBe('Antique Vase');
       expect(item.englishShortName).toBe('Vase');
-      // Categories used for filtering are from English
-      expect(item.categories).toEqual(['Barter item']);
+      // Stable category ids stay intact
+      expect(item.categories).toEqual(['barter-item']);
       // Display categories may be localized
       expect(item.categories_display?.[0].name).toBe('Tauschgegenstand');
+      expect(item.categories_display_en?.[0].name).toBe('Barter item');
     });
 
-    // Called twice: en + de
-    expect(fetchTarkovData).toHaveBeenCalledTimes(2);
-    expect(fetchTarkovData).toHaveBeenNthCalledWith(1, 'regular', 'en');
-    expect(fetchTarkovData).toHaveBeenNthCalledWith(2, 'regular', 'de');
+    expect(fetchTarkovData).toHaveBeenCalledTimes(1);
+    expect(fetchTarkovData).toHaveBeenCalledWith('regular', 'de');
   });
 
   test('when language is en, only one fetch occurs and english is used for display', async () => {

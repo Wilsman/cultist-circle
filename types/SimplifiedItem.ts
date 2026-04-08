@@ -3,6 +3,7 @@
 export interface TraderVendorInfo {
   normalizedName: string;
   minTraderLevel?: number;
+  buyLimit?: number;
 }
 
 export interface TraderBuyOffer {

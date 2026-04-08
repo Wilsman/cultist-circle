@@ -1,0 +1,301 @@
+{
+  "capturedAt": "2026-04-08T19:10:48.895Z",
+  "baseUrl": "http://127.0.0.1:3101",
+  "coldRuns": 3,
+  "warmRuns": 3,
+  "settleDelayMs": 1500,
+  "results": [
+    {
+      "route": "/",
+      "coldRuns": [
+        {
+          "route": "/",
+          "mode": "cold",
+          "iteration": 1,
+          "url": "http://127.0.0.1:3101/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 4.5,
+            "domContentLoadedMs": 155.29999999701977,
+            "loadEventMs": 530.7999999970198
+          },
+          "totalUntilSettledMs": 2322.0989999999997,
+          "relevantRequests": [
+            {
+              "url": "https://api.tarkov.dev/graphql",
+              "durationMs": 619,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/",
+          "mode": "cold",
+          "iteration": 2,
+          "url": "http://127.0.0.1:3101/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 3.399999998509884,
+            "domContentLoadedMs": 163.10000000149012,
+            "loadEventMs": 635.7999999970198
+          },
+          "totalUntilSettledMs": 2340.9044999999996,
+          "relevantRequests": [
+            {
+              "url": "https://api.tarkov.dev/graphql",
+              "durationMs": 146,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/",
+          "mode": "cold",
+          "iteration": 3,
+          "url": "http://127.0.0.1:3101/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 4,
+            "domContentLoadedMs": 145.39999999850988,
+            "loadEventMs": 534.6999999955297
+          },
+          "totalUntilSettledMs": 2211.1432999999997,
+          "relevantRequests": [
+            {
+              "url": "https://api.tarkov.dev/graphql",
+              "durationMs": 588,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "warmRuns": [
+        {
+          "route": "/",
+          "mode": "warm",
+          "iteration": 1,
+          "url": "http://127.0.0.1:3101/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 3.899999998509884,
+            "domContentLoadedMs": 146.79999999701977,
+            "loadEventMs": 460
+          },
+          "totalUntilSettledMs": 2185.8134999999993,
+          "relevantRequests": [
+            {
+              "url": "https://api.tarkov.dev/graphql",
+              "durationMs": 611,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/",
+          "mode": "warm",
+          "iteration": 2,
+          "url": "http://127.0.0.1:3101/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 6.0999999940395355,
+            "domContentLoadedMs": 18.399999998509884,
+            "loadEventMs": 295.59999999403954
+          },
+          "totalUntilSettledMs": 1801.1476999999995,
+          "relevantRequests": [
+            {
+              "url": "https://api.tarkov.dev/graphql",
+              "durationMs": 242,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/",
+          "mode": "warm",
+          "iteration": 3,
+          "url": "http://127.0.0.1:3101/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 5.799999997019768,
+            "domContentLoadedMs": 18.599999994039536,
+            "loadEventMs": 323.59999999403954
+          },
+          "totalUntilSettledMs": 1834.1871999999985,
+          "relevantRequests": [
+            {
+              "url": "https://api.tarkov.dev/graphql",
+              "durationMs": 378,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "cold": {
+          "count": 3,
+          "avgResponseStartMs": 3.9666666661699614,
+          "medianResponseStartMs": 4,
+          "avgDomContentLoadedMs": 154.5999999990066,
+          "medianDomContentLoadedMs": 155.29999999701977,
+          "avgLoadEventMs": 567.099999996523,
+          "medianLoadEventMs": 534.6999999955297,
+          "avgSettledMs": 2291.382266666666,
+          "medianSettledMs": 2322.0989999999997,
+          "avgRelevantRequestCount": 1,
+          "avgRelevantRequestDurationMs": 451
+        },
+        "warm": {
+          "count": 3,
+          "avgResponseStartMs": 5.266666663189729,
+          "medianResponseStartMs": 5.799999997019768,
+          "avgDomContentLoadedMs": 61.26666666318973,
+          "medianDomContentLoadedMs": 18.599999994039536,
+          "avgLoadEventMs": 359.7333333293597,
+          "medianLoadEventMs": 323.59999999403954,
+          "avgSettledMs": 1940.3827999999992,
+          "medianSettledMs": 1834.1871999999985,
+          "avgRelevantRequestCount": 1,
+          "avgRelevantRequestDurationMs": 410.3333333333333
+        }
+      }
+    },
+    {
+      "route": "/base-values",
+      "coldRuns": [
+        {
+          "route": "/base-values",
+          "mode": "cold",
+          "iteration": 1,
+          "url": "http://127.0.0.1:3101/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 7.200000002980232,
+            "domContentLoadedMs": 16.5,
+            "loadEventMs": 493
+          },
+          "totalUntilSettledMs": 2009.5985,
+          "relevantRequests": []
+        },
+        {
+          "route": "/base-values",
+          "mode": "cold",
+          "iteration": 2,
+          "url": "http://127.0.0.1:3101/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 6.899999998509884,
+            "domContentLoadedMs": 15.799999997019768,
+            "loadEventMs": 592.6000000014901
+          },
+          "totalUntilSettledMs": 2106.0069999999996,
+          "relevantRequests": []
+        },
+        {
+          "route": "/base-values",
+          "mode": "cold",
+          "iteration": 3,
+          "url": "http://127.0.0.1:3101/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 6.399999998509884,
+            "domContentLoadedMs": 14,
+            "loadEventMs": 556.7999999970198
+          },
+          "totalUntilSettledMs": 2069.8485,
+          "relevantRequests": []
+        }
+      ],
+      "warmRuns": [
+        {
+          "route": "/base-values",
+          "mode": "warm",
+          "iteration": 1,
+          "url": "http://127.0.0.1:3101/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 7.100000001490116,
+            "domContentLoadedMs": 20.700000002980232,
+            "loadEventMs": 491.30000000447035
+          },
+          "totalUntilSettledMs": 1999.092700000001,
+          "relevantRequests": [
+            {
+              "url": "https://api.tarkov.dev/graphql",
+              "durationMs": 760,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/base-values",
+          "mode": "warm",
+          "iteration": 2,
+          "url": "http://127.0.0.1:3101/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 4.899999998509884,
+            "domContentLoadedMs": 16,
+            "loadEventMs": 260.29999999701977
+          },
+          "totalUntilSettledMs": 1767.803899999999,
+          "relevantRequests": [
+            {
+              "url": "https://api.tarkov.dev/graphql",
+              "durationMs": 779,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/base-values",
+          "mode": "warm",
+          "iteration": 3,
+          "url": "http://127.0.0.1:3101/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 5.100000001490116,
+            "domContentLoadedMs": 16.200000002980232,
+            "loadEventMs": 323.5
+          },
+          "totalUntilSettledMs": 1829.6561000000002,
+          "relevantRequests": [
+            {
+              "url": "https://api.tarkov.dev/graphql",
+              "durationMs": 85,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "cold": {
+          "count": 3,
+          "avgResponseStartMs": 6.833333333333333,
+          "medianResponseStartMs": 6.899999998509884,
+          "avgDomContentLoadedMs": 15.433333332339922,
+          "medianDomContentLoadedMs": 15.799999997019768,
+          "avgLoadEventMs": 547.46666666617,
+          "medianLoadEventMs": 556.7999999970198,
+          "avgSettledMs": 2061.8179999999998,
+          "medianSettledMs": 2069.8485,
+          "avgRelevantRequestCount": 0,
+          "avgRelevantRequestDurationMs": 0
+        },
+        "warm": {
+          "count": 3,
+          "avgResponseStartMs": 5.700000000496705,
+          "medianResponseStartMs": 5.100000001490116,
+          "avgDomContentLoadedMs": 17.633333335320156,
+          "medianDomContentLoadedMs": 16.200000002980232,
+          "avgLoadEventMs": 358.3666666671634,
+          "medianLoadEventMs": 323.5,
+          "avgSettledMs": 1865.5175666666667,
+          "medianSettledMs": 1829.6561000000002,
+          "avgRelevantRequestCount": 1,
+          "avgRelevantRequestDurationMs": 541.3333333333334
+        }
+      }
+    }
+  ]
+}

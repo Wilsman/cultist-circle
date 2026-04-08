@@ -1,0 +1,439 @@
+{
+  "capturedAt": "2026-04-08T19:18:28.978Z",
+  "baseUrl": "http://127.0.0.1:3103",
+  "coldRuns": 3,
+  "warmRuns": 3,
+  "settleDelayMs": 1500,
+  "results": [
+    {
+      "route": "/",
+      "coldRuns": [
+        {
+          "route": "/",
+          "mode": "cold",
+          "iteration": 1,
+          "url": "http://127.0.0.1:3103/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 6.299999997019768,
+            "domContentLoadedMs": 177.5,
+            "loadEventMs": 601.1000000014901
+          },
+          "totalUntilSettledMs": 2429.7893,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 249,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 266,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 296,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/",
+          "mode": "cold",
+          "iteration": 2,
+          "url": "http://127.0.0.1:3103/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 3.899999998509884,
+            "domContentLoadedMs": 172,
+            "loadEventMs": 1559.2000000029802
+          },
+          "totalUntilSettledMs": 3305.3394,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 9,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 66,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 80,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/",
+          "mode": "cold",
+          "iteration": 3,
+          "url": "http://127.0.0.1:3103/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 4.899999998509884,
+            "domContentLoadedMs": 170.80000000447035,
+            "loadEventMs": 694.7000000029802
+          },
+          "totalUntilSettledMs": 2451.0789999999997,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 8,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 42,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 71,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "warmRuns": [
+        {
+          "route": "/",
+          "mode": "warm",
+          "iteration": 1,
+          "url": "http://127.0.0.1:3103/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 4.5,
+            "domContentLoadedMs": 168.30000000447035,
+            "loadEventMs": 737.8999999985099
+          },
+          "totalUntilSettledMs": 2489.4678999999996,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 9,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 46,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 80,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/",
+          "mode": "warm",
+          "iteration": 2,
+          "url": "http://127.0.0.1:3103/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 7.200000002980232,
+            "domContentLoadedMs": 24.700000002980232,
+            "loadEventMs": 662.7000000029802
+          },
+          "totalUntilSettledMs": 2171.7946999999986,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 16,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 16,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 16,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/",
+          "mode": "warm",
+          "iteration": 3,
+          "url": "http://127.0.0.1:3103/",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 6.5,
+            "domContentLoadedMs": 20.399999998509884,
+            "loadEventMs": 609.5
+          },
+          "totalUntilSettledMs": 2127.0215000000007,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 15,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 15,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 15,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "cold": {
+          "count": 3,
+          "avgResponseStartMs": 5.033333331346512,
+          "medianResponseStartMs": 4.899999998509884,
+          "avgDomContentLoadedMs": 173.43333333482346,
+          "medianDomContentLoadedMs": 172,
+          "avgLoadEventMs": 951.6666666691502,
+          "medianLoadEventMs": 694.7000000029802,
+          "avgSettledMs": 2728.7358999999997,
+          "medianSettledMs": 2451.0789999999997,
+          "avgRelevantRequestCount": 3,
+          "avgRelevantRequestDurationMs": 362.3333333333333
+        },
+        "warm": {
+          "count": 3,
+          "avgResponseStartMs": 6.066666667660077,
+          "medianResponseStartMs": 6.5,
+          "avgDomContentLoadedMs": 71.13333333532016,
+          "medianDomContentLoadedMs": 24.700000002980232,
+          "avgLoadEventMs": 670.03333333383,
+          "medianLoadEventMs": 662.7000000029802,
+          "avgSettledMs": 2262.761366666666,
+          "medianSettledMs": 2171.7946999999986,
+          "avgRelevantRequestCount": 3,
+          "avgRelevantRequestDurationMs": 76
+        }
+      }
+    },
+    {
+      "route": "/base-values",
+      "coldRuns": [
+        {
+          "route": "/base-values",
+          "mode": "cold",
+          "iteration": 1,
+          "url": "http://127.0.0.1:3103/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 7.600000001490116,
+            "domContentLoadedMs": 19.200000002980232,
+            "loadEventMs": 971.8999999985099
+          },
+          "totalUntilSettledMs": 2480.6095000000023,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 71,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 71,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 76,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/base-values",
+          "mode": "cold",
+          "iteration": 2,
+          "url": "http://127.0.0.1:3103/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 7.399999998509884,
+            "domContentLoadedMs": 18.399999998509884,
+            "loadEventMs": 873.8000000044703
+          },
+          "totalUntilSettledMs": 2377.6299,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 55,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 56,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 65,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/base-values",
+          "mode": "cold",
+          "iteration": 3,
+          "url": "http://127.0.0.1:3103/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 6,
+            "domContentLoadedMs": 16.100000001490116,
+            "loadEventMs": 853.3999999985099
+          },
+          "totalUntilSettledMs": 2359.4300000000003,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 31,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 109,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 110,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "warmRuns": [
+        {
+          "route": "/base-values",
+          "mode": "warm",
+          "iteration": 1,
+          "url": "http://127.0.0.1:3103/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 5.200000002980232,
+            "domContentLoadedMs": 16.399999998509884,
+            "loadEventMs": 978.1000000014901
+          },
+          "totalUntilSettledMs": 2488.1080999999976,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 70,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 90,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 90,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/base-values",
+          "mode": "warm",
+          "iteration": 2,
+          "url": "http://127.0.0.1:3103/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 5.600000001490116,
+            "domContentLoadedMs": 19.799999997019768,
+            "loadEventMs": 594
+          },
+          "totalUntilSettledMs": 2109.4868000000024,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 30,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 30,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 30,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "route": "/base-values",
+          "mode": "warm",
+          "iteration": 3,
+          "url": "http://127.0.0.1:3103/base-values",
+          "status": 200,
+          "browserTimings": {
+            "responseStartMs": 5.5999999940395355,
+            "domContentLoadedMs": 18.099999994039536,
+            "loadEventMs": 505
+          },
+          "totalUntilSettledMs": 2013.9812999999995,
+          "relevantRequests": [
+            {
+              "url": "https://json.tarkov.dev/regular/items_en",
+              "durationMs": 23,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/regular/items",
+              "durationMs": 23,
+              "status": 200
+            },
+            {
+              "url": "https://json.tarkov.dev/pve/items",
+              "durationMs": 23,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "cold": {
+          "count": 3,
+          "avgResponseStartMs": 7,
+          "medianResponseStartMs": 7.399999998509884,
+          "avgDomContentLoadedMs": 17.900000000993412,
+          "medianDomContentLoadedMs": 18.399999998509884,
+          "avgLoadEventMs": 899.7000000004967,
+          "medianLoadEventMs": 873.8000000044703,
+          "avgSettledMs": 2405.889800000001,
+          "medianSettledMs": 2377.6299,
+          "avgRelevantRequestCount": 3,
+          "avgRelevantRequestDurationMs": 214.66666666666666
+        },
+        "warm": {
+          "count": 3,
+          "avgResponseStartMs": 5.466666666169961,
+          "medianResponseStartMs": 5.5999999940395355,
+          "avgDomContentLoadedMs": 18.099999996523064,
+          "medianDomContentLoadedMs": 18.099999994039536,
+          "avgLoadEventMs": 692.3666666671634,
+          "medianLoadEventMs": 594,
+          "avgSettledMs": 2203.858733333333,
+          "medianSettledMs": 2109.4868000000024,
+          "avgRelevantRequestCount": 3,
+          "avgRelevantRequestDurationMs": 136.33333333333334
+        }
+      }
+    }
+  ]
+}
