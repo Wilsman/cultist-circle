@@ -333,4 +333,36 @@ describe("ItemSelector dropdown behavior", () => {
     expect(screen.queryByText(/Rubel/i)).toBeNull();
     expect(screen.queryByText(/Roubles/i)).toBeNull();
   });
+
+  it("excludes posters because they are part of the default excluded items set", () => {
+    const items = [
+      makeItem({
+        id: "poster",
+        name: "Final Moment poster",
+        englishName: "Final Moment poster",
+      }),
+    ];
+
+    renderWithLanguage(<ItemSelector items={items} {...baseProps} />);
+    focusSelector();
+
+    expect(screen.queryByText(/Final Moment poster/i)).toBeNull();
+  });
+
+  it("shows posters when the default excluded item filter is removed", () => {
+    const items = [
+      makeItem({
+        id: "poster",
+        name: "Final Moment poster",
+        englishName: "Final Moment poster",
+      }),
+    ];
+
+    renderWithLanguage(
+      <ItemSelector items={items} {...baseProps} excludedItems={new Set()} />
+    );
+    focusSelector();
+
+    expect(screen.getByText("Final Moment poster")).toBeInTheDocument();
+  });
 });

@@ -24,6 +24,7 @@ import {
   DEFAULT_EXCLUDED_CATEGORY_IDS,
   CATEGORY_BY_ID,
   CATEGORY_ID_BY_NAME,
+  LEGACY_DEFAULT_EXCLUDED_CATEGORY_IDS_WITH_FLYER,
   type ItemCategory,
 } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
@@ -385,13 +386,33 @@ function AppContent({ contributors = [] }: AppProps) {
         const parsedCategories = JSON.parse(saved) as unknown;
         if (Array.isArray(parsedCategories)) {
           // Back-compat: convert any legacy names to IDs
-          const ids = (parsedCategories as string[])
+          let ids = (parsedCategories as string[])
             .map((val) => {
               if (CATEGORY_BY_ID.has(val)) return val; // already an ID
               const id = CATEGORY_ID_BY_NAME.get(val);
               return id ?? null;
             })
             .filter((x): x is string => Boolean(x));
+
+          const flyerCategoryId = CATEGORY_ID_BY_NAME.get("Flyer");
+          const removeFlyerMigrationKey = "cc_migration_remove_flyer_v1";
+          const legacyDefaultIds = Array.from(
+            LEGACY_DEFAULT_EXCLUDED_CATEGORY_IDS_WITH_FLYER,
+          );
+          const matchesLegacyDefaultSelection =
+            ids.length === legacyDefaultIds.length &&
+            ids.every((id) =>
+              LEGACY_DEFAULT_EXCLUDED_CATEGORY_IDS_WITH_FLYER.has(id),
+            );
+
+          if (
+            flyerCategoryId &&
+            !localStorage.getItem(removeFlyerMigrationKey) &&
+            matchesLegacyDefaultSelection
+          ) {
+            ids = ids.filter((id) => id !== flyerCategoryId);
+            localStorage.setItem(removeFlyerMigrationKey, "1");
+          }
 
           // One-time migration: add "Medical item" category for existing users
           const medicalItemId = CATEGORY_ID_BY_NAME.get("Medical item");

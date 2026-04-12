@@ -58,7 +58,6 @@ const DEFAULT_NAMES = [
   "Armor Plate",
   "Armored equipment",
   "Chest rig",
-  "Flyer",
   "Key",
   "Medical item",
   "Repair Kits",
@@ -67,6 +66,14 @@ const DEFAULT_NAMES = [
 
 export const DEFAULT_EXCLUDED_CATEGORY_IDS = new Set(
   DEFAULT_NAMES
+    .map((name) => CATEGORY_ID_BY_NAME.get(name))
+    .filter((id): id is string => Boolean(id))
+);
+
+const LEGACY_DEFAULT_NAMES_WITH_FLYER = [...DEFAULT_NAMES, "Flyer"];
+
+export const LEGACY_DEFAULT_EXCLUDED_CATEGORY_IDS_WITH_FLYER = new Set(
+  LEGACY_DEFAULT_NAMES_WITH_FLYER
     .map((name) => CATEGORY_ID_BY_NAME.get(name))
     .filter((id): id is string => Boolean(id))
 );
