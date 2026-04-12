@@ -783,7 +783,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                       >
                         <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-slate-200">
                           <Checkbox
-                            aria-label={t("Only show items that hit target")}
+                            aria-label={t("Show items that hit threshold first")}
                             checked={showThresholdMatchesOnly}
                             onCheckedChange={(checked) =>
                               setShowThresholdMatchesOnly(checked === true)
@@ -798,7 +798,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                             }
                             className="truncate text-left text-xs font-medium text-slate-200 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
                           >
-                            {t("Only show items that hit target")}
+                            {t("Show items that hit threshold first")}
                           </button>
                         </div>
                         <span

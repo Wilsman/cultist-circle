@@ -126,7 +126,7 @@ describe("ItemSelector dropdown behavior", () => {
     act(() => {
       fireEvent.click(
         screen.getByRole("checkbox", {
-          name: /only show items that hit target/i,
+          name: /Show items that hit threshold first/i,
         })
       );
     });
@@ -220,14 +220,14 @@ describe("ItemSelector dropdown behavior", () => {
     act(() => {
       fireEvent.click(
         screen.getByRole("button", {
-          name: /only show items that hit target/i,
+          name: /Show items that hit threshold first/i,
         })
       );
     });
 
     expect(
       screen.getByRole("checkbox", {
-        name: /only show items that hit target/i,
+        name: /Show items that hit threshold first/i,
       })
     ).toHaveAttribute("data-state", "checked");
     expect(screen.getByText("Qualified case")).toBeInTheDocument();
