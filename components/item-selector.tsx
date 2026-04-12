@@ -43,6 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Import react-window for virtualization
 import {
@@ -72,6 +73,8 @@ export interface ItemSelectorProps {
   fleaPriceType: "lastLowPrice" | "avg24hPrice";
   priceMode: "flea" | "trader";
   traderLevels: TraderLevels;
+  remainingThreshold: number;
+  itemBonusPercent: number;
 }
 
 export interface ItemSelectorHandle {
@@ -96,6 +99,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       fleaPriceType,
       priceMode,
       traderLevels,
+      remainingThreshold,
+      itemBonusPercent,
     },
     ref
   ) => {
@@ -109,6 +114,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
 
     const [searchTerm, setSearchTerm] = useState("");
     const [isFocused, setIsFocused] = useState(false);
+    const [showThresholdMatchesOnly, setShowThresholdMatchesOnly] =
+      useState(false);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -147,6 +154,11 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
     const excludedLookup = useMemo(() => {
       return new Set(Array.from(excludedItems, (name) => name.toLowerCase()));
     }, [excludedItems]);
+
+    const bonusMultiplier = useMemo(
+      () => 1 + itemBonusPercent / 100,
+      [itemBonusPercent]
+    );
 
     // Helper: compute effective price and chosen vendor info
     const getEffectivePriceInfo = useCallback(
@@ -215,11 +227,55 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       };
     }, [selectedItem, overriddenPrice]);
 
+    const normalCandidateItems = useMemo(() => {
+      const validItems = Array.isArray(items) ? items : [];
+      return validItems.filter(
+        (item) =>
+          item.basePrice > 0 &&
+          !getSearchableNames(item).some((name) =>
+            excludedLookup.has(name.toLowerCase())
+          )
+      );
+    }, [excludedLookup, getSearchableNames, items]);
+
+    const thresholdCandidateItems = useMemo(() => {
+      return [...normalCandidateItems]
+        .filter((item) => item.basePrice * bonusMultiplier >= remainingThreshold)
+        .sort((a, b) => {
+          const priceA = getEffectivePriceInfo(a).price;
+          const priceB = getEffectivePriceInfo(b).price;
+          const ratioA =
+            typeof priceA === "number" && priceA > 0
+              ? (a.basePrice * bonusMultiplier) / priceA
+              : null;
+          const ratioB =
+            typeof priceB === "number" && priceB > 0
+              ? (b.basePrice * bonusMultiplier) / priceB
+              : null;
+
+          if (ratioA !== null && ratioB !== null && ratioA !== ratioB) {
+            return ratioB - ratioA;
+          }
+          if (ratioA !== null && ratioB === null) return -1;
+          if (ratioA === null && ratioB !== null) return 1;
+
+          return a.basePrice - b.basePrice || a.name.localeCompare(b.name);
+        });
+    }, [
+      bonusMultiplier,
+      getEffectivePriceInfo,
+      normalCandidateItems,
+      remainingThreshold,
+    ]);
+
+    const searchableItems = showThresholdMatchesOnly
+      ? thresholdCandidateItems
+      : normalCandidateItems;
+
     // Initialize Fuse.js for searching
     const fuse = useMemo(() => {
-      const validItems = Array.isArray(items) ? items : [];
       try {
-        return new Fuse(validItems, {
+        return new Fuse(searchableItems, {
           keys: [
             { name: "name", weight: 0.7 },
             { name: "shortName", weight: 0.3 },
@@ -233,7 +289,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         console.debug("Fuse initialization error or empty items array", e);
         return null;
       }
-    }, [items]);
+    }, [searchableItems]);
 
     // Debounce the search term
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -249,59 +305,65 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
 
     // Filter items based on search
     const filteredItems = useMemo(() => {
-      const validItems = Array.isArray(items) ? items : [];
-      if (validItems.length === 0) return [];
+      if (searchableItems.length === 0) return [];
 
       let results: SimplifiedItem[];
       if (isFocused && !debouncedSearchTerm) {
-        results = validItems.filter((item) => item.basePrice > 0);
+        results = searchableItems;
       } else if (!debouncedSearchTerm) {
         return [];
       } else if (!fuse) {
-        results = validItems;
+        results = searchableItems;
       } else {
-        results = fuse
-          .search(debouncedSearchTerm)
-          .map((result) => result.item)
-          .filter((item) => item.basePrice > 0);
+        results = fuse.search(debouncedSearchTerm).map((result) => result.item);
       }
-      return results.filter(
-        (item) =>
-          item.basePrice > 0 &&
-          !getSearchableNames(item).some((name) =>
-            excludedLookup.has(name.toLowerCase())
-          )
+      if (!showThresholdMatchesOnly) {
+        return results;
+      }
+      return [...results].sort(
+        (a, b) => {
+          const ratioA =
+            ((getEffectivePriceInfo(a).price ?? 0) > 0
+              ? (a.basePrice * bonusMultiplier) /
+                (getEffectivePriceInfo(a).price as number)
+              : Number.NEGATIVE_INFINITY);
+          const ratioB =
+            ((getEffectivePriceInfo(b).price ?? 0) > 0
+              ? (b.basePrice * bonusMultiplier) /
+                (getEffectivePriceInfo(b).price as number)
+              : Number.NEGATIVE_INFINITY);
+
+          if (ratioA !== ratioB) {
+            return ratioB - ratioA;
+          }
+
+          return a.basePrice - b.basePrice || a.name.localeCompare(b.name);
+        }
       );
     }, [
+      bonusMultiplier,
       debouncedSearchTerm,
-      excludedLookup,
       fuse,
-      getSearchableNames,
+      getEffectivePriceInfo,
       isFocused,
-      items,
+      searchableItems,
+      showThresholdMatchesOnly,
     ]);
 
     const inlineSuggestionItem = useMemo(() => {
       const normalizedTerm = searchTerm.trim().toLowerCase();
       if (!normalizedTerm) return null;
-      const validItems = Array.isArray(items) ? items : [];
-      for (const item of validItems) {
-        if (item.basePrice <= 0) continue;
+      for (const item of searchableItems) {
         const searchableNames = getSearchableNames(item);
         const matches = searchableNames.some((name) =>
           name.toLowerCase().startsWith(normalizedTerm)
         );
-        if (
-          matches &&
-          !searchableNames.some((name) =>
-            excludedLookup.has(name.toLowerCase())
-          )
-        ) {
+        if (matches) {
           return item;
         }
       }
       return null;
-    }, [excludedLookup, getSearchableNames, items, searchTerm]);
+    }, [getSearchableNames, searchableItems, searchTerm]);
 
     const inlineSuggestionText = inlineSuggestionItem?.name ?? "";
     const hasInlineSuggestion =
@@ -334,6 +396,12 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       listRef.current?.scrollToItem(highlightedIndex);
     }, [highlightedIndex, isFocused]);
 
+    useEffect(() => {
+      if (!isFocused) {
+        setShowThresholdMatchesOnly(false);
+      }
+    }, [isFocused]);
+
     // Handle selection
     const handleSelect = useCallback(
       (item: SimplifiedItem | null) => {
@@ -348,6 +416,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         onSelect(item, overriddenPriceToPass);
         setSearchTerm("");
         setIsFocused(false);
+        setShowThresholdMatchesOnly(false);
         setPriceOverride(
           overriddenPriceToPass !== undefined && overriddenPriceToPass !== null
             ? overriddenPriceToPass.toString()
@@ -517,6 +586,38 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       ]
     );
 
+    const emptyStateMessage = useMemo(() => {
+      if (!showThresholdMatchesOnly) {
+        return t("No items matching your search");
+      }
+      if (thresholdCandidateItems.length === 0) {
+        return remainingThreshold > 0
+          ? t("No single item can hit the remaining ₽{amount}", {
+              amount: Math.ceil(remainingThreshold).toLocaleString(),
+            })
+          : t("No valid items available for the threshold view");
+      }
+      if (debouncedSearchTerm.trim()) {
+        return t('No threshold-matching items found for "{term}"', {
+          term: debouncedSearchTerm.trim(),
+        });
+      }
+      return t("No items matching your threshold view");
+    }, [
+      debouncedSearchTerm,
+      remainingThreshold,
+      showThresholdMatchesOnly,
+      t,
+      thresholdCandidateItems.length,
+    ]);
+
+    const thresholdStatusLabel =
+      remainingThreshold > 0
+        ? t("Need ₽{amount} more", {
+            amount: Math.ceil(remainingThreshold).toLocaleString(),
+          })
+        : t("Target met");
+
     const highlightMatch = useCallback(
       (text: string): React.ReactNode => {
         const term = debouncedSearchTerm.trim();
@@ -676,26 +777,59 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
 
                 {isFocused && (
                   <div className="absolute top-full left-0 right-0 z-[100] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
-                      <div className="max-h-[320px]">
-                        <AutoSizer disableHeight>
-                          {({ width }) => (
-                            <List
-                              ref={listRef}
-                              height={Math.min(
-                                filteredItems.length * 56 || 200,
-                                320
-                              )}
-                              itemCount={filteredItems.length}
-                              itemSize={56}
-                              width={width}
-                            >
-                              {Row}
-                            </List>
+                      <div
+                        className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3"
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-slate-200">
+                          <Checkbox
+                            aria-label={t("Only show items that hit target")}
+                            checked={showThresholdMatchesOnly}
+                            onCheckedChange={(checked) =>
+                              setShowThresholdMatchesOnly(checked === true)
+                            }
+                            className="border-white/20 data-[state=checked]:bg-emerald-400 data-[state=checked]:text-slate-950"
+                          />
+                          <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowThresholdMatchesOnly((current) => !current)
+                            }
+                            className="truncate text-left text-xs font-medium text-slate-200 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
+                          >
+                            {t("Only show items that hit target")}
+                          </button>
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]",
+                            remainingThreshold > 0
+                              ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
+                              : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
                           )}
-                        </AutoSizer>
-                        {filteredItems.length === 0 && (
+                        >
+                          {thresholdStatusLabel}
+                        </span>
+                      </div>
+                      <div className="max-h-[268px]">
+                        {filteredItems.length > 0 ? (
+                          <AutoSizer disableHeight>
+                            {({ width }) => (
+                              <List
+                                ref={listRef}
+                                height={Math.min(filteredItems.length * 56, 268)}
+                                itemCount={filteredItems.length}
+                                itemSize={56}
+                                width={width}
+                              >
+                                {Row}
+                              </List>
+                            )}
+                          </AutoSizer>
+                        ) : (
                           <div className="p-8 text-center text-white/30 text-sm font-medium">
-                            {t("No items matching your search")}
+                            {emptyStateMessage}
                           </div>
                         )}
                       </div>

@@ -1032,6 +1032,11 @@ function AppContent({ contributors = [] }: AppProps) {
     return fleaCosts.reduce((sum, cost) => sum! + cost!, 0);
   }, [fleaCosts]);
 
+  const remainingThreshold = useMemo(
+    () => Math.max(0, threshold - total),
+    [threshold, total],
+  );
+
   const isThresholdMet: boolean = total >= threshold;
 
   // Timer/outcome info now handled by RewardsChart component
@@ -2028,6 +2033,8 @@ function AppContent({ contributors = [] }: AppProps) {
                               fleaPriceType={fleaPriceType}
                               priceMode={priceMode}
                               traderLevels={traderLevels}
+                              remainingThreshold={remainingThreshold}
+                              itemBonusPercent={itemBonus}
                             />
                           </Suspense>
                           {showHintPills &&
