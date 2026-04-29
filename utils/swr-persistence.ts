@@ -3,6 +3,34 @@ import { CACHE_TTL } from '@/hooks/use-tarkov-api';
 
 const STORAGE_KEY_PREFIX = 'swr-cache-';
 
+export function isTruncatedItemArray(data: unknown): boolean {
+  if (!Array.isArray(data) || data.length === 0) {
+    return false;
+  }
+
+  return data.every((item) => {
+    if (!item || typeof item !== 'object') {
+      return false;
+    }
+
+    const keys = Object.keys(item as Record<string, unknown>);
+    return (
+      keys.length <= 3 &&
+      keys.includes('id') &&
+      keys.includes('name')
+    );
+  });
+}
+
+export function isPlaceholderCacheData(data: unknown): boolean {
+  return (
+    !!data &&
+    typeof data === 'object' &&
+    !Array.isArray(data) &&
+    (data as Record<string, unknown>).cached === true
+  );
+}
+
 /**
  * Creates a middleware for SWR that persists cache data to localStorage
  * @param version Cache version to invalidate when needed
@@ -34,7 +62,11 @@ export function createSWRPersistMiddleware(version: string, ttl: number = CACHE_
           
           // Check if the cache is still valid based on TTL
           if (now - timestamp < ttl) {
-            persistedData = data;
+            if (isTruncatedItemArray(data) || isPlaceholderCacheData(data)) {
+              localStorage.removeItem(storageKey);
+            } else {
+              persistedData = data;
+            }
           } else {
             // Cache expired, remove it
             localStorage.removeItem(storageKey);
@@ -58,23 +90,8 @@ export function createSWRPersistMiddleware(version: string, ttl: number = CACHE_
         if (swr.data && typeof window !== 'undefined') {
           try {
             // First check if we're close to the quota limit (14MB is typical limit)
-            // Only keep the minimal data needed for caching
-            const dataToStore = typeof swr.data === 'object' ? 
-              (Array.isArray(swr.data) ? 
-                // For arrays, only store essential information
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                swr.data.map((item: any) => {
-                  // Extract only the most important fields
-                  const { id, name, type } = item || {};
-                  return { id, name, type };
-                }) : 
-                // For objects, store as is
-                swr.data) : 
-              // For primitives, store as is
-              swr.data;
-              
             const cacheData = {
-              data: dataToStore,
+              data: swr.data,
               timestamp: Date.now(),
             };
             
@@ -86,16 +103,6 @@ export function createSWRPersistMiddleware(version: string, ttl: number = CACHE_
                 // If quota exceeded, clear old cache and try again
                 console.warn('Storage quota exceeded, clearing old cache');
                 clearSWRCache();
-                
-                // Try one more time with reduced data
-                try {
-                  localStorage.setItem(storageKey, JSON.stringify({
-                    data: { cached: true, version },
-                    timestamp: Date.now(),
-                  }));
-                } catch (innerError) {
-                  console.error('Failed to store even minimal cache data:', innerError);
-                }
               } else {
                 throw error;
               }

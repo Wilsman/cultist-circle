@@ -1,5 +1,6 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
+import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import CookieConsent from "@/components/cookie-consent";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
@@ -10,6 +11,11 @@ import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { NotesWidget } from "@/components/notes-widget";
 import { SupportWidget } from "@/components/support-widget";
 import { SiteNav } from "@/components/site-nav";
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -99,8 +105,9 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        {/* Google Analytics */}
+      <body
+        className={`${geistMono.className} min-h-screen bg-background text-foreground antialiased`}
+      >
         <Script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-MDQ1Z37Y5M"
@@ -109,11 +116,11 @@ export default function RootLayout({
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){ dataLayer.push(arguments); }
+            window.gtag = gtag;
             gtag('js', new Date());
             gtag('config', 'G-MDQ1Z37Y5M');
           `}
         </Script>
-
         <CookieConsentProvider>
           <LanguageProvider>
             <main className="relative min-h-screen">

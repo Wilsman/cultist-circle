@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect } from "react"
+import { getStoredCookiePreferences } from "@/lib/cookie-consent"
 
 type CookieConsentContextType = {
   hasConsent: boolean
@@ -21,8 +22,7 @@ export function CookieConsentProvider({
     let cancelled = false
     Promise.resolve().then(() => {
       if (cancelled) return
-      const consent = localStorage.getItem("cookieConsent")
-      setHasConsent(consent === "true")
+      setHasConsent(getStoredCookiePreferences() !== null)
       setIsLoading(false)
     })
     return () => {

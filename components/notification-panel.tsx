@@ -31,6 +31,31 @@ export interface NotificationAction {
 
 export const NOTIFICATIONS: Notification[] = [
   {
+    id: "new-figurine-recipes-round",
+    type: "hot-sacrifice",
+    title: "Ded Moroz Ornament Recipe Updated",
+    description: (
+      <>
+        The three-ornament recipe has been updated and now rewards{" "}
+        <strong>2x Ded Moroz figurine</strong>. Check the{" "}
+        <Link
+          href="/recipes"
+          className="underline hover:text-indigo-200 transition-colors font-semibold"
+        >
+          Recipes page
+        </Link>{" "}
+        for the latest info.
+        <div className="mt-2 rounded-lg border border-indigo-300/30 bg-indigo-200/10 px-2 py-2 shadow-sm">
+          <span className="block text-[12px] leading-relaxed text-indigo-50">
+            Thanks to the person who submitted feedback and helped us update
+            this for everyone.
+          </span>
+        </div>
+      </>
+    ),
+    priority: 0,
+  },
+  {
     id: "thor-hot-sacrifice-pvp-warning",
     type: "warning",
     title: "THOR Hot Sacrifice No Longer Works in PVP",
@@ -49,24 +74,6 @@ export const NOTIFICATIONS: Notification[] = [
             You lot find stuff fast. 💖
           </span>
         </div>
-      </>
-    ),
-    priority: 0,
-  },
-  {
-    id: "new-figurine-recipes-round",
-    type: "hot-sacrifice",
-    title: "New Figurine Recipes Round",
-    description: (
-      <>
-        Multiple new figurine recipes have been added. Check the{" "}
-        <Link
-          href="/recipes"
-          className="underline hover:text-indigo-200 transition-colors font-semibold"
-        >
-          Recipes page
-        </Link>{" "}
-        for the latest additions.
       </>
     ),
     priority: 0,

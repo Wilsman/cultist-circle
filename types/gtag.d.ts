@@ -1,13 +1,13 @@
 interface Window {
   gtag?: (
-    command: 'consent',
-    action: 'update',
+    command: "consent",
+    action: "update",
     consentParameters: {
-      analytics_storage?: 'granted' | 'denied'
-      ad_storage?: 'granted' | 'denied'
-      ad_user_data?: 'granted' | 'denied'
-      ad_personalization?: 'granted' | 'denied'
+      analytics_storage?: "granted" | "denied";
+      ad_storage?: "granted" | "denied";
+      ad_user_data?: "granted" | "denied";
+      ad_personalization?: "granted" | "denied";
     }
-  ) => void
-  dataLayer?: Array<Record<string, unknown>>
+  ) => void;
+  dataLayer?: Array<Record<string, unknown>>;
 }

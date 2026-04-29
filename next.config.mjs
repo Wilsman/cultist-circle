@@ -1,5 +1,12 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: __dirname,
   // Add cache headers for the /404 page to maximize Edge caching
   async headers() {
     return [
@@ -43,14 +50,6 @@ const nextConfig = {
         pathname: "/**",
       },
     ],
-  },
-  webpack(config) {
-    config.module.rules.push({
-      test: /\.json5$/i,
-      type: "javascript/auto",
-      use: "json5-loader",
-    });
-    return config;
   },
 };
 

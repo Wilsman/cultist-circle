@@ -10,6 +10,7 @@ export interface Recipe {
     | string[]
     | { type: "multiple_possible"; items: string[]; explanation: string }[];
   isNew?: boolean;
+  isUpdated?: boolean;
   isRepeatable?: boolean;
   modeRestriction?: "pvp-only";
   roomInfo?: {
@@ -22,6 +23,16 @@ export interface Recipe {
  * Escape from Tarkov Cultist Circle crafting recipes
  */
 export const tarkovRecipes: Recipe[] = [
+  {
+    requiredItems: [
+      "1x Christmas tree ornament (Silver)",
+      "1x Christmas tree ornament (Red)",
+      "1x Christmas tree ornament (Violet)",
+    ],
+    craftingTime: "66 mins",
+    producedItems: ["2x Ded Moroz figurine"],
+    isUpdated: true,
+  },
   {
     requiredItems: ["1x Jaeger figurine"],
     craftingTime: "66 mins",
@@ -122,15 +133,6 @@ export const tarkovRecipes: Recipe[] = [
       "2x BNTI Module-3M body armor",
       "2x Kalashnikov AK-74 5.45x39 assault rifle",
     ],
-  },
-  {
-    requiredItems: [
-      "1x Christmas tree ornament (Silver)",
-      "1x Christmas tree ornament (Red)",
-      "1x Christmas tree ornament (Violet)",
-    ],
-    craftingTime: "66 mins",
-    producedItems: ["1x Ded Moroz hat", "1x Ded Moroz figurine"],
   },
   {
     requiredItems: ["1x Mastichin figurine"],
