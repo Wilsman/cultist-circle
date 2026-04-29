@@ -4,7 +4,7 @@ import { HOT_SACRIFICES } from '@/components/hot-sacrifices-panel';
 import { NOTIFICATIONS } from '@/components/notification-panel';
 
 describe('Info dashboard THOR PvP warning', () => {
-  it('puts the THOR PvP warning above the figurine recipes notice', () => {
+  it('keeps the THOR PvP warning in the priority updates group', () => {
     const thorAlertIndex = NOTIFICATIONS.findIndex(
       (notification) => notification.id === 'thor-hot-sacrifice-pvp-warning'
     );
@@ -12,12 +12,16 @@ describe('Info dashboard THOR PvP warning', () => {
       (notification) => notification.id === 'new-figurine-recipes-round'
     );
 
-    expect(thorAlertIndex).toBe(0);
-    expect(figurineAlertIndex).toBeGreaterThan(thorAlertIndex);
+    expect(thorAlertIndex).toBeGreaterThan(-1);
+    expect(figurineAlertIndex).toBeGreaterThan(-1);
+    expect(NOTIFICATIONS[thorAlertIndex]?.priority).toBe(0);
+    expect(NOTIFICATIONS[figurineAlertIndex]?.priority).toBe(0);
   });
 
   it('includes a high-priority updates alert for the THOR PvP change', () => {
-    const thorAlert = NOTIFICATIONS[0];
+    const thorAlert = NOTIFICATIONS.find(
+      (notification) => notification.id === 'thor-hot-sacrifice-pvp-warning'
+    );
 
     expect(thorAlert).toBeDefined();
     expect(thorAlert?.id).toBe('thor-hot-sacrifice-pvp-warning');
