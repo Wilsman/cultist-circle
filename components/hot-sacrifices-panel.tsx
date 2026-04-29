@@ -234,81 +234,70 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{
-        scale: 1.005,
-        backgroundColor: "rgba(255, 255, 255, 0.03)",
-      }}
-      className="relative z-50 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-xl bg-white/[0.03] dark:bg-slate-800/20 border border-white/5 dark:border-slate-700/30 p-4 transition-all duration-300 backdrop-blur-md hover:border-indigo-500/30 hover:shadow-[0_0_20px_rgba(99,102,241,0.1)] group"
+      className="group relative z-20 flex flex-col gap-3 rounded-lg border border-slate-700/60 bg-slate-900/55 p-3 transition-colors duration-200 hover:border-slate-500/80 hover:bg-slate-900/75 md:flex-row md:items-center md:justify-between"
     >
-      <div className="flex flex-wrap items-center gap-2 flex-1">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         {combo.ingredients.map((ingredient, idx) => (
           <div key={idx} className="flex items-center gap-2">
             {idx > 0 && (
-              <div className="flex items-center justify-center w-6 opacity-40 group-hover:opacity-60 transition-opacity">
+              <div className="flex w-5 items-center justify-center text-slate-500">
                 {combo.separator === "➡️" ? (
-                  <ArrowRight className="w-3.5 h-3.5 text-indigo-400" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 ) : (
-                  <Plus className="w-3.5 h-3.5 text-slate-400" />
+                  <Plus className="h-3.5 w-3.5" />
                 )}
               </div>
             )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-3 bg-slate-900/40 rounded-lg px-3 py-2 ring-1 ring-white/5 cursor-help transition-all hover:ring-indigo-500/20 hover:bg-slate-900/60 relative overflow-hidden group/item">
-                    {/* Background glow effect */}
-                    <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover/item:opacity-100 transition-opacity" />
-
-                    <div className="relative z-10 flex items-center gap-3">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-white/5 blur-sm rounded-md" />
+                  <div className="group/item flex min-w-0 cursor-help items-center gap-2 rounded-md border border-slate-700/70 bg-slate-950/35 px-2 py-1.5 transition-colors hover:border-slate-500/80 hover:bg-slate-950/60">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className="relative shrink-0">
                         <img
                           src={ingredient.imageUrl}
                           alt={ingredient.name}
-                          width={48}
-                          height={48}
-                          className="rounded-md relative z-10 transform transition-transform group-hover/item:scale-110"
+                          width={34}
+                          height={34}
+                          className="relative z-10 h-8 w-8 rounded object-contain"
                         />
-                      </div>
-                      <div className="flex flex-col justify-center min-w-0">
-                        <span className="text-sm font-bold text-slate-100 leading-none mb-1">
-                          {ingredient.count}×
+                        <span className="absolute -right-1 -top-1 rounded border border-slate-600 bg-slate-900 px-1 text-[9px] font-black leading-4 text-slate-200 shadow-sm z-10">
+                          {ingredient.count}x
                         </span>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider truncate max-w-[140px] group-hover/item:text-slate-300 transition-colors">
+                      </div>
+                      <div className="flex min-w-0 flex-col justify-center">
+                        <span className="max-w-[118px] truncate text-[11px] font-semibold leading-4 text-slate-200 transition-colors group-hover/item:text-slate-50">
                           {ingredient.shortName || ingredient.name}
                         </span>
+                        {ingredient.vendor && (
+                          <span className="text-[10px] font-medium text-slate-500">
+                            {ingredient.vendor.name} {ingredient.vendor.level}
+                          </span>
+                        )}
                       </div>
 
                       {ingredient.vendor && (
-                        <div className="flex items-center gap-1.5 pl-2 border-l border-white/10 ml-1 group/vendor">
-                          <div className="relative">
-                            <img
-                              src={ingredient.vendor.imageUrl}
-                              alt={ingredient.vendor.name}
-                              width={18}
-                              height={18}
-                              className="rounded-full opacity-60 grayscale-[0.5] transition-all duration-300 group-hover/item:opacity-100 group-hover/item:grayscale-0 group-hover/item:scale-110"
-                            />
-                            <div className="absolute inset-0 rounded-full bg-indigo-500/10 blur-[2px] opacity-0 group-hover/item:opacity-100" />
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-500 group-hover/item:text-indigo-400 transition-colors">
-                            {ingredient.vendor.level}
-                          </span>
-                        </div>
+                        <img
+                          src={ingredient.vendor.imageUrl}
+                          alt=""
+                          width={18}
+                          height={18}
+                          className="hidden rounded-full opacity-60 sm:block"
+                        />
                       )}
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-slate-200 p-3 shadow-2xl rounded-xl max-w-[260px] z-50">
+                <TooltipContent className="z-50 max-w-[260px] rounded-lg border border-slate-700 bg-slate-950/95 p-3 text-slate-200 shadow-2xl backdrop-blur-xl">
                   <p className="font-bold text-sm mb-1 text-slate-100 leading-snug">
                     {ingredient.name}
                   </p>
                   {ingredient.vendor && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-white/5">
+                    <div className="mt-1.5 flex items-center gap-1.5 border-t border-slate-800 pt-1.5 text-xs text-slate-400">
                       <span className="opacity-60">{t("Buy from:")}</span>
-                      <span className="text-indigo-300 font-semibold">
+                      <span className="font-semibold text-slate-200">
                         {ingredient.vendor.name}{" "}
-                        <span className="text-indigo-300/60 font-medium">
+                        <span className="font-medium text-slate-400">
                           ({ingredient.vendor.level})
                         </span>
                       </span>
@@ -321,41 +310,31 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
         ))}
       </div>
 
-      <div className="flex items-center gap-4 justify-end sm:justify-start mt-2 sm:mt-0 pl-1">
-        <div className="flex flex-col items-end sm:items-start gap-1">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className={`text-[12px] font-bold px-4 py-1.5 rounded-full backdrop-blur-md shadow-lg ${
+      <div className="flex items-center justify-between gap-3 border-t border-slate-800/80 pt-3 md:justify-start md:border-l md:border-t-0 md:pl-3 md:pt-0">
+        <div className="flex flex-col items-start gap-1 md:items-end">
+          <div
+            className={`rounded-md border px-2.5 py-1 text-[11px] font-bold ${
               isHighValue
-                ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-400 ring-1 ring-emerald-500/30"
-                : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 ring-1 ring-amber-500/30"
+                ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
+                : "border-amber-400/25 bg-amber-400/10 text-amber-200"
             }`}
           >
-            <span className="relative z-10 flex items-center gap-1.5">
-              {isHighValue && (
-                <motion.span
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"
-                />
-              )}
-              {combo.resultText}
-            </span>
-          </motion.div>
+            {combo.resultText}
+          </div>
 
           {estimatedCost !== undefined && (
-            <div className="flex items-baseline gap-1.5 px-1 opacity-80 group-hover:opacity-100 transition-opacity">
-              <span className="text-[9px] uppercase tracking-tighter text-slate-500 font-bold whitespace-nowrap">
+            <div className="flex items-baseline gap-1.5 px-0.5">
+              <span className="whitespace-nowrap text-[9px] font-bold uppercase tracking-wide text-slate-500">
                 {t("Est. Cost:")}
               </span>
-              <span className="text-[11px] font-black text-cyan-400/90 tabular-nums whitespace-nowrap">
+              <span className="whitespace-nowrap text-[11px] font-bold tabular-nums text-cyan-200">
                 ₽{estimatedCost.toLocaleString()}
               </span>
             </div>
           )}
 
           {hasAvailabilityNote && (
-            <p className="max-w-[260px] text-right sm:text-left text-[10px] leading-snug font-semibold text-amber-300/90">
+            <p className="max-w-[260px] text-left text-[10px] font-medium leading-snug text-amber-200/90 md:text-right">
               {combo.availabilityNote}
             </p>
           )}
@@ -369,12 +348,12 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
                   size="sm"
                   variant="ghost"
                   onClick={() => onUseThis(combo)}
-                  className="h-8 px-4 text-[11px] font-semibold tracking-wide rounded-full border border-white/10 bg-transparent text-slate-200 hover:border-indigo-300/60 hover:text-white hover:bg-white/5 transition duration-200 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="h-8 rounded-md border border-slate-700 bg-slate-950/30 px-3 text-[11px] font-semibold tracking-wide text-slate-200 transition-colors hover:border-cyan-400/40 hover:bg-cyan-400/10 hover:text-cyan-100 focus-visible:ring-0 focus-visible:ring-offset-0"
                 >
                   {t("Use")}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent className="bg-slate-900/95 backdrop-blur-md border-white/10 text-slate-200 text-xs">
+              <TooltipContent className="border-slate-700 bg-slate-950/95 text-xs text-slate-200 backdrop-blur-md">
                 <p>{t("Auto-populate items for this combo")}</p>
               </TooltipContent>
             </Tooltip>
@@ -395,7 +374,7 @@ export function HotSacrificesPanel({
   sacrificeCosts = {},
 }: HotSacrificesPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // Sort sacrifices by estimated cost (lowest to highest)
   const sortedSacrifices = useMemo(() => {
     return [...HOT_SACRIFICES].sort((a, b) => {
@@ -408,7 +387,7 @@ export function HotSacrificesPanel({
       return costA - costB;
     });
   }, [sacrificeCosts]);
-  
+
   const featuredCombo = sortedSacrifices[0];
   const remainingCombos = sortedSacrifices.slice(1);
 
