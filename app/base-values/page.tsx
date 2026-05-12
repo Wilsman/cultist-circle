@@ -9,7 +9,10 @@ import {
   useState,
   useTransition,
 } from "react";
-import { fetchMinimalTarkovData, MinimalItem } from "@/hooks/use-tarkov-api";
+import {
+  fetchMinimalTarkovDataForMode,
+  MinimalItem,
+} from "@/hooks/use-tarkov-api";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useFavorites } from "@/hooks/use-favorites";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
@@ -180,6 +183,33 @@ export default function ItemsTablePage() {
     []
   );
 
+  const applyModeFilters = useCallback((itemsForMode: MinimalItem[]) => {
+    setFilter((f) => ({
+      ...f,
+      basePrice: getMinMax(itemsForMode, "basePrice"),
+      lastLowPrice: getMinMax(itemsForMode, "lastLowPrice"),
+      avg24hPrice: getMinMax(itemsForMode, "avg24hPrice"),
+    }));
+  }, []);
+
+  const loadModeItems = useCallback(
+    async (targetMode: "pvp" | "pve", nextLanguage: string) => {
+      const apiMode = targetMode === "pve" ? "pve" : "regular";
+      const items = await fetchMinimalTarkovDataForMode(apiMode, nextLanguage);
+
+      setPvp((current) => (targetMode === "pvp" ? items : current));
+      setPve((current) => (targetMode === "pve" ? items : current));
+
+      return items;
+    },
+    []
+  );
+
+  const currentModeRef = useRef(mode);
+  useEffect(() => {
+    currentModeRef.current = mode;
+  }, [mode]);
+
   // Initialize favorites functionality
   const {
     isFavorite,
@@ -201,26 +231,24 @@ export default function ItemsTablePage() {
 
   useEffect(() => {
     let isMounted = true;
-    fetchMinimalTarkovData(language).then(
-      (data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }) => {
-        if (isMounted) {
-          setPvp(data.pvpItems || []);
-          setPve(data.pveItems || []);
-          // Default to PVP min/max
-          setFilter((f) => ({
-            ...f,
-            basePrice: getMinMax(data.pvpItems || [], "basePrice"),
-            lastLowPrice: getMinMax(data.pvpItems || [], "lastLowPrice"),
-            avg24hPrice: getMinMax(data.pvpItems || [], "avg24hPrice"),
-          }));
-          setIsLoading(false);
-        }
-      }
-    );
+    setIsLoading(true);
+    setPvp([]);
+    setPve([]);
+
+    loadModeItems(currentModeRef.current, language)
+      .then((items) => {
+        if (!isMounted) return;
+        applyModeFilters(items);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setIsLoading(false);
+      });
     return () => {
       isMounted = false;
     };
-  }, [language]);
+  }, [applyModeFilters, language, loadModeItems]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -814,12 +842,19 @@ export default function ItemsTablePage() {
                       const newMode = "pvp";
                       setMode(newMode);
                       const newItems = pvp;
-                      setFilter((f) => ({
-                        ...f,
-                        basePrice: getMinMax(newItems, "basePrice"),
-                        lastLowPrice: getMinMax(newItems, "lastLowPrice"),
-                        avg24hPrice: getMinMax(newItems, "avg24hPrice"),
-                      }));
+                      if (newItems.length > 0) {
+                        applyModeFilters(newItems);
+                        return;
+                      }
+
+                      setIsLoading(true);
+                      loadModeItems(newMode, language)
+                        .then((items) => {
+                          applyModeFilters(items);
+                        })
+                        .finally(() => {
+                          setIsLoading(false);
+                        });
                     });
                   }}
                   className="h-8 px-3 rounded-full"
@@ -834,12 +869,19 @@ export default function ItemsTablePage() {
                       const newMode = "pve";
                       setMode(newMode);
                       const newItems = pve;
-                      setFilter((f) => ({
-                        ...f,
-                        basePrice: getMinMax(newItems, "basePrice"),
-                        lastLowPrice: getMinMax(newItems, "lastLowPrice"),
-                        avg24hPrice: getMinMax(newItems, "avg24hPrice"),
-                      }));
+                      if (newItems.length > 0) {
+                        applyModeFilters(newItems);
+                        return;
+                      }
+
+                      setIsLoading(true);
+                      loadModeItems(newMode, language)
+                        .then((items) => {
+                          applyModeFilters(items);
+                        })
+                        .finally(() => {
+                          setIsLoading(false);
+                        });
                     });
                   }}
                   className="h-8 px-3 rounded-full"

@@ -113,36 +113,9 @@ export function useItemsData(isPVE: boolean) {
       try {
       console.debug(`🔍 Fetching items [${mode}] language=${language} at ${new Date().toLocaleTimeString()}`);
 
-      // Always fetch English for filtering
-      const english = await fetchTarkovData(gameMode as 'pve' | 'regular', 'en');
-      // If EN, do not fetch localized; use English for display/filters
-      if (language === 'en') {
-        const mapped: SimplifiedItem[] = english.items.map((en) => ({
-          ...en,
-          categories: en.categories,
-          categories_display: en.categories_display,
-          categories_display_en: en.categories_display,
-          englishName: en.name,
-          englishShortName: en.shortName,
-          name: en.name,
-          shortName: en.shortName,
-          iconLink: en.iconLink,
-        } as SimplifiedItem));
-        // Store
-        if (isPVE) {
-          requestTracker.lastDataPVE = mapped;
-          requestTracker.lastLangPVE = 'en';
-        } else {
-          requestTracker.lastDataPVP = mapped;
-          requestTracker.lastLangPVP = 'en';
-        }
-        return mapped;
-      }
-      // Fetch localized only when lang !== 'en'
-      const localized = await fetchTarkovData(gameMode as 'pve' | 'regular', language);
+      const response = await fetchTarkovData(gameMode as 'pve' | 'regular', language);
 
-      // Use English count to determine emptiness
-      if (english.items.length === 0) {
+      if (response.items.length === 0) {
         console.warn(`⚠️ [${mode.toUpperCase()}] Received empty data from API`);
         
         // Increment retry count
@@ -164,39 +137,26 @@ export function useItemsData(isPVE: boolean) {
       requestTracker.retryCount = 0;
       if (isMounted.current) setNeedsManualRetry(false);
 
-      // Merge English with localized by id
-      const localizedById = new Map(localized.items.map((it) => [it.id, it] as const));
-      const merged: SimplifiedItem[] = english.items.map((en) => {
-        const loc = localizedById.get(en.id);
-        return {
-          ...en,
-          // keep English categories for filtering logic
-          categories: en.categories,
-          // display localized categories if available
-          categories_display: loc?.categories_display ?? en.categories_display,
-          // always keep english categories for stable filtering by ID mapping
-          categories_display_en: en.categories_display,
-          // capture English names for filtering
-          englishName: en.name,
-          englishShortName: en.shortName,
-          // display localized names when available
-          name: loc?.name ?? en.name,
-          shortName: loc?.shortName ?? en.shortName,
-          // icon: prefer localized when available for non-EN
-          iconLink: loc?.iconLink ?? en.iconLink,
-        } as SimplifiedItem;
-      });
+      const mapped: SimplifiedItem[] = response.items.map((item) => ({
+        ...item,
+        categories: item.categories,
+        categories_display: item.categories_display,
+        categories_display_en:
+          item.categories_display_en ?? item.categories_display,
+        englishName: item.englishName ?? item.name,
+        englishShortName: item.englishShortName ?? item.shortName,
+      } as SimplifiedItem));
 
       // Store the data in the appropriate cache
       if (isPVE) {
-        requestTracker.lastDataPVE = merged;
+        requestTracker.lastDataPVE = mapped;
         requestTracker.lastLangPVE = language;
       } else {
-        requestTracker.lastDataPVP = merged;
+        requestTracker.lastDataPVP = mapped;
         requestTracker.lastLangPVP = language;
       }
 
-      return merged;
+      return mapped;
     } catch (error) {
       console.error(`❌ [${mode.toUpperCase()}] Fetch error:`, error);
       
