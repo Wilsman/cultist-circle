@@ -104,8 +104,10 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   "RB-PKPTS key",
   "TerraGroup corporate apartment key",
   "Elektronik's key",
-  
-  // 2025 xmas items
-  "Nut can"
 
+  // 2025 xmas items
+  "Nut can",
+
+  // icebreaker items
+  "SZ-1 explosive charge",
 ]);
