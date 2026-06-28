@@ -23,11 +23,11 @@ interface ToastNotificationsState {
 const NOTIFICATIONS_STORAGE_KEY = "cultist_toast_notifications";
 const CURRENT_APP_VERSION = "2.1.2";
 
-const THOR_PVP_WARNING_NOTIFICATION: Notification = {
-  id: "thor-hot-sacrifice-pvp-warning",
-  title: "THOR Hot Sacrifice No Longer Works in PVP",
+const TARKOV_DEV_API_WARNING_NOTIFICATION: Notification = {
+  id: "tarkov-dev-api-issues",
+  title: "Tarkov.dev API Issues",
   description:
-    "The NFM THOR Integrated Carrier body armor hot sacrifice no longer reaches the target value in PVP because its base value changed there. PVE still works.",
+    "Tarkov.dev is currently having API issues. Some item values, recipes, and calculator results may be stale or incomplete until their service is stable again.",
   version: CURRENT_APP_VERSION,
   type: "warning",
   createdAt: new Date().toISOString(),
@@ -37,7 +37,7 @@ const THOR_PVP_WARNING_NOTIFICATION: Notification = {
   }),
 };
 
-const AVAILABLE_NOTIFICATIONS = [THOR_PVP_WARNING_NOTIFICATION];
+const AVAILABLE_NOTIFICATIONS = [TARKOV_DEV_API_WARNING_NOTIFICATION];
 
 export function useToastNotifications() {
   const [state, setState] = useState<ToastNotificationsState>({

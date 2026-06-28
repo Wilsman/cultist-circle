@@ -3,40 +3,33 @@ import { describe, expect, it } from 'vitest';
 import { HOT_SACRIFICES } from '@/components/hot-sacrifices-panel';
 import { NOTIFICATIONS } from '@/components/notification-panel';
 
-describe('Info dashboard THOR PvP warning', () => {
-  it('keeps the THOR PvP warning in the priority updates group', () => {
-    const thorAlertIndex = NOTIFICATIONS.findIndex(
-      (notification) => notification.id === 'thor-hot-sacrifice-pvp-warning'
-    );
-    const figurineAlertIndex = NOTIFICATIONS.findIndex(
-      (notification) => notification.id === 'new-figurine-recipes-round'
+describe('Info dashboard alerts', () => {
+  it('keeps the Tarkov.dev API issue warning in the priority updates group', () => {
+    const apiAlertIndex = NOTIFICATIONS.findIndex(
+      (notification) => notification.id === 'tarkov-dev-api-issues'
     );
 
-    expect(thorAlertIndex).toBeGreaterThan(-1);
-    expect(figurineAlertIndex).toBeGreaterThan(-1);
-    expect(NOTIFICATIONS[thorAlertIndex]?.priority).toBe(0);
-    expect(NOTIFICATIONS[figurineAlertIndex]?.priority).toBe(0);
+    expect(apiAlertIndex).toBeGreaterThan(-1);
+    expect(NOTIFICATIONS[apiAlertIndex]?.priority).toBe(0);
   });
 
-  it('includes a high-priority updates alert for the THOR PvP change', () => {
-    const thorAlert = NOTIFICATIONS.find(
-      (notification) => notification.id === 'thor-hot-sacrifice-pvp-warning'
+  it('includes a high-priority updates alert for the Tarkov.dev API issue', () => {
+    const apiAlert = NOTIFICATIONS.find(
+      (notification) => notification.id === 'tarkov-dev-api-issues'
     );
 
-    expect(thorAlert).toBeDefined();
-    expect(thorAlert?.id).toBe('thor-hot-sacrifice-pvp-warning');
-    expect(thorAlert?.title).toContain('THOR');
-    expect(thorAlert?.priority).toBe(0);
-    expect(thorAlert?.actions).toBeUndefined();
+    expect(apiAlert).toBeDefined();
+    expect(apiAlert?.id).toBe('tarkov-dev-api-issues');
+    expect(apiAlert?.title).toBe('Tarkov.dev API Issues');
+    expect(apiAlert?.priority).toBe(0);
+    expect(apiAlert?.actions).toBeUndefined();
   });
 
-  it('renames the old cat update to the Ded Moroz recipe update notice', () => {
-    const figurineAlert = NOTIFICATIONS.find(
-      (notification) => notification.id === 'new-figurine-recipes-round'
-    );
+  it('removes the retired Ded Moroz and THOR priority notices', () => {
+    const notificationIds = NOTIFICATIONS.map((notification) => notification.id);
 
-    expect(figurineAlert).toBeDefined();
-    expect(figurineAlert?.title).toBe('Ded Moroz Ornament Recipe Updated');
+    expect(notificationIds).not.toContain('new-figurine-recipes-round');
+    expect(notificationIds).not.toContain('thor-hot-sacrifice-pvp-warning');
   });
 
   it('marks the THOR hot sacrifice as unavailable in PVP but working in PVE', () => {

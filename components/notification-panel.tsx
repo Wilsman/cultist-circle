@@ -37,47 +37,18 @@ export interface NotificationAction {
 
 export const NOTIFICATIONS: Notification[] = [
   {
-    id: "new-figurine-recipes-round",
-    type: "hot-sacrifice",
-    title: "Ded Moroz Ornament Recipe Updated",
-    description: (
-      <>
-        The three-ornament recipe has been updated and now rewards{" "}
-        <strong>2x Ded Moroz figurine</strong>. Check the{" "}
-        <Link
-          href="/recipes"
-          className="underline hover:text-indigo-200 transition-colors font-semibold"
-        >
-          Recipes page
-        </Link>{" "}
-        for the latest info.
-        <div className="mt-2 rounded-md border border-slate-600/50 bg-slate-950/30 px-2.5 py-2">
-          <span className="block text-[12px] leading-relaxed text-slate-300">
-            Thanks to the person who submitted feedback and helped us update
-            this for everyone.
-          </span>
-        </div>
-      </>
-    ),
-    priority: 0,
-  },
-  {
-    id: "thor-hot-sacrifice-pvp-warning",
+    id: "tarkov-dev-api-issues",
     type: "warning",
-    title: "THOR Hot Sacrifice No Longer Works in PVP",
+    title: "Tarkov.dev API Issues",
     description: (
       <>
-        <span className="block text-[13px] leading-6">
-          The <strong>NFM THOR Integrated Carrier body armor</strong> no longer
-          hits the target value in <strong>PVP</strong> because its{" "}
-          <strong>PVP base value changed</strong>. <strong>PVE</strong> still
-          works as expected.
-        </span>
-        <div className="mt-2 rounded-md border border-slate-600/50 bg-slate-950/30 px-2.5 py-2">
-          <span className="block text-[12px] font-medium leading-relaxed text-slate-300">
-            Big love to everyone testing this in <strong>Discord</strong> and
-            people sending reports through the <strong>feedback form</strong>.
-            You lot find stuff fast. 💖
+        Tarkov.dev is currently having API issues. Some item values, recipes,
+        and calculator results may be stale or incomplete until their service
+        is stable again.
+        <div className="mt-2 rounded-md border border-red-400/35 bg-red-950/30 px-2.5 py-2">
+          <span className="block text-[12px] leading-relaxed text-red-100">
+            We will keep the calculator updated as soon as reliable data is
+            available again.
           </span>
         </div>
       </>
@@ -132,6 +103,7 @@ export function NotificationCard({
 }) {
   const isPriority = notification.priority === 0;
   const isInteractive = Boolean(onClick);
+  const isCriticalApiWarning = notification.id === "tarkov-dev-api-issues";
   const styles =
     notification.type === "success"
       ? {
@@ -142,10 +114,10 @@ export function NotificationCard({
         }
       : notification.type === "warning"
         ? {
-            marker: "bg-red-300",
-            icon: "text-red-300",
-            title: "text-red-100",
-            badge: "border-red-300/25 bg-red-300/10 text-red-200",
+            marker: "bg-red-400",
+            icon: "border-red-400/40 bg-red-950/50 text-red-200",
+            title: "text-red-50",
+            badge: "border-red-300/45 bg-red-500/25 text-red-100",
           }
         : notification.type === "hot-sacrifice"
           ? {
@@ -180,12 +152,13 @@ export function NotificationCard({
         group relative overflow-hidden rounded-lg border border-slate-700/60 bg-slate-900/55
         px-3.5 py-3 backdrop-blur-sm transition-all duration-200
         ${isPriority ? "border-slate-600/80 bg-slate-900/75" : ""}
+        ${isCriticalApiWarning ? "border-red-400/45 bg-red-950/25 shadow-[0_0_24px_rgba(248,113,113,0.16)]" : ""}
         ${isInteractive ? "cursor-pointer hover:border-slate-500/80 hover:bg-slate-900/80" : ""}
       `}
       onClick={onClick}
     >
       <div
-        className={`absolute bottom-0 left-0 top-0 w-1 ${styles.marker} opacity-70`}
+        className={`absolute bottom-0 left-0 top-0 ${isCriticalApiWarning ? "w-1.5" : "w-1"} ${styles.marker} opacity-90`}
       />
       <div className="flex items-start gap-3 pl-1">
         <div

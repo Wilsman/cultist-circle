@@ -28,7 +28,7 @@ describe('useToastNotifications', () => {
     window.sessionStorage.clear();
   });
 
-  it('shows the THOR PvP warning toast with an icon', async () => {
+  it('shows the Tarkov.dev API warning toast with an icon', async () => {
     render(<ToastHarness />);
 
     await act(async () => {
@@ -37,13 +37,13 @@ describe('useToastNotifications', () => {
 
     expect(toastMock).toHaveBeenCalledTimes(1);
 
-    const thorCall = toastMock.mock.calls.find(
-      ([title]) => title === 'THOR Hot Sacrifice No Longer Works in PVP'
+    const apiCall = toastMock.mock.calls.find(
+      ([title]) => title === 'Tarkov.dev API Issues'
     );
 
-    expect(thorCall).toBeDefined();
-    expect(thorCall?.[1]).toMatchObject({
-      description: expect.stringContaining('NFM THOR Integrated Carrier body armor'),
+    expect(apiCall).toBeDefined();
+    expect(apiCall?.[1]).toMatchObject({
+      description: expect.stringContaining('Tarkov.dev is currently having API issues'),
       icon: expect.anything(),
     });
   });
