@@ -247,7 +247,38 @@ function AppContent({ contributors = [] }: AppProps) {
     mutate,
     needsManualRetry,
     resetRetryCount,
+    requestStatus,
   } = useItemsData(isPVE);
+  const [requestStatusNow, setRequestStatusNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!requestStatus.nextRetryAt && !requestStatus.cooldownUntil) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setRequestStatusNow(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [requestStatus.nextRetryAt, requestStatus.cooldownUntil]);
+
+  const retrySeconds = requestStatus.nextRetryAt
+    ? Math.max(
+        0,
+        Math.ceil((requestStatus.nextRetryAt - requestStatusNow) / 1000),
+      )
+    : 0;
+  const cooldownSeconds = requestStatus.cooldownUntil
+    ? Math.max(
+        0,
+        Math.ceil((requestStatus.cooldownUntil - requestStatusNow) / 1000),
+      )
+    : 0;
+  const isRetryingTarkovRequest =
+    requestStatus.phase === "retrying" && Boolean(requestStatus.nextRetryAt);
+  const isCoolingDownTarkovRequest =
+    requestStatus.phase === "cooldown" && cooldownSeconds > 0;
 
   // Initialize toast notifications
   const { triggerNewNotifications } = useToastNotifications();
@@ -875,8 +906,7 @@ function AppContent({ contributors = [] }: AppProps) {
       let best: number | undefined = undefined;
       for (const offer of item.buyFor) {
         const vendor = offer.vendor?.normalizedName as
-          | keyof TraderLevels
-          | undefined;
+          keyof TraderLevels | undefined;
         if (!vendor) continue;
         const minLvl = offer.vendor?.minTraderLevel ?? 1;
         const userLvl = traderLevels[vendor];
@@ -1542,8 +1572,7 @@ function AppContent({ contributors = [] }: AppProps) {
             let bestTrader: number | undefined = undefined;
             for (const offer of match.buyFor) {
               const vendor = offer.vendor?.normalizedName as
-                | keyof TraderLevels
-                | undefined;
+                keyof TraderLevels | undefined;
               if (!vendor) continue;
               const minLvl = offer.vendor?.minTraderLevel ?? 1;
               const userLvl = traderLevels[vendor];
@@ -1972,6 +2001,30 @@ function AppContent({ contributors = [] }: AppProps) {
 
                 {/* Item Selection Area */}
                 <div className="space-y-1" id="search-items">
+                  {(isRetryingTarkovRequest || isCoolingDownTarkovRequest) && (
+                    <div className="mb-2 rounded-lg border border-amber-400/30 bg-amber-950/25 px-3 py-2 text-xs text-amber-100 shadow-inner shadow-amber-950/20">
+                      <div className="flex items-start gap-2">
+                        {isRetryingTarkovRequest ? (
+                          <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-amber-300" />
+                        ) : (
+                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-semibold">
+                            {isRetryingTarkovRequest
+                              ? `Tarkov.dev is not responding. Retrying in ${retrySeconds}s... attempt ${requestStatus.attempt} of ${requestStatus.maxAttempts}.`
+                              : `Tarkov.dev is still unavailable. Using cached data where possible. Try again in ${cooldownSeconds}s.`}
+                          </p>
+                          {requestStatus.usingStaleData && (
+                            <p className="mt-0.5 text-[11px] text-amber-200/80">
+                              The calculator is showing the last cached item
+                              data.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {loading ? (
                     <div className="space-y-1">
                       {Array(5)
@@ -1984,8 +2037,30 @@ function AppContent({ contributors = [] }: AppProps) {
                         ))}
                     </div>
                   ) : hasError ? (
-                    <div className="text-red-400 text-center p-6 text-sm">
-                      {t("Failed to load items. Please refresh the page.")}
+                    <div className="space-y-3 rounded-lg border border-red-400/35 bg-red-950/25 p-6 text-center text-sm text-red-100">
+                      <AlertCircle className="mx-auto h-6 w-6 text-red-300" />
+                      <div>
+                        <p className="font-semibold">
+                          Tarkov.dev item data could not be loaded.
+                        </p>
+                        <p className="mt-1 text-xs text-red-200/80">
+                          {isCoolingDownTarkovRequest
+                            ? `The API is cooling down after repeated failures. Try again in ${cooldownSeconds}s.`
+                            : "The API did not recover after retries. Try again when the service is stable."}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          resetRetryCount();
+                          mutate();
+                        }}
+                        size="sm"
+                        variant="outline"
+                        disabled={isCoolingDownTarkovRequest}
+                        className="mx-auto"
+                      >
+                        {t("Try Again")}
+                      </Button>
                     </div>
                   ) : rawItemsData.length === 0 ? (
                     <div className="text-slate-400 text-center p-6 flex flex-col items-center space-y-2">
@@ -2002,6 +2077,7 @@ function AppContent({ contributors = [] }: AppProps) {
                             }}
                             size="sm"
                             variant="outline"
+                            disabled={isCoolingDownTarkovRequest}
                           >
                             {t("Try Again")}
                           </Button>

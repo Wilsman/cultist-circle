@@ -9,7 +9,12 @@ import {
   useState,
   useTransition,
 } from "react";
-import { fetchMinimalTarkovData, MinimalItem } from "@/hooks/use-tarkov-api";
+import {
+  DEFAULT_TARKOV_REQUEST_STATUS,
+  fetchMinimalTarkovData,
+  MinimalItem,
+  type TarkovRequestStatus,
+} from "@/hooks/use-tarkov-api";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useFavorites } from "@/hooks/use-favorites";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
@@ -64,7 +69,7 @@ interface FilterState {
 
 function getMinMax(
   items: MinimalItem[],
-  key: keyof MinimalItem
+  key: keyof MinimalItem,
 ): [number, number] {
   if (items.length === 0) {
     // Sensible fallback avoids Infinity/-Infinity propagation
@@ -72,7 +77,7 @@ function getMinMax(
   }
 
   const nums = items.map((i) =>
-    typeof i[key] === "number" ? (i[key] as number) : 0
+    typeof i[key] === "number" ? (i[key] as number) : 0,
   );
   return [Math.min(...nums), Math.max(...nums)];
 }
@@ -135,8 +140,14 @@ export default function ItemsTablePage() {
 
   const [pvp, setPvp] = useState<MinimalItem[]>([]);
   const [pve, setPve] = useState<MinimalItem[]>([]);
+  const hasLoadedItemsRef = useRef(false);
   const [mode, setMode] = useState<"pvp" | "pve">("pvp");
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [requestStatus, setRequestStatus] = useState<TarkovRequestStatus>(
+    DEFAULT_TARKOV_REQUEST_STATUS,
+  );
+  const [requestStatusNow, setRequestStatusNow] = useState(() => Date.now());
   const [filter, setFilter] = useState<FilterState>({
     // Use full FilterState
     name: "",
@@ -161,7 +172,9 @@ export default function ItemsTablePage() {
   // Multiplier Tester state (dev tool)
   const [testerWeaponSum, setTesterWeaponSum] = useState<number>(0);
   const [testerOtherSum, setTesterOtherSum] = useState<number>(0);
-  const [testerOutcome, setTesterOutcome] = useState<"6h" | "14h" | "12h">("6h");
+  const [testerOutcome, setTesterOutcome] = useState<"6h" | "14h" | "12h">(
+    "6h",
+  );
   const [testerK, setTesterK] = useState<number>(2);
   const [showTester, setShowTester] = useState<boolean>(false);
   // Weapon combobox removed; use main table search to find base prices.
@@ -177,7 +190,7 @@ export default function ItemsTablePage() {
       setTesterWeaponSum(basePrice * normalizedQty);
       setTesterOtherSum(0);
     },
-    []
+    [],
   );
 
   // Initialize favorites functionality
@@ -201,11 +214,21 @@ export default function ItemsTablePage() {
 
   useEffect(() => {
     let isMounted = true;
-    fetchMinimalTarkovData(language).then(
-      (data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }) => {
+
+    fetchMinimalTarkovData(language, {
+      usingStaleData: hasLoadedItemsRef.current,
+      onStatus: (status) => {
+        if (isMounted) {
+          setRequestStatus(status);
+        }
+      },
+    })
+      .then((data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }) => {
         if (isMounted) {
           setPvp(data.pvpItems || []);
           setPve(data.pveItems || []);
+          hasLoadedItemsRef.current = true;
+          setLoadError(null);
           // Default to PVP min/max
           setFilter((f) => ({
             ...f,
@@ -215,12 +238,46 @@ export default function ItemsTablePage() {
           }));
           setIsLoading(false);
         }
-      }
-    );
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setLoadError(error instanceof Error ? error.message : String(error));
+          setIsLoading(false);
+        }
+      });
     return () => {
       isMounted = false;
     };
   }, [language]);
+
+  useEffect(() => {
+    if (!requestStatus.nextRetryAt && !requestStatus.cooldownUntil) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setRequestStatusNow(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [requestStatus.nextRetryAt, requestStatus.cooldownUntil]);
+
+  const retrySeconds = requestStatus.nextRetryAt
+    ? Math.max(
+        0,
+        Math.ceil((requestStatus.nextRetryAt - requestStatusNow) / 1000),
+      )
+    : 0;
+  const cooldownSeconds = requestStatus.cooldownUntil
+    ? Math.max(
+        0,
+        Math.ceil((requestStatus.cooldownUntil - requestStatusNow) / 1000),
+      )
+    : 0;
+  const isRetryingTarkovRequest =
+    requestStatus.phase === "retrying" && Boolean(requestStatus.nextRetryAt);
+  const isCoolingDownTarkovRequest =
+    requestStatus.phase === "cooldown" && cooldownSeconds > 0;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -281,9 +338,7 @@ export default function ItemsTablePage() {
     };
 
     const parseRangeToken = (token: string, prefix: string) => {
-      const match = token.match(
-        new RegExp(`^${prefix}([<>]=?|=)(\\d+)$`, "i")
-      );
+      const match = token.match(new RegExp(`^${prefix}([<>]=?|=)(\\d+)$`, "i"));
       if (!match) return null;
       const op = match[1];
       const value = Number(match[2]);
@@ -309,9 +364,11 @@ export default function ItemsTablePage() {
       }
 
       if (lastLowToken) {
-        if (lastLowToken.op === "<") filters.lastLowMax = lastLowToken.value - 1;
+        if (lastLowToken.op === "<")
+          filters.lastLowMax = lastLowToken.value - 1;
         if (lastLowToken.op === "<=") filters.lastLowMax = lastLowToken.value;
-        if (lastLowToken.op === ">") filters.lastLowMin = lastLowToken.value + 1;
+        if (lastLowToken.op === ">")
+          filters.lastLowMin = lastLowToken.value + 1;
         if (lastLowToken.op === ">=") filters.lastLowMin = lastLowToken.value;
         if (lastLowToken.op === "=") {
           filters.lastLowMin = lastLowToken.value;
@@ -370,7 +427,7 @@ export default function ItemsTablePage() {
         | "traderSellPrice"
         | "traderBuyPrice"
         | "buyLimit"
-        | "bestValue"
+        | "bestValue",
     ) => {
       // Use startTransition to mark UI updates as non-urgent
       startTransition(() => {
@@ -384,12 +441,12 @@ export default function ItemsTablePage() {
                 ? "desc"
                 : "asc"
               : sortKey === "name" || sortKey === "shortName"
-              ? "asc"
-              : "desc",
+                ? "asc"
+                : "desc",
         }));
       });
     },
-    [startTransition]
+    [startTransition],
   );
 
   // Export to Excel function
@@ -425,24 +482,28 @@ export default function ItemsTablePage() {
                   .filter(
                     (seller) =>
                       seller?.vendor?.normalizedName !== "flea-market" &&
-                      seller?.priceRUB != null
+                      seller?.priceRUB != null,
                   )
-                  .map((seller) => seller.priceRUB || 0)
+                  .map((seller) => seller.priceRUB || 0),
               )
             : 0;
 
         // Find best buy offer (lowest price, excluding flea market)
-        const validBuyOffers = item.buyFor?.filter(
-          (offer) =>
-            offer.vendor?.normalizedName !== "flea-market" &&
-            offer.priceRUB != null
-        ) || [];
+        const validBuyOffers =
+          item.buyFor?.filter(
+            (offer) =>
+              offer.vendor?.normalizedName !== "flea-market" &&
+              offer.priceRUB != null,
+          ) || [];
 
-        const bestBuyOffer = validBuyOffers.length > 0
-          ? validBuyOffers.reduce((prev, curr) =>
-              (prev.priceRUB || Infinity) < (curr.priceRUB || Infinity) ? prev : curr
-            )
-          : null;
+        const bestBuyOffer =
+          validBuyOffers.length > 0
+            ? validBuyOffers.reduce((prev, curr) =>
+                (prev.priceRUB || Infinity) < (curr.priceRUB || Infinity)
+                  ? prev
+                  : curr,
+              )
+            : null;
 
         const bestBuyPrice = bestBuyOffer ? bestBuyOffer.priceRUB : 0;
         const bestBuyTraderName = bestBuyOffer?.vendor?.normalizedName || "";
@@ -463,7 +524,11 @@ export default function ItemsTablePage() {
           bestBuyPrice === Infinity ? 0 : bestBuyPrice,
           `"${bestBuyTraderName.replace(/"/g, '""')}"`,
           bestBuyTraderLevel,
-          bestBuyLimit === undefined ? 'N/A' : (bestBuyLimit === null ? '∞' : bestBuyLimit),
+          bestBuyLimit === undefined
+            ? "N/A"
+            : bestBuyLimit === null
+              ? "∞"
+              : bestBuyLimit,
           `"${(item.link || "").replace(/"/g, '""')}"`,
         ].join(",");
       }),
@@ -478,7 +543,7 @@ export default function ItemsTablePage() {
       "download",
       `cultist-circle-items-${mode}-${
         new Date().toISOString().split("T")[0]
-      }.csv`
+      }.csv`,
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -516,7 +581,7 @@ export default function ItemsTablePage() {
           .filter(
             (offer) =>
               offer?.vendor?.normalizedName !== "flea-market" &&
-              offer?.priceRUB != null
+              offer?.priceRUB != null,
           )
           .reduce<(typeof item.buyFor)[0] | null>((prev, curr) => {
             if (!prev) return curr;
@@ -555,7 +620,7 @@ export default function ItemsTablePage() {
   }, [items]);
   const filtered = useMemo(() => {
     const qTerms = parsedQuery.textTerms.map((term) =>
-      term.trim().toLowerCase()
+      term.trim().toLowerCase(),
     );
     const parsedFilters = parsedQuery.filters;
 
@@ -572,7 +637,7 @@ export default function ItemsTablePage() {
 
         // Check if all search terms appear in either name or shortName
         return qTerms.every(
-          (term) => lowerName.includes(term) || lowerShortName.includes(term)
+          (term) => lowerName.includes(term) || lowerShortName.includes(term),
         );
       });
     }
@@ -581,8 +646,8 @@ export default function ItemsTablePage() {
       const match = parsedFilters.category.toLowerCase();
       filteredItems = filteredItems.filter((item) =>
         item.categories?.some((category) =>
-          category.name.toLowerCase().includes(match)
-        )
+          category.name.toLowerCase().includes(match),
+        ),
       );
     }
 
@@ -606,7 +671,7 @@ export default function ItemsTablePage() {
           .filter(
             (offer) =>
               offer?.vendor?.normalizedName !== "flea-market" &&
-              offer?.priceRUB != null
+              offer?.priceRUB != null,
           )
           .reduce<(typeof item.buyFor)[0] | null>((prev, curr) => {
             if (!prev) return curr;
@@ -628,24 +693,24 @@ export default function ItemsTablePage() {
         (parsedFilters.baseMax == null ||
           item.basePrice <= parsedFilters.baseMax) &&
         (typeof item.lastLowPrice !== "number" ||
-          ((item.lastLowPrice >= filter.lastLowPrice[0] &&
-            item.lastLowPrice <= filter.lastLowPrice[1]) &&
+          (item.lastLowPrice >= filter.lastLowPrice[0] &&
+            item.lastLowPrice <= filter.lastLowPrice[1] &&
             (parsedFilters.lastLowMin == null ||
               item.lastLowPrice >= parsedFilters.lastLowMin) &&
             (parsedFilters.lastLowMax == null ||
               item.lastLowPrice <= parsedFilters.lastLowMax))) &&
         (typeof item.avg24hPrice !== "number" ||
-          ((item.avg24hPrice >= filter.avg24hPrice[0] &&
-            item.avg24hPrice <= filter.avg24hPrice[1]) &&
+          (item.avg24hPrice >= filter.avg24hPrice[0] &&
+            item.avg24hPrice <= filter.avg24hPrice[1] &&
             (parsedFilters.avgMin == null ||
               item.avg24hPrice >= parsedFilters.avgMin) &&
             (parsedFilters.avgMax == null ||
-              item.avg24hPrice <= parsedFilters.avgMax)))
+              item.avg24hPrice <= parsedFilters.avgMax))),
     );
 
     if (selectedCategory && selectedCategory !== "All Categories") {
       filteredItems = filteredItems.filter((item) =>
-        item.categories?.some((category) => category.name === selectedCategory)
+        item.categories?.some((category) => category.name === selectedCategory),
       );
     }
 
@@ -668,7 +733,8 @@ export default function ItemsTablePage() {
                   for (const offer of item.sellFor) {
                     if (
                       offer?.vendor?.normalizedName &&
-                      offer.vendor.normalizedName.toLowerCase() !== "flea-market" &&
+                      offer.vendor.normalizedName.toLowerCase() !==
+                        "flea-market" &&
                       offer.priceRUB &&
                       offer.priceRUB > bestPrice
                     ) {
@@ -677,7 +743,7 @@ export default function ItemsTablePage() {
                   }
                 }
                 return [item.id, bestPrice];
-              })
+              }),
             )
           : null;
 
@@ -692,7 +758,8 @@ export default function ItemsTablePage() {
                   for (const offer of item.buyFor) {
                     if (
                       offer?.vendor?.normalizedName &&
-                      offer.vendor.normalizedName.toLowerCase() !== "flea-market" &&
+                      offer.vendor.normalizedName.toLowerCase() !==
+                        "flea-market" &&
                       offer.priceRUB &&
                       (offer.priceRUB < bestPrice || bestPrice === 0)
                     ) {
@@ -702,7 +769,7 @@ export default function ItemsTablePage() {
                   }
                 }
                 return [item.id, { price: bestPrice, limit: buyLimit }];
-              })
+              }),
             )
           : null;
 
@@ -716,23 +783,19 @@ export default function ItemsTablePage() {
         if (filter.sort === "traderBuyPrice" && bestBuyPrices) {
           const aData = bestBuyPrices.get(a.id) || { price: 0 };
           const bData = bestBuyPrices.get(b.id) || { price: 0 };
-          return filter.sortDir === "desc" 
-            ? bData.price - aData.price 
+          return filter.sortDir === "desc"
+            ? bData.price - aData.price
             : aData.price - bData.price;
         }
         if (filter.sort === "buyLimit" && bestBuyPrices) {
           const aData = bestBuyPrices.get(a.id) || { limit: 0 };
           const bData = bestBuyPrices.get(b.id) || { limit: 0 };
-          return filter.sortDir === "desc" 
-            ? bData.limit - aData.limit 
+          return filter.sortDir === "desc"
+            ? bData.limit - aData.limit
             : aData.limit - bData.limit;
         }
         const sortKey = filter.sort as
-          | "name"
-          | "shortName"
-          | "basePrice"
-          | "lastLowPrice"
-          | "avg24hPrice"; // Include name/shortName
+          "name" | "shortName" | "basePrice" | "lastLowPrice" | "avg24hPrice"; // Include name/shortName
         const aVal =
           sortKey === "name" || sortKey === "shortName"
             ? (a[sortKey] as string).toLowerCase()
@@ -771,7 +834,9 @@ export default function ItemsTablePage() {
           {t("Item Base Values")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {t("Search fast. Base price first, extra details when you need them.")}
+          {t(
+            "Search fast. Base price first, extra details when you need them.",
+          )}
         </p>
       </div>
 
@@ -850,11 +915,11 @@ export default function ItemsTablePage() {
 
               <div className="text-xs text-muted-foreground">
                 {isLoading
-                  ? "Loading items..."
+                  ? isRetryingTarkovRequest
+                    ? `Retrying Tarkov.dev in ${retrySeconds}s... attempt ${requestStatus.attempt} of ${requestStatus.maxAttempts}`
+                    : "Loading items..."
                   : `${filtered.length.toLocaleString()} items`}
-                {debouncedSearchTerm
-                  ? ` for "${debouncedSearchTerm}"`
-                  : ""}
+                {debouncedSearchTerm ? ` for "${debouncedSearchTerm}"` : ""}
               </div>
             </div>
 
@@ -871,13 +936,44 @@ export default function ItemsTablePage() {
         </div>
       </div>
 
+      {(isRetryingTarkovRequest || isCoolingDownTarkovRequest || loadError) && (
+        <div className="mb-4 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 shadow-sm dark:text-amber-100">
+          <div className="flex items-start gap-3">
+            {isRetryingTarkovRequest ? (
+              <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+            ) : (
+              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+            )}
+            <div className="min-w-0">
+              <p className="font-medium">
+                {isRetryingTarkovRequest
+                  ? `Tarkov.dev is not responding. Retrying in ${retrySeconds}s... attempt ${requestStatus.attempt} of ${requestStatus.maxAttempts}.`
+                  : isCoolingDownTarkovRequest
+                    ? `Tarkov.dev is still unavailable. Using cached data where possible. Try again in ${cooldownSeconds}s.`
+                    : "Tarkov.dev item data could not be loaded."}
+              </p>
+              {(requestStatus.usingStaleData ||
+                pvp.length > 0 ||
+                pve.length > 0) && (
+                <p className="mt-1 text-xs opacity-80">
+                  Base Values is showing the last loaded item data.
+                </p>
+              )}
+              {loadError &&
+                !isRetryingTarkovRequest &&
+                !isCoolingDownTarkovRequest && (
+                  <p className="mt-1 text-xs opacity-80">{loadError}</p>
+                )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters & Sorting */}
       <details
         className="mb-6 rounded-2xl border bg-muted/20"
         open={isAdvancedOpen}
-        onToggle={(event) =>
-          setIsAdvancedOpen(event.currentTarget.open)
-        }
+        onToggle={(event) => setIsAdvancedOpen(event.currentTarget.open)}
       >
         <summary className="list-none cursor-pointer px-4 py-3 text-sm font-medium flex items-center justify-between">
           Filters and sorting
@@ -1141,18 +1237,18 @@ export default function ItemsTablePage() {
                 <label className="text-xs text-muted-foreground">
                   Single weapon base price (RUB)
                 </label>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    value={Number.isFinite(singleBasePrice) ? singleBasePrice : 0}
-                    onChange={(e) => {
-                      const next = Number(e.target.value) || 0;
-                      setSingleBasePrice(next);
-                      updateTesterComputedSum(next, selectedQty);
-                    }}
-                    placeholder="e.g. 40,000"
-                  />
-                </div>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={Number.isFinite(singleBasePrice) ? singleBasePrice : 0}
+                  onChange={(e) => {
+                    const next = Number(e.target.value) || 0;
+                    setSingleBasePrice(next);
+                    updateTesterComputedSum(next, selectedQty);
+                  }}
+                  placeholder="e.g. 40,000"
+                />
+              </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">
                   Quantity (1–5)
@@ -1269,10 +1365,10 @@ export default function ItemsTablePage() {
                 predictedTotal >= sixH
                   ? "6h"
                   : predictedTotal >= fourteenH
-                  ? "14h"
-                  : predictedTotal >= twelveHMin
-                  ? "12h"
-                  : "<12h";
+                    ? "14h"
+                    : predictedTotal >= twelveHMin
+                      ? "12h"
+                      : "<12h";
               const predictedBand = (() => {
                 if (predictedTotal >= sixH) return "6h (≥ 400,000)";
                 if (predictedTotal >= fourteenH)
