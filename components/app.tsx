@@ -2013,7 +2013,7 @@ function AppContent({ contributors = [] }: AppProps) {
                           <p className="font-semibold">
                             {isRetryingTarkovRequest
                               ? `Tarkov.dev is not responding. Retrying in ${retrySeconds}s... attempt ${requestStatus.attempt} of ${requestStatus.maxAttempts}.`
-                              : `Tarkov.dev is still unavailable. Using cached data where possible. Try again in ${cooldownSeconds}s.`}
+                              : `Tarkov.dev is unavailable. Using cached data where possible. Try again in ${cooldownSeconds}s.`}
                           </p>
                           {requestStatus.usingStaleData && (
                             <p className="mt-0.5 text-[11px] text-amber-200/80">

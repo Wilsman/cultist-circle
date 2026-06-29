@@ -37,40 +37,6 @@ export interface NotificationAction {
 
 export const NOTIFICATIONS: Notification[] = [
   {
-    id: "tarkov-dev-api-issues",
-    type: "warning",
-    title: "Tarkov.dev API Issues",
-    description: (
-      <>
-        Tarkov.dev is currently having API issues. Some item values, recipes,
-        and calculator results may be stale or incomplete until their service
-        is stable again.
-        <div className="mt-2 rounded-md border border-red-400/35 bg-red-950/30 px-2.5 py-2">
-          <span className="block text-[12px] leading-relaxed text-red-100">
-            We will keep the calculator updated as soon as reliable data is
-            available again.
-          </span>
-        </div>
-      </>
-    ),
-    priority: 0,
-  },
-  {
-    id: "six-hour-timer-warning",
-    type: "warning",
-    title: "6h Timer Rewards Are Not Guaranteed",
-    description: (
-      <>
-        Recent reports show more low-value drops from the{" "}
-        <strong>6h timer</strong>. At the moment, <strong>6h timers</strong> are
-        not a 100% chance for quest/hideout items. It is unclear if this is a
-        bug or intended behavior, so treat 6h rewards as inconsistent for
-        quest/hideout progress.
-      </>
-    ),
-    priority: 1,
-  },
-  {
     id: "weapon-values-warning",
     type: "warning",
     title: "Weapon Base Values - Work in Progress",
@@ -103,7 +69,6 @@ export function NotificationCard({
 }) {
   const isPriority = notification.priority === 0;
   const isInteractive = Boolean(onClick);
-  const isCriticalApiWarning = notification.id === "tarkov-dev-api-issues";
   const styles =
     notification.type === "success"
       ? {
@@ -152,13 +117,12 @@ export function NotificationCard({
         group relative overflow-hidden rounded-lg border border-slate-700/60 bg-slate-900/55
         px-3.5 py-3 backdrop-blur-sm transition-all duration-200
         ${isPriority ? "border-slate-600/80 bg-slate-900/75" : ""}
-        ${isCriticalApiWarning ? "border-red-400/45 bg-red-950/25 shadow-[0_0_24px_rgba(248,113,113,0.16)]" : ""}
         ${isInteractive ? "cursor-pointer hover:border-slate-500/80 hover:bg-slate-900/80" : ""}
       `}
       onClick={onClick}
     >
       <div
-        className={`absolute bottom-0 left-0 top-0 ${isCriticalApiWarning ? "w-1.5" : "w-1"} ${styles.marker} opacity-90`}
+        className={`absolute bottom-0 left-0 top-0 w-1 ${styles.marker} opacity-90`}
       />
       <div className="flex items-start gap-3 pl-1">
         <div

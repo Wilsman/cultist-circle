@@ -125,7 +125,7 @@ describe("Tarkov request status UI", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Tarkov\.dev is still unavailable/i),
+        screen.getByText(/Tarkov\.dev is unavailable/i),
       ).toBeInTheDocument();
     });
   });

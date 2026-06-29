@@ -1,7 +1,6 @@
 "use client";
 
-import { createElement, type ReactNode, useState, useEffect, useCallback } from "react";
-import { AlertTriangle } from "lucide-react";
+import { type ReactNode, useState, useEffect, useCallback } from "react";
 import { toast as sonnerToast } from "sonner";
 
 interface Notification {
@@ -23,21 +22,7 @@ interface ToastNotificationsState {
 const NOTIFICATIONS_STORAGE_KEY = "cultist_toast_notifications";
 const CURRENT_APP_VERSION = "2.1.2";
 
-const TARKOV_DEV_API_WARNING_NOTIFICATION: Notification = {
-  id: "tarkov-dev-api-issues",
-  title: "Tarkov.dev API Issues",
-  description:
-    "Tarkov.dev is currently having API issues. Some item values, recipes, and calculator results may be stale or incomplete until their service is stable again.",
-  version: CURRENT_APP_VERSION,
-  type: "warning",
-  createdAt: new Date().toISOString(),
-  icon: createElement(AlertTriangle, {
-    className: "h-4 w-4 text-amber-400",
-    "aria-hidden": true,
-  }),
-};
-
-const AVAILABLE_NOTIFICATIONS = [TARKOV_DEV_API_WARNING_NOTIFICATION];
+const AVAILABLE_NOTIFICATIONS: Notification[] = [];
 
 export function useToastNotifications() {
   const [state, setState] = useState<ToastNotificationsState>({
@@ -59,14 +44,15 @@ export function useToastNotifications() {
           if (parsed.currentVersion !== CURRENT_APP_VERSION) {
             setState({
               shownNotifications: new Set(),
-              dismissedNotifications: parsed.dismissedNotifications || new Set(),
+              dismissedNotifications:
+                parsed.dismissedNotifications || new Set(),
               currentVersion: CURRENT_APP_VERSION,
             });
           } else {
             setState({
               shownNotifications: new Set(parsed.shownNotifications || []),
               dismissedNotifications: new Set(
-                parsed.dismissedNotifications || []
+                parsed.dismissedNotifications || [],
               ),
               currentVersion: CURRENT_APP_VERSION,
             });
@@ -75,7 +61,7 @@ export function useToastNotifications() {
       } catch (error) {
         console.error(
           "Failed to load toast notifications from localStorage:",
-          error
+          error,
         );
       }
     });
@@ -95,12 +81,12 @@ export function useToastNotifications() {
       };
       localStorage.setItem(
         NOTIFICATIONS_STORAGE_KEY,
-        JSON.stringify(dataToStore)
+        JSON.stringify(dataToStore),
       );
     } catch (error) {
       console.error(
         "Failed to save toast notifications to localStorage:",
-        error
+        error,
       );
     }
   }, [state]);
@@ -109,14 +95,14 @@ export function useToastNotifications() {
     // Save individual dismissed notification to localStorage
     const dismissedNotificationsKey = "cultist_dismissed_notifications";
     const currentDismissed = JSON.parse(
-      localStorage.getItem(dismissedNotificationsKey) || "[]"
+      localStorage.getItem(dismissedNotificationsKey) || "[]",
     );
-    
+
     if (!currentDismissed.includes(notificationId)) {
       const updatedDismissed = [...currentDismissed, notificationId];
       localStorage.setItem(
         dismissedNotificationsKey,
-        JSON.stringify(updatedDismissed)
+        JSON.stringify(updatedDismissed),
       );
     }
 
@@ -166,7 +152,7 @@ export function useToastNotifications() {
       state.dismissedNotifications,
       state.shownNotifications,
       dismissNotification,
-    ]
+    ],
   );
 
   // Auto-show notifications on app load (for new users or new versions)
@@ -174,7 +160,7 @@ export function useToastNotifications() {
     // Get individual dismissed notifications from localStorage
     const dismissedNotificationsKey = "cultist_dismissed_notifications";
     const dismissedFromStorage = JSON.parse(
-      localStorage.getItem(dismissedNotificationsKey) || "[]"
+      localStorage.getItem(dismissedNotificationsKey) || "[]",
     );
 
     // Prevent multiple triggers in same session
@@ -182,37 +168,37 @@ export function useToastNotifications() {
     if (hasTriggered) return;
 
     // Find all notifications that should be shown
-    const notificationsToShow = AVAILABLE_NOTIFICATIONS.filter(notification =>
-      !dismissedFromStorage.includes(notification.id) &&
-      !state.shownNotifications.has(notification.id) &&
-      notification.version === CURRENT_APP_VERSION
+    const notificationsToShow = AVAILABLE_NOTIFICATIONS.filter(
+      (notification) =>
+        !dismissedFromStorage.includes(notification.id) &&
+        !state.shownNotifications.has(notification.id) &&
+        notification.version === CURRENT_APP_VERSION,
     );
 
     if (notificationsToShow.length === 0) return;
 
     // Show all applicable notifications with staggered timing
     notificationsToShow.forEach((notification, index) => {
-      setTimeout(() => {
-        // Double-check before showing (in case state changed during timeout)
-        const currentDismissed = JSON.parse(
-          localStorage.getItem(dismissedNotificationsKey) || "[]"
-        );
-        if (
-          !currentDismissed.includes(notification.id) &&
-          !state.shownNotifications.has(notification.id)
-        ) {
-          showNotification(notification);
-        }
-      }, 3000 + (index * 1000)); // Stagger by 1 second each
+      setTimeout(
+        () => {
+          // Double-check before showing (in case state changed during timeout)
+          const currentDismissed = JSON.parse(
+            localStorage.getItem(dismissedNotificationsKey) || "[]",
+          );
+          if (
+            !currentDismissed.includes(notification.id) &&
+            !state.shownNotifications.has(notification.id)
+          ) {
+            showNotification(notification);
+          }
+        },
+        3000 + index * 1000,
+      ); // Stagger by 1 second each
     });
 
     // Mark as triggered to prevent future triggers in same session
     sessionStorage.setItem("notification_triggered", "true");
-  }, [
-    state.shownNotifications,
-    showNotification,
-  ]);
-
+  }, [state.shownNotifications, showNotification]);
 
   // Reset all notifications (useful for testing or manual reset)
   const resetNotifications = useCallback(() => {

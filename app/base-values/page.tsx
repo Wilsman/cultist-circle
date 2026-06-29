@@ -949,7 +949,7 @@ export default function ItemsTablePage() {
                 {isRetryingTarkovRequest
                   ? `Tarkov.dev is not responding. Retrying in ${retrySeconds}s... attempt ${requestStatus.attempt} of ${requestStatus.maxAttempts}.`
                   : isCoolingDownTarkovRequest
-                    ? `Tarkov.dev is still unavailable. Using cached data where possible. Try again in ${cooldownSeconds}s.`
+                    ? `Tarkov.dev is unavailable. Using cached data where possible. Try again in ${cooldownSeconds}s.`
                     : "Tarkov.dev item data could not be loaded."}
               </p>
               {(requestStatus.usingStaleData ||
