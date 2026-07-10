@@ -63,7 +63,7 @@ export function PriceRangeFilter({
       const tc = Math.min(1, Math.max(0, t));
       return Math.round(tc * 1000);
     },
-    [normMinMax]
+    [normMinMax],
   );
 
   const fromSlider = useCallback(
@@ -76,7 +76,7 @@ export function PriceRangeFilter({
       const real = Math.round(nv - shift);
       return real;
     },
-    [normMinMax]
+    [normMinMax],
   );
 
   // Keep a separate slider-value in 0..1000 that mirrors localValue
@@ -114,7 +114,7 @@ export function PriceRangeFilter({
       setInputValues([range[0].toString(), range[1].toString()]);
       onChange(range);
     },
-    [fromSlider, onChange]
+    [fromSlider, onChange],
   );
 
   const handleInputChange = useCallback(
@@ -127,20 +127,20 @@ export function PriceRangeFilter({
       if (!isNaN(numValue) && numValue >= min && numValue <= max) {
         const newValue: [number, number] = [...localValue];
         newValue[index] = numValue;
-        
+
         // Ensure min <= max
         if (index === 0 && numValue > newValue[1]) {
           newValue[1] = numValue;
         } else if (index === 1 && numValue < newValue[0]) {
           newValue[0] = numValue;
         }
-        
+
         setLocalValue(newValue);
         setSliderValue([toSlider(newValue[0]), toSlider(newValue[1])]);
         onChange(newValue);
       }
     },
-    [inputValues, localValue, min, max, onChange, toSlider]
+    [inputValues, localValue, min, max, onChange, toSlider],
   );
 
   const handleInputBlur = useCallback(
@@ -153,73 +153,96 @@ export function PriceRangeFilter({
         setInputValues(newInputValues);
       }
     },
-    [inputValues, localValue, min, max]
+    [inputValues, localValue, min, max],
   );
 
   const isAtDefaults = localValue[0] === min && localValue[1] === max;
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">{label}</Label>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Label className="whitespace-nowrap text-xs font-semibold">
+            {label}
+          </Label>
+          <span className="truncate rounded-md bg-primary/10 px-2 py-1 font-mono text-[11px] font-medium tabular-nums text-primary">
+            {formatPrice(localValue[0])} – {formatPrice(localValue[1])} ₽
+          </span>
+        </div>
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={onReset}
           disabled={isAtDefaults}
-          className="h-6 px-2 text-xs"
+          className="h-7 shrink-0 rounded-md px-2 text-[11px]"
           aria-label={t("Reset price range")}
         >
-          <RotateCcw className="h-3 w-3 mr-1" />
+          <RotateCcw className="mr-1 h-3 w-3" />
           {t("Reset")}
         </Button>
       </div>
 
-      {/* Slider */}
-      <div className="px-2">
-        <Slider
-          value={sliderValue}
-          onValueChange={handleSliderChange}
-          min={0}
-          max={1000}
-          step={1}
-          className="w-full"
-          aria-label={`${label} slider`}
-        />
-      </div>
-
-      {/* Range display and inputs */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            value={inputValues[0]}
-            onChange={(e) => handleInputChange(0, e.target.value)}
-            onBlur={() => handleInputBlur(0)}
-            min={min}
-            max={max}
-            className="h-7 w-20 text-xs"
-            placeholder={t("Min")}
-            aria-label={t("Minimum price")}
-          />
-          <span className="text-xs text-muted-foreground">{t("to")}</span>
-          <Input
-            type="number"
-            value={inputValues[1]}
-            onChange={(e) => handleInputChange(1, e.target.value)}
-            onBlur={() => handleInputBlur(1)}
-            min={min}
-            max={max}
-            className="h-7 w-20 text-xs"
-            placeholder={t("Max")}
-            aria-label={t("Maximum price")}
-          />
+      <div className="grid gap-3 sm:grid-cols-[8.5rem_minmax(10rem,1fr)_8.5rem] sm:items-center">
+        <div>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Min
+            </span>
+            <Input
+              type="number"
+              value={inputValues[0]}
+              onChange={(e) => handleInputChange(0, e.target.value)}
+              onBlur={() => handleInputBlur(0)}
+              min={min}
+              max={max}
+              className="h-8 w-full rounded-lg bg-background pl-10 pr-6 font-mono text-xs tabular-nums"
+              placeholder={t("Min")}
+              aria-label={t("Minimum price")}
+            />
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
+              ₽
+            </span>
+          </div>
         </div>
-        
-        {/* Range display */}
-        <div className="text-xs text-muted-foreground font-mono">
-          {formatPrice(localValue[0])} - {formatPrice(localValue[1])}
+        <div className="space-y-1">
+          <Slider
+            value={sliderValue}
+            onValueChange={handleSliderChange}
+            min={0}
+            max={1000}
+            step={1}
+            className="h-6 w-full"
+            trackClassName="h-1.5 bg-muted shadow-inner"
+            rangeClassName="bg-primary"
+            thumbClassName="h-4 w-4 border-2 border-primary bg-background shadow-sm ring-offset-background transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            aria-label={`${label} slider`}
+          />
+          <div className="flex justify-between font-mono text-[9px] text-muted-foreground">
+            <span>{formatPrice(min)}</span>
+            <span>{formatPrice(max)}</span>
+          </div>
+        </div>
+        <div>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Max
+            </span>
+            <Input
+              type="number"
+              value={inputValues[1]}
+              onChange={(e) => handleInputChange(1, e.target.value)}
+              onBlur={() => handleInputBlur(1)}
+              min={min}
+              max={max}
+              className="h-8 w-full rounded-lg bg-background pl-10 pr-6 font-mono text-xs tabular-nums"
+              placeholder={t("Max")}
+              aria-label={t("Maximum price")}
+            />
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
+              ₽
+            </span>
+          </div>
         </div>
       </div>
     </div>

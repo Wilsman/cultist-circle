@@ -52,6 +52,7 @@ interface VirtualizedTableProps {
   ) => void;
   onToggleFavorite?: (itemId: string) => void;
   isFavorite?: (itemId: string) => boolean;
+  stickyHeaderClassName?: string;
 }
 
 export function VirtualizedTable({
@@ -61,6 +62,7 @@ export function VirtualizedTable({
   onHeaderSort,
   onToggleFavorite,
   isFavorite,
+  stickyHeaderClassName,
 }: VirtualizedTableProps) {
   const { t } = useLanguage();
   const [tableHeight, setTableHeight] = useState(0); // Default height, will be updated
@@ -382,54 +384,89 @@ export function VirtualizedTable({
   }
 
   return (
-    <div className="rounded-md border overflow-hidden">
-      <div className="flex border-b">
+    <div className="relative rounded-md border">
+      <div
+        className={cn(
+          "sticky z-10 flex h-11 border-b border-zinc-800 bg-zinc-950 text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-400 shadow-md",
+          stickyHeaderClassName,
+        )}
+      >
         <div
-          className="font-medium p-2 flex-1 min-w-[200px] cursor-pointer hover:bg-muted/30 transition-colors"
+          className="flex min-w-[200px] flex-1 cursor-pointer items-center px-3 text-left text-zinc-200 transition-colors hover:bg-zinc-900"
           onClick={() => onHeaderSort?.("name")}
         >
-          Name {sortKey === "name" && (sortDir === "asc" ? "↑" : "↓")}
+          <span className="whitespace-nowrap">Name</span>
+          {sortKey === "name" && (
+            <span className="ml-1.5 text-primary">
+              {sortDir === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </div>
         <div
-          className="text-right font-semibold p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
+          className="flex w-[120px] cursor-pointer items-center justify-end gap-1 px-3 text-right text-zinc-200 transition-colors hover:bg-zinc-900"
           onClick={() => onHeaderSort?.("basePrice")}
         >
-          Base Value{" "}
-          {sortKey === "basePrice" && (sortDir === "asc" ? "↑" : "↓")}
+          <span className="whitespace-nowrap">Base value</span>
+          {sortKey === "basePrice" && (
+            <span className="text-primary">
+              {sortDir === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </div>
         <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
+          className="flex w-[120px] cursor-pointer items-center justify-end gap-1 px-3 text-right transition-colors hover:bg-zinc-900"
           onClick={() => onHeaderSort?.("lastLowPrice")}
         >
-          Flea Price{" "}
-          {sortKey === "lastLowPrice" && (sortDir === "asc" ? "↑" : "↓")}
+          <span className="whitespace-nowrap">Flea price</span>
+          {sortKey === "lastLowPrice" && (
+            <span className="text-primary">
+              {sortDir === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </div>
         <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
+          className="flex w-[120px] cursor-pointer items-center justify-end gap-1 px-3 text-right transition-colors hover:bg-zinc-900"
           onClick={() => onHeaderSort?.("avg24hPrice")}
         >
-          Avg 24h Price{" "}
-          {sortKey === "avg24hPrice" && (sortDir === "asc" ? "↑" : "↓")}
+          <span className="whitespace-nowrap">24h average</span>
+          {sortKey === "avg24hPrice" && (
+            <span className="text-primary">
+              {sortDir === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </div>
         <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
+          className="flex w-[120px] cursor-pointer items-center justify-end gap-1 px-3 text-right transition-colors hover:bg-zinc-900"
           onClick={() => onHeaderSort?.("traderSellPrice")}
         >
-          Sell-to-trader Price{" "}
-          {sortKey === "traderSellPrice" && (sortDir === "asc" ? "↑" : "↓")}
+          <span className="whitespace-nowrap">Sell to trader</span>
+          {sortKey === "traderSellPrice" && (
+            <span className="text-primary">
+              {sortDir === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </div>
         <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
+          className="flex w-[120px] cursor-pointer items-center justify-end gap-1 px-3 text-right transition-colors hover:bg-zinc-900"
           onClick={() => onHeaderSort?.("traderBuyPrice")}
         >
-          Buy From Traders{" "}
-          {sortKey === "traderBuyPrice" && (sortDir === "asc" ? "↑" : "↓")}
+          <span className="whitespace-nowrap">Buy from trader</span>
+          {sortKey === "traderBuyPrice" && (
+            <span className="text-primary">
+              {sortDir === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </div>
         <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
+          className="flex w-[120px] cursor-pointer items-center justify-end gap-1 px-3 text-right transition-colors hover:bg-zinc-900"
           onClick={() => onHeaderSort?.("buyLimit")}
         >
-          Buy Limit {sortKey === "buyLimit" && (sortDir === "asc" ? "↑" : "↓")}
+          <span className="whitespace-nowrap">Buy limit</span>
+          {sortKey === "buyLimit" && (
+            <span className="text-primary">
+              {sortDir === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </div>
       </div>
       <List
