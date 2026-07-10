@@ -18,6 +18,7 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest",
+    "benchmark:tarkov-api": "bun scripts/benchmark-tarkov-api.mjs",
     "add-recipe": "bun tools/add-recipe.ts"
   },
   "dependencies": {

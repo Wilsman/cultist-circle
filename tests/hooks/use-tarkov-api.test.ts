@@ -11,14 +11,22 @@ const emptyCombinedResponse = {
   data: { pvpItems: [], pveItems: [] },
 };
 
+const originalDataSource = process.env.NEXT_PUBLIC_TARKOV_DATA_SOURCE;
+
 describe("use-tarkov-api GraphQL fetchers", () => {
   beforeEach(() => {
+    process.env.NEXT_PUBLIC_TARKOV_DATA_SOURCE = "graphql";
     resetTarkovApiCachesForTests();
     resetTarkovApiRetryStateForTests();
     vi.restoreAllMocks();
   });
 
   afterEach(() => {
+    if (originalDataSource === undefined) {
+      delete process.env.NEXT_PUBLIC_TARKOV_DATA_SOURCE;
+    } else {
+      process.env.NEXT_PUBLIC_TARKOV_DATA_SOURCE = originalDataSource;
+    }
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -171,16 +179,16 @@ describe("use-tarkov-api GraphQL fetchers", () => {
       json: async () => minimalResponse,
     } as any);
 
-    await fetchMinimalTarkovData("fr");
+    await fetchMinimalTarkovData("regular", "fr");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const init3 = fetchMock.mock.calls[0][1] as any;
     const body1 = JSON.parse(init3.body as string);
     expect(body1.query).toContain("lang: fr");
 
-    await fetchMinimalTarkovData("fr");
+    await fetchMinimalTarkovData("regular", "fr");
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    await fetchMinimalTarkovData("en");
+    await fetchMinimalTarkovData("regular", "en");
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 

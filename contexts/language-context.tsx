@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
 import { DEFAULT_LANGUAGE, formatMessage, getMessage } from "@/config/i18n";
 
@@ -11,9 +17,11 @@ export interface LanguageContextValue {
   t: (key: string, vars?: Record<string, string | number>) => string;
 }
 
-const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextValue | undefined>(
+  undefined,
+);
 
-const SUPPORTED_LANGUAGES: { code: string; label: string }[] = [
+export const SUPPORTED_LANGUAGES: { code: string; label: string }[] = [
   { code: "en", label: "English" },
   { code: "de", label: "Deutsch" },
   { code: "fr", label: "Français" },
@@ -59,21 +67,27 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, [language]);
 
-  const value = useMemo<LanguageContextValue>(() => ({
-    language,
-    setLanguage,
-    supported: SUPPORTED_LANGUAGES,
-    t: (key: string, vars?: Record<string, string | number>) =>
-      formatMessage(getMessage(language, key), vars),
-  }), [language]);
+  const value = useMemo<LanguageContextValue>(
+    () => ({
+      language,
+      setLanguage,
+      supported: SUPPORTED_LANGUAGES,
+      t: (key: string, vars?: Record<string, string | number>) =>
+        formatMessage(getMessage(language, key), vars),
+    }),
+    [language],
+  );
 
   return (
-    <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
+    <LanguageContext.Provider value={value}>
+      {children}
+    </LanguageContext.Provider>
   );
 }
 
 export function useLanguage(): LanguageContextValue {
   const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error("useLanguage must be used within a LanguageProvider");
+  if (!ctx)
+    throw new Error("useLanguage must be used within a LanguageProvider");
   return ctx;
 }
