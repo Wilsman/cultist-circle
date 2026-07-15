@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LanguageProvider } from "@/contexts/language-context";
@@ -106,7 +106,7 @@ describe("Tarkov request status UI", () => {
   it("shows Base Values outage status instead of silently rendering empty data", async () => {
     const ItemsTablePage = (await import("@/app/base-values/page")).default;
     fetchMinimalTarkovDataMock.mockImplementation(
-      (_language: string, options?: any) => {
+      (_gameMode: string, _language: string, options?: any) => {
         options?.onStatus?.({
           phase: "cooldown",
           attempt: 3,
@@ -128,5 +128,32 @@ describe("Tarkov request status UI", () => {
         screen.getByText(/Tarkov\.dev is unavailable/i),
       ).toBeInTheDocument();
     });
+  });
+
+  it("loads Base Values data one game mode at a time", async () => {
+    const ItemsTablePage = (await import("@/app/base-values/page")).default;
+    fetchMinimalTarkovDataMock.mockResolvedValue([]);
+
+    renderWithLanguage(<ItemsTablePage />);
+
+    await waitFor(() => {
+      expect(fetchMinimalTarkovDataMock).toHaveBeenCalledWith(
+        "regular",
+        "en",
+        expect.any(Object),
+      );
+    });
+    expect(fetchMinimalTarkovDataMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "PVE" }));
+
+    await waitFor(() => {
+      expect(fetchMinimalTarkovDataMock).toHaveBeenCalledWith(
+        "pve",
+        "en",
+        expect.any(Object),
+      );
+    });
+    expect(fetchMinimalTarkovDataMock).toHaveBeenCalledTimes(2);
   });
 });

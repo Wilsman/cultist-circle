@@ -140,7 +140,14 @@ export default function ItemsTablePage() {
 
   const [pvp, setPvp] = useState<MinimalItem[]>([]);
   const [pve, setPve] = useState<MinimalItem[]>([]);
-  const hasLoadedItemsRef = useRef(false);
+  const itemsByModeRef = useRef<{ pvp: MinimalItem[]; pve: MinimalItem[] }>({
+    pvp: [],
+    pve: [],
+  });
+  const loadedLanguageByModeRef = useRef<{
+    pvp: string | null;
+    pve: string | null;
+  }>({ pvp: null, pve: null });
   const [mode, setMode] = useState<"pvp" | "pve">("pvp");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -214,27 +221,43 @@ export default function ItemsTablePage() {
 
   useEffect(() => {
     let isMounted = true;
+    const gameMode = mode === "pve" ? "pve" : "regular";
+    const staleItems = itemsByModeRef.current[mode];
 
-    fetchMinimalTarkovData(language, {
-      usingStaleData: hasLoadedItemsRef.current,
+    if (loadedLanguageByModeRef.current[mode] === language) {
+      setIsLoading(false);
+      setLoadError(null);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setIsLoading(staleItems.length === 0);
+    setLoadError(null);
+
+    fetchMinimalTarkovData(gameMode, language, {
+      usingStaleData: staleItems.length > 0,
       onStatus: (status) => {
         if (isMounted) {
           setRequestStatus(status);
         }
       },
     })
-      .then((data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }) => {
+      .then((items: MinimalItem[]) => {
         if (isMounted) {
-          setPvp(data.pvpItems || []);
-          setPve(data.pveItems || []);
-          hasLoadedItemsRef.current = true;
+          itemsByModeRef.current[mode] = items;
+          loadedLanguageByModeRef.current[mode] = language;
+          if (mode === "pvp") {
+            setPvp(items);
+          } else {
+            setPve(items);
+          }
           setLoadError(null);
-          // Default to PVP min/max
           setFilter((f) => ({
             ...f,
-            basePrice: getMinMax(data.pvpItems || [], "basePrice"),
-            lastLowPrice: getMinMax(data.pvpItems || [], "lastLowPrice"),
-            avg24hPrice: getMinMax(data.pvpItems || [], "avg24hPrice"),
+            basePrice: getMinMax(items, "basePrice"),
+            lastLowPrice: getMinMax(items, "lastLowPrice"),
+            avg24hPrice: getMinMax(items, "avg24hPrice"),
           }));
           setIsLoading(false);
         }
@@ -248,7 +271,7 @@ export default function ItemsTablePage() {
     return () => {
       isMounted = false;
     };
-  }, [language]);
+  }, [language, mode]);
 
   useEffect(() => {
     if (!requestStatus.nextRetryAt && !requestStatus.cooldownUntil) {

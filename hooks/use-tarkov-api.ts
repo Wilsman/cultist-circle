@@ -2,11 +2,15 @@ import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { GraphQLResponse, TarkovItem } from "@/types/GraphQLResponse";
 
 const DEFAULT_GRAPHQL_API_URL = "https://api.tarkov.dev/graphql";
+const DEFAULT_JSON_API_URL = "https://json.tarkov.dev";
 
 const GRAPHQL_API_URL =
   typeof window !== "undefined"
     ? (process.env.NEXT_PUBLIC_TARKOV_GRAPHQL_URL ?? DEFAULT_GRAPHQL_API_URL)
     : (process.env.TARKOV_GRAPHQL_URL ?? DEFAULT_GRAPHQL_API_URL);
+
+const JSON_API_URL =
+  process.env.NEXT_PUBLIC_TARKOV_JSON_URL ?? DEFAULT_JSON_API_URL;
 
 const TARKOV_API_COOLDOWN_KEY = "tarkov-dev-api-cooldown-until";
 const REQUEST_TIMEOUT_MS = 15000;
@@ -161,8 +165,8 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
 }
 
-async function fetchTarkovGraphQL<T>(
-  query: string,
+async function runTarkovRequestWithRetry<T>(
+  request: (signal: AbortSignal) => Promise<T>,
   options: TarkovRequestOptions = {},
 ): Promise<T> {
   const usingStaleData = options.usingStaleData ?? false;
@@ -201,31 +205,7 @@ async function fetchTarkovGraphQL<T>(
     );
 
     try {
-      const response = await fetch(GRAPHQL_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ query }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const retryAfterMs = parseRetryAfterMs(
-          response.headers.get("Retry-After"),
-        );
-        throw new TarkovApiError(
-          `Tarkov.dev API request failed with status ${response.status}`,
-          {
-            status: response.status,
-            transient: RETRYABLE_STATUS_CODES.has(response.status),
-            retryAfterMs,
-          },
-        );
-      }
-
-      const result = (await response.json()) as T;
+      const result = await request(controller.signal);
       clearCooldown();
       options.onStatus?.({
         phase: "success",
@@ -281,6 +261,314 @@ async function fetchTarkovGraphQL<T>(
   throw lastError;
 }
 
+async function fetchTarkovGraphQL<T>(
+  query: string,
+  options: TarkovRequestOptions = {},
+): Promise<T> {
+  return runTarkovRequestWithRetry(async (signal) => {
+    const response = await fetch(GRAPHQL_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ query }),
+      signal,
+    });
+
+    if (!response.ok) {
+      const retryAfterMs = parseRetryAfterMs(
+        response.headers.get("Retry-After"),
+      );
+      throw new TarkovApiError(
+        `Tarkov.dev API request failed with status ${response.status}`,
+        {
+          status: response.status,
+          transient: RETRYABLE_STATUS_CODES.has(response.status),
+          retryAfterMs,
+        },
+      );
+    }
+
+    return (await response.json()) as T;
+  }, options);
+}
+
+interface TarkovJsonEnvelope<T> {
+  data: T;
+  translations?: string[];
+}
+
+interface TarkovJsonCategory {
+  id: string;
+  name: string;
+}
+
+interface TarkovJsonTrader {
+  id: string;
+  normalizedName: string;
+}
+
+interface TarkovJsonTraderOffer {
+  trader: string;
+  priceRUB: number;
+  minTraderLevel?: number;
+  buyLimit?: number;
+}
+
+interface TarkovJsonItem {
+  id: string;
+  name: string;
+  shortName: string;
+  basePrice: number;
+  lastLowPrice: number | null;
+  avg24hPrice: number | null;
+  updated?: string;
+  width?: number;
+  height?: number;
+  lastOfferCount?: number | null;
+  iconLink?: string;
+  link?: string;
+  categories?: string[];
+  buyFromTrader?: TarkovJsonTraderOffer[];
+  sellToTrader?: TarkovJsonTraderOffer[];
+}
+
+interface TarkovJsonItemsData {
+  items: Record<string, TarkovJsonItem>;
+  itemCategories: Record<string, TarkovJsonCategory>;
+}
+
+type TarkovJsonTranslations = Record<string, string>;
+type TarkovJsonTraders = Record<string, TarkovJsonTrader>;
+
+interface TarkovJsonBundle {
+  items: TarkovJsonEnvelope<TarkovJsonItemsData>;
+  primaryTranslations: TarkovJsonTranslations;
+  englishTranslations: TarkovJsonTranslations;
+  traders: TarkovJsonTraders;
+}
+
+interface JsonResourceCacheEntry {
+  data: unknown;
+  time: number;
+}
+
+const jsonResourceCache = new Map<string, JsonResourceCacheEntry>();
+const jsonResourceInFlight = new Map<string, Promise<unknown>>();
+
+function getDataSource(): "json" | "graphql" {
+  return process.env.NEXT_PUBLIC_TARKOV_DATA_SOURCE === "graphql"
+    ? "graphql"
+    : "json";
+}
+
+async function fetchJsonResource<T>(
+  path: string,
+  signal: AbortSignal,
+): Promise<T> {
+  const cached = jsonResourceCache.get(path);
+  if (cached && Date.now() - cached.time < CACHE_TTL) {
+    return cached.data as T;
+  }
+
+  const existing = jsonResourceInFlight.get(path);
+  if (existing) {
+    return (await existing) as T;
+  }
+
+  const promise = (async () => {
+    const response = await fetch(`${JSON_API_URL}/${path}`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-cache",
+      signal,
+    });
+
+    if (!response.ok) {
+      const retryAfterMs = parseRetryAfterMs(
+        response.headers.get("Retry-After"),
+      );
+      throw new TarkovApiError(
+        `Tarkov.dev JSON request failed with status ${response.status} (${path})`,
+        {
+          status: response.status,
+          transient: RETRYABLE_STATUS_CODES.has(response.status),
+          retryAfterMs,
+        },
+      );
+    }
+
+    const data = (await response.json()) as T;
+    jsonResourceCache.set(path, { data, time: Date.now() });
+    return data;
+  })();
+
+  jsonResourceInFlight.set(path, promise);
+  try {
+    return await promise;
+  } finally {
+    jsonResourceInFlight.delete(path);
+  }
+}
+
+async function fetchTarkovJsonBundle(
+  gameMode: "pve" | "regular",
+  language: string,
+  options: TarkovRequestOptions,
+): Promise<TarkovJsonBundle> {
+  return runTarkovRequestWithRetry(async (signal) => {
+    const basePath = `${gameMode}/items`;
+    const primaryPromise =
+      language === "en"
+        ? Promise.resolve(undefined)
+        : fetchJsonResource<TarkovJsonEnvelope<TarkovJsonTranslations>>(
+            `${basePath}_${language}`,
+            signal,
+          ).catch((error) => {
+            console.warn(
+              `Tarkov.dev JSON translation ${language} unavailable; using English`,
+              error,
+            );
+            return undefined;
+          });
+
+    const [items, english, traders, primary] = await Promise.all([
+      fetchJsonResource<TarkovJsonEnvelope<TarkovJsonItemsData>>(
+        basePath,
+        signal,
+      ),
+      fetchJsonResource<TarkovJsonEnvelope<TarkovJsonTranslations>>(
+        `${basePath}_en`,
+        signal,
+      ),
+      fetchJsonResource<TarkovJsonEnvelope<TarkovJsonTraders>>(
+        `${gameMode}/traders`,
+        signal,
+      ),
+      primaryPromise,
+    ]);
+
+    return {
+      items,
+      primaryTranslations: primary?.data ?? english.data,
+      englishTranslations: english.data,
+      traders: traders.data,
+    };
+  }, options);
+}
+
+function translateJsonValue(
+  key: string,
+  primary: TarkovJsonTranslations,
+  english: TarkovJsonTranslations,
+): string {
+  return primary[key] ?? english[key] ?? key;
+}
+
+function mapJsonCategories(
+  item: TarkovJsonItem,
+  bundle: TarkovJsonBundle,
+): Array<{ id: string; name: string }> {
+  return (item.categories ?? []).map((categoryId) => {
+    const category = bundle.items.data.itemCategories[categoryId];
+    const nameKey = category?.name ?? categoryId;
+    return {
+      id: categoryId,
+      name: translateJsonValue(
+        nameKey,
+        bundle.primaryTranslations,
+        bundle.englishTranslations,
+      ),
+    };
+  });
+}
+
+function getJsonTraderName(
+  traderId: string,
+  traders: TarkovJsonTraders,
+): string {
+  return traders[traderId]?.normalizedName ?? traderId;
+}
+
+function mapJsonSimplifiedItem(
+  item: TarkovJsonItem,
+  bundle: TarkovJsonBundle,
+): SimplifiedItem {
+  const categories = mapJsonCategories(item, bundle);
+  return {
+    id: item.id,
+    name: translateJsonValue(
+      item.name,
+      bundle.primaryTranslations,
+      bundle.englishTranslations,
+    ),
+    shortName: translateJsonValue(
+      item.shortName,
+      bundle.primaryTranslations,
+      bundle.englishTranslations,
+    ),
+    basePrice: item.basePrice,
+    lastLowPrice: item.lastLowPrice ?? undefined,
+    avg24hPrice: item.avg24hPrice ?? undefined,
+    updated: item.updated,
+    width: item.width,
+    height: item.height,
+    lastOfferCount: item.lastOfferCount ?? undefined,
+    iconLink: item.iconLink,
+    link: item.link,
+    categories: categories.map((category) => category.id),
+    categories_display: categories,
+    buyFor: (item.buyFromTrader ?? []).map((offer) => ({
+      priceRUB: offer.priceRUB,
+      vendor: {
+        normalizedName: getJsonTraderName(offer.trader, bundle.traders),
+        minTraderLevel: offer.minTraderLevel,
+      },
+    })),
+    tags: [],
+    isExcluded: false,
+  };
+}
+
+function mapJsonMinimalItem(
+  item: TarkovJsonItem,
+  bundle: TarkovJsonBundle,
+): MinimalItem {
+  return {
+    id: item.id,
+    name: translateJsonValue(
+      item.name,
+      bundle.primaryTranslations,
+      bundle.englishTranslations,
+    ),
+    shortName: translateJsonValue(
+      item.shortName,
+      bundle.primaryTranslations,
+      bundle.englishTranslations,
+    ),
+    basePrice: item.basePrice,
+    lastLowPrice: item.lastLowPrice,
+    avg24hPrice: item.avg24hPrice,
+    categories: mapJsonCategories(item, bundle).map(({ name }) => ({ name })),
+    link: item.link ?? "",
+    sellFor: (item.sellToTrader ?? []).map((offer) => ({
+      priceRUB: offer.priceRUB,
+      vendor: {
+        normalizedName: getJsonTraderName(offer.trader, bundle.traders),
+      },
+    })),
+    buyFor: (item.buyFromTrader ?? []).map((offer) => ({
+      priceRUB: offer.priceRUB,
+      vendor: {
+        normalizedName: getJsonTraderName(offer.trader, bundle.traders),
+        minTraderLevel: offer.minTraderLevel,
+        buyLimit: offer.buyLimit,
+      },
+    })),
+  };
+}
+
 // Define a type for the combined data response
 interface CombinedTarkovData {
   pvp: SimplifiedItem[];
@@ -308,9 +596,33 @@ const minimalDataCacheByLang: Map<
   { data: { pvpItems: MinimalItem[]; pveItems: MinimalItem[] }; time: number }
 > = new Map();
 
+type TarkovDataResult = {
+  items: SimplifiedItem[];
+  meta: {
+    totalItems: number;
+    validItems: number;
+    processTime: number;
+    categories: number;
+    mode: string;
+  };
+};
+
+const jsonSimplifiedDataCache = new Map<
+  string,
+  { data: TarkovDataResult; time: number }
+>();
+const jsonMinimalDataCache = new Map<
+  string,
+  { data: MinimalItem[]; time: number }
+>();
+
 export function resetTarkovApiCachesForTests() {
   combinedDataCacheByLang.clear();
   minimalDataCacheByLang.clear();
+  jsonResourceCache.clear();
+  jsonResourceInFlight.clear();
+  jsonSimplifiedDataCache.clear();
+  jsonMinimalDataCache.clear();
   clearCooldown();
 }
 
@@ -502,20 +814,11 @@ export async function fetchCombinedTarkovData(
  * @param gameMode 'pve' or 'regular' (pvp)
  * @returns Promise with transformed items in SimplifiedItem format
  */
-export async function fetchTarkovData(
+async function fetchTarkovDataFromGraphQL(
   gameMode: "pve" | "regular",
   language: string = "en",
   options: TarkovRequestOptions = {},
-): Promise<{
-  items: SimplifiedItem[];
-  meta: {
-    totalItems: number;
-    validItems: number;
-    processTime: number;
-    categories: number;
-    mode: string;
-  };
-}> {
+): Promise<TarkovDataResult> {
   try {
     // Use the combined data fetcher and extract the relevant mode's data
     const combinedData = await fetchCombinedTarkovData(language, options);
@@ -542,6 +845,60 @@ export async function fetchTarkovData(
   } catch (error) {
     console.error(`Error fetching Tarkov data (${gameMode}):`, error);
     throw error;
+  }
+}
+
+async function fetchTarkovDataFromJson(
+  gameMode: "pve" | "regular",
+  language: string,
+  options: TarkovRequestOptions,
+): Promise<TarkovDataResult> {
+  const cacheKey = `${gameMode}:${language}`;
+  const cached = jsonSimplifiedDataCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < CACHE_TTL) {
+    return cached.data;
+  }
+
+  const startTime = Date.now();
+  const bundle = await fetchTarkovJsonBundle(gameMode, language, options);
+  const items = Object.values(bundle.items.data.items).map((item) =>
+    mapJsonSimplifiedItem(item, bundle),
+  );
+  const categoryCount = new Set(items.flatMap((item) => item.categories ?? []))
+    .size;
+  const result: TarkovDataResult = {
+    items,
+    meta: {
+      totalItems: items.length,
+      validItems: items.length,
+      processTime: Date.now() - startTime,
+      categories: categoryCount,
+      mode: gameMode === "pve" ? "pve" : "pvp",
+    },
+  };
+
+  jsonSimplifiedDataCache.set(cacheKey, { data: result, time: Date.now() });
+  return result;
+}
+
+export async function fetchTarkovData(
+  gameMode: "pve" | "regular",
+  language: string = "en",
+  options: TarkovRequestOptions = {},
+): Promise<TarkovDataResult> {
+  if (getDataSource() === "graphql") {
+    return fetchTarkovDataFromGraphQL(gameMode, language, options);
+  }
+
+  try {
+    return await fetchTarkovDataFromJson(gameMode, language, options);
+  } catch (jsonError) {
+    console.warn(
+      `Tarkov.dev JSON fetch failed for ${gameMode}/${language}; falling back to GraphQL`,
+      jsonError,
+    );
+    clearCooldown();
+    return fetchTarkovDataFromGraphQL(gameMode, language, options);
   }
 }
 
@@ -580,7 +937,7 @@ interface FetchMinimalTarkovGraphQLResponse {
   errors?: Array<{ message: string }>;
 }
 
-export async function fetchMinimalTarkovData(
+async function fetchMinimalTarkovDataFromGraphQL(
   language: string = "en",
   options: TarkovRequestOptions = {},
 ): Promise<{ pvpItems: MinimalItem[]; pveItems: MinimalItem[] }> {
@@ -699,5 +1056,47 @@ export async function fetchMinimalTarkovData(
   } catch (error) {
     console.error("❌ Failed to fetch minimal Tarkov data:", error);
     throw error;
+  }
+}
+
+async function fetchMinimalTarkovDataFromJson(
+  gameMode: "pve" | "regular",
+  language: string,
+  options: TarkovRequestOptions,
+): Promise<MinimalItem[]> {
+  const cacheKey = `${gameMode}:${language}`;
+  const cached = jsonMinimalDataCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < CACHE_TTL) {
+    return cached.data;
+  }
+
+  const bundle = await fetchTarkovJsonBundle(gameMode, language, options);
+  const items = Object.values(bundle.items.data.items).map((item) =>
+    mapJsonMinimalItem(item, bundle),
+  );
+  jsonMinimalDataCache.set(cacheKey, { data: items, time: Date.now() });
+  return items;
+}
+
+export async function fetchMinimalTarkovData(
+  gameMode: "pve" | "regular",
+  language: string = "en",
+  options: TarkovRequestOptions = {},
+): Promise<MinimalItem[]> {
+  if (getDataSource() === "graphql") {
+    const combined = await fetchMinimalTarkovDataFromGraphQL(language, options);
+    return gameMode === "pve" ? combined.pveItems : combined.pvpItems;
+  }
+
+  try {
+    return await fetchMinimalTarkovDataFromJson(gameMode, language, options);
+  } catch (jsonError) {
+    console.warn(
+      `Tarkov.dev JSON minimal fetch failed for ${gameMode}/${language}; falling back to GraphQL`,
+      jsonError,
+    );
+    clearCooldown();
+    const combined = await fetchMinimalTarkovDataFromGraphQL(language, options);
+    return gameMode === "pve" ? combined.pveItems : combined.pvpItems;
   }
 }
