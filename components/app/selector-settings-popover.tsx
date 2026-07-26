@@ -229,9 +229,9 @@ export function SelectorSettingsPopover({
       <PopoverContent
         align="end"
         sideOffset={10}
-        className="w-[340px] border-slate-700 bg-[#12161d]/95 p-0 text-slate-100 shadow-2xl backdrop-blur-md"
+        className="max-h-[min(70vh,var(--radix-popover-content-available-height))] w-[340px] overflow-y-auto border-slate-700 bg-[#12161d]/95 p-0 text-slate-100 shadow-2xl backdrop-blur-md"
       >
-        <div className="max-h-[70vh] overflow-y-auto p-3">
+        <div className="p-3">
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
             {t("Settings")}
           </p>

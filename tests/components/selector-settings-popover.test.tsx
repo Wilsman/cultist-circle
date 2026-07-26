@@ -79,6 +79,15 @@ function renderPopover(
 }
 
 describe("SelectorSettingsPopover search filters", () => {
+  it("uses the collision-available height for viewport-safe scrolling", () => {
+    renderPopover();
+
+    expect(screen.getByRole("dialog")).toHaveClass(
+      "max-h-[min(70vh,var(--radix-popover-content-available-height))]",
+      "overflow-y-auto",
+    );
+  });
+
   it("provides a searchable stable-ID category picker", () => {
     const props = renderPopover();
 
