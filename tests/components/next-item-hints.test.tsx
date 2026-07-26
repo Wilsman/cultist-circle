@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 
 import NextItemHints from "@/components/next-item-hints";
@@ -34,7 +34,7 @@ describe("NextItemHints", () => {
     74000,
   );
 
-  it("explains the recommendation hierarchy and base values", () => {
+  it("starts collapsed and reveals the recommendation hierarchy on demand", async () => {
     render(
       <LanguageProvider>
         <NextItemHints
@@ -49,10 +49,32 @@ describe("NextItemHints", () => {
         name: "Recommended items for this slot",
       }),
     ).toBeInTheDocument();
+    const expandButton = screen.getByRole("button", {
+      name: "Show recommended items for this slot",
+    });
+    expect(expandButton).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Recommended")).not.toBeInTheDocument();
+
+    fireEvent.click(expandButton);
+
+    expect(
+      screen.getByRole("button", {
+        name: "Hide recommended items for this slot",
+      }),
+    ).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Recommended")).toBeInTheDocument();
     expect(screen.getByText("Alternative 1")).toBeInTheDocument();
     expect(screen.getByText("Base value ₽77,500")).toBeInTheDocument();
     expect(screen.getByText("Base value ₽74,000")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Hide recommended items for this slot",
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.queryByText("Recommended")).not.toBeInTheDocument();
+    });
   });
 
   it("adds a suggested item from the attached recommendation drawer", () => {
@@ -64,6 +86,11 @@ describe("NextItemHints", () => {
       </LanguageProvider>,
     );
 
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Show recommended items for this slot",
+      }),
+    );
     fireEvent.click(
       screen.getByRole("button", {
         name: "Add recommended item SP-8 Survival Machete, base value ₽77,500",
