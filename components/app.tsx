@@ -24,6 +24,7 @@ import {
   DEFAULT_EXCLUDED_CATEGORY_IDS,
   CATEGORY_BY_ID,
   CATEGORY_ID_BY_NAME,
+  getCategoryDisplayName,
   LEGACY_DEFAULT_EXCLUDED_CATEGORY_IDS_WITH_FLYER,
   type ItemCategory,
 } from "@/config/item-categories";
@@ -78,6 +79,10 @@ import {
   restoreSelectedItemsFromIds,
   SELECTED_ITEM_IDS_STORAGE_KEY,
 } from "@/lib/persisted-selected-items";
+import {
+  ALL_CATEGORIES_FILTER,
+  type SelectorTraderFilter,
+} from "@/lib/item-selector-filters";
 interface AppProps {
   contributors?: GitHubContributor[];
 }
@@ -181,6 +186,11 @@ function AppContent({ contributors = [] }: AppProps) {
     }
     return DEFAULT_TRADER_LEVELS;
   });
+  const [selectorCategoryFilter, setSelectorCategoryFilter] = useState<string>(
+    ALL_CATEGORIES_FILTER,
+  );
+  const [selectorTraderFilter, setSelectorTraderFilter] =
+    useState<SelectorTraderFilter>("any");
   const [useLastOfferCountFilter, setUseLastOfferCountFilter] =
     useState<boolean>(() => {
       if (typeof window !== "undefined") {
@@ -328,6 +338,18 @@ function AppContent({ contributors = [] }: AppProps) {
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [rawItemsData]);
+  const selectorCategoryFilterLabel = useMemo(() => {
+    if (selectorCategoryFilter === ALL_CATEGORIES_FILTER) {
+      return t("All categories");
+    }
+    return getCategoryDisplayName(
+      allCategoriesLocalized.find(
+        (category) => category.id === selectorCategoryFilter,
+      )?.name ??
+        CATEGORY_BY_ID.get(selectorCategoryFilter)?.name ??
+        t("Selected category"),
+    );
+  }, [allCategoriesLocalized, selectorCategoryFilter, t]);
 
   // Save isPVE state to localStorage when it changes
   useEffect(() => {
@@ -735,6 +757,7 @@ function AppContent({ contributors = [] }: AppProps) {
     if (loading || !rawItemsData) {
       return {
         items: [] as SimplifiedItem[],
+        manualDiscoveryItems: [] as SimplifiedItem[],
         fleaLevelFilteredCount: 0,
         lowOfferCountFilteredCount: 0,
         incompatibleFilteredCount: 0,
@@ -745,6 +768,7 @@ function AppContent({ contributors = [] }: AppProps) {
       console.error("rawItemsData is not an array:", rawItemsData);
       return {
         items: [] as SimplifiedItem[],
+        manualDiscoveryItems: [] as SimplifiedItem[],
         fleaLevelFilteredCount: 0,
         lowOfferCountFilteredCount: 0,
         incompatibleFilteredCount: 0,
@@ -764,52 +788,61 @@ function AppContent({ contributors = [] }: AppProps) {
       return !ids.some((id) => excludedCategories.has(id));
     });
 
-    // Then filter by player level (flea market access)
-    const levelFiltered = useLevelFilter
-      ? categoryFiltered.filter((item: SimplifiedItem) => {
-          // First check individual item requirements (takes priority)
-          const itemNames = [
-            item.englishName,
-            item.name,
-            item.englishShortName,
-            item.shortName,
-          ].filter(Boolean) as string[];
+    const filterByPlayerLevel = (candidateItems: SimplifiedItem[]) =>
+      useLevelFilter
+        ? candidateItems.filter((item: SimplifiedItem) => {
+            // First check individual item requirements (takes priority)
+            const itemNames = [
+              item.englishName,
+              item.name,
+              item.englishShortName,
+              item.shortName,
+            ].filter(Boolean) as string[];
 
-          for (const name of itemNames) {
-            const itemReq = getItemLevelRequirement(name);
-            if (itemReq !== undefined) {
-              // Item has a specific level requirement
-              return playerLevel >= itemReq;
+            for (const name of itemNames) {
+              const itemReq = getItemLevelRequirement(name);
+              if (itemReq !== undefined) {
+                // Item has a specific level requirement
+                return playerLevel >= itemReq;
+              }
             }
-          }
 
-          // Fall back to category-level filtering
-          const ids =
-            item.categories && item.categories.length > 0
-              ? item.categories
-              : (item.categories_display_en ?? [])
-                  .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
-                  .filter((x): x is string => Boolean(x));
-          // Get categories that are inaccessible at current level
-          const inaccessibleCategories =
-            getInaccessibleCategoriesAtLevel(playerLevel);
-          // Item passes if none of its categories are inaccessible
-          return !ids.some((id) => inaccessibleCategories.includes(id));
-        })
-      : categoryFiltered;
+            // Fall back to category-level filtering
+            const ids =
+              item.categories && item.categories.length > 0
+                ? item.categories
+                : (item.categories_display_en ?? [])
+                    .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
+                    .filter((x): x is string => Boolean(x));
+            // Get categories that are inaccessible at current level
+            const inaccessibleCategories =
+              getInaccessibleCategoriesAtLevel(playerLevel);
+            // Item passes if none of its categories are inaccessible
+            return !ids.some((id) => inaccessibleCategories.includes(id));
+          })
+        : candidateItems;
+
+    // The default pool applies category exclusions. The manual discovery pool
+    // deliberately bypasses only category exclusions so users can find guns
+    // and components without changing Auto Select's candidate list.
+    const levelFiltered = filterByPlayerLevel(categoryFiltered);
+    const manualLevelFiltered = filterByPlayerLevel(rawItemsData);
     const fleaLevelFilteredCount =
       useLevelFilter && !ignoreFilters
         ? categoryFiltered.length - levelFiltered.length
         : 0;
 
-    const lowOfferFiltered =
+    const filterByOfferCount = (candidateItems: SimplifiedItem[]) =>
       priceMode === "flea" && useLastOfferCountFilter && !ignoreFilters
-        ? levelFiltered.filter(
+        ? candidateItems.filter(
             (item: SimplifiedItem) =>
               typeof item.lastOfferCount !== "number" ||
-              item.lastOfferCount >= LOW_OFFER_COUNT_THRESHOLD,
+              item.lastOfferCount >= LOW_OFFER_COUNT_THRESHOLD
           )
-        : levelFiltered;
+        : candidateItems;
+
+    const lowOfferFiltered = filterByOfferCount(levelFiltered);
+    const manualLowOfferFiltered = filterByOfferCount(manualLevelFiltered);
     const lowOfferCountFilteredCount =
       priceMode === "flea" && useLastOfferCountFilter && !ignoreFilters
         ? levelFiltered.length - lowOfferFiltered.length
@@ -817,54 +850,58 @@ function AppContent({ contributors = [] }: AppProps) {
 
     // Then filter out individually excluded items (case-insensitive, language-agnostic)
     const excludedItemNames = new Set(
-      Array.from(excludedItems, (name) => name.toLowerCase()),
+      Array.from(excludedItems, (name) => name.toLowerCase())
     );
-    const excludedFiltered = excludeIncompatible
-      ? lowOfferFiltered.filter((item: SimplifiedItem) => {
-          if (ignoreFilters) return true; // Bypass individual exclusions
-          const candidates = [
-            item.name,
-            item.shortName,
-            item.englishName,
-            item.englishShortName,
-          ].filter(Boolean) as string[];
-          return !candidates.some((n) =>
-            excludedItemNames.has(n.toLowerCase()),
-          );
-        })
-      : lowOfferFiltered;
+    const filterExcludedItems = (candidateItems: SimplifiedItem[]) =>
+      excludeIncompatible
+        ? candidateItems.filter((item: SimplifiedItem) => {
+            if (ignoreFilters) return true; // Bypass individual exclusions
+            const candidates = [
+              item.name,
+              item.shortName,
+              item.englishName,
+              item.englishShortName,
+            ].filter(Boolean) as string[];
+            return !candidates.some((n) =>
+              excludedItemNames.has(n.toLowerCase())
+            );
+          })
+        : candidateItems;
+
+    const excludedFiltered = filterExcludedItems(lowOfferFiltered);
+    const manualExcludedFiltered = filterExcludedItems(manualLowOfferFiltered);
     const incompatibleFilteredCount =
       excludeIncompatible && !ignoreFilters
         ? lowOfferFiltered.length - excludedFiltered.length
         : 0;
 
-    // Sorting logic...
-    const sortedItems = [...excludedFiltered];
-    if (sortOption === "az") {
-      sortedItems.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortOption === "base-value") {
-      sortedItems.sort((a, b) => a.basePrice - b.basePrice);
-    } else if (sortOption === "base-value-desc") {
-      sortedItems.sort((a, b) => b.basePrice - a.basePrice);
-    } else if (sortOption === "most-recent") {
-      // Sort by updated time in descending order (updated is a timestamp so calc timestamp - updated) use datetime.strptime
-      sortedItems.sort((a, b) => {
-        const dateA = a.updated ? new Date(a.updated) : new Date(0);
-        const dateB = b.updated ? new Date(b.updated) : new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      });
-    } else if (sortOption === "ratio") {
-      sortedItems.sort((a, b) => {
-        // Skip items without lastLowPrice in sorting (push them to the end)
-        if (!b.lastLowPrice) return -1;
-        if (!a.lastLowPrice) return 1;
-        // Sort by highest base value to lowest market price ratio
-        return b.basePrice / b.lastLowPrice - a.basePrice / a.lastLowPrice;
-      });
-    }
+    const sortSelectorItems = (candidateItems: SimplifiedItem[]) => {
+      const sortedItems = [...candidateItems];
+      if (sortOption === "az") {
+        sortedItems.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (sortOption === "base-value") {
+        sortedItems.sort((a, b) => a.basePrice - b.basePrice);
+      } else if (sortOption === "base-value-desc") {
+        sortedItems.sort((a, b) => b.basePrice - a.basePrice);
+      } else if (sortOption === "most-recent") {
+        sortedItems.sort((a, b) => {
+          const dateA = a.updated ? new Date(a.updated) : new Date(0);
+          const dateB = b.updated ? new Date(b.updated) : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+        });
+      } else if (sortOption === "ratio") {
+        sortedItems.sort((a, b) => {
+          if (!b.lastLowPrice) return -1;
+          if (!a.lastLowPrice) return 1;
+          return b.basePrice / b.lastLowPrice - a.basePrice / a.lastLowPrice;
+        });
+      }
+      return sortedItems;
+    };
 
     return {
-      items: sortedItems,
+      items: sortSelectorItems(excludedFiltered),
+      manualDiscoveryItems: sortSelectorItems(manualExcludedFiltered),
       fleaLevelFilteredCount,
       lowOfferCountFilteredCount,
       incompatibleFilteredCount,
@@ -883,6 +920,7 @@ function AppContent({ contributors = [] }: AppProps) {
     useLastOfferCountFilter,
   ]);
   const items = selectorFilterState.items;
+  const manualDiscoveryItems = selectorFilterState.manualDiscoveryItems;
   const fleaLevelFilteredCount = selectorFilterState.fleaLevelFilteredCount;
   const lowOfferCountFilteredCount =
     selectorFilterState.lowOfferCountFilteredCount;
@@ -1210,6 +1248,18 @@ function AppContent({ contributors = [] }: AppProps) {
       return out;
     });
   }, [items, selectedItems, threshold, itemBonus, getEffectivePrice]);
+
+  const shouldShowNextItemHints = (
+    slotItem: SimplifiedItem | null,
+    index: number,
+  ) =>
+    Boolean(
+      showHintPills &&
+        !slotItem &&
+        nextItemSuggestions[index] &&
+        nextItemSuggestions[index].length > 0 &&
+        index === selectedItems.findIndex((item) => !item),
+    );
 
   // Handler to update selected item
   const handleItemSelect = useCallback(
@@ -1996,6 +2046,11 @@ function AppContent({ contributors = [] }: AppProps) {
                     onPlayerLevelChange={setPlayerLevel}
                     ignoreFilters={ignoreFilters}
                     onIgnoreFiltersChange={setIgnoreFilters}
+                    categories={allCategoriesLocalized}
+                    categoryFilter={selectorCategoryFilter}
+                    onCategoryFilterChange={setSelectorCategoryFilter}
+                    traderFilter={selectorTraderFilter}
+                    onTraderFilterChange={setSelectorTraderFilter}
                   />
                 </div>
 
@@ -2107,6 +2162,7 @@ function AppContent({ contributors = [] }: AppProps) {
                                 selectorRefs.current[index] = el;
                               }}
                               items={items}
+                              manualDiscoveryItems={manualDiscoveryItems}
                               selectedItem={item}
                               onSelect={(
                                 sel: SimplifiedItem | null,
@@ -2132,15 +2188,18 @@ function AppContent({ contributors = [] }: AppProps) {
                               traderLevels={traderLevels}
                               remainingThreshold={remainingThreshold}
                               itemBonusPercent={itemBonus}
+                              categoryFilter={selectorCategoryFilter}
+                              categoryFilterLabel={
+                                selectorCategoryFilterLabel
+                              }
+                              traderFilter={selectorTraderFilter}
+                              hasAttachedSuggestions={shouldShowNextItemHints(
+                                item,
+                                index,
+                              )}
                             />
                           </Suspense>
-                          {showHintPills &&
-                          !item &&
-                          nextItemSuggestions[index] &&
-                          nextItemSuggestions[index].length > 0 &&
-                          (index === selectedItems.findIndex((it) => !it) ||
-                            (selectedItems.every((it) => !it) &&
-                              index === 0)) ? (
+                          {shouldShowNextItemHints(item, index) ? (
                             <NextItemHints
                               items={
                                 selectedItems.every((it) => !it) && index === 0
@@ -2303,6 +2362,8 @@ function AppContent({ contributors = [] }: AppProps) {
               setOverriddenPrices({});
               setUseLevelFilter(DEFAULT_USE_LEVEL_FILTER);
               setPlayerLevel(DEFAULT_PLAYER_LEVEL);
+              setSelectorCategoryFilter(ALL_CATEGORIES_FILTER);
+              setSelectorTraderFilter("any");
 
               sonnerToast(t("Data Cleared"), {
                 description: t(

@@ -1,10 +1,25 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useMemo } from "react";
-import { ChevronDown, Settings } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  ChevronsUpDown,
+  ListFilter,
+  Settings,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
@@ -23,6 +38,14 @@ import { type FleaPriceType, type PriceMode } from "@/hooks/use-app-settings";
 import { useLanguage } from "@/contexts/language-context";
 import { cn } from "@/lib/utils";
 import { type TraderLevels } from "@/components/ui/trader-level-selector";
+import {
+  getCategoryDisplayName,
+  type ItemCategory,
+} from "@/config/item-categories";
+import {
+  ALL_CATEGORIES_FILTER,
+  type SelectorTraderFilter,
+} from "@/lib/item-selector-filters";
 
 interface SelectorSettingsPopoverProps {
   sortOption: string;
@@ -46,6 +69,11 @@ interface SelectorSettingsPopoverProps {
   onPlayerLevelChange: (level: number) => void;
   ignoreFilters: boolean;
   onIgnoreFiltersChange: (value: boolean) => void;
+  categories: ItemCategory[];
+  categoryFilter: string;
+  onCategoryFilterChange: (categoryId: string) => void;
+  traderFilter: SelectorTraderFilter;
+  onTraderFilterChange: (trader: SelectorTraderFilter) => void;
 }
 
 const SORT_OPTIONS = [
@@ -120,9 +148,30 @@ export function SelectorSettingsPopover({
   onPlayerLevelChange,
   ignoreFilters,
   onIgnoreFiltersChange,
+  categories,
+  categoryFilter,
+  onCategoryFilterChange,
+  traderFilter,
+  onTraderFilterChange,
 }: SelectorSettingsPopoverProps) {
   const { t } = useLanguage();
   const filtersAreOverridden = ignoreFilters;
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const selectedCategory = useMemo(
+    () => categories.find((category) => category.id === categoryFilter),
+    [categories, categoryFilter],
+  );
+  const selectedCategoryName = selectedCategory
+    ? getCategoryDisplayName(selectedCategory.name)
+    : t("All categories");
+  const activeSearchFilterCount =
+    (categoryFilter === ALL_CATEGORIES_FILTER ? 0 : 1) +
+    (traderFilter === "any" ? 0 : 1);
+  const searchFiltersAreActive = activeSearchFilterCount > 0;
+  const selectedTrader =
+    traderFilter === "any"
+      ? null
+      : TRADERS.find((trader) => trader.key === traderFilter);
 
   const normalizedLevel = useMemo(
     () => Math.min(79, Math.max(1, playerLevel)),
@@ -153,17 +202,25 @@ export function SelectorSettingsPopover({
           size="sm"
           className={cn(
             "h-7 gap-2 rounded-md border px-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors",
-            filtersAreOverridden
+            filtersAreOverridden || searchFiltersAreActive
               ? "border-amber-500/40 bg-amber-500/12 text-amber-200 hover:border-amber-400/60 hover:bg-amber-500/18"
               : "border-slate-600/40 bg-slate-900/70 text-slate-300 hover:border-slate-500/60 hover:bg-slate-800/80 hover:text-slate-100",
           )}
           aria-label={t("Open selector settings")}
+          data-search-filters-active={
+            searchFiltersAreActive ? "true" : undefined
+          }
         >
           <Settings className="h-3.5 w-3.5" />
           <span>{t("Quick Settings")}</span>
           {filtersAreOverridden && (
             <span className="rounded-full border border-amber-300/40 bg-amber-200/12 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-[0.14em] text-amber-100">
               {t("All Items")}
+            </span>
+          )}
+          {searchFiltersAreActive && (
+            <span className="rounded-full border border-amber-300/40 bg-amber-200/12 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-[0.14em] text-amber-100">
+              {t("{count} active", { count: activeSearchFilterCount })}
             </span>
           )}
           <ChevronDown className="h-3 w-3 opacity-70" />
@@ -179,13 +236,197 @@ export function SelectorSettingsPopover({
             {t("Settings")}
           </p>
 
+          <section
+            className={cn(
+              "mb-3 rounded-md border p-2.5 transition-colors",
+              searchFiltersAreActive
+                ? "border-amber-400/30 bg-amber-500/[0.07]"
+                : "border-slate-700 bg-slate-900/70",
+            )}
+          >
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-2">
+                <ListFilter
+                  className={cn(
+                    "mt-0.5 h-3.5 w-3.5 shrink-0",
+                    searchFiltersAreActive
+                      ? "text-amber-300"
+                      : "text-slate-500",
+                  )}
+                  aria-hidden
+                />
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-200">
+                    {t("Search Filters")}
+                  </p>
+                  <p className="mt-0.5 text-[9px] text-slate-500">
+                    {t("Manual item searches only")}
+                  </p>
+                </div>
+              </div>
+              {searchFiltersAreActive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCategoryFilterChange(ALL_CATEGORIES_FILTER);
+                    onTraderFilterChange("any");
+                  }}
+                  className="flex shrink-0 items-center gap-1 rounded px-1.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-amber-200/75 transition-colors hover:bg-amber-300/10 hover:text-amber-100"
+                  aria-label={t("Clear search filters")}
+                >
+                  <X className="h-3 w-3" aria-hidden />
+                  {t("Clear")}
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Popover
+                open={categoryPickerOpen}
+                onOpenChange={setCategoryPickerOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={categoryPickerOpen}
+                    aria-label={t("Filter manual search by category")}
+                    className={cn(
+                      "h-9 min-w-0 justify-between rounded-md border-slate-700 bg-slate-950/70 px-2 text-[10px] font-semibold text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-slate-100",
+                      categoryFilter !== ALL_CATEGORIES_FILTER &&
+                        "border-amber-400/30 text-amber-100",
+                    )}
+                  >
+                    <span className="truncate">{selectedCategoryName}</span>
+                    <ChevronsUpDown
+                      className="ml-1 h-3 w-3 shrink-0 opacity-50"
+                      aria-hidden
+                    />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  sideOffset={4}
+                  className="z-[120] w-[306px] border-slate-700 bg-[#12161d] p-0 text-slate-100 shadow-2xl"
+                >
+                  <Command className="bg-transparent">
+                    <CommandInput
+                      placeholder={t("Find a category...")}
+                      className="h-9 text-xs"
+                    />
+                    <CommandList className="max-h-64">
+                      <CommandEmpty className="py-6 text-center text-xs text-slate-500">
+                        {t("No category found")}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value={t("All categories")}
+                          onSelect={() => {
+                            onCategoryFilterChange(ALL_CATEGORIES_FILTER);
+                            setCategoryPickerOpen(false);
+                          }}
+                          className="gap-2 text-xs text-slate-200 data-[selected=true]:bg-slate-800 data-[selected=true]:text-white"
+                        >
+                          <Check
+                            className={cn(
+                              "h-3.5 w-3.5",
+                              categoryFilter === ALL_CATEGORIES_FILTER
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                            aria-hidden
+                          />
+                          {t("All categories")}
+                        </CommandItem>
+                        {categories.map((category) => (
+                          <CommandItem
+                            key={category.id}
+                            value={`${getCategoryDisplayName(category.name)} ${category.name} ${category.id}`}
+                            onSelect={() => {
+                              onCategoryFilterChange(category.id);
+                              setCategoryPickerOpen(false);
+                            }}
+                            className="gap-2 text-xs text-slate-200 data-[selected=true]:bg-slate-800 data-[selected=true]:text-white"
+                          >
+                            <Check
+                              className={cn(
+                                "h-3.5 w-3.5",
+                                categoryFilter === category.id
+                                  ? "opacity-100"
+                                  : "opacity-0",
+                              )}
+                              aria-hidden
+                            />
+                            <span className="truncate">
+                              {getCategoryDisplayName(category.name)}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              <Select
+                value={traderFilter}
+                onValueChange={(value) =>
+                  onTraderFilterChange(value as SelectorTraderFilter)
+                }
+              >
+                <SelectTrigger
+                  aria-label={t("Filter manual search by trader")}
+                  className={cn(
+                    "h-9 min-w-0 rounded-md border-slate-700 bg-slate-950/70 px-2 text-[10px] font-semibold text-slate-300 hover:border-slate-600 focus:ring-slate-500/50",
+                    traderFilter !== "any" &&
+                      "border-amber-400/30 text-amber-100",
+                  )}
+                >
+                  <SelectValue placeholder={t("Any trader")} />
+                </SelectTrigger>
+                <SelectContent className="border-slate-700 bg-[#12161d] text-slate-100">
+                  <SelectItem
+                    value="any"
+                    className="text-xs focus:bg-slate-800 focus:text-white"
+                  >
+                    {t("Any trader")}
+                  </SelectItem>
+                  {TRADERS.map((trader) => (
+                    <SelectItem
+                      key={trader.key}
+                      value={trader.key}
+                      className="text-xs focus:bg-slate-800 focus:text-white"
+                    >
+                      {t(trader.label)} · LL{traderLevels[trader.key]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {searchFiltersAreActive && (
+              <p className="mt-2 truncate text-[9px] font-medium text-amber-200/70">
+                {selectedCategoryName}
+                {" · "}
+                {selectedTrader
+                  ? `${t(selectedTrader.label)} · LL${
+                      traderLevels[selectedTrader.key]
+                    }`
+                  : t("Any trader")}
+              </p>
+            )}
+          </section>
+
           {filtersAreOverridden && (
             <div className="mb-3 rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2">
               <p className="text-[11px] font-medium text-amber-200">
-                {t("All selector filters are currently bypassed")}
+                {t("Base selector filters are currently bypassed")}
               </p>
               <p className="mt-1 text-[10px] text-amber-100/80">
-                {t("Every item is shown in the selector list")}
+                {searchFiltersAreActive
+                  ? t("Search Filters above still apply to manual searches")
+                  : t("Every item is shown in the selector list")}
               </p>
             </div>
           )}

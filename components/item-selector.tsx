@@ -18,6 +18,7 @@ import {
   CircleSlash,
   Trash2,
   Search,
+  ListFilter,
   ExternalLink,
   MoreHorizontal,
 } from "lucide-react";
@@ -52,9 +53,31 @@ import {
   type ListChildComponentProps,
 } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
+import {
+  filterManualDiscoveryItems,
+  getAccessibleTraderOffer,
+  prioritizeDefaultWeapons,
+  ALL_CATEGORIES_FILTER,
+  type SelectorTraderFilter,
+  WEAPON_CATEGORY_ID,
+} from "@/lib/item-selector-filters";
+
+const TRADER_FILTERS: Array<{
+  value: keyof TraderLevels;
+  label: string;
+}> = [
+  { value: "prapor", label: "Prapor" },
+  { value: "therapist", label: "Therapist" },
+  { value: "skier", label: "Skier" },
+  { value: "peacekeeper", label: "Peacekeeper" },
+  { value: "mechanic", label: "Mechanic" },
+  { value: "ragman", label: "Ragman" },
+  { value: "jaeger", label: "Jaeger" },
+];
 
 export interface ItemSelectorProps {
   items: SimplifiedItem[];
+  manualDiscoveryItems: SimplifiedItem[];
   selectedItem: SimplifiedItem | null;
   onSelect: (
     selectedItem: SimplifiedItem | null,
@@ -75,6 +98,10 @@ export interface ItemSelectorProps {
   traderLevels: TraderLevels;
   remainingThreshold: number;
   itemBonusPercent: number;
+  hasAttachedSuggestions?: boolean;
+  categoryFilter: string;
+  categoryFilterLabel: string;
+  traderFilter: SelectorTraderFilter;
 }
 
 export interface ItemSelectorHandle {
@@ -85,6 +112,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
   (
     {
       items,
+      manualDiscoveryItems,
       selectedItem,
       onSelect,
       onCopy,
@@ -101,6 +129,10 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       traderLevels,
       remainingThreshold,
       itemBonusPercent,
+      hasAttachedSuggestions = false,
+      categoryFilter,
+      categoryFilterLabel,
+      traderFilter,
     },
     ref
   ) => {
@@ -110,7 +142,12 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       if (!Array.isArray(items)) {
         console.debug("Items prop is not an array, defaulting to empty array");
       }
-    }, [items]);
+      if (!Array.isArray(manualDiscoveryItems)) {
+        console.debug(
+          "Manual discovery items prop is not an array, defaulting to empty array"
+        );
+      }
+    }, [items, manualDiscoveryItems]);
 
     const [searchTerm, setSearchTerm] = useState("");
     const [isFocused, setIsFocused] = useState(false);
@@ -227,20 +264,45 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       };
     }, [selectedItem, overriddenPrice]);
 
+    const filteredDiscoveryItems = useMemo(() => {
+      const sourceItems =
+        categoryFilter === ALL_CATEGORIES_FILTER
+          ? Array.isArray(items)
+            ? items
+            : []
+          : Array.isArray(manualDiscoveryItems)
+          ? manualDiscoveryItems
+          : [];
+
+      return filterManualDiscoveryItems(
+        sourceItems,
+        categoryFilter === ALL_CATEGORIES_FILTER ? null : categoryFilter,
+        traderFilter === "any" ? null : traderFilter,
+        traderLevels
+      );
+    }, [
+      categoryFilter,
+      items,
+      manualDiscoveryItems,
+      traderFilter,
+      traderLevels,
+    ]);
+
     const normalCandidateItems = useMemo(() => {
-      const validItems = Array.isArray(items) ? items : [];
-      return validItems.filter(
+      return filteredDiscoveryItems.filter(
         (item) =>
           item.basePrice > 0 &&
           !getSearchableNames(item).some((name) =>
             excludedLookup.has(name.toLowerCase())
           )
       );
-    }, [excludedLookup, getSearchableNames, items]);
+    }, [excludedLookup, filteredDiscoveryItems, getSearchableNames]);
 
     const thresholdCandidateItems = useMemo(() => {
       return [...normalCandidateItems]
-        .filter((item) => item.basePrice * bonusMultiplier >= remainingThreshold)
+        .filter(
+          (item) => item.basePrice * bonusMultiplier >= remainingThreshold
+        )
         .sort((a, b) => {
           const priceA = getEffectivePriceInfo(a).price;
           const priceB = getEffectivePriceInfo(b).price;
@@ -268,9 +330,20 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       remainingThreshold,
     ]);
 
-    const searchableItems = showThresholdMatchesOnly
-      ? thresholdCandidateItems
-      : normalCandidateItems;
+    const searchableItems = useMemo(() => {
+      const candidates = showThresholdMatchesOnly
+        ? thresholdCandidateItems
+        : normalCandidateItems;
+
+      return categoryFilter === WEAPON_CATEGORY_ID
+        ? prioritizeDefaultWeapons(candidates)
+        : candidates;
+    }, [
+      categoryFilter,
+      normalCandidateItems,
+      showThresholdMatchesOnly,
+      thresholdCandidateItems,
+    ]);
 
     // Initialize Fuse.js for searching
     const fuse = useMemo(() => {
@@ -279,6 +352,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
           keys: [
             { name: "name", weight: 0.7 },
             { name: "shortName", weight: 0.3 },
+            { name: "englishName", weight: 0.7 },
+            { name: "englishShortName", weight: 0.3 },
           ],
           threshold: 0.4,
           includeScore: true,
@@ -318,30 +393,35 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         results = fuse.search(debouncedSearchTerm).map((result) => result.item);
       }
       if (!showThresholdMatchesOnly) {
-        return results;
+        return categoryFilter === WEAPON_CATEGORY_ID
+          ? prioritizeDefaultWeapons(results)
+          : results;
       }
-      return [...results].sort(
-        (a, b) => {
-          const ratioA =
-            ((getEffectivePriceInfo(a).price ?? 0) > 0
-              ? (a.basePrice * bonusMultiplier) /
-                (getEffectivePriceInfo(a).price as number)
-              : Number.NEGATIVE_INFINITY);
-          const ratioB =
-            ((getEffectivePriceInfo(b).price ?? 0) > 0
-              ? (b.basePrice * bonusMultiplier) /
-                (getEffectivePriceInfo(b).price as number)
-              : Number.NEGATIVE_INFINITY);
+      const thresholdSorted = [...results].sort((a, b) => {
+        const ratioA =
+          (getEffectivePriceInfo(a).price ?? 0) > 0
+            ? (a.basePrice * bonusMultiplier) /
+              (getEffectivePriceInfo(a).price as number)
+            : Number.NEGATIVE_INFINITY;
+        const ratioB =
+          (getEffectivePriceInfo(b).price ?? 0) > 0
+            ? (b.basePrice * bonusMultiplier) /
+              (getEffectivePriceInfo(b).price as number)
+            : Number.NEGATIVE_INFINITY;
 
-          if (ratioA !== ratioB) {
-            return ratioB - ratioA;
-          }
-
-          return a.basePrice - b.basePrice || a.name.localeCompare(b.name);
+        if (ratioA !== ratioB) {
+          return ratioB - ratioA;
         }
-      );
+
+        return a.basePrice - b.basePrice || a.name.localeCompare(b.name);
+      });
+
+      return categoryFilter === WEAPON_CATEGORY_ID
+        ? prioritizeDefaultWeapons(thresholdSorted)
+        : thresholdSorted;
     }, [
       bonusMultiplier,
+      categoryFilter,
       debouncedSearchTerm,
       fuse,
       getEffectivePriceInfo,
@@ -389,7 +469,13 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       return () => {
         cancelled = true;
       };
-    }, [debouncedSearchTerm, filteredItems.length, isFocused]);
+    }, [
+      categoryFilter,
+      debouncedSearchTerm,
+      filteredItems.length,
+      isFocused,
+      traderFilter,
+    ]);
 
     useEffect(() => {
       if (!isFocused || highlightedIndex < 0) return;
@@ -586,8 +672,41 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       ]
     );
 
+    const selectedTraderLabel =
+      traderFilter === "any"
+        ? null
+        : TRADER_FILTERS.find((trader) => trader.value === traderFilter)?.label;
+    const selectedCategoryLabel =
+      categoryFilter === ALL_CATEGORIES_FILTER ? null : categoryFilterLabel;
+    const activeDiscoveryFilterCount =
+      (selectedCategoryLabel ? 1 : 0) + (selectedTraderLabel ? 1 : 0);
+    const activeDiscoveryFilterLabel = [
+      selectedCategoryLabel,
+      selectedTraderLabel
+        ? `${selectedTraderLabel} LL${traderLevels[traderFilter as keyof TraderLevels]}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
     const emptyStateMessage = useMemo(() => {
       if (!showThresholdMatchesOnly) {
+        if (selectedCategoryLabel && selectedTraderLabel) {
+          return t("No {category} items match this search and {trader}", {
+            category: selectedCategoryLabel,
+            trader: selectedTraderLabel,
+          });
+        }
+        if (selectedCategoryLabel) {
+          return t("No {category} items match your search", {
+            category: selectedCategoryLabel,
+          });
+        }
+        if (selectedTraderLabel) {
+          return t("No items match this search and {trader}", {
+              trader: selectedTraderLabel,
+          });
+        }
         return t("No items matching your search");
       }
       if (thresholdCandidateItems.length === 0) {
@@ -606,6 +725,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
     }, [
       debouncedSearchTerm,
       remainingThreshold,
+      selectedCategoryLabel,
+      selectedTraderLabel,
       showThresholdMatchesOnly,
       t,
       thresholdCandidateItems.length,
@@ -652,6 +773,15 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
             ? itemOverriddenPrice
             : effectiveInfo.price ?? null;
         const isOverridden = itemOverriddenPrice !== undefined;
+        const selectedTraderOffer =
+          traderFilter === "any"
+            ? undefined
+            : getAccessibleTraderOffer(item, traderFilter, traderLevels);
+        const rowTraderLabel =
+          traderFilter === "any"
+            ? null
+            : TRADER_FILTERS.find((trader) => trader.value === traderFilter)
+                ?.label;
 
         return (
           <div
@@ -693,6 +823,25 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                     ? `₽${displayedPrice.toLocaleString()}`
                     : "N/A"}
                 </span>
+                {selectedTraderOffer &&
+                  traderFilter !== "any" &&
+                  rowTraderLabel && (
+                    <>
+                      <span className="h-0.5 w-0.5 shrink-0 rounded-full bg-white/10" />
+                      <span className="flex min-w-0 items-center gap-1 text-[9px] font-semibold text-amber-200/80">
+                        <img
+                          src={TRADER_AVATARS[traderFilter]}
+                          alt=""
+                          aria-hidden
+                          className="h-3.5 w-3.5 shrink-0 rounded-full object-cover"
+                        />
+                        <span className="truncate">
+                          {rowTraderLabel} LL
+                          {selectedTraderOffer.vendor.minTraderLevel ?? 1}
+                        </span>
+                      </span>
+                    </>
+                  )}
               </div>
             </div>
           </div>
@@ -707,6 +856,9 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         overriddenPrices,
         priceMode,
         t,
+        traderFilter,
+        traderLevels,
+        TRADER_AVATARS,
       ]
     );
 
@@ -715,126 +867,180 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         <div className="relative w-full">
           {!selectedItem ? (
             <div className="relative">
-                <div
+              <div
+                data-suggestions-attached={
+                  hasAttachedSuggestions ? "true" : undefined
+                }
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 bg-black/40 backdrop-blur-xl border transition-all duration-200 rounded-xl",
+                  hasAttachedSuggestions && "rounded-b-none",
+                  isFocused
+                    ? "border-primary/50 shadow-[0_0_20px_rgba(0,255,255,0.1)]"
+                    : "border-white/10"
+                )}
+              >
+                <Search
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 bg-black/40 backdrop-blur-xl border transition-all duration-200 rounded-xl",
-                    isFocused
-                      ? "border-primary/50 shadow-[0_0_20px_rgba(0,255,255,0.1)]"
-                      : "border-white/10"
+                    "h-4 w-4 transition-colors",
+                    isFocused ? "text-primary" : "text-white/30"
                   )}
-                >
-                  <Search
-                    className={cn(
-                      "h-4 w-4 transition-colors",
-                      isFocused ? "text-primary" : "text-white/30"
-                    )}
-                  />
-                  <div className="relative flex-1">
-                    {isFocused && hasInlineSuggestion && (
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-y-0 left-0 flex items-center text-sm font-medium text-white/25"
-                      >
-                        <span className="text-transparent">{searchTerm}</span>
-                        <span>{suggestionRemainder}</span>
-                      </span>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={inputRef}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() =>
-                          setTimeout(() => setIsFocused(false), 200)
-                        }
-                        type="text"
-                        value={searchTerm}
-                        onKeyDown={handleInputKeyDown}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder={t("Search items...")}
-                        className="relative z-10 w-full bg-transparent text-sm text-white placeholder:text-white/20 outline-none font-medium"
-                      />
-                      {!isFocused && !searchTerm && (
-                        <div className="hidden sm:flex items-center absolute right-0 pointer-events-none">
-                          <span className="text-[10px] font-bold text-white/20 border border-white/10 bg-white/5 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+                />
+                <div className="relative flex-1">
+                  {isFocused && hasInlineSuggestion && (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 left-0 flex items-center text-sm font-medium text-white/25"
+                    >
+                      <span className="text-transparent">{searchTerm}</span>
+                      <span>{suggestionRemainder}</span>
+                    </span>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={inputRef}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() =>
+                        setTimeout(() => {
+                          setIsFocused(false);
+                        }, 200)
+                      }
+                      type="text"
+                      value={searchTerm}
+                      onKeyDown={handleInputKeyDown}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder={t("Search items...")}
+                      className={cn(
+                        "relative z-10 w-full bg-transparent text-sm font-medium text-white outline-none placeholder:text-white/20",
+                        activeDiscoveryFilterCount > 0
+                          ? "pr-10 sm:pr-28"
+                          : "sm:pr-6"
+                      )}
+                    />
+                    {!isFocused && !searchTerm && (
+                      <div className="pointer-events-none absolute right-0 flex items-center">
+                        {activeDiscoveryFilterCount > 0 ? (
+                          <span
+                            className="flex items-center gap-1 rounded-md border border-amber-400/25 bg-amber-400/10 px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.1em] text-amber-200"
+                            aria-label={t("Search filters active: {filters}", {
+                              filters: activeDiscoveryFilterLabel,
+                            })}
+                          >
+                            <ListFilter className="h-3 w-3" aria-hidden />
+                            <span className="hidden sm:inline">
+                              {t("Search filter")}
+                            </span>
+                            <span>{activeDiscoveryFilterCount}</span>
+                          </span>
+                        ) : (
+                          <span className="hidden rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-tighter text-white/20 sm:inline">
                             /
                           </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {isFocused && hasInlineSuggestion && (
-                  <div className="flex items-center gap-2 px-4 pt-2 text-[11px] text-white/50">
-                    <span className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/70">
-                      {t("Tab")}
-                    </span>
-                    <span className="truncate">
-                      {t('Autocomplete to "{value}"', { value: inlineSuggestionText })}
-                    </span>
-                  </div>
-                )}
-
-                {isFocused && (
-                  <div className="absolute top-full left-0 right-0 z-[100] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
-                      <div
-                        className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3"
-                        onMouseDown={(e) => e.preventDefault()}
-                      >
-                        <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-slate-200">
-                          <Checkbox
-                            aria-label={t("Show items that hit threshold first")}
-                            checked={showThresholdMatchesOnly}
-                            onCheckedChange={(checked) =>
-                              setShowThresholdMatchesOnly(checked === true)
-                            }
-                            className="border-white/20 data-[state=checked]:bg-emerald-400 data-[state=checked]:text-slate-950"
-                          />
-                          <button
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() =>
-                              setShowThresholdMatchesOnly((current) => !current)
-                            }
-                            className="truncate text-left text-xs font-medium text-slate-200 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
-                          >
-                            {t("Show items that hit threshold first")}
-                          </button>
-                        </div>
-                        <span
-                          className={cn(
-                            "shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]",
-                            remainingThreshold > 0
-                              ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
-                              : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-                          )}
-                        >
-                          {thresholdStatusLabel}
-                        </span>
-                      </div>
-                      <div className="max-h-[268px]">
-                        {filteredItems.length > 0 ? (
-                          <AutoSizer disableHeight>
-                            {({ width }) => (
-                              <List
-                                ref={listRef}
-                                height={Math.min(filteredItems.length * 56, 268)}
-                                itemCount={filteredItems.length}
-                                itemSize={56}
-                                width={width}
-                              >
-                                {Row}
-                              </List>
-                            )}
-                          </AutoSizer>
-                        ) : (
-                          <div className="p-8 text-center text-white/30 text-sm font-medium">
-                            {emptyStateMessage}
-                          </div>
                         )}
                       </div>
+                    )}
                   </div>
-                )}
+                </div>
+              </div>
+
+              {isFocused && hasInlineSuggestion && (
+                <div className="flex items-center gap-2 px-4 pt-2 text-[11px] text-white/50">
+                  <span className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/70">
+                    {t("Tab")}
+                  </span>
+                  <span className="truncate">
+                    {t('Autocomplete to "{value}"', {
+                      value: inlineSuggestionText,
+                    })}
+                  </span>
+                </div>
+              )}
+
+              {isFocused && (
+                <div className="absolute top-full left-0 right-0 z-[100] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+                  <div
+                    className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3"
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-slate-200">
+                      <Checkbox
+                        aria-label={t("Show items that hit threshold first")}
+                        checked={showThresholdMatchesOnly}
+                        onCheckedChange={(checked) =>
+                          setShowThresholdMatchesOnly(checked === true)
+                        }
+                        className="border-white/20 data-[state=checked]:bg-emerald-400 data-[state=checked]:text-slate-950"
+                      />
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() =>
+                          setShowThresholdMatchesOnly((current) => !current)
+                        }
+                        className="truncate text-left text-xs font-medium text-slate-200 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
+                      >
+                        {t("Show items that hit threshold first")}
+                      </button>
+                    </div>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]",
+                        remainingThreshold > 0
+                          ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
+                          : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+                      )}
+                    >
+                      {thresholdStatusLabel}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-950/35 px-3 py-2">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <ListFilter
+                        className={cn(
+                          "h-3.5 w-3.5 shrink-0",
+                          activeDiscoveryFilterCount > 0
+                            ? "text-amber-300"
+                            : "text-slate-600"
+                        )}
+                        aria-hidden
+                      />
+                      <span className="truncate text-[10px] font-semibold text-slate-400">
+                        {activeDiscoveryFilterCount > 0
+                          ? activeDiscoveryFilterLabel
+                          : t("All categories · Any trader")}
+                      </span>
+                    </div>
+                    <span
+                      className="shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-1 font-mono text-[9px] text-slate-400"
+                      aria-label={t("{count} matching items", {
+                        count: filteredItems.length.toLocaleString(),
+                      })}
+                    >
+                      {filteredItems.length.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="max-h-[268px]">
+                    {filteredItems.length > 0 ? (
+                      <AutoSizer disableHeight>
+                        {({ width }) => (
+                          <List
+                            ref={listRef}
+                            height={Math.min(filteredItems.length * 56, 268)}
+                            itemCount={filteredItems.length}
+                            itemSize={56}
+                            width={width}
+                          >
+                            {Row}
+                          </List>
+                        )}
+                      </AutoSizer>
+                    ) : (
+                      <div className="p-8 text-center text-white/30 text-sm font-medium">
+                        {emptyStateMessage}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div

@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Copy, ChevronRight } from "lucide-react";
+import { Package, Copy, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 
 interface NextItemHintsProps {
@@ -52,98 +53,159 @@ export function NextItemHints({
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className={cn("mt-2 pb-3 flex flex-wrap gap-2 items-center", className)}
+      role="region"
+      aria-label={t("Recommended items for this slot")}
+      className={cn(
+        "-mt-px mb-3 overflow-hidden rounded-b-xl border border-t-0 border-white/10 bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]",
+        className,
+      )}
     >
-      <AnimatePresence mode="popLayout">
-        {prevItem && (
-          <motion.button
-            key={`prev-${prevItem.id}`}
-            variants={itemVariants}
-            layout
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            type="button"
-            onClick={() => onPick(prevItem)}
-            className={cn(
-              "group relative flex items-center gap-2 rounded-full border px-3 py-1.5",
-              "bg-emerald-500/10 border-emerald-500/30 text-emerald-300",
-              "hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all duration-300 shadow-sm shadow-emerald-500/5"
-            )}
-            title={t("Copy the same item from the slot above: {name}", {
-              name: prevItem.name,
-            })}
-          >
-            <div className="p-1 rounded-full bg-emerald-500/20 group-hover:bg-emerald-500/30 transition-colors">
-              <Copy className="h-3 w-3 text-emerald-400" />
-            </div>
-            <div className="flex flex-col items-start leading-none">
-              <span className="text-[9px] uppercase tracking-wider font-bold opacity-60 group-hover:opacity-100 transition-opacity">
-                {t("Duplicate")}
-              </span>
-              <span className="font-semibold text-[11px] truncate max-w-[120px]">
-                {prevItem.shortName || prevItem.name}
-              </span>
-            </div>
-          </motion.button>
-        )}
+      <div className="flex min-h-8 items-center justify-between gap-3 border-b border-white/[0.07] px-2.5 py-1.5">
+        <div className="flex min-w-0 items-baseline gap-2 border-l-2 border-amber-400/60 pl-2">
+          <span className="truncate text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-200 sm:hidden">
+            {t("Picks for this slot")}
+          </span>
+          <span className="hidden truncate text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-200 sm:inline">
+            {t("Recommended for this slot")}
+          </span>
+          <span className="hidden text-[9px] font-medium text-slate-500 sm:inline">
+            {t("Choose one to add it")}
+          </span>
+        </div>
+        <span className="shrink-0 text-[8px] font-bold uppercase tracking-[0.12em] text-slate-600">
+          {t("{count} quick picks", {
+            count: Math.min(items.length, 3) + (prevItem ? 1 : 0),
+          })}
+        </span>
+      </div>
 
-        {items.slice(0, 3).map((it, i) => (
-          <motion.button
-            key={it.id}
-            variants={itemVariants}
-            layout
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            type="button"
-            onClick={() => onPick(it)}
-            className={cn(
-              "group relative flex items-center gap-2 rounded-full border px-3 py-1.5 backdrop-blur-md transition-all duration-300",
-              i === 0
-                ? "bg-amber-500/10 border-amber-500/30 text-amber-300 shadow-sm shadow-amber-500/5"
-                : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20"
-            )}
-            title={`${it.name} — Base: ₽${it.basePrice.toLocaleString()}`}
-          >
-            {i === 0 && (
-              <div className="p-1 rounded-full bg-amber-500/20 group-hover:bg-amber-500/30 transition-colors">
-                <Sparkles className="h-3 w-3 text-amber-400" />
-              </div>
-            )}
-            <div className="flex flex-col items-start leading-none">
-              <span className="text-[9px] uppercase tracking-wider font-bold opacity-40 group-hover:opacity-100 transition-opacity">
-                {i === 0 ? t("Top Pick") : t("Suggest")}
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-1.5 p-1.5 sm:grid-cols-2",
+          prevItem ? "lg:grid-cols-4" : "lg:grid-cols-3",
+        )}
+      >
+        <AnimatePresence mode="popLayout">
+          {prevItem && (
+            <motion.button
+              key={`prev-${prevItem.id}`}
+              variants={itemVariants}
+              layout
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.99 }}
+              type="button"
+              onClick={() => onPick(prevItem)}
+              className="group relative flex min-w-0 items-center gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/[0.06] px-2 py-2 text-left transition-colors hover:border-emerald-400/40 hover:bg-emerald-500/10"
+              title={prevItem.name}
+              aria-label={t("Add previous item {name}", {
+                name: prevItem.name,
+              })}
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-emerald-400/15 bg-emerald-400/10 text-emerald-300">
+                <Copy className="h-3.5 w-3.5" aria-hidden />
               </span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-[11px] truncate max-w-[120px] text-slate-100">
+              <span className="min-w-0 flex-1">
+                <span className="block text-[8px] font-extrabold uppercase tracking-[0.16em] text-emerald-400/70">
+                  {t("Repeat previous")}
+                </span>
+                <span className="mt-0.5 block truncate text-[11px] font-bold leading-none text-slate-100">
+                  {prevItem.shortName || prevItem.name}
+                </span>
+                <span className="mt-1 block text-[9px] font-semibold tabular-nums text-slate-500">
+                  {t("Base value")} ₽{prevItem.basePrice.toLocaleString()}
+                </span>
+              </span>
+              <ChevronRight
+                className="h-3.5 w-3.5 shrink-0 text-emerald-400/40 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-300"
+                aria-hidden
+              />
+            </motion.button>
+          )}
+
+          {items.slice(0, 3).map((it, i) => (
+            <motion.button
+              key={it.id}
+              variants={itemVariants}
+              layout
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.99 }}
+              type="button"
+              onClick={() => onPick(it)}
+              className={cn(
+                "group relative flex min-w-0 items-center gap-2 rounded-md border px-2 py-2 text-left transition-colors",
+                i === 0
+                  ? "border-amber-400/35 bg-gradient-to-r from-amber-400/[0.11] to-amber-400/[0.035] shadow-[inset_2px_0_0_rgba(251,191,36,0.75)] hover:border-amber-300/55 hover:from-amber-400/[0.16]"
+                  : "border-white/[0.08] bg-white/[0.025] hover:border-white/15 hover:bg-white/[0.055]",
+              )}
+              title={it.name}
+              aria-label={t("Add {label} {name}, base value ₽{value}", {
+                label:
+                  i === 0
+                    ? t("recommended item")
+                    : t("alternative {number}", { number: i }),
+                name: it.name,
+                value: it.basePrice.toLocaleString(),
+              })}
+            >
+              <span
+                className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded border",
+                  i === 0
+                    ? "border-amber-400/20 bg-amber-400/10"
+                    : "border-white/[0.08] bg-black/20",
+                )}
+              >
+                {it.iconLink ? (
+                  <Image
+                    src={it.iconLink}
+                    alt=""
+                    aria-hidden
+                    width={28}
+                    height={28}
+                    className="h-7 w-7 object-contain"
+                  />
+                ) : (
+                  <Package
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      i === 0 ? "text-amber-300" : "text-slate-500",
+                    )}
+                    aria-hidden
+                  />
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span
+                  className={cn(
+                    "block text-[8px] font-extrabold uppercase tracking-[0.16em]",
+                    i === 0 ? "text-amber-300" : "text-slate-500",
+                  )}
+                >
+                  {i === 0
+                    ? t("Recommended")
+                    : t("Alternative {number}", { number: i })}
+                </span>
+                <span className="mt-0.5 block truncate text-[11px] font-bold leading-none text-slate-100">
                   {it.shortName || it.name}
                 </span>
-                <span className="text-[10px] opacity-40 group-hover:opacity-60 tabular-nums">
-                  ₽{(it.basePrice / 1000).toFixed(0)}k
+                <span className="mt-1 block text-[9px] font-semibold tabular-nums text-slate-500">
+                  {t("Base value")} ₽{it.basePrice.toLocaleString()}
                 </span>
-              </div>
-            </div>
-            {i === 0 && (
-              <ChevronRight className="h-3 w-3 opacity-0 -ml-1 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-300" />
-            )}
-          </motion.button>
-        ))}
-      </AnimatePresence>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.4 }}
-        className="flex items-center gap-1.5 ml-1 select-none pointer-events-none"
-      >
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          {t("Press")}
-        </span>
-        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-white/5 border border-white/10 rounded text-[10px] font-black text-white/50 font-mono shadow-sm">
-          /
-        </span>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          {t("to focus")}
-        </span>
-      </motion.div>
+              </span>
+              <span
+                className={cn(
+                  "flex shrink-0 items-center gap-0.5 text-[8px] font-extrabold uppercase tracking-wider opacity-60 transition-opacity group-hover:opacity-100",
+                  i === 0 ? "text-amber-300" : "text-slate-400",
+                )}
+                aria-hidden
+              >
+                <span className="hidden xl:inline">{t("Add")}</span>
+                <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </motion.button>
+          ))}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }

@@ -3,8 +3,11 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { vi } from "vitest";
 
 vi.mock("react-virtualized-auto-sizer", () => ({
-  default: ({ children }: { children: (size: { width: number }) => React.ReactNode }) =>
-    children({ width: 320 }),
+  default: ({
+    children,
+  }: {
+    children: (size: { width: number }) => React.ReactNode;
+  }) => children({ width: 320 }),
 }));
 
 vi.mock("react-window", async () => {
@@ -84,10 +87,7 @@ const defaultTraderLevels: TraderLevels = {
 describe("ItemSelector dropdown behavior", () => {
   const excludedItems = new Set(DEFAULT_EXCLUDED_ITEMS);
 
-  const renderWithLanguage = (
-    ui: React.ReactElement,
-    language?: string
-  ) => {
+  const renderWithLanguage = (ui: React.ReactElement, language?: string) => {
     if (language) {
       window.localStorage.setItem("language", language);
     } else {
@@ -104,6 +104,7 @@ describe("ItemSelector dropdown behavior", () => {
     isPinned: false,
     isAutoPickActive: false,
     overriddenPrices: {},
+    manualDiscoveryItems: [],
     isExcluded: false,
     onToggleExclude: () => {},
     excludedItems,
@@ -112,10 +113,15 @@ describe("ItemSelector dropdown behavior", () => {
     traderLevels: defaultTraderLevels,
     remainingThreshold: 200_000,
     itemBonusPercent: 0,
+    categoryFilter: "all",
+    categoryFilterLabel: "All categories",
+    traderFilter: "any" as const,
   };
 
   const focusSelector = () => {
-    const input = screen.getByPlaceholderText(/search items|gegenstaende suchen/i);
+    const input = screen.getByPlaceholderText(
+      /search items|gegenstaende suchen/i
+    );
     act(() => {
       fireEvent.focus(input);
     });
@@ -264,11 +270,7 @@ describe("ItemSelector dropdown behavior", () => {
     ];
 
     renderWithLanguage(
-      <ItemSelector
-        items={items}
-        {...baseProps}
-        remainingThreshold={500_000}
-      />
+      <ItemSelector items={items} {...baseProps} remainingThreshold={500_000} />
     );
     focusSelector();
     toggleThresholdFilter();
@@ -364,5 +366,225 @@ describe("ItemSelector dropdown behavior", () => {
     focusSelector();
 
     expect(screen.getByText("Final Moment poster")).toBeInTheDocument();
+  });
+
+  it("reveals an excluded category through the shared category filter", () => {
+    const regularItem = makeItem({ id: "regular", name: "Golden rooster" });
+    const gun = makeItem({
+      id: "gun",
+      name: "HK MP5 9x19 submachine gun Default",
+      categories: ["5422acb9af1c889c16000029"],
+    });
+
+    renderWithLanguage(
+      <ItemSelector
+        items={[regularItem]}
+        {...baseProps}
+        manualDiscoveryItems={[regularItem, gun]}
+        categoryFilter="5422acb9af1c889c16000029"
+        categoryFilterLabel="Weapon"
+      />
+    );
+    focusSelector();
+
+    expect(
+      screen.getByText("HK MP5 9x19 submachine gun Default")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Golden rooster")).not.toBeInTheDocument();
+  });
+
+  it("matches a narrow category without including other categories", () => {
+    const gun = makeItem({
+      id: "gun",
+      name: "AK-74N Default",
+      categories: ["5422acb9af1c889c16000029"],
+    });
+    const component = makeItem({
+      id: "component",
+      name: "AK polymer handguard",
+      categories: ["5448fe124bdc2da5018b4567"],
+    });
+
+    renderWithLanguage(
+      <ItemSelector
+        items={[]}
+        {...baseProps}
+        manualDiscoveryItems={[gun, component]}
+        categoryFilter="5448fe124bdc2da5018b4567"
+        categoryFilterLabel="Weapon mod"
+      />
+    );
+    focusSelector();
+
+    expect(screen.getByText("AK polymer handguard")).toBeInTheDocument();
+    expect(screen.queryByText("AK-74N Default")).not.toBeInTheDocument();
+  });
+
+  it("ranks Default gun presets first without hiding other guns", () => {
+    const baseGun = makeItem({
+      id: "base",
+      name: "HK MP5 base",
+      categories: ["5422acb9af1c889c16000029"],
+    });
+    const defaultGun = makeItem({
+      id: "default",
+      name: "HK MP5 Navy Default",
+      categories: ["5422acb9af1c889c16000029"],
+    });
+    const exceptionGun = makeItem({
+      id: "exception",
+      name: "HK MP5 SD",
+      categories: ["5422acb9af1c889c16000029"],
+    });
+
+    renderWithLanguage(
+      <ItemSelector
+        items={[]}
+        {...baseProps}
+        manualDiscoveryItems={[baseGun, exceptionGun, defaultGun]}
+        categoryFilter="5422acb9af1c889c16000029"
+        categoryFilterLabel="Weapon"
+      />
+    );
+    focusSelector();
+
+    expectBefore("HK MP5 Navy Default", "HK MP5 base");
+    expectBefore("HK MP5 base", "HK MP5 SD");
+  });
+
+  it("filters trader offers by configured loyalty level", () => {
+    const accessibleGun = makeItem({
+      id: "accessible",
+      name: "Prapor LL2 gun",
+      categories: ["5422acb9af1c889c16000029"],
+      buyFor: [
+        {
+          priceRUB: 20_000,
+          vendor: { normalizedName: "prapor", minTraderLevel: 2 },
+        },
+      ],
+    });
+    const lockedGun = makeItem({
+      id: "locked",
+      name: "Prapor LL3 gun",
+      categories: ["5422acb9af1c889c16000029"],
+      buyFor: [
+        {
+          priceRUB: 30_000,
+          vendor: { normalizedName: "prapor", minTraderLevel: 3 },
+        },
+      ],
+    });
+
+    renderWithLanguage(
+      <ItemSelector
+        items={[]}
+        {...baseProps}
+        manualDiscoveryItems={[accessibleGun, lockedGun]}
+        traderLevels={{ ...defaultTraderLevels, prapor: 2 }}
+        categoryFilter="5422acb9af1c889c16000029"
+        categoryFilterLabel="Weapon"
+        traderFilter="prapor"
+      />
+    );
+    focusSelector();
+
+    expect(screen.getByText("Prapor LL2 gun")).toBeInTheDocument();
+    expect(screen.queryByText("Prapor LL3 gun")).not.toBeInTheDocument();
+    expect(screen.getByText("Prapor LL2")).toBeInTheDocument();
+  });
+
+  it("scopes search and autocomplete to the selected category", async () => {
+    const gun = makeItem({
+      id: "gun",
+      name: "HK MP5 Navy Default",
+      categories: ["5422acb9af1c889c16000029"],
+    });
+    const component = makeItem({
+      id: "component",
+      name: "HK MP5 handguard",
+      categories: ["5448fe124bdc2da5018b4567"],
+    });
+
+    renderWithLanguage(
+      <ItemSelector
+        items={[]}
+        {...baseProps}
+        manualDiscoveryItems={[component, gun]}
+        categoryFilter="5422acb9af1c889c16000029"
+        categoryFilterLabel="Weapon"
+      />
+    );
+    const input = focusSelector();
+    fireEvent.change(input, { target: { value: "HK" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    expect(screen.queryByText("HK MP5 handguard")).not.toBeInTheDocument();
+    fireEvent.keyDown(input, { key: "Tab" });
+    expect(input).toHaveValue("HK MP5 Navy Default");
+  });
+
+  it("keeps shared search filters after selecting an item", () => {
+    const regularItem = makeItem({ id: "regular", name: "Golden rooster" });
+    const gun = makeItem({
+      id: "gun",
+      name: "HK MP5 Navy Default",
+      categories: ["5422acb9af1c889c16000029"],
+    });
+    const onSelect = vi.fn();
+
+    renderWithLanguage(
+      <ItemSelector
+        items={[regularItem]}
+        {...baseProps}
+        manualDiscoveryItems={[regularItem, gun]}
+        onSelect={onSelect}
+        categoryFilter="5422acb9af1c889c16000029"
+        categoryFilterLabel="Weapon"
+      />
+    );
+    focusSelector();
+    fireEvent.click(screen.getByText("HK MP5 Navy Default"));
+
+    expect(onSelect).toHaveBeenCalledWith(gun, undefined);
+    expect(
+      screen.getByLabelText("Search filters active: Weapon")
+    ).toBeInTheDocument();
+
+    focusSelector();
+    expect(screen.getByText("HK MP5 Navy Default")).toBeInTheDocument();
+    expect(screen.queryByText("Golden rooster")).not.toBeInTheDocument();
+  });
+
+  it("shows a contextual empty state for category and trader filters", () => {
+    const gun = makeItem({
+      id: "gun",
+      name: "Peacekeeper gun",
+      categories: ["5422acb9af1c889c16000029"],
+      buyFor: [
+        {
+          priceRUB: 20_000,
+          vendor: { normalizedName: "peacekeeper", minTraderLevel: 1 },
+        },
+      ],
+    });
+
+    renderWithLanguage(
+      <ItemSelector
+        items={[]}
+        {...baseProps}
+        manualDiscoveryItems={[gun]}
+        categoryFilter="550aa4cd4bdc2dd8348b456c"
+        categoryFilterLabel="Silencer"
+        traderFilter="prapor"
+      />
+    );
+    focusSelector();
+
+    expect(
+      screen.getByText("No Silencer items match this search and Prapor")
+    ).toBeInTheDocument();
   });
 });
