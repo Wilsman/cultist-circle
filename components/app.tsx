@@ -66,6 +66,7 @@ import {
   HOT_SACRIFICES,
 } from "@/components/hot-sacrifices-panel";
 import { hashString, seededShuffle } from "@/lib/item-utils";
+import { RECIPE_COMPLETION_STORAGE_KEY } from "@/lib/recipe-completion";
 import { HeaderSection } from "@/components/app/header-section";
 import { FooterSection } from "@/components/app/footer-section";
 import { SelectorSettingsPopover } from "@/components/app/selector-settings-popover";
@@ -1791,11 +1792,14 @@ function AppContent({ contributors = [] }: AppProps) {
           storedVersion || "none"
         } to ${CURRENT_VERSION}`,
       );
-      // If the version has changed, we want to clear out most of the items in local storage
-      // We don't want to clear out the cookie consent, as that is a user preference
+      // If the version has changed, we want to clear out most items in local storage.
+      // Keep durable user preferences and progress that should survive releases.
+      const preservedStorageKeys = new Set([
+        "cookieConsent",
+        RECIPE_COMPLETION_STORAGE_KEY,
+      ]);
       Object.keys(localStorage).forEach((key) => {
-        // If the key is not "cookieConsent", remove the item from local storage
-        if (key !== "cookieConsent") {
+        if (!preservedStorageKeys.has(key)) {
           localStorage.removeItem(key);
         }
       });

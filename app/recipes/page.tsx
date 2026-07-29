@@ -19,6 +19,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -30,6 +42,13 @@ import { recipeIconMap } from "@/data/recipe-icons";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
 import { useLanguage } from "@/contexts/language-context";
 import { tarkovRecipes, type Recipe } from "@/data/recipes";
+import { useLocalStorageState } from "@/hooks/use-local-storage-state";
+import {
+  isRecipeCompletionList,
+  normalizeCompletedRecipeIds,
+  RECIPE_COMPLETION_STORAGE_KEY,
+  setRecipeCompletion,
+} from "@/lib/recipe-completion";
 import {
   Package,
   CheckCircle2,
@@ -39,9 +58,8 @@ import {
   X,
   Clock3,
   Filter,
-  ChevronDown,
-  ChevronUp,
   Repeat2,
+  RotateCcw,
 } from "lucide-react";
 
 // ============================================================================
@@ -359,12 +377,16 @@ interface RecipeCardProps {
     name: string,
   ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
   t: (key: string) => string;
+  isCompleted: boolean;
+  onCompletedChange: (recipeId: string, isCompleted: boolean) => void;
 }
 
 const RecipeCard = React.memo(function RecipeCard({
   recipe,
   getItemByName,
   t,
+  isCompleted,
+  onCompletedChange,
 }: RecipeCardProps) {
   const processOutputs = useCallback((): ProcessedOutput[] => {
     const outputs: ProcessedOutput[] = [];
@@ -417,143 +439,181 @@ const RecipeCard = React.memo(function RecipeCard({
     }
   }, [processedOutputs]);
 
+  const completionLabel = isCompleted
+    ? `Mark recipe requiring ${recipe.requiredItems.join(", ")} as not completed`
+    : `Mark recipe requiring ${recipe.requiredItems.join(", ")} as completed`;
+
   return (
-    <div className="relative rounded-xl border border-gray-700/50 bg-gray-800/40 p-4 lg:p-5 backdrop-blur-sm transition-all duration-200 hover:bg-gray-800/60 hover:border-gray-600/50 hover:shadow-lg hover:shadow-black/20 group">
-      {recipe.isUpdated ? (
-        <StatusBadge variant="updated" />
-      ) : recipe.isNew ? (
-        <StatusBadge variant="new" />
-      ) : null}
-      <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
-        <FoundInRaidBadge t={t} />
-        <ModeRestrictionBadge t={t} modeRestriction={recipe.modeRestriction} />
-        {recipe.isRepeatable && <RepeatableBadge />}
+    <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-3">
+      <div className="flex justify-center pt-4 sm:pt-5">
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <Checkbox
+                  checked={isCompleted}
+                  onCheckedChange={(checked) =>
+                    onCompletedChange(recipe.id, checked === true)
+                  }
+                  aria-label={completionLabel}
+                  className="h-5 w-5 rounded-full border-gray-500/80 bg-gray-950/50 text-emerald-950 shadow-[0_0_0_4px_rgba(17,24,39,0.7)] transition-all duration-200 hover:border-emerald-400/70 hover:bg-gray-900 focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 data-[state=checked]:border-emerald-300 data-[state=checked]:bg-emerald-300 data-[state=checked]:shadow-[0_0_0_4px_rgba(16,185,129,0.12),0_0_16px_rgba(52,211,153,0.22)]"
+                />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">
+              {isCompleted ? "Mark as not done" : "Mark as done"}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
-        {/* Inputs Column */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
-            <div className="p-1.5 rounded-lg bg-red-500/10">
-              <Package className="h-4 w-4 text-red-400" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-red-300">
-                Sacrifice
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
-                {recipe.requiredItems.length}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            {recipe.requiredItems.map((ing, idx) => (
-              <ItemBadge key={idx} itemName={ing} getItemByName={getItemByName} />
-            ))}
-          </div>
+      <div
+        className={`relative rounded-xl border p-4 backdrop-blur-sm transition-all duration-200 lg:p-5 group ${
+          isCompleted
+            ? "border-emerald-500/30 bg-emerald-950/10 shadow-[inset_0_0_24px_rgba(16,185,129,0.035)] hover:border-emerald-400/40 hover:bg-emerald-950/15"
+            : "border-gray-700/50 bg-gray-800/40 hover:border-gray-600/50 hover:bg-gray-800/60 hover:shadow-lg hover:shadow-black/20"
+        }`}
+      >
+        {recipe.isUpdated ? (
+          <StatusBadge variant="updated" />
+        ) : recipe.isNew ? (
+          <StatusBadge variant="new" />
+        ) : null}
+        <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
+          <FoundInRaidBadge t={t} />
+          <ModeRestrictionBadge t={t} modeRestriction={recipe.modeRestriction} />
+          {recipe.isRepeatable && <RepeatableBadge />}
         </div>
 
-        {/* Time Column */}
-        <div className="lg:border-x lg:border-gray-700/50 lg:px-6 flex flex-col items-center justify-center py-2 lg:py-0">
-          <div className="flex items-center gap-1 mb-2">
-            <ArrowRight
-              className="flow-arrow h-3 w-3 text-green-400/60"
-              style={{ animationDelay: "0ms" }}
-            />
-            <ArrowRight
-              className="flow-arrow h-3 w-3 text-green-400/80"
-              style={{ animationDelay: "150ms" }}
-            />
-            <ArrowRight
-              className="flow-arrow h-3 w-3 text-green-400"
-              style={{ animationDelay: "300ms" }}
-            />
+        <div
+          className={`grid grid-cols-1 gap-4 transition-opacity duration-200 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch lg:gap-6 ${
+            isCompleted ? "opacity-70" : ""
+          }`}
+        >
+          {/* Inputs Column */}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
+              <div className="p-1.5 rounded-lg bg-red-500/10">
+                <Package className="h-4 w-4 text-red-400" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-red-300">
+                  Sacrifice
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
+                  {recipe.requiredItems.length}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {recipe.requiredItems.map((ing, idx) => (
+                <ItemBadge key={idx} itemName={ing} getItemByName={getItemByName} />
+              ))}
+            </div>
           </div>
-          <style jsx global>{`
-            @keyframes flowFlash {
-              0% {
-                opacity: 0;
-              }
-              30% {
-                opacity: 1;
-              }
-              60%,
-              100% {
-                opacity: 0;
-              }
-            }
-            .flow-arrow {
-              animation: flowFlash 2s ease-in-out infinite;
-              animation-fill-mode: both;
-            }
-          `}</style>
-          <TooltipProvider delayDuration={150}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/60 border border-gray-700/50">
-                  <Clock3 className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm font-mono font-medium text-gray-200">
-                    {recipe.craftingTime}
-                  </span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                Crafting time
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
 
-        {/* Outputs Column */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
-            <div className="p-1.5 rounded-lg bg-green-500/10">
-              <CheckCircle2 className="h-4 w-4 text-green-400" />
+          {/* Time Column */}
+          <div className="lg:border-x lg:border-gray-700/50 lg:px-6 flex flex-col items-center justify-center py-2 lg:py-0">
+            <div className="flex items-center gap-1 mb-2">
+              <ArrowRight
+                className="flow-arrow h-3 w-3 text-green-400/60"
+                style={{ animationDelay: "0ms" }}
+              />
+              <ArrowRight
+                className="flow-arrow h-3 w-3 text-green-400/80"
+                style={{ animationDelay: "150ms" }}
+              />
+              <ArrowRight
+                className="flow-arrow h-3 w-3 text-green-400"
+                style={{ animationDelay: "300ms" }}
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-green-300">
-                Rewards
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
-                {outputCount}
-              </span>
-            </div>
+            <style jsx global>{`
+              @keyframes flowFlash {
+                0% {
+                  opacity: 0;
+                }
+                30% {
+                  opacity: 1;
+                }
+                60%,
+                100% {
+                  opacity: 0;
+                }
+              }
+              .flow-arrow {
+                animation: flowFlash 2s ease-in-out infinite;
+                animation-fill-mode: both;
+              }
+            `}</style>
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/60 border border-gray-700/50">
+                    <Clock3 className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm font-mono font-medium text-gray-200">
+                      {recipe.craftingTime}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Crafting time
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <div className="flex flex-col gap-2">
-            {processedOutputs.map((output, idx) => {
-              if (output.type === "normal") {
+
+          {/* Outputs Column */}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
+              <div className="p-1.5 rounded-lg bg-green-500/10">
+                <CheckCircle2 className="h-4 w-4 text-green-400" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-green-300">
+                  Rewards
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
+                  {outputCount}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {processedOutputs.map((output, idx) => {
+                if (output.type === "normal") {
+                  return (
+                    <ItemBadge
+                      key={`${output.content}-${idx}`}
+                      itemName={output.content as string}
+                      isOutput={true}
+                      getItemByName={getItemByName}
+                    />
+                  );
+                }
+                const content = output.content as {
+                  items: string[];
+                  explanation: string;
+                };
                 return (
-                  <ItemBadge
-                    key={`${output.content}-${idx}`}
-                    itemName={output.content as string}
-                    isOutput={true}
-                    getItemByName={getItemByName}
-                  />
+                  <div key={`multiple-wrapper-${idx}`}>
+                    <MultipleOutputBadge
+                      items={content.items}
+                      explanation={content.explanation}
+                      getItemByName={getItemByName}
+                    />
+                    {idx < processedOutputs.length - 1 && (
+                      <div className="flex items-center justify-center my-3">
+                        <span className="text-xs font-bold text-orange-400/80 bg-orange-950/20 px-4 py-1 rounded-full border border-orange-900/30 uppercase tracking-widest">
+                          OR
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 );
-              }
-              const content = output.content as {
-                items: string[];
-                explanation: string;
-              };
-              return (
-                <div key={`multiple-wrapper-${idx}`}>
-                  <MultipleOutputBadge
-                    items={content.items}
-                    explanation={content.explanation}
-                    getItemByName={getItemByName}
-                  />
-                  {idx < processedOutputs.length - 1 && (
-                    <div className="flex items-center justify-center my-3">
-                      <span className="text-xs font-bold text-orange-400/80 bg-orange-950/20 px-4 py-1 rounded-full border border-orange-900/30 uppercase tracking-widest">
-                        OR
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+              })}
+            </div>
+            {recipe.roomInfo && <RoomInfoBadge roomInfo={recipe.roomInfo} />}
           </div>
-          {recipe.roomInfo && <RoomInfoBadge roomInfo={recipe.roomInfo} />}
         </div>
       </div>
     </div>
@@ -576,9 +636,39 @@ export default function RecipesPage() {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
+  const [storedCompletedRecipeIds, setStoredCompletedRecipeIds] =
+    useLocalStorageState<string[]>(RECIPE_COMPLETION_STORAGE_KEY, [], {
+      validate: isRecipeCompletionList,
+    });
   const searchRef = useRef<HTMLInputElement>(null);
   const debouncedSearch = useDebounce(searchQuery, 150);
+  const knownRecipeIds = useMemo(
+    () => new Set(tarkovRecipes.map((recipe) => recipe.id)),
+    [],
+  );
+  const completedRecipeIds = useMemo(
+    () =>
+      new Set(
+        normalizeCompletedRecipeIds(storedCompletedRecipeIds, knownRecipeIds),
+      ),
+    [knownRecipeIds, storedCompletedRecipeIds],
+  );
+  const completedRecipeCount = completedRecipeIds.size;
+
+  const handleCompletedChange = useCallback(
+    (recipeId: string, isCompleted: boolean) => {
+      setStoredCompletedRecipeIds((currentRecipeIds) =>
+        setRecipeCompletion(
+          currentRecipeIds,
+          recipeId,
+          isCompleted,
+          knownRecipeIds,
+        ),
+      );
+    },
+    [knownRecipeIds, setStoredCompletedRecipeIds],
+  );
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -598,10 +688,6 @@ export default function RecipesPage() {
         e.preventDefault();
         searchRef.current?.focus();
       }
-      if (e.key === "f" && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        setShowFilters((prev) => !prev);
-      }
     }
 
     window.addEventListener("keydown", onKeyDown);
@@ -613,6 +699,10 @@ export default function RecipesPage() {
     const searchLower = debouncedSearch.toLowerCase().trim();
 
     let filtered = tarkovRecipes.filter((recipe) => {
+      if (showIncompleteOnly && completedRecipeIds.has(recipe.id)) {
+        return false;
+      }
+
       if (!searchLower) return true;
 
       const inInputs = recipe.requiredItems.some((input) =>
@@ -657,9 +747,10 @@ export default function RecipesPage() {
     }
 
     return filtered;
-  }, [debouncedSearch, sortBy]);
+  }, [completedRecipeIds, debouncedSearch, showIncompleteOnly, sortBy]);
 
-  const hasActiveFilters = sortBy !== "default" || debouncedSearch;
+  const hasActiveFilters =
+    sortBy !== "default" || Boolean(debouncedSearch) || showIncompleteOnly;
 
   return (
     <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100">
@@ -704,86 +795,110 @@ export default function RecipesPage() {
               </div>
             </div>
 
-            {/* Filters & Sort */}
-            <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filters & Sort
-                {showFilters ? (
-                  <ChevronUp className="h-4 w-4 ml-2" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                )}
-              </Button>
-
-              <div className="flex items-center gap-3 text-sm text-gray-400">
-                <span className="px-3 py-1.5 rounded-full bg-gray-800/70 border border-gray-700">
-                  {filteredAndSortedItems.length} recipe
-                  {filteredAndSortedItems.length === 1 ? "" : "s"}
+            {/* Always-visible filters, sort, and progress */}
+            <div className="mt-4 border-t border-gray-800/80 pt-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-600">
+                  Sort
                 </span>
-                {hasActiveFilters && (
+                {SORT_OPTIONS.map((option) => (
                   <Button
-                    variant="ghost"
+                    key={option.value}
+                    variant={sortBy === option.value ? "default" : "outline"}
                     size="sm"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSortBy("default");
-                    }}
-                    className="text-xs text-gray-500 hover:text-gray-300"
+                    onClick={() => setSortBy(option.value)}
+                    className={`h-7 rounded-full px-3 text-[11px] transition-all ${
+                      sortBy === option.value
+                        ? "border-gray-600 bg-gray-700 text-white"
+                        : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
+                    }`}
                   >
-                    Clear filters
+                    {option.label}
                   </Button>
-                )}
+                ))}
+                <span className="mx-1 hidden h-4 w-px bg-gray-700/70 sm:block" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-pressed={showIncompleteOnly}
+                  onClick={() => setShowIncompleteOnly((current) => !current)}
+                  className={`h-7 rounded-full px-3 text-[11px] transition-all ${
+                    showIncompleteOnly
+                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100"
+                      : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
+                  }`}
+                >
+                  <Filter className="mr-1.5 h-3 w-3" />
+                  Unfinished only
+                </Button>
               </div>
-            </div>
 
-            {/* Expandable Filters */}
-            {showFilters && (
-              <div className="mt-4 pt-4 border-t border-gray-800 animate-in slide-in-from-top-2 duration-200">
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-gray-500 uppercase tracking-wider font-medium self-center mr-2">
-                    Sort by:
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-sm text-gray-400">
+                  <span
+                    className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-emerald-300/90"
+                    aria-live="polite"
+                  >
+                    {completedRecipeCount} / {tarkovRecipes.length} done
                   </span>
-                  {SORT_OPTIONS.map((option) => (
+                  {completedRecipeCount > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-red-950/30 hover:text-red-300"
+                        >
+                          <RotateCcw className="mr-1 h-3 w-3" />
+                          Reset progress
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="border-gray-700 bg-gray-900 text-gray-100 shadow-2xl sm:max-w-md">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Reset recipe progress?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-gray-400">
+                            This will mark all {tarkovRecipes.length} recipes as
+                            unfinished on this device.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white">
+                            Cancel
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => setStoredCompletedRecipeIds([])}
+                            className="bg-red-600 text-white hover:bg-red-500"
+                          >
+                            Reset progress
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5">
+                    {filteredAndSortedItems.length} recipe
+                    {filteredAndSortedItems.length === 1 ? "" : "s"}
+                  </span>
+                  {hasActiveFilters && (
                     <Button
-                      key={option.value}
-                      variant={sortBy === option.value ? "default" : "outline"}
+                      variant="ghost"
                       size="sm"
-                      onClick={() => setSortBy(option.value)}
-                      className={`text-xs rounded-full transition-all ${
-                        sortBy === option.value
-                          ? "bg-gray-700 text-white border-gray-600"
-                          : "bg-transparent text-gray-400 border-gray-700 hover:bg-gray-800 hover:text-gray-200"
-                      }`}
+                      onClick={() => {
+                        setSearchQuery("");
+                        setSortBy("default");
+                        setShowIncompleteOnly(false);
+                      }}
+                      className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-gray-800 hover:text-gray-300"
                     >
-                      {option.label}
+                      Clear filters
                     </Button>
-                  ))}
+                  )}
                 </div>
               </div>
-            )}
-
-            {/* Quick Tips */}
-            {!searchQuery && (
-              <div className="mt-3 text-center">
-                <p className="text-xs text-gray-500">
-                  Pro tip: Press{" "}
-                  <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 mx-1">
-                    /
-                  </kbd>{" "}
-                  to search,{" "}
-                  <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 mx-1">
-                    F
-                  </kbd>{" "}
-                  for filters
-                </p>
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Recipe List */}
@@ -804,6 +919,7 @@ export default function RecipesPage() {
                   onClick={() => {
                     setSearchQuery("");
                     setSortBy("default");
+                    setShowIncompleteOnly(false);
                   }}
                   className="border-gray-700 hover:bg-gray-800"
                 >
@@ -812,12 +928,14 @@ export default function RecipesPage() {
               </div>
             ) : (
               <div className="grid gap-3 sm:gap-4">
-                {filteredAndSortedItems.map((recipe, index) => (
+                {filteredAndSortedItems.map((recipe) => (
                   <RecipeCard
-                    key={`${recipe.requiredItems.join("-")}-${index}`}
+                    key={recipe.id}
                     recipe={recipe}
                     getItemByName={getItemByName}
                     t={t}
+                    isCompleted={completedRecipeIds.has(recipe.id)}
+                    onCompletedChange={handleCompletedChange}
                   />
                 ))}
               </div>

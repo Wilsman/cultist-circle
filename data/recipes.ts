@@ -4,6 +4,7 @@
  * Recipe type definition for Cultist Circle crafting recipes
  */
 export interface Recipe {
+  id: string;
   requiredItems: string[];
   craftingTime: string;
   producedItems:
@@ -19,10 +20,26 @@ export interface Recipe {
   };
 }
 
+type RecipeDefinition = Omit<Recipe, "id">;
+
+function createRecipeId(requiredItems: string[]): string {
+  const source = requiredItems
+    .map((item) => item.trim().toLowerCase())
+    .join("\u001f");
+  let hash = 2166136261;
+
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return `recipe-${(hash >>> 0).toString(36)}`;
+}
+
 /**
  * Escape from Tarkov Cultist Circle crafting recipes
  */
-export const tarkovRecipes: Recipe[] = [
+const recipeDefinitions: RecipeDefinition[] = [
   {
     requiredItems: [
       "1x Christmas tree ornament (Silver)",
@@ -434,3 +451,8 @@ export const tarkovRecipes: Recipe[] = [
     isRepeatable: true,
   },
 ];
+
+export const tarkovRecipes: Recipe[] = recipeDefinitions.map((recipe) => ({
+  ...recipe,
+  id: createRecipeId(recipe.requiredItems),
+}));
