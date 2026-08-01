@@ -10,6 +10,10 @@
   font-display: swap;
 }
 
+.font-arcade {
+  font-family: "PressStart2P", monospace;
+}
+
 /* Custom animations */
 @keyframes pulse-color {
   0%,
@@ -123,6 +127,56 @@
   }
 }
 
+@keyframes arcade-unlock {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.96);
+    filter: brightness(2);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(2px, 0) scale(1.02);
+  }
+  55% {
+    transform: translate(-2px, 0) scale(0.99);
+  }
+  100% {
+    transform: translate(0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes arcade-scan {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 8px;
+  }
+}
+
+.scav-invaders-unlock {
+  animation: arcade-unlock 480ms steps(4, end) both;
+}
+
+.scav-invaders-scanlines {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.018) 0,
+      rgba(255, 255, 255, 0.018) 1px,
+      rgba(0, 0, 0, 0.16) 2px,
+      rgba(0, 0, 0, 0.16) 4px
+    ),
+    radial-gradient(circle at center, transparent 55%, rgba(0, 0, 0, 0.38));
+  animation: arcade-scan 700ms linear infinite;
+  mix-blend-mode: screen;
+}
+
+.scav-invaders-cabinet canvas {
+  image-rendering: pixelated;
+}
+
 @layer base {
   :root {
     --background: 220 22% 20%;
@@ -169,7 +223,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
     image-rendering: pixelated;
   }
 
@@ -351,6 +407,11 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .scav-invaders-scanlines {
+    animation: none;
+    background-position: 0 0;
   }
 }
 
