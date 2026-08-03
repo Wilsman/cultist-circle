@@ -1,5 +1,18 @@
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { toast as sonnerToast } from "sonner";
+import type { GameMode } from "@/lib/game-mode";
+
+const SHARE_MODE_CODES: Record<GameMode, string> = {
+  pvp: "v",
+  pve: "p",
+  season: "s",
+};
+
+const SHARE_CODE_MODES: Record<string, GameMode> = {
+  v: "pvp",
+  p: "pve",
+  s: "season",
+};
 
 /**
  * Shortens an item ID by taking the first 8 characters
@@ -15,12 +28,12 @@ function shortenItemId(id: string): string {
 /**
  * Generates a shareable code for the selected items
  * @param selectedItems - Array of selected items
- * @param isPVE - Whether the game mode is PVE
+ * @param mode - The selected game mode
  * @returns string - The shareable code
  */
 export function generateShareableCode(
   selectedItems: (SimplifiedItem | null)[],
-  isPVE: boolean
+  mode: GameMode,
 ): string {
   // Filter out null items and get their IDs
   const itemIds = selectedItems
@@ -33,11 +46,10 @@ export function generateShareableCode(
 
   // Use shortened item IDs for a more compact code
   const shortIds = itemIds.map(shortenItemId);
-  
+
   // Create an ultra-compact code format: p:id1,id2,id3
   // Using single character for game mode and shortest possible separator
-  const gameMode = isPVE ? "p" : "v";
-  const codeContent = `${gameMode}:${shortIds.join(",")}`;  // Using : as separator to save 1 byte
+  const codeContent = `${SHARE_MODE_CODES[mode]}:${shortIds.join(",")}`;
 
   // Base64 encode for a cleaner code
   return btoa(codeContent);
@@ -46,15 +58,15 @@ export function generateShareableCode(
 /**
  * Copies a shareable code to clipboard
  * @param selectedItems - Array of selected items
- * @param isPVE - Whether the game mode is PVE
+ * @param mode - The selected game mode
  * @param toast - Toast function to show notifications
  * @returns void
  */
 export function copyShareableCode(
   selectedItems: (SimplifiedItem | null)[],
-  isPVE: boolean
+  mode: GameMode,
 ): void {
-  const code = generateShareableCode(selectedItems, isPVE);
+  const code = generateShareableCode(selectedItems, mode);
 
   if (!code) {
     sonnerToast("No Items Selected", {
@@ -100,12 +112,12 @@ function isValidBase64(str: string): boolean {
  */
 export function parseShareableCode(code: string): {
   itemIds: string[];
-  isPVE: boolean | null;
+  gameMode: GameMode | null;
   error?: string;
 } {
   // First validate if the code is a valid Base64 string
   if (!isValidBase64(code)) {
-    return { itemIds: [], isPVE: null, error: "Invalid code format" };
+    return { itemIds: [], gameMode: null, error: "Invalid code format" };
   }
 
   try {
@@ -114,26 +126,49 @@ export function parseShareableCode(code: string): {
 
     // Check if the decoded content has the expected format (using colon as separator)
     if (!decodedContent.includes(":")) {
-      return { itemIds: [], isPVE: null, error: "Invalid code structure" };
+      return { itemIds: [], gameMode: null, error: "Invalid code structure" };
     }
 
     // Split the content by the separator
-    const [gameMode, itemsString] = decodedContent.split(":");
+    const [modeCode, itemsString] = decodedContent.split(":");
 
     // Validate game mode (only support shortened format)
-    const isPVE = gameMode === "p" ? true : gameMode === "v" ? false : null;
-    
-    if (isPVE === null) {
-      return { itemIds: [], isPVE: null, error: "Invalid game mode" };
+    const gameMode = SHARE_CODE_MODES[modeCode] ?? null;
+
+    if (gameMode === null) {
+      return { itemIds: [], gameMode: null, error: "Invalid game mode" };
     }
 
     // Parse item IDs
     const itemIds = itemsString ? itemsString.split(",") : [];
 
-    return { itemIds, isPVE };
+    return { itemIds, gameMode };
   } catch {
-    return { itemIds: [], isPVE: null, error: "Failed to parse code" };
+    return { itemIds: [], gameMode: null, error: "Failed to parse code" };
   }
+}
+
+export function resolveSharedItems(
+  itemIds: string[],
+  rawItemsData: SimplifiedItem[],
+): (SimplifiedItem | null)[] {
+  const selectedItems: (SimplifiedItem | null)[] = Array(5).fill(null);
+
+  itemIds.slice(0, 5).forEach((shortId, index) => {
+    const item = rawItemsData.find((candidate) =>
+      candidate.id.startsWith(shortId),
+    );
+    if (!item) return;
+
+    selectedItems[index] = {
+      ...item,
+      basePrice: typeof item.basePrice === "number" ? item.basePrice : 0,
+      lastLowPrice:
+        typeof item.lastLowPrice === "number" ? item.lastLowPrice : 0,
+    };
+  });
+
+  return selectedItems;
 }
 
 /**
@@ -145,21 +180,21 @@ export function parseShareableCode(code: string): {
  */
 export function loadItemsFromCode(
   code: string,
-  rawItemsData: SimplifiedItem[]
-): { items: (SimplifiedItem | null)[] | null; isPVE: boolean | null } {
+  rawItemsData: SimplifiedItem[],
+): { items: (SimplifiedItem | null)[] | null; gameMode: GameMode | null } {
   if (!code || !rawItemsData || rawItemsData.length === 0) {
-    return { items: null, isPVE: null };
+    return { items: null, gameMode: null };
   }
 
   // Parse the code
-  const { itemIds, isPVE, error } = parseShareableCode(code);
+  const { itemIds, gameMode, error } = parseShareableCode(code);
 
   // Handle parsing errors
   if (error) {
     sonnerToast("Invalid Code", {
       description: "The code format is invalid. Please check and try again.",
     });
-    return { items: null, isPVE: null };
+    return { items: null, gameMode: null };
   }
 
   // Check if we have any items
@@ -167,46 +202,22 @@ export function loadItemsFromCode(
     sonnerToast("Invalid Code", {
       description: "The provided code doesn't contain any items.",
     });
-    return { items: null, isPVE };
+    return { items: null, gameMode };
   }
 
   try {
-    // Create an array of 5 null items
-    const newSelectedItems = Array(5).fill(null);
-
-    // Find items by ID and populate the selection
-    itemIds.forEach((shortId: string, index: number) => {
-      if (index < 5) {
-        // Match items by the shortened ID prefix
-        const item = rawItemsData.find((item) => 
-          item.id.startsWith(shortId) // Shortened ID match
-        );
-
-        // Validate the item has all required properties before adding it
-        if (item && typeof item === "object") {
-          // Ensure item has all required properties with valid values
-          const validItem = {
-            ...item,
-            basePrice: typeof item.basePrice === "number" ? item.basePrice : 0,
-            lastLowPrice:
-              typeof item.lastLowPrice === "number" ? item.lastLowPrice : 0,
-          };
-
-          newSelectedItems[index] = validItem;
-        }
-      }
-    });
+    const newSelectedItems = resolveSharedItems(itemIds, rawItemsData);
 
     // Show toast notification about loaded items
     sonnerToast("Items Loaded", {
       description: "Items have been loaded from the shared code.",
     });
 
-    return { items: newSelectedItems, isPVE };
+    return { items: newSelectedItems, gameMode };
   } catch {
     sonnerToast("Error Loading Items", {
       description: "There was a problem loading the items from the code.",
     });
-    return { items: null, isPVE: null };
+    return { items: null, gameMode: null };
   }
 }

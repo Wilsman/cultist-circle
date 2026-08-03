@@ -99,6 +99,15 @@ function installJsonFetchMock(
       );
     }
     if (url.endsWith("/regular/traders")) return response(traderResponse);
+    if (url.endsWith("/pvp-season/items")) return response(itemResponse);
+    if (url.endsWith("/pvp-season/items_en")) return response(englishResponse);
+    if (url.endsWith("/pvp-season/items_de")) {
+      return response(
+        options.germanBody ?? germanResponse,
+        options.germanStatus ?? 200,
+      );
+    }
+    if (url.endsWith("/pvp-season/traders")) return response(traderResponse);
     throw new Error(`Unexpected request: ${url}`);
   });
 }
@@ -225,6 +234,51 @@ describe("Tarkov.dev JSON fetchers", () => {
     ]);
     expect(
       fetchMock.mock.calls.some(([input]) => String(input).includes("/pve/")),
+    ).toBe(false);
+  });
+
+  test("loads Season from its dedicated JSON resources", async () => {
+    const fetchMock = installJsonFetchMock();
+
+    const result = await fetchTarkovData("pvp-season", "de");
+
+    expect(result.meta.mode).toBe("season");
+    expect(result.items[0]).toMatchObject({
+      name: "Testgegenstand",
+      shortName: "Gegenstand",
+    });
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(urls).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/\/pvp-season\/items$/),
+        expect.stringMatching(/\/pvp-season\/items_en$/),
+        expect.stringMatching(/\/pvp-season\/items_de$/),
+        expect.stringMatching(/\/pvp-season\/traders$/),
+      ]),
+    );
+    expect(urls.some((url) => url.includes("/regular/"))).toBe(false);
+  });
+
+  test("does not fall back to regular GraphQL data when Season JSON fails", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch" as any)
+      .mockImplementation(async (input) => {
+        const url = String(input);
+        if (url.endsWith("/pvp-season/items")) return response({}, 404);
+        if (url.endsWith("/pvp-season/items_en")) {
+          return response(englishResponse);
+        }
+        if (url.endsWith("/pvp-season/traders")) {
+          return response(traderResponse);
+        }
+        throw new Error(`Unexpected request: ${url}`);
+      });
+
+    await expect(fetchTarkovData("pvp-season", "en")).rejects.toThrow(
+      /pvp-season\/items/,
+    );
+    expect(
+      fetchMock.mock.calls.some(([input]) => String(input).includes("graphql")),
     ).toBe(false);
   });
 

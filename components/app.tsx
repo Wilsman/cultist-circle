@@ -84,6 +84,14 @@ import {
   ALL_CATEGORIES_FILTER,
   type SelectorTraderFilter,
 } from "@/lib/item-selector-filters";
+import {
+  GAME_MODE_LABELS,
+  GAME_MODE_STORAGE_KEY,
+  LEGACY_PVE_STORAGE_KEY,
+  getStoredGameMode,
+  type GameMode,
+} from "@/lib/game-mode";
+import { resolveSharedItems } from "@/lib/share-utils";
 interface AppProps {
   contributors?: GitHubContributor[];
 }
@@ -116,12 +124,16 @@ function AppContent({ contributors = [] }: AppProps) {
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const { t } = useLanguage();
   // Define state variables and hooks
-  const [isPVE, setIsPVE] = useState<boolean>(() => {
+  const [mode, setMode] = useState<GameMode>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("isPVE") === "true";
+      return getStoredGameMode(localStorage);
     }
-    return false;
+    return "pvp";
   });
+  const [pendingSharedItems, setPendingSharedItems] = useState<{
+    mode: GameMode;
+    itemIds: string[];
+  } | null>(null);
   const [selectedItems, setSelectedItems] = useState<
     Array<SimplifiedItem | null>
   >(Array(5).fill(null));
@@ -259,7 +271,7 @@ function AppContent({ contributors = [] }: AppProps) {
     needsManualRetry,
     resetRetryCount,
     requestStatus,
-  } = useItemsData(isPVE);
+  } = useItemsData(mode);
   const [requestStatusNow, setRequestStatusNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -352,10 +364,11 @@ function AppContent({ contributors = [] }: AppProps) {
     );
   }, [allCategoriesLocalized, selectorCategoryFilter, t]);
 
-  // Save isPVE state to localStorage when it changes
+  // Persist the three-mode selection and retire the legacy boolean key.
   useEffect(() => {
-    localStorage.setItem("isPVE", isPVE.toString());
-  }, [isPVE]);
+    localStorage.setItem(GAME_MODE_STORAGE_KEY, mode);
+    localStorage.removeItem(LEGACY_PVE_STORAGE_KEY);
+  }, [mode]);
 
   // Save fleaPriceType to localStorage
   useEffect(() => {
@@ -726,7 +739,7 @@ function AppContent({ contributors = [] }: AppProps) {
       setThreshold,
       setExcludedItems,
       setOverriddenPrices,
-      setIsPVE,
+      setMode,
       async () => {
         await mutate();
         return;
@@ -743,7 +756,7 @@ function AppContent({ contributors = [] }: AppProps) {
     setThreshold,
     setExcludedItems,
     setOverriddenPrices,
-    setIsPVE,
+    setMode,
     mutate,
   ]);
 
@@ -838,7 +851,7 @@ function AppContent({ contributors = [] }: AppProps) {
         ? candidateItems.filter(
             (item: SimplifiedItem) =>
               typeof item.lastOfferCount !== "number" ||
-              item.lastOfferCount >= LOW_OFFER_COUNT_THRESHOLD
+              item.lastOfferCount >= LOW_OFFER_COUNT_THRESHOLD,
           )
         : candidateItems;
 
@@ -851,7 +864,7 @@ function AppContent({ contributors = [] }: AppProps) {
 
     // Then filter out individually excluded items (case-insensitive, language-agnostic)
     const excludedItemNames = new Set(
-      Array.from(excludedItems, (name) => name.toLowerCase())
+      Array.from(excludedItems, (name) => name.toLowerCase()),
     );
     const filterExcludedItems = (candidateItems: SimplifiedItem[]) =>
       excludeIncompatible
@@ -864,7 +877,7 @@ function AppContent({ contributors = [] }: AppProps) {
               item.englishShortName,
             ].filter(Boolean) as string[];
             return !candidates.some((n) =>
-              excludedItemNames.has(n.toLowerCase())
+              excludedItemNames.has(n.toLowerCase()),
             );
           })
         : candidateItems;
@@ -1256,10 +1269,10 @@ function AppContent({ contributors = [] }: AppProps) {
   ) =>
     Boolean(
       showHintPills &&
-        !slotItem &&
-        nextItemSuggestions[index] &&
-        nextItemSuggestions[index].length > 0 &&
-        index === selectedItems.findIndex((item) => !item),
+      !slotItem &&
+      nextItemSuggestions[index] &&
+      nextItemSuggestions[index].length > 0 &&
+      index === selectedItems.findIndex((item) => !item),
     );
 
   // Handler to update selected item
@@ -1482,7 +1495,7 @@ function AppContent({ contributors = [] }: AppProps) {
       );
 
       if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
-        if (!isPVE && priceMode === "flea") {
+        if (mode !== "pve" && priceMode === "flea") {
           sonnerToast.error(t("Auto Select"), {
             description: t(
               "No valid combo using Flea prices in PvP. Switch to Trader prices?",
@@ -1541,7 +1554,7 @@ function AppContent({ contributors = [] }: AppProps) {
     overriddenPrices,
     findBestCombination,
     getEffectivePrice,
-    isPVE,
+    mode,
     priceMode,
     setPriceMode,
     ignoreFilters,
@@ -1712,13 +1725,13 @@ function AppContent({ contributors = [] }: AppProps) {
     [findMatchingItem, t, updateSelectedItem],
   );
 
-  const handleModeToggle = useCallback((checked: boolean): void => {
+  const handleModeChange = useCallback((nextMode: GameMode): void => {
     // Mode switching is now handled by SWR cache in use-items-data.ts
     // We just need to update the UI state
-    console.log(`Switching to ${checked ? "PVE" : "PVP"} mode`);
+    console.log(`Switching to ${GAME_MODE_LABELS[nextMode]} mode`);
 
     // Update the mode state
-    setIsPVE(checked);
+    setMode(nextMode);
 
     // Reset UI state
     setSelectedItems(Array(5).fill(null));
@@ -1728,6 +1741,42 @@ function AppContent({ contributors = [] }: AppProps) {
     setHasAutoSelected(false);
     toastShownRef.current = false;
   }, []);
+
+  const handleSharedCodeLoad = useCallback(
+    (itemIds: string[], sharedMode: GameMode) => {
+      setPendingSharedItems({ mode: sharedMode, itemIds });
+      handleModeChange(sharedMode);
+    },
+    [handleModeChange],
+  );
+
+  useEffect(() => {
+    if (
+      !pendingSharedItems ||
+      pendingSharedItems.mode !== mode ||
+      rawItemsData.length === 0
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      const items = resolveSharedItems(
+        pendingSharedItems.itemIds,
+        rawItemsData,
+      );
+      setSelectedItems(items);
+      setPendingSharedItems(null);
+      sonnerToast("Items Loaded!", {
+        description: `Loaded ${items.filter(Boolean).length} items from code.`,
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, pendingSharedItems, rawItemsData]);
 
   // Handler to copy item name to clipboard
   const handleCopyToClipboard = (index: number): void => {
@@ -1796,6 +1845,7 @@ function AppContent({ contributors = [] }: AppProps) {
       // Keep durable user preferences and progress that should survive releases.
       const preservedStorageKeys = new Set([
         "cookieConsent",
+        GAME_MODE_STORAGE_KEY,
         RECIPE_COMPLETION_STORAGE_KEY,
       ]);
       Object.keys(localStorage).forEach((key) => {
@@ -1963,8 +2013,8 @@ function AppContent({ contributors = [] }: AppProps) {
                   {/* Primary Controls Row */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
                     <ModeThreshold
-                      isPVE={isPVE}
-                      onModeToggle={handleModeToggle}
+                      mode={mode}
+                      onModeChange={handleModeChange}
                       threshold={threshold}
                       onThresholdChange={handleThresholdChange}
                     />
@@ -2193,9 +2243,7 @@ function AppContent({ contributors = [] }: AppProps) {
                               remainingThreshold={remainingThreshold}
                               itemBonusPercent={itemBonus}
                               categoryFilter={selectorCategoryFilter}
-                              categoryFilterLabel={
-                                selectorCategoryFilterLabel
-                              }
+                              categoryFilterLabel={selectorCategoryFilterLabel}
                               traderFilter={selectorTraderFilter}
                               hasAttachedSuggestions={shouldShowNextItemHints(
                                 item,
@@ -2297,17 +2345,11 @@ function AppContent({ contributors = [] }: AppProps) {
                   {/* Right: Share button */}
                   <ShareButton
                     selectedItems={selectedItems}
-                    isPVE={isPVE}
-                    rawItemsData={rawItemsData}
+                    mode={mode}
                     total={Math.floor(total)}
                     totalFlea={Math.floor(totalFleaCost || 0)}
                     sacred={itemBonus > 0}
-                    onItemsLoaded={(items, newIsPVE) => {
-                      setSelectedItems(items);
-                      if (newIsPVE !== null) {
-                        setIsPVE(newIsPVE);
-                      }
-                    }}
+                    onCodeLoaded={handleSharedCodeLoad}
                   />
                 </div>
 

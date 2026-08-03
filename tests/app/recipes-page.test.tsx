@@ -25,15 +25,16 @@ const mockRecipes = vi.hoisted(() => [
     producedItems: ["1x Sun reward"],
   },
 ]);
+const useRecipeItemDataMock = vi.hoisted(() =>
+  vi.fn(() => ({ getItemByName: () => null })),
+);
 
 vi.mock("@/data/recipes", () => ({
   tarkovRecipes: mockRecipes,
 }));
 
 vi.mock("@/hooks/use-recipe-item-data", () => ({
-  useRecipeItemData: () => ({
-    getItemByName: () => null,
-  }),
+  useRecipeItemData: (mode: string) => useRecipeItemDataMock(mode),
 }));
 
 vi.mock("@/contexts/language-context", () => ({
@@ -45,10 +46,19 @@ vi.mock("@/contexts/language-context", () => ({
 describe("RecipesPage completion tracker", () => {
   beforeEach(() => {
     localStorage.clear();
+    useRecipeItemDataMock.mockClear();
   });
 
   afterEach(() => {
     cleanup();
+  });
+
+  it("uses the persisted Season item dataset", () => {
+    localStorage.setItem("gameMode", "season");
+
+    render(<RecipesPage />);
+
+    expect(useRecipeItemDataMock).toHaveBeenCalledWith("season");
   });
 
   it("checks recipes independently and restores progress after remount", () => {

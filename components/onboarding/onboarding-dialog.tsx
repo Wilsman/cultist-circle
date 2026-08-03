@@ -139,7 +139,7 @@ export function OnboardingDialog() {
               <CarouselItem>
                 <Slide title="How to use the calculator">
                   <ol className="list-decimal list-inside space-y-1">
-                    <li>Set game mode (PVE/PVP).</li>
+                    <li>Set game mode (PVP/PVE/Season).</li>
                     <li>Set your threshold (e.g., 400k).</li>
                     <li>Search/select up to 5 items, or use Auto Select.</li>
                     <li>
@@ -260,7 +260,7 @@ export function OnboardingDialog() {
                                       ? "text-amber-400 sm:bg-amber-500/20 sm:border-amber-500/30"
                                       : "text-blue-400 sm:bg-blue-500/20 sm:border-blue-500/30",
                                     // Desktop: show bubble
-                                    "sm:inline-flex sm:items-center sm:px-2.5 sm:py-1 sm:rounded-full sm:border"
+                                    "sm:inline-flex sm:items-center sm:px-2.5 sm:py-1 sm:rounded-full sm:border",
                                   )}
                                 >
                                   {t(row.result)}
@@ -303,7 +303,7 @@ export function OnboardingDialog() {
                   aria-label={`Go to slide ${i + 1}`}
                   className={cn(
                     "h-1.5 w-6 rounded-full transition-colors",
-                    i === index ? "bg-yellow-500" : "bg-muted"
+                    i === index ? "bg-yellow-500" : "bg-muted",
                   )}
                 />
               ))}
@@ -327,8 +327,14 @@ export function OnboardingDialog() {
                       return;
                     }
                     // Fallback: click the Next control if API missing
-                    const root = document.querySelector('[aria-roledescription="carousel"]');
-                    (root?.querySelector('button[aria-label="Next slide"]') as HTMLButtonElement | null)?.click();
+                    const root = document.querySelector(
+                      '[aria-roledescription="carousel"]',
+                    );
+                    (
+                      root?.querySelector(
+                        'button[aria-label="Next slide"]',
+                      ) as HTMLButtonElement | null
+                    )?.click();
                   }}
                 >
                   Next

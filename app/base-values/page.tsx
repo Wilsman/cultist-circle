@@ -17,6 +17,15 @@ import {
 } from "@/hooks/use-tarkov-api";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useFavorites } from "@/hooks/use-favorites";
+import {
+  GAME_MODES,
+  GAME_MODE_LABELS,
+  GAME_MODE_STORAGE_KEY,
+  LEGACY_PVE_STORAGE_KEY,
+  getStoredGameMode,
+  toTarkovJsonGameMode,
+  type GameMode,
+} from "@/lib/game-mode";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 // UI components
 import { Input } from "@/components/ui/input";
@@ -138,23 +147,33 @@ export default function ItemsTablePage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
-  const [pvp, setPvp] = useState<MinimalItem[]>([]);
-  const [pve, setPve] = useState<MinimalItem[]>([]);
-  const itemsByModeRef = useRef<{ pvp: MinimalItem[]; pve: MinimalItem[] }>({
+  const [itemsByMode, setItemsByMode] = useState<
+    Record<GameMode, MinimalItem[]>
+  >({ pvp: [], pve: [], season: [] });
+  const itemsByModeRef = useRef<Record<GameMode, MinimalItem[]>>({
     pvp: [],
     pve: [],
+    season: [],
   });
-  const loadedLanguageByModeRef = useRef<{
-    pvp: string | null;
-    pve: string | null;
-  }>({ pvp: null, pve: null });
-  const [mode, setMode] = useState<"pvp" | "pve">("pvp");
+  const loadedLanguageByModeRef = useRef<Record<GameMode, string | null>>({
+    pvp: null,
+    pve: null,
+    season: null,
+  });
+  const [mode, setMode] = useState<GameMode>(() =>
+    typeof window === "undefined" ? "pvp" : getStoredGameMode(localStorage),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [requestStatus, setRequestStatus] = useState<TarkovRequestStatus>(
     DEFAULT_TARKOV_REQUEST_STATUS,
   );
   const [requestStatusNow, setRequestStatusNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    localStorage.setItem(GAME_MODE_STORAGE_KEY, mode);
+    localStorage.removeItem(LEGACY_PVE_STORAGE_KEY);
+  }, [mode]);
   const [filter, setFilter] = useState<FilterState>({
     // Use full FilterState
     name: "",
@@ -221,7 +240,7 @@ export default function ItemsTablePage() {
 
   useEffect(() => {
     let isMounted = true;
-    const gameMode = mode === "pve" ? "pve" : "regular";
+    const gameMode = toTarkovJsonGameMode(mode);
     const staleItems = itemsByModeRef.current[mode];
 
     if (loadedLanguageByModeRef.current[mode] === language) {
@@ -247,11 +266,7 @@ export default function ItemsTablePage() {
         if (isMounted) {
           itemsByModeRef.current[mode] = items;
           loadedLanguageByModeRef.current[mode] = language;
-          if (mode === "pvp") {
-            setPvp(items);
-          } else {
-            setPve(items);
-          }
+          setItemsByMode((current) => ({ ...current, [mode]: items }));
           setLoadError(null);
           setFilter((f) => ({
             ...f,
@@ -576,7 +591,7 @@ export default function ItemsTablePage() {
   };
 
   const items = useMemo(() => {
-    const allItems = mode === "pvp" ? pvp : pve;
+    const allItems = itemsByMode[mode];
 
     // Filter by favorites if enabled
     if (showOnlyFavorites) {
@@ -619,8 +634,7 @@ export default function ItemsTablePage() {
     return filtered;
   }, [
     mode,
-    pvp,
-    pve,
+    itemsByMode,
     showOnlyFavorites,
     isFavorite,
     showCompatibleOnly,
@@ -893,47 +907,35 @@ export default function ItemsTablePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center rounded-full border bg-muted/40 p-1">
-                <Button
-                  variant={mode === "pvp" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => {
-                    startTransition(() => {
-                      const newMode = "pvp";
-                      setMode(newMode);
-                      const newItems = pvp;
-                      setFilter((f) => ({
-                        ...f,
-                        basePrice: getMinMax(newItems, "basePrice"),
-                        lastLowPrice: getMinMax(newItems, "lastLowPrice"),
-                        avg24hPrice: getMinMax(newItems, "avg24hPrice"),
-                      }));
-                    });
-                  }}
-                  className="h-8 px-3 rounded-full"
-                >
-                  PVP
-                </Button>
-                <Button
-                  variant={mode === "pve" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => {
-                    startTransition(() => {
-                      const newMode = "pve";
-                      setMode(newMode);
-                      const newItems = pve;
-                      setFilter((f) => ({
-                        ...f,
-                        basePrice: getMinMax(newItems, "basePrice"),
-                        lastLowPrice: getMinMax(newItems, "lastLowPrice"),
-                        avg24hPrice: getMinMax(newItems, "avg24hPrice"),
-                      }));
-                    });
-                  }}
-                  className="h-8 px-3 rounded-full"
-                >
-                  PVE
-                </Button>
+              <div
+                className="flex items-center rounded-full border bg-muted/40 p-1"
+                role="radiogroup"
+                aria-label="Game mode"
+              >
+                {GAME_MODES.map((gameMode) => (
+                  <Button
+                    key={gameMode}
+                    role="radio"
+                    aria-checked={mode === gameMode}
+                    variant={mode === gameMode ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => {
+                      startTransition(() => {
+                        setMode(gameMode);
+                        const newItems = itemsByModeRef.current[gameMode];
+                        setFilter((current) => ({
+                          ...current,
+                          basePrice: getMinMax(newItems, "basePrice"),
+                          lastLowPrice: getMinMax(newItems, "lastLowPrice"),
+                          avg24hPrice: getMinMax(newItems, "avg24hPrice"),
+                        }));
+                      });
+                    }}
+                    className="h-8 rounded-full px-3"
+                  >
+                    {GAME_MODE_LABELS[gameMode]}
+                  </Button>
+                ))}
               </div>
 
               <div className="text-xs text-muted-foreground">
@@ -976,8 +978,9 @@ export default function ItemsTablePage() {
                     : "Tarkov.dev item data could not be loaded."}
               </p>
               {(requestStatus.usingStaleData ||
-                pvp.length > 0 ||
-                pve.length > 0) && (
+                Object.values(itemsByMode).some(
+                  (items) => items.length > 0,
+                )) && (
                 <p className="mt-1 text-xs opacity-80">
                   Base Values is showing the last loaded item data.
                 </p>

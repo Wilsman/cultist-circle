@@ -1,5 +1,10 @@
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { GraphQLResponse, TarkovItem } from "@/types/GraphQLResponse";
+import {
+  fromTarkovJsonGameMode,
+  type TarkovGraphqlGameMode,
+  type TarkovJsonGameMode,
+} from "@/lib/game-mode";
 
 const DEFAULT_GRAPHQL_API_URL = "https://api.tarkov.dev/graphql";
 const DEFAULT_JSON_API_URL = "https://json.tarkov.dev";
@@ -413,7 +418,7 @@ async function fetchJsonResource<T>(
 }
 
 async function fetchTarkovJsonBundle(
-  gameMode: "pve" | "regular",
+  gameMode: TarkovJsonGameMode,
   language: string,
   options: TarkovRequestOptions,
 ): Promise<TarkovJsonBundle> {
@@ -815,7 +820,7 @@ export async function fetchCombinedTarkovData(
  * @returns Promise with transformed items in SimplifiedItem format
  */
 async function fetchTarkovDataFromGraphQL(
-  gameMode: "pve" | "regular",
+  gameMode: TarkovGraphqlGameMode,
   language: string = "en",
   options: TarkovRequestOptions = {},
 ): Promise<TarkovDataResult> {
@@ -849,7 +854,7 @@ async function fetchTarkovDataFromGraphQL(
 }
 
 async function fetchTarkovDataFromJson(
-  gameMode: "pve" | "regular",
+  gameMode: TarkovJsonGameMode,
   language: string,
   options: TarkovRequestOptions,
 ): Promise<TarkovDataResult> {
@@ -873,7 +878,7 @@ async function fetchTarkovDataFromJson(
       validItems: items.length,
       processTime: Date.now() - startTime,
       categories: categoryCount,
-      mode: gameMode === "pve" ? "pve" : "pvp",
+      mode: fromTarkovJsonGameMode(gameMode),
     },
   };
 
@@ -882,17 +887,27 @@ async function fetchTarkovDataFromJson(
 }
 
 export async function fetchTarkovData(
-  gameMode: "pve" | "regular",
+  gameMode: TarkovJsonGameMode,
   language: string = "en",
   options: TarkovRequestOptions = {},
 ): Promise<TarkovDataResult> {
   if (getDataSource() === "graphql") {
+    if (gameMode === "pvp-season") {
+      return fetchTarkovDataFromJson(gameMode, language, options);
+    }
     return fetchTarkovDataFromGraphQL(gameMode, language, options);
   }
 
   try {
     return await fetchTarkovDataFromJson(gameMode, language, options);
   } catch (jsonError) {
+    if (gameMode === "pvp-season") {
+      console.warn(
+        `Tarkov.dev JSON fetch failed for ${gameMode}/${language}; no GraphQL fallback is available`,
+        jsonError,
+      );
+      throw jsonError;
+    }
     console.warn(
       `Tarkov.dev JSON fetch failed for ${gameMode}/${language}; falling back to GraphQL`,
       jsonError,
@@ -1060,7 +1075,7 @@ async function fetchMinimalTarkovDataFromGraphQL(
 }
 
 async function fetchMinimalTarkovDataFromJson(
-  gameMode: "pve" | "regular",
+  gameMode: TarkovJsonGameMode,
   language: string,
   options: TarkovRequestOptions,
 ): Promise<MinimalItem[]> {
@@ -1079,11 +1094,14 @@ async function fetchMinimalTarkovDataFromJson(
 }
 
 export async function fetchMinimalTarkovData(
-  gameMode: "pve" | "regular",
+  gameMode: TarkovJsonGameMode,
   language: string = "en",
   options: TarkovRequestOptions = {},
 ): Promise<MinimalItem[]> {
   if (getDataSource() === "graphql") {
+    if (gameMode === "pvp-season") {
+      return fetchMinimalTarkovDataFromJson(gameMode, language, options);
+    }
     const combined = await fetchMinimalTarkovDataFromGraphQL(language, options);
     return gameMode === "pve" ? combined.pveItems : combined.pvpItems;
   }
@@ -1091,6 +1109,13 @@ export async function fetchMinimalTarkovData(
   try {
     return await fetchMinimalTarkovDataFromJson(gameMode, language, options);
   } catch (jsonError) {
+    if (gameMode === "pvp-season") {
+      console.warn(
+        `Tarkov.dev JSON minimal fetch failed for ${gameMode}/${language}; no GraphQL fallback is available`,
+        jsonError,
+      );
+      throw jsonError;
+    }
     console.warn(
       `Tarkov.dev JSON minimal fetch failed for ${gameMode}/${language}; falling back to GraphQL`,
       jsonError,

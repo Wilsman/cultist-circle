@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-
-type GameMode = "pvp" | "pve";
+import type { GameMode } from "@/lib/game-mode";
 
 // Type for the debounced function with specific parameter types
 type DebouncedFunction<T> = {
@@ -11,28 +10,28 @@ type DebouncedFunction<T> = {
 // Enhanced debounce function with cancel capability and specific parameter type
 function createDebouncer<T>(
   fn: (arg: T) => void,
-  delay: number
+  delay: number,
 ): DebouncedFunction<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
-  const debouncedFn = function(arg: T): void {
+
+  const debouncedFn = function (arg: T): void {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    
+
     timeoutId = setTimeout(() => {
       fn(arg);
       timeoutId = null;
     }, delay);
   } as DebouncedFunction<T>;
-  
+
   debouncedFn.cancel = (): void => {
     if (timeoutId) {
       clearTimeout(timeoutId);
       timeoutId = null;
     }
   };
-  
+
   return debouncedFn;
 }
 
@@ -62,10 +61,13 @@ export function useFavorites(gameMode: GameMode) {
         const savedFavorites = localStorage.getItem(`favorites_${gameMode}`);
         if (savedFavorites) {
           setFavorites(new Set(JSON.parse(savedFavorites)));
+        } else {
+          setFavorites(new Set());
         }
       } catch (error) {
         console.error("Failed to load favorites:", error);
         localStorage.removeItem(`favorites_${gameMode}`);
+        setFavorites(new Set());
       }
     });
     return () => {
@@ -74,20 +76,23 @@ export function useFavorites(gameMode: GameMode) {
   }, [gameMode]);
 
   // Memoize the save function to prevent recreation on every render
-  const saveFavorites = useCallback((favoritesToSave: Set<string>) => {
-    try {
-      if (favoritesToSave.size > 0) {
-        localStorage.setItem(
-          `favorites_${gameMode}`,
-          JSON.stringify(Array.from(favoritesToSave))
-        );
-      } else {
-        localStorage.removeItem(`favorites_${gameMode}`);
+  const saveFavorites = useCallback(
+    (favoritesToSave: Set<string>) => {
+      try {
+        if (favoritesToSave.size > 0) {
+          localStorage.setItem(
+            `favorites_${gameMode}`,
+            JSON.stringify(Array.from(favoritesToSave)),
+          );
+        } else {
+          localStorage.removeItem(`favorites_${gameMode}`);
+        }
+      } catch (error) {
+        console.error("Failed to save favorites:", error);
       }
-    } catch (error) {
-      console.error("Failed to save favorites:", error);
-    }
-  }, [gameMode]);
+    },
+    [gameMode],
+  );
 
   // Create a debounced version of saveFavorites
   const debouncedSaveFavorites = useMemo(() => {
@@ -99,21 +104,21 @@ export function useFavorites(gameMode: GameMode) {
   // Save favorites to localStorage when they change
   useEffect(() => {
     if (!isMounted.current) return;
-    
+
     const writeKey = `favorites_${gameMode}`;
-    
+
     // Cancel any pending write for this game mode
     const cancelPending = pendingWrites.current.get(writeKey);
     if (cancelPending) {
       cancelPending();
     }
-    
+
     // Schedule a new write
     debouncedSaveFavorites(favorites);
-    
+
     // Store the cancel function
     pendingWrites.current.set(writeKey, debouncedSaveFavorites.cancel);
-    
+
     // Cleanup function
     return () => {
       debouncedSaveFavorites.cancel();
@@ -136,7 +141,7 @@ export function useFavorites(gameMode: GameMode) {
     (itemId: string) => {
       return favorites.has(itemId);
     },
-    [favorites]
+    [favorites],
   );
 
   return {

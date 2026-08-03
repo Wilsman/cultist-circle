@@ -13,6 +13,11 @@ import {
 import { toast as sonnerToast } from "sonner";
 import { useLanguage } from "@/contexts/language-context";
 import { CURRENT_VERSION } from "@/config/changelog";
+import {
+  GAME_MODES,
+  toTarkovJsonGameMode,
+  type GameMode,
+} from "@/lib/game-mode";
 
 // Create a single persistence middleware for the combined data
 // The middleware handles localStorage quota errors and clears old cache when needed
@@ -21,33 +26,51 @@ const swrPersistMiddleware = createSWRPersistMiddleware(
   CACHE_TTL,
 ); // Using centralized cache TTL
 
-// Add request tracking outside component
-const requestTracker = {
-  lastFetchTime: 0,
-  inProgress: false,
-  lastDataPVP: [] as SimplifiedItem[],
-  lastDataPVE: [] as SimplifiedItem[],
-  lastLangPVP: null as string | null,
-  lastLangPVE: null as string | null,
-  currentPromise: null as Promise<SimplifiedItem[]> | null,
-  currentPromiseLang: null as string | null,
-  currentPromiseMode: null as "pvp" | "pve" | null,
-  retryCount: 0,
-  maxRetries: 3,
-};
+const lastData = Object.fromEntries(
+  GAME_MODES.map((mode) => [mode, [] as SimplifiedItem[]]),
+) as Record<GameMode, SimplifiedItem[]>;
+const lastLang = Object.fromEntries(
+  GAME_MODES.map((mode) => [mode, null as string | null]),
+) as Record<GameMode, string | null>;
+const requestTrackers = Object.fromEntries(
+  GAME_MODES.map((mode) => [
+    mode,
+    {
+      lastFetchTime: 0,
+      inProgress: false,
+      currentPromise: null as Promise<SimplifiedItem[]> | null,
+      currentPromiseLang: null as string | null,
+      retryCount: 0,
+    },
+  ]),
+) as Record<
+  GameMode,
+  {
+    lastFetchTime: number;
+    inProgress: boolean;
+    currentPromise: Promise<SimplifiedItem[]> | null;
+    currentPromiseLang: string | null;
+    retryCount: number;
+  }
+>;
+const MAX_RETRIES = 3;
 
 // Cross-instance in-flight dedupe keyed by SWR key to survive StrictMode re-mounts
 const inFlightByKey = new Map<string, Promise<SimplifiedItem[]>>();
 
-export function useItemsData(isPVE: boolean) {
-  const mode = isPVE ? "pve" : "pvp";
-  const gameMode = isPVE ? "pve" : "regular";
+export function useItemsData(mode: GameMode) {
+  const gameMode = toTarkovJsonGameMode(mode);
+  const tracker = requestTrackers[mode];
   const { language } = useLanguage();
   const IS_TEST =
     typeof process !== "undefined" &&
     (process.env?.VITEST || process.env?.NODE_ENV === "test");
   const isMounted = useRef(true);
-  const latestDataRef = useRef<SimplifiedItem[]>([]);
+  const latestDataRef = useRef<{
+    mode: GameMode;
+    language: string;
+    data: SimplifiedItem[];
+  }>({ mode, language, data: [] });
 
   // Track mount state to avoid setState after unmount during async fetches
   useEffect(() => {
@@ -57,7 +80,7 @@ export function useItemsData(isPVE: boolean) {
     };
   }, []);
 
-  // Use separate SWR keys for PVE and PVP to ensure proper mode switching
+  // Use separate SWR keys for each mode to ensure proper mode switching
   const swrKey = `tarkov-dev-api/${mode}/${language}?v=${CURRENT_VERSION}`;
 
   // Track mode changes without clearing cache
@@ -66,25 +89,26 @@ export function useItemsData(isPVE: boolean) {
       `🔄 [${mode.toUpperCase()}] Mode changed, using cache if available`,
     );
     // Reset retry count when mode changes
-    requestTracker.retryCount = 0;
+    tracker.retryCount = 0;
     // Also reset throttle/in-flight to avoid blocking next request on mode switch
-    requestTracker.lastFetchTime = 0;
-    requestTracker.inProgress = false;
-    requestTracker.currentPromise = null;
-    requestTracker.currentPromiseLang = null;
-    requestTracker.currentPromiseMode = null;
-  }, [mode]); // Only depend on mode to track mode changes
+    tracker.lastFetchTime = 0;
+    tracker.inProgress = false;
+    tracker.currentPromise = null;
+    tracker.currentPromiseLang = null;
+  }, [mode, tracker]); // Only depend on mode to track mode changes
 
   // Reset throttling when language changes to ensure immediate refetch on lang switch
   useEffect(() => {
-    requestTracker.lastFetchTime = 0;
-    requestTracker.currentPromise = null;
-    requestTracker.inProgress = false;
     // Clear cached data so we don't reuse different-language items
-    requestTracker.lastDataPVP = [];
-    requestTracker.lastDataPVE = [];
-    requestTracker.lastLangPVP = null;
-    requestTracker.lastLangPVE = null;
+    GAME_MODES.forEach((gameModeKey) => {
+      const modeTracker = requestTrackers[gameModeKey];
+      modeTracker.lastFetchTime = 0;
+      modeTracker.currentPromise = null;
+      modeTracker.currentPromiseLang = null;
+      modeTracker.inProgress = false;
+      lastData[gameModeKey] = [];
+      lastLang[gameModeKey] = null;
+    });
   }, [language]);
   // Using Sonner for notifications
 
@@ -102,39 +126,39 @@ export function useItemsData(isPVE: boolean) {
     if (existing) return await existing;
     // Simple request tracking to prevent duplicate fetches
     const now = Date.now();
-    const cached = isPVE
-      ? requestTracker.lastDataPVE
-      : requestTracker.lastDataPVP;
-    const lastLang = isPVE
-      ? requestTracker.lastLangPVE
-      : requestTracker.lastLangPVP;
-    const renderedFallback = latestDataRef.current;
+    const cached = lastData[mode];
+    const cachedLanguage = lastLang[mode];
+    const renderedFallback =
+      latestDataRef.current.mode === mode &&
+      latestDataRef.current.language === language
+        ? latestDataRef.current.data
+        : [];
     const staleFallback =
-      cached.length > 0 && lastLang === language ? cached : renderedFallback;
+      cached.length > 0 && cachedLanguage === language
+        ? cached
+        : renderedFallback;
     const hasUsableStaleData = staleFallback.length > 0;
     // If an identical request is already in-flight, await it
     if (
-      requestTracker.inProgress &&
-      requestTracker.currentPromise &&
-      requestTracker.currentPromiseLang === language &&
-      requestTracker.currentPromiseMode === (isPVE ? "pve" : "pvp")
+      tracker.inProgress &&
+      tracker.currentPromise &&
+      tracker.currentPromiseLang === language
     ) {
-      return await requestTracker.currentPromise;
+      return await tracker.currentPromise;
     }
     const withinThrottle =
-      now - requestTracker.lastFetchTime < 2000 || requestTracker.inProgress;
+      now - tracker.lastFetchTime < 2000 || tracker.inProgress;
     if (withinThrottle) {
       // Only return cached data if it's for the same language
-      if (cached.length > 0 && lastLang === language) {
+      if (cached.length > 0 && cachedLanguage === language) {
         return cached;
       }
     }
 
-    requestTracker.inProgress = true;
-    requestTracker.lastFetchTime = now;
+    tracker.inProgress = true;
+    tracker.lastFetchTime = now;
     // Set promise identity before starting to avoid race window for concurrent calls
-    requestTracker.currentPromiseLang = language;
-    requestTracker.currentPromiseMode = isPVE ? "pve" : "pvp";
+    tracker.currentPromiseLang = language;
 
     const promise = (async () => {
       try {
@@ -152,14 +176,10 @@ export function useItemsData(isPVE: boolean) {
           }
         };
 
-        const english = await fetchTarkovData(
-          gameMode as "pve" | "regular",
-          "en",
-          {
-            onStatus,
-            usingStaleData: hasUsableStaleData,
-          },
-        );
+        const english = await fetchTarkovData(gameMode, "en", {
+          onStatus,
+          usingStaleData: hasUsableStaleData,
+        });
         // If EN, do not fetch localized; use English for display/filters
         if (language === "en") {
           const mapped: SimplifiedItem[] = english.items.map(
@@ -177,32 +197,23 @@ export function useItemsData(isPVE: boolean) {
               }) as SimplifiedItem,
           );
           // Store
-          if (isPVE) {
-            requestTracker.lastDataPVE = mapped;
-            requestTracker.lastLangPVE = "en";
-          } else {
-            requestTracker.lastDataPVP = mapped;
-            requestTracker.lastLangPVP = "en";
-          }
+          lastData[mode] = mapped;
+          lastLang[mode] = "en";
           if (isMounted.current) {
             setRequestStatus({
               phase: "success",
-              attempt: requestTracker.maxRetries,
-              maxAttempts: requestTracker.maxRetries,
+              attempt: MAX_RETRIES,
+              maxAttempts: MAX_RETRIES,
               usingStaleData: false,
             });
           }
           return mapped;
         }
         // Fetch localized only when lang !== 'en'
-        const localized = await fetchTarkovData(
-          gameMode as "pve" | "regular",
-          language,
-          {
-            onStatus,
-            usingStaleData: hasUsableStaleData,
-          },
-        );
+        const localized = await fetchTarkovData(gameMode, language, {
+          onStatus,
+          usingStaleData: hasUsableStaleData,
+        });
 
         // Use English count to determine emptiness
         if (english.items.length === 0) {
@@ -211,16 +222,16 @@ export function useItemsData(isPVE: boolean) {
           );
 
           // Increment retry count
-          requestTracker.retryCount++;
+          tracker.retryCount++;
 
           // If we haven't exceeded max retries, throw an error to trigger retry
-          if (requestTracker.retryCount < requestTracker.maxRetries) {
+          if (tracker.retryCount < MAX_RETRIES) {
             throw new Error("Empty data received, retrying...");
           } else {
             // We've exceeded max retries, set flag to show manual retry button (only if still mounted)
             if (isMounted.current) setNeedsManualRetry(true);
             console.error(
-              `❌ [${mode.toUpperCase()}] Max retries (${requestTracker.maxRetries}) exceeded with empty data`,
+              `❌ [${mode.toUpperCase()}] Max retries (${MAX_RETRIES}) exceeded with empty data`,
             );
 
             // Return empty array but don't cache it
@@ -228,7 +239,7 @@ export function useItemsData(isPVE: boolean) {
           }
         }
         // Reset retry count on successful fetch with data
-        requestTracker.retryCount = 0;
+        tracker.retryCount = 0;
         if (isMounted.current) setNeedsManualRetry(false);
 
         // Merge English with localized by id
@@ -258,19 +269,14 @@ export function useItemsData(isPVE: boolean) {
         });
 
         // Store the data in the appropriate cache
-        if (isPVE) {
-          requestTracker.lastDataPVE = merged;
-          requestTracker.lastLangPVE = language;
-        } else {
-          requestTracker.lastDataPVP = merged;
-          requestTracker.lastLangPVP = language;
-        }
+        lastData[mode] = merged;
+        lastLang[mode] = language;
 
         if (isMounted.current) {
           setRequestStatus({
             phase: "success",
-            attempt: requestTracker.maxRetries,
-            maxAttempts: requestTracker.maxRetries,
+            attempt: MAX_RETRIES,
+            maxAttempts: MAX_RETRIES,
             usingStaleData: false,
           });
         }
@@ -306,12 +312,12 @@ export function useItemsData(isPVE: boolean) {
 
         throw error;
       } finally {
-        requestTracker.inProgress = false;
-        requestTracker.currentPromise = null;
+        tracker.inProgress = false;
+        tracker.currentPromise = null;
       }
     })();
     inFlightByKey.set(key, promise);
-    requestTracker.currentPromise = promise;
+    tracker.currentPromise = promise;
     try {
       return await promise;
     } finally {
@@ -329,13 +335,9 @@ export function useItemsData(isPVE: boolean) {
     // During tests, avoid any fallback to ensure fresh fetch
     fallbackData: IS_TEST
       ? []
-      : (isPVE
-          ? requestTracker.lastLangPVE === language
-            ? requestTracker.lastDataPVE
-            : []
-          : requestTracker.lastLangPVP === language
-            ? requestTracker.lastDataPVP
-            : []) || [],
+      : lastLang[mode] === language
+        ? lastData[mode]
+        : [],
     suspense: false, // Disable suspense to prevent flashing
     errorRetryCount: 0,
     shouldRetryOnError: false,
@@ -345,9 +347,9 @@ export function useItemsData(isPVE: boolean) {
 
   useEffect(() => {
     if (data && data.length > 0) {
-      latestDataRef.current = data;
+      latestDataRef.current = { mode, language, data };
     }
-  }, [data]);
+  }, [data, language, mode]);
 
   // Simplify effect to prevent extra renders
   useEffect(() => {
@@ -364,12 +366,11 @@ export function useItemsData(isPVE: boolean) {
     needsManualRetry,
     requestStatus,
     resetRetryCount: () => {
-      requestTracker.retryCount = 0;
-      requestTracker.lastFetchTime = 0;
-      requestTracker.inProgress = false;
-      requestTracker.currentPromise = null;
-      requestTracker.currentPromiseLang = null;
-      requestTracker.currentPromiseMode = null;
+      tracker.retryCount = 0;
+      tracker.lastFetchTime = 0;
+      tracker.inProgress = false;
+      tracker.currentPromise = null;
+      tracker.currentPromiseLang = null;
       clearTarkovApiCooldown();
       setNeedsManualRetry(false);
       setRequestStatus(DEFAULT_TARKOV_REQUEST_STATUS);

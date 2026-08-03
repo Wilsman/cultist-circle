@@ -4,11 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ChevronUpIcon, ChevronDownIcon } from "@radix-ui/react-icons";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/contexts/language-context";
-
 
 interface ThresholdSelectorProps {
   value: number;
@@ -100,12 +103,16 @@ export default function ThresholdSelector({
           size="sm"
           className={
             embedded
-              ? "h-9 px-2 rounded-full text-gray-200 hover:bg-white/5"
+              ? "h-9 whitespace-nowrap rounded-full px-3 text-gray-200 hover:bg-white/5"
               : "h-9 px-3 rounded-md bg-gray-800/50 border-gray-700 text-gray-200 hover:bg-gray-800"
           }
         >
-          <span className="text-xs mr-1.5">{t("Threshold:")}</span>
-          <span className="text-sm font-medium">{formatValue(value)}</span>
+          <span className="mr-1.5 text-xs leading-none text-slate-400">
+            {t("Threshold:")}
+          </span>
+          <span className="text-sm font-medium leading-none">
+            {formatValue(value)}
+          </span>
           {open ? (
             <ChevronUpIcon className="ml-1 h-4 w-4" />
           ) : (
@@ -126,7 +133,7 @@ export default function ThresholdSelector({
           <div className="grid grid-cols-1 gap-3">
             <Alert
               variant="default"
-              className={`transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded cursor-pointer ${value === 350001 ? 'ring-2 ring-yellow-500/50' : ''}`}
+              className={`transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded cursor-pointer ${value === 350001 ? "ring-2 ring-yellow-500/50" : ""}`}
               onClick={() => handlePresetClick(350001)}
             >
               <AlertTitle className="flex items-center gap-2 text-yellow-500/90">
@@ -149,7 +156,7 @@ export default function ThresholdSelector({
 
             <Alert
               variant="default"
-              className={`transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded cursor-pointer ${value === 400000 ? 'ring-2 ring-yellow-500/50' : ''}`}
+              className={`transition-all duration-300 hover:bg-gray-800/80 border-yellow-500/50 bg-gray-800/60 backdrop-blur-sm text-gray-200 rounded cursor-pointer ${value === 400000 ? "ring-2 ring-yellow-500/50" : ""}`}
               onClick={() => handlePresetClick(400000)}
             >
               <AlertTitle className="flex items-center gap-2 text-yellow-500/90">

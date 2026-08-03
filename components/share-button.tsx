@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast as sonnerToast } from "sonner";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
-import { loadItemsFromCode, generateShareableCode } from "@/lib/share-utils";
+import { generateShareableCode, parseShareableCode } from "@/lib/share-utils";
+import { GAME_MODE_LABELS, type GameMode } from "@/lib/game-mode";
 import {
   ClipboardIcon,
   CopyIcon,
@@ -27,15 +28,11 @@ import { useLanguage } from "@/contexts/language-context";
 
 interface ShareButtonProps {
   selectedItems: (SimplifiedItem | null)[];
-  isPVE: boolean;
-  rawItemsData: SimplifiedItem[];
+  mode: GameMode;
   total: number;
   totalFlea: number;
   sacred: boolean;
-  onItemsLoaded: (
-    items: (SimplifiedItem | null)[],
-    isPVE: boolean | null
-  ) => void;
+  onCodeLoaded: (itemIds: string[], mode: GameMode) => void;
 }
 
 function getThresholdLabel(total: number): string {
@@ -82,24 +79,21 @@ const TIMER_OPTIONS: { value: ActualTimer; label: string }[] = [
 
 export function ShareButton({
   selectedItems,
-  isPVE,
-  rawItemsData,
+  mode,
   total,
   totalFlea,
   sacred,
-  onItemsLoaded,
+  onCodeLoaded,
 }: ShareButtonProps) {
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
-  const [currentCode, setCurrentCode] = useState("");
+  const currentCode = useMemo(
+    () => generateShareableCode(selectedItems, mode),
+    [selectedItems, mode],
+  );
 
-  const modeLabel = isPVE ? "PVE" : "PVP";
+  const modeLabel = GAME_MODE_LABELS[mode];
   const items = selectedItems;
-
-  useEffect(() => {
-    const code = generateShareableCode(selectedItems, isPVE);
-    setCurrentCode(code);
-  }, [selectedItems, isPVE]);
 
   const handleCopyCode = () => {
     if (!currentCode) {
@@ -132,7 +126,7 @@ export function ShareButton({
   // Discord copy with timer selection
   const handleCopyForResults = (actualTimer: ActualTimer) => {
     const filteredItems = selectedItems.filter(
-      (item): item is SimplifiedItem => item !== null
+      (item): item is SimplifiedItem => item !== null,
     );
     if (filteredItems.length === 0) {
       sonnerToast(t("No Items Selected"), {
@@ -150,7 +144,7 @@ ${itemsList}
 **Threshold**: ${getThresholdLabel(total)}
 **Predicted**: ${getPredictedTimer(total)}
 **Actual Timer**: ${actualTimer} ⏱️
-**Mode**: ${isPVE ? "PVE" : "PVP"}
+**Mode**: ${modeLabel}
 **Sacred Amulet**: ${sacred ? "✅ Yes" : "❌ No"}
 
 __Output__:
@@ -190,17 +184,25 @@ __Output__:
         return;
       }
 
-      const result = loadItemsFromCode(trimmedCode, rawItemsData);
+      const result = parseShareableCode(trimmedCode);
       setIsLoading(false);
 
-      if (result.items) {
-        onItemsLoaded(result.items, result.isPVE);
-        sonnerToast("Items Loaded!", {
-          description: `Loaded ${
-            result.items.filter(Boolean).length
-          } items from code.`,
+      if (result.error || !result.gameMode) {
+        sonnerToast("Invalid Code", {
+          description:
+            "The code format is invalid. Please check and try again.",
         });
+        return;
       }
+
+      if (result.itemIds.length === 0) {
+        sonnerToast("Invalid Code", {
+          description: "The provided code doesn't contain any items.",
+        });
+        return;
+      }
+
+      onCodeLoaded(result.itemIds, result.gameMode);
     } catch {
       setIsLoading(false);
       sonnerToast("Clipboard Access Failed", {
@@ -223,7 +225,7 @@ __Output__:
       if (!ctx) throw new Error("No 2D context");
 
       const icons: Array<CanvasImageSource | null> = await Promise.all(
-        items.map((it) => loadIconSource(it?.iconLink))
+        items.map((it) => loadIconSource(it?.iconLink)),
       );
 
       // Background
@@ -301,7 +303,7 @@ __Output__:
             iconX + padImg,
             iconY + padImg,
             iconSize - padImg * 2,
-            iconSize - padImg * 2
+            iconSize - padImg * 2,
           );
           ctx.restore();
         } else {
@@ -323,7 +325,7 @@ __Output__:
           ctx.fillText(
             formatRubles(Math.floor(it.basePrice)),
             width - pad - 28,
-            y - 2
+            y - 2,
           );
           ctx.restore();
         }
@@ -346,12 +348,12 @@ __Output__:
       ctx.fillText(
         new Date().toLocaleString(),
         width - pad - 24,
-        height - pad - 16
+        height - pad - 16,
       );
       ctx.restore();
 
       const blob: Blob | null = await new Promise((resolve) =>
-        canvas.toBlob((b) => resolve(b), "image/png")
+        canvas.toBlob((b) => resolve(b), "image/png"),
       );
       if (!blob) throw new Error("Failed to encode PNG");
       const item = new ClipboardItem({ "image/png": blob });
@@ -452,7 +454,7 @@ function roundRect(
   y: number,
   w: number,
   h: number,
-  r: number
+  r: number,
 ) {
   const radius = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
@@ -469,7 +471,7 @@ function drawRoundedBadge(
   x: number,
   y: number,
   w: number,
-  h: number
+  h: number,
 ) {
   ctx.save();
   ctx.fillStyle = "rgba(30,41,59,0.6)";
@@ -484,18 +486,21 @@ function drawRoundedBadge(
 function truncateText(
   ctx: CanvasRenderingContext2D,
   text: string,
-  maxWidth: number
+  maxWidth: number,
 ): string {
   if (ctx.measureText(text).width <= maxWidth) return text;
   let truncated = text;
-  while (truncated.length > 0 && ctx.measureText(truncated + "…").width > maxWidth) {
+  while (
+    truncated.length > 0 &&
+    ctx.measureText(truncated + "…").width > maxWidth
+  ) {
     truncated = truncated.slice(0, -1);
   }
   return truncated + "…";
 }
 
 async function loadIconSource(
-  url: string | undefined
+  url: string | undefined,
 ): Promise<CanvasImageSource | null> {
   if (!url) return null;
   return new Promise((resolve) => {

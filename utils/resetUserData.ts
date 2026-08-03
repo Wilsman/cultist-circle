@@ -1,7 +1,11 @@
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
-import { DEFAULT_PLAYER_LEVEL, DEFAULT_USE_LEVEL_FILTER } from "@/config/flea-level-requirements";
+import {
+  DEFAULT_PLAYER_LEVEL,
+  DEFAULT_USE_LEVEL_FILTER,
+} from "@/config/flea-level-requirements";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { toast as sonnerToast } from "sonner";
+import type { GameMode } from "@/lib/game-mode";
 
 export async function resetUserData(
   setSelectedItems: React.Dispatch<
@@ -15,11 +19,11 @@ export async function resetUserData(
   setOverriddenPrices: React.Dispatch<
     React.SetStateAction<Record<string, number>>
   >,
-  setIsPVE: React.Dispatch<React.SetStateAction<boolean>>,
+  setGameMode: React.Dispatch<React.SetStateAction<GameMode>>,
   fetchData: () => Promise<void>,
   defaultItemCategories: Set<string>,
   setUseLevelFilter?: React.Dispatch<React.SetStateAction<boolean>>,
-  setPlayerLevel?: React.Dispatch<React.SetStateAction<number>>
+  setPlayerLevel?: React.Dispatch<React.SetStateAction<number>>,
 ) {
   // Clear local storage
   localStorage.clear();
@@ -28,7 +32,9 @@ export async function resetUserData(
   try {
     const response = await fetch("/api/expire-cookies");
     if (response.ok) {
-      console.log("Cookies cleared successfully (preserving authentication cookies)");
+      console.log(
+        "Cookies cleared successfully (preserving authentication cookies)",
+      );
     } else {
       console.error("Failed to clear cookies");
     }
@@ -45,7 +51,7 @@ export async function resetUserData(
   setSortOption("az");
   setThreshold(400000);
   setOverriddenPrices({});
-  setIsPVE(false);
+  setGameMode("pvp");
   if (setUseLevelFilter) setUseLevelFilter(DEFAULT_USE_LEVEL_FILTER);
   if (setPlayerLevel) setPlayerLevel(DEFAULT_PLAYER_LEVEL);
 

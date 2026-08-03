@@ -1,39 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useId } from "react";
+import { LayoutGroup, motion } from "framer-motion";
+import { GAME_MODE_LABELS, GAME_MODES, type GameMode } from "@/lib/game-mode";
 
 interface ModeToggleProps {
-  isPVE: boolean;
-  onToggle: (isPVEActive: boolean) => void;
+  mode: GameMode;
+  onModeChange: (mode: GameMode) => void;
   embedded?: boolean;
 }
 
 export function ModeToggle({
-  isPVE,
-  onToggle,
+  mode,
+  onModeChange,
   embedded = false,
 }: ModeToggleProps) {
-  const [internalMode, setInternalMode] = useState<"PVP" | "PVE">(
-    isPVE ? "PVE" : "PVP"
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.resolve().then(() => {
-      if (!cancelled) {
-        setInternalMode(isPVE ? "PVE" : "PVP");
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isPVE]);
-
-  const handleModeChange = (newMode: "PVP" | "PVE") => {
-    setInternalMode(newMode);
-    onToggle(newMode === "PVE");
-  };
+  const layoutId = useId();
 
   return (
     <div
@@ -43,82 +25,48 @@ export function ModeToggle({
       <div
         className={
           embedded
-            ? "relative rounded-full p-0.5"
-            : "relative bg-slate-700/50 backdrop-blur-sm rounded-full p-0.5 shadow-2xl border border-slate-600/30"
+            ? ""
+            : "rounded-full border border-slate-600/30 bg-slate-800/70 p-1 shadow-lg shadow-black/15 backdrop-blur-sm"
         }
       >
-        <div className="flex relative">
-          {/* Background slider */}
-          <motion.div
-            className="absolute inset-y-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-lg"
-            initial={false}
-            animate={{
-              x: internalMode === "PVP" ? 4 : "calc(100% - 4px)",
-              width:
-                internalMode === "PVP" ? "calc(50% - 1px)" : "calc(50% - 1px)",
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 30,
-            }}
-          />
-
-          {/* PVP Button */}
-          <button
-            onClick={() => handleModeChange("PVP")}
-            className={`relative z-10 px-2 sm:px-4 py-1.5 rounded-full font-semibold text-xs sm:text-sm tracking-wide transition-all duration-200 min-w-[56px] sm:min-w-[80px] text-center ${
-              // compact
-              internalMode === "PVP"
-                ? "text-white shadow-lg"
-                : "text-slate-400 hover:text-slate-300"
-            }`}
+        <LayoutGroup id={layoutId}>
+          <div
+            className="grid w-[216px] grid-cols-3 gap-0.5 sm:w-[228px]"
+            role="radiogroup"
+            aria-label="Game mode"
           >
-            <motion.span
-              animate={{
-                scale: internalMode === "PVP" ? 1.05 : 1,
-              }}
-              transition={{ duration: 0.2 }}
-            >
-              PVP
-            </motion.span>
-          </button>
-
-          {/* PVE Button */}
-          <button
-            onClick={() => handleModeChange("PVE")}
-            className={`relative z-10 px-2 sm:px-4 py-1.5 rounded-full font-semibold text-xs sm:text-sm tracking-wide transition-all duration-200 min-w-[56px] sm:min-w-[80px] text-center ${
-              // compact
-              internalMode === "PVE"
-                ? "text-white shadow-lg"
-                : "text-slate-400 hover:text-slate-300"
-            }`}
-          >
-            <motion.span
-              animate={{
-                scale: internalMode === "PVE" ? 1.05 : 1,
-              }}
-              transition={{ duration: 0.2 }}
-            >
-              PVE
-            </motion.span>
-          </button>
-        </div>
-
-        {/* Glow effect (only in standalone) */}
-        {!embedded && (
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-full blur-lg pointer-events-none"
-            animate={{
-              opacity: [0.5, 0.8, 0.5],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity, // Changed from Number.POSITIVE_INFINITY
-              ease: "easeInOut",
-            }}
-          />
-        )}
+            {GAME_MODES.map((gameMode) => {
+              const isActive = mode === gameMode;
+              return (
+                <button
+                  key={gameMode}
+                  type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  onClick={() => onModeChange(gameMode)}
+                  className={`relative isolate flex h-9 items-center justify-center rounded-full px-2 text-[13px] font-semibold leading-none tracking-[0.01em] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+                    isActive
+                      ? "text-white"
+                      : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="active-game-mode"
+                      className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-blue-500 to-violet-600 shadow-[0_4px_14px_rgba(79,70,229,0.28)] ring-1 ring-white/15"
+                      transition={{
+                        type: "spring",
+                        stiffness: 420,
+                        damping: 34,
+                      }}
+                    />
+                  )}
+                  <span className="relative">{GAME_MODE_LABELS[gameMode]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </LayoutGroup>
       </div>
     </div>
   );

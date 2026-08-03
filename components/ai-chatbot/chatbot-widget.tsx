@@ -242,9 +242,9 @@ const ANSWERS: Array<{ test: (q: string) => boolean; answer: string }> = [
       "Trader pricing is work-in-progress: quest-locked items are currently included.",
   },
   {
-    test: (q) => includesAny(q, ["mode", "pve", "pvp"]),
+    test: (q) => includesAny(q, ["mode", "pve", "pvp", "season"]),
     answer:
-      "Toggle PVE/PVP to match the correct flea market for pricing/search.",
+      "Choose PVP, PVE, or Season to match the correct item and flea-market data for pricing/search.",
   },
   {
     test: (q) => includesAny(q, ["tips", "strategy", "optimal"]),
@@ -270,7 +270,7 @@ function getAnswer(question: string): string {
   const q = normalize(question);
   const rule = ANSWERS.find(({ test }) => test(q));
   if (rule) return rule.answer;
-  return "Ask about thresholds (350k/400k), 6h/12h/14h chances, base value math (vendor ÷ trader multiplier), PVE/PVP flea, Auto Select/Pin/Override/Share/Refresh, price indicators, excluding categories, sorting, tips, or Discord.";
+  return "Ask about thresholds (350k/400k), 6h/12h/14h chances, base value math (vendor ÷ trader multiplier), PVP/PVE/Season data, Auto Select/Pin/Override/Share/Refresh, price indicators, excluding categories, sorting, tips, or Discord.";
 }
 
 // ------------------------------
@@ -329,7 +329,7 @@ export function ChatbotWidget({ className }: { className?: string }) {
       // reset textarea
       e.currentTarget.reset();
     },
-    [submitQuestion]
+    [submitQuestion],
   );
 
   // Auto-scroll to latest message
@@ -344,7 +344,7 @@ export function ChatbotWidget({ className }: { className?: string }) {
 
   const containerClasses = useMemo(
     () => cn("fixed right-4 z-50 bottom-4", className),
-    [className]
+    [className],
   );
 
   return (
@@ -357,7 +357,7 @@ export function ChatbotWidget({ className }: { className?: string }) {
           className={cn(
             "flex items-center gap-2 rounded-full border border-slate-800/50",
             "bg-slate-900/80 text-slate-100 backdrop-blur px-4 py-2 shadow-lg",
-            "hover:bg-slate-900/90 transition focus:outline-none focus:ring-2 focus:ring-slate-400/60"
+            "hover:bg-slate-900/90 transition focus:outline-none focus:ring-2 focus:ring-slate-400/60",
           )}
           aria-label="Open AI helper"
         >
@@ -375,7 +375,7 @@ export function ChatbotWidget({ className }: { className?: string }) {
           className={cn(
             "flex h-[36rem] w-[22rem] flex-col overflow-hidden",
             "rounded-2xl border border-slate-800/50 bg-slate-900/80 backdrop-blur",
-            "shadow-xl outline-none"
+            "shadow-xl outline-none",
           )}
           role="dialog"
           aria-modal="true"

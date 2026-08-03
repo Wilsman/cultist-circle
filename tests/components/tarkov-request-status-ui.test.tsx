@@ -35,6 +35,7 @@ function renderWithLanguage(ui: React.ReactNode) {
 
 describe("Tarkov request status UI", () => {
   beforeEach(() => {
+    localStorage.clear();
     localStorage.setItem("appVersion", "2.1.2");
     class ResizeObserverMock {
       observe() {}
@@ -103,6 +104,32 @@ describe("Tarkov request status UI", () => {
     expect(screen.getByRole("button", { name: /try again/i })).toBeDisabled();
   });
 
+  it("switches the calculator to Season and persists the selection", async () => {
+    const { App } = await import("@/components/app");
+    useItemsDataMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      hasError: false,
+      mutate: vi.fn(),
+      needsManualRetry: false,
+      resetRetryCount: vi.fn(),
+      requestStatus: {
+        phase: "success",
+        attempt: 3,
+        maxAttempts: 3,
+        usingStaleData: false,
+      },
+    });
+
+    renderWithLanguage(<App />);
+    fireEvent.click(await screen.findByRole("radio", { name: "Season" }));
+
+    await waitFor(() => {
+      expect(useItemsDataMock).toHaveBeenLastCalledWith("season");
+      expect(localStorage.getItem("gameMode")).toBe("season");
+    });
+  });
+
   it("shows Base Values outage status instead of silently rendering empty data", async () => {
     const ItemsTablePage = (await import("@/app/base-values/page")).default;
     fetchMinimalTarkovDataMock.mockImplementation(
@@ -145,7 +172,7 @@ describe("Tarkov request status UI", () => {
     });
     expect(fetchMinimalTarkovDataMock).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "PVE" }));
+    fireEvent.click(screen.getByRole("radio", { name: "PVE" }));
 
     await waitFor(() => {
       expect(fetchMinimalTarkovDataMock).toHaveBeenCalledWith(
@@ -155,5 +182,16 @@ describe("Tarkov request status UI", () => {
       );
     });
     expect(fetchMinimalTarkovDataMock).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Season" }));
+
+    await waitFor(() => {
+      expect(fetchMinimalTarkovDataMock).toHaveBeenCalledWith(
+        "pvp-season",
+        "en",
+        expect.any(Object),
+      );
+    });
+    expect(fetchMinimalTarkovDataMock).toHaveBeenCalledTimes(3);
   });
 });

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast as sonnerToast } from "sonner";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
-import { loadItemsFromCode, generateShareableCode } from "@/lib/share-utils";
+import { generateShareableCode, parseShareableCode } from "@/lib/share-utils";
+import { GAME_MODE_LABELS, type GameMode } from "@/lib/game-mode";
 import {
   ClipboardIcon,
   CopyIcon,
@@ -21,14 +22,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 interface ShareCodeDialogProps {
   selectedItems: (SimplifiedItem | null)[];
-  isPVE: boolean;
-  rawItemsData: SimplifiedItem[];
+  mode: GameMode;
   total: number;
   sacred: boolean;
-  onItemsLoaded: (
-    items: (SimplifiedItem | null)[],
-    isPVE: boolean | null
-  ) => void;
+  onCodeLoaded: (itemIds: string[], mode: GameMode) => void;
 }
 
 function getTimerLabel(total: number): string {
@@ -53,11 +50,10 @@ function getThresholdLabel(total: number): string {
 
 export function ShareCodeDialog({
   selectedItems,
-  isPVE,
-  rawItemsData,
+  mode,
   total,
   sacred,
-  onItemsLoaded,
+  onCodeLoaded,
 }: ShareCodeDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentCode, setCurrentCode] = useState("");
@@ -68,14 +64,14 @@ export function ShareCodeDialog({
     let cancelled = false;
     Promise.resolve().then(() => {
       if (!cancelled) {
-        const code = generateShareableCode(selectedItems, isPVE);
+        const code = generateShareableCode(selectedItems, mode);
         setCurrentCode(code);
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [selectedItems, isPVE]);
+  }, [selectedItems, mode]);
 
   const handleCopyCode = () => {
     if (!currentCode) {
@@ -121,12 +117,25 @@ export function ShareCodeDialog({
         return;
       }
 
-      const result = loadItemsFromCode(trimmedCode, rawItemsData);
+      const result = parseShareableCode(trimmedCode);
       setIsLoading(false);
 
-      if (result.items) {
-        onItemsLoaded(result.items, result.isPVE);
+      if (result.error || !result.gameMode) {
+        sonnerToast("Invalid Code", {
+          description:
+            "The code format is invalid. Please check and try again.",
+        });
+        return;
       }
+
+      if (result.itemIds.length === 0) {
+        sonnerToast("Invalid Code", {
+          description: "The provided code doesn't contain any items.",
+        });
+        return;
+      }
+
+      onCodeLoaded(result.itemIds, result.gameMode);
     } catch {
       setIsLoading(false);
       sonnerToast("Clipboard Access Failed", {
@@ -138,7 +147,7 @@ export function ShareCodeDialog({
 
   const handleCopyForDiscord = () => {
     const items = selectedItems.filter(
-      (item): item is SimplifiedItem => item !== null
+      (item): item is SimplifiedItem => item !== null,
     );
     if (items.length === 0) {
       sonnerToast("No Items Selected", {
@@ -156,7 +165,7 @@ ${itemsList}
 
 **Threshold**: ${getThresholdLabel(total)}
 **Timer**: ${getTimerLabel(total)}
-**Mode**: ${isPVE ? "PVE" : "PVP"}
+**Mode**: ${GAME_MODE_LABELS[mode]}
 **Sacred Amulet**: ${sacred ? "yes" : "no"}
 
 __Output__:

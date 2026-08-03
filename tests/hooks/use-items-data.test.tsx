@@ -49,9 +49,10 @@ import { fetchTarkovData } from "@/hooks/use-tarkov-api";
 import { LanguageProvider } from "@/contexts/language-context";
 import { useItemsData } from "@/hooks/use-items-data";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
+import type { GameMode, TarkovJsonGameMode } from "@/lib/game-mode";
 
-function Harness({ isPVE = false }: { isPVE?: boolean }) {
-  const { data, requestStatus, resetRetryCount, mutate } = useItemsData(isPVE);
+function Harness({ mode = "pvp" }: { mode?: GameMode }) {
+  const { data, requestStatus, resetRetryCount, mutate } = useItemsData(mode);
   return (
     <>
       <pre data-testid="out">{JSON.stringify(data)}</pre>
@@ -95,7 +96,7 @@ describe("useItemsData dual-fetch + merge", () => {
     ];
 
     (fetchTarkovData as unknown as any).mockImplementation(
-      (mode: "pve" | "regular", lang: string) => {
+      (mode: TarkovJsonGameMode, lang: string) => {
         const items = lang === "en" ? enItems : deItems;
         return Promise.resolve({
           items,
@@ -115,7 +116,7 @@ describe("useItemsData dual-fetch + merge", () => {
 
     render(
       <LanguageProvider>
-        <Harness isPVE={false} />
+        <Harness mode="pvp" />
       </LanguageProvider>,
     );
 
@@ -181,7 +182,7 @@ describe("useItemsData dual-fetch + merge", () => {
 
     render(
       <LanguageProvider>
-        <Harness isPVE={false} />
+        <Harness mode="pvp" />
       </LanguageProvider>,
     );
 
@@ -204,6 +205,98 @@ describe("useItemsData dual-fetch + merge", () => {
     );
   });
 
+  test("routes Season through an isolated pvp-season request", async () => {
+    (fetchTarkovData as unknown as any).mockResolvedValue({
+      items: [
+        {
+          id: "season-item",
+          name: "Season Item",
+          shortName: "Season",
+          basePrice: 1000,
+          categories: [],
+          categories_display: [],
+        },
+      ],
+      meta: {
+        totalItems: 1,
+        validItems: 1,
+        processTime: 1,
+        categories: 0,
+        mode: "season",
+      },
+    });
+    localStorage.setItem("language", "en");
+
+    render(
+      <LanguageProvider>
+        <Harness mode="season" />
+      </LanguageProvider>,
+    );
+
+    await waitFor(() => {
+      expect(fetchTarkovData).toHaveBeenCalledWith(
+        "pvp-season",
+        "en",
+        expect.any(Object),
+      );
+    });
+  });
+
+  test("never reuses rendered PVP data as a Season failure fallback", async () => {
+    const pvpItem: SimplifiedItem = {
+      id: "pvp-only",
+      name: "PVP Item",
+      shortName: "PVP",
+      basePrice: 1000,
+      categories: [],
+      categories_display: [],
+    };
+    (fetchTarkovData as unknown as any).mockImplementation(
+      (apiMode: TarkovJsonGameMode) => {
+        if (apiMode === "pvp-season") {
+          return Promise.reject(new Error("Season unavailable"));
+        }
+        return Promise.resolve({
+          items: [pvpItem],
+          meta: {
+            totalItems: 1,
+            validItems: 1,
+            processTime: 1,
+            categories: 0,
+            mode: "pvp",
+          },
+        });
+      },
+    );
+    localStorage.setItem("language", "fr");
+
+    const { rerender } = render(
+      <LanguageProvider>
+        <Harness mode="pvp" />
+      </LanguageProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("out").textContent).toContain("PVP Item");
+    });
+
+    rerender(
+      <LanguageProvider>
+        <Harness mode="season" />
+      </LanguageProvider>,
+    );
+
+    await waitFor(() => {
+      expect(fetchTarkovData).toHaveBeenCalledWith(
+        "pvp-season",
+        "en",
+        expect.any(Object),
+      );
+      expect(JSON.parse(screen.getByTestId("out").textContent || "[]")).toEqual(
+        [],
+      );
+    });
+  });
+
   test("exposes retry status from the Tarkov fetcher", async () => {
     const enItems: SimplifiedItem[] = [
       {
@@ -218,7 +311,7 @@ describe("useItemsData dual-fetch + merge", () => {
     ];
     let resolveFetch: ((value: unknown) => void) | undefined;
     (fetchTarkovData as unknown as any).mockImplementation(
-      (_mode: "pve" | "regular", _lang: string, options?: any) => {
+      (_mode: TarkovJsonGameMode, _lang: string, options?: any) => {
         options?.onStatus?.({
           phase: "retrying",
           attempt: 2,
@@ -237,7 +330,7 @@ describe("useItemsData dual-fetch + merge", () => {
 
     render(
       <LanguageProvider>
-        <Harness isPVE={false} />
+        <Harness mode="pvp" />
       </LanguageProvider>,
     );
 
@@ -284,7 +377,7 @@ describe("useItemsData dual-fetch + merge", () => {
 
     let failNow = false;
     (fetchTarkovData as unknown as any).mockImplementation(
-      (_mode: "pve" | "regular", _lang: string, options?: any) => {
+      (_mode: TarkovJsonGameMode, _lang: string, options?: any) => {
         if (failNow) {
           options?.onStatus?.({
             phase: "cooldown",
@@ -316,7 +409,7 @@ describe("useItemsData dual-fetch + merge", () => {
 
     render(
       <LanguageProvider>
-        <Harness isPVE={false} />
+        <Harness mode="pvp" />
       </LanguageProvider>,
     );
 

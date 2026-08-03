@@ -37,20 +37,20 @@ describe("share-utils", () => {
   test("generates compact codes and parses them back to short ids", () => {
     const code = generateShareableCode(
       [makeItem("abcdefgh1234"), null, makeItem("ijklmnop9876")],
-      true,
+      "pve",
     );
 
     expect(code).not.toBe("");
     expect(parseShareableCode(code)).toEqual({
       itemIds: ["abcdefgh", "ijklmnop"],
-      isPVE: true,
+      gameMode: "pve",
     });
   });
 
   test("rejects invalid base64 input", () => {
     expect(parseShareableCode("not-a-valid-code!")).toEqual({
       itemIds: [],
-      isPVE: null,
+      gameMode: null,
       error: "Invalid code format",
     });
   });
@@ -69,7 +69,7 @@ describe("share-utils", () => {
           lastLowPrice: undefined,
         }),
       ],
-      false,
+      "pvp",
     );
 
     const result = loadItemsFromCode(code, [
@@ -86,7 +86,7 @@ describe("share-utils", () => {
       makeItem("qrstuvwx0000", { name: "Ignored" }),
     ]);
 
-    expect(result.isPVE).toBe(false);
+    expect(result.gameMode).toBe("pvp");
     expect(result.items).toHaveLength(5);
     expect(result.items?.[0]).toMatchObject({
       id: "abcdefgh1234",
@@ -109,9 +109,28 @@ describe("share-utils", () => {
   test("returns null items and shows a toast for invalid codes", () => {
     const result = loadItemsFromCode("bad!", [makeItem("abcdefgh1234")]);
 
-    expect(result).toEqual({ items: null, isPVE: null });
+    expect(result).toEqual({ items: null, gameMode: null });
     expect(toastMock).toHaveBeenCalledWith("Invalid Code", {
       description: "The code format is invalid. Please check and try again.",
+    });
+  });
+
+  test("round-trips Season codes without changing legacy mode markers", () => {
+    const seasonCode = generateShareableCode(
+      [makeItem("abcdefgh1234")],
+      "season",
+    );
+
+    expect(atob(seasonCode)).toBe("s:abcdefgh");
+    expect(parseShareableCode(seasonCode)).toEqual({
+      itemIds: ["abcdefgh"],
+      gameMode: "season",
+    });
+    expect(parseShareableCode(btoa("v:abcdefgh"))).toMatchObject({
+      gameMode: "pvp",
+    });
+    expect(parseShareableCode(btoa("p:abcdefgh"))).toMatchObject({
+      gameMode: "pve",
     });
   });
 });

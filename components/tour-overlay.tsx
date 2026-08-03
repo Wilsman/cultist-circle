@@ -19,8 +19,8 @@ const steps = [
   },
   {
     target: "#pvp-toggle",
-    title: "PVP Toggle",
-    content: "Toggle between PVP and PVE item lists and flea market prices.",
+    title: "Game Mode",
+    content: "Choose PVP, PVE, or Season item lists and flea-market prices.",
   },
   {
     target: "#threshold",
@@ -70,7 +70,10 @@ export default function TourOverlay() {
 
   useEffect(() => {
     const handleLoad = () => {
-      if (!localStorage.getItem("tourCompleted") || localStorage.getItem("tourCompleted") === "false") {
+      if (
+        !localStorage.getItem("tourCompleted") ||
+        localStorage.getItem("tourCompleted") === "false"
+      ) {
         setIsVisible(true);
       }
     };
@@ -93,7 +96,7 @@ export default function TourOverlay() {
           targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
         } else {
           console.warn(
-            `Element not found for selector: ${steps[currentStep].target}`
+            `Element not found for selector: ${steps[currentStep].target}`,
           );
           setTargetRect(null);
         }

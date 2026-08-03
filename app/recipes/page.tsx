@@ -49,6 +49,7 @@ import {
   RECIPE_COMPLETION_STORAGE_KEY,
   setRecipeCompletion,
 } from "@/lib/recipe-completion";
+import { getStoredGameMode, type GameMode } from "@/lib/game-mode";
 import {
   Package,
   CheckCircle2,
@@ -230,9 +231,7 @@ const ItemBadge = React.memo(function ItemBadge({
   const iconUrl = recipeIconMap[itemName];
   const itemData = getItemByName(itemName);
   const sizeClasses =
-    size === "sm"
-      ? "w-10 h-10 p-1.5"
-      : "w-12 h-12 lg:w-14 lg:h-14 p-2";
+    size === "sm" ? "w-10 h-10 p-1.5" : "w-12 h-12 lg:w-14 lg:h-14 p-2";
 
   const badgeContent = (
     <div className="flex items-center gap-2 lg:gap-3 w-full group">
@@ -282,8 +281,7 @@ const RoomInfoBadge = React.memo(function RoomInfoBadge({
 }: {
   roomInfo: { itemName: string; spawnInfo: string };
 }) {
-  const batteryIconUrl =
-    recipeIconMap["1x 6-STEN-140-M military battery"];
+  const batteryIconUrl = recipeIconMap["1x 6-STEN-140-M military battery"];
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -345,7 +343,11 @@ const MultipleOutputBadge = React.memo(function MultipleOutputBadge({
 
         return (
           <div key={idx}>
-            <ItemBadge itemName={item} isOutput={true} getItemByName={getItemByName} />
+            <ItemBadge
+              itemName={item}
+              isOutput={true}
+              getItemByName={getItemByName}
+            />
             {showConnector && (
               <div className="flex items-center justify-center my-1.5">
                 <TooltipProvider delayDuration={150}>
@@ -481,7 +483,10 @@ const RecipeCard = React.memo(function RecipeCard({
         ) : null}
         <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
           <FoundInRaidBadge t={t} />
-          <ModeRestrictionBadge t={t} modeRestriction={recipe.modeRestriction} />
+          <ModeRestrictionBadge
+            t={t}
+            modeRestriction={recipe.modeRestriction}
+          />
           {recipe.isRepeatable && <RepeatableBadge />}
         </div>
 
@@ -507,7 +512,11 @@ const RecipeCard = React.memo(function RecipeCard({
             </div>
             <div className="flex flex-col gap-2">
               {recipe.requiredItems.map((ing, idx) => (
-                <ItemBadge key={idx} itemName={ing} getItemByName={getItemByName} />
+                <ItemBadge
+                  key={idx}
+                  itemName={ing}
+                  getItemByName={getItemByName}
+                />
               ))}
             </div>
           </div>
@@ -625,14 +634,14 @@ const RecipeCard = React.memo(function RecipeCard({
 // ============================================================================
 
 export default function RecipesPage() {
-  const [isPVE] = useState<boolean>(() => {
+  const [mode] = useState<GameMode>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("isPVE") === "true";
+      return getStoredGameMode(localStorage);
     }
-    return false;
+    return "pvp";
   });
 
-  const { getItemByName } = useRecipeItemData(isPVE);
+  const { getItemByName } = useRecipeItemData(mode);
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
@@ -675,7 +684,10 @@ export default function RecipesPage() {
     function onKeyDown(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       const isTyping =
-        tag === "input" || tag === "textarea" || tag === "select" || e.isComposing;
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        e.isComposing;
 
       if (isTyping) {
         if (e.key === "Escape") {
@@ -740,7 +752,8 @@ export default function RecipesPage() {
       case "newest":
         filtered = [...filtered].sort(
           (a, b) =>
-            (Number(Boolean(b.isUpdated)) * 2 + Number(Boolean(b.isNew))) -
+            Number(Boolean(b.isUpdated)) * 2 +
+            Number(Boolean(b.isNew)) -
             (Number(Boolean(a.isUpdated)) * 2 + Number(Boolean(a.isNew))),
         );
         break;
@@ -855,7 +868,9 @@ export default function RecipesPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent className="border-gray-700 bg-gray-900 text-gray-100 shadow-2xl sm:max-w-md">
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Reset recipe progress?</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            Reset recipe progress?
+                          </AlertDialogTitle>
                           <AlertDialogDescription className="text-gray-400">
                             This will mark all {tarkovRecipes.length} recipes as
                             unfinished on this device.
@@ -953,8 +968,8 @@ export default function RecipesPage() {
                 className="text-blue-400 hover:text-blue-300 underline transition-colors"
               >
                 Escape from Tarkov Wiki
-              </a>
-              {" "}and our{" "}
+              </a>{" "}
+              and our{" "}
               <a
                 href="https://discord.com/invite/3dFmr5qaJK"
                 target="_blank"
