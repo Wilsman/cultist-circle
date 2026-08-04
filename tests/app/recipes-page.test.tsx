@@ -16,7 +16,7 @@ const mockRecipes = vi.hoisted(() => [
   {
     id: "recipe-promo",
     requiredItems: ["5x BD dogtag •| Ferrum"],
-    craftingTime: "05:09:00",
+    craftingTime: "5:55:55",
     producedItems: ["1x Briefcase with documents"],
     isNew: true,
     specialFlow: {
@@ -237,7 +237,7 @@ describe("RecipesPage completion tracker", () => {
     expect(
       screen.getAllByRole("button", { name: /copy promo code/i }),
     ).toHaveLength(5);
-    expect(screen.getByText("05:09:00")).toBeInTheDocument();
+    expect(screen.getByText("5:55:55")).toBeInTheDocument();
     expect(
       screen.getByRole("link", {
         name: "View 5x BD dogtag •| Ferrum on Tarkov.dev",

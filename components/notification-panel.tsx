@@ -46,7 +46,7 @@ export const NOTIFICATIONS: Notification[] = [
       <>
         The circle has revealed a new exchange. Redeem five launcher codes, then
         sacrifice any five <strong>Black Division dogtags</strong> — Ferrum,
-        Green, or Red — to begin a <strong>05:09:00 ritual</strong>
+        Green, or Red — to begin a <strong>5:55:55 ritual </strong>
         and receive a Briefcase with documents.{" "}
         <Link
           href="/recipes"

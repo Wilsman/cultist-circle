@@ -39,7 +39,7 @@ describe("useToastNotifications", () => {
       "New Ritual: Black Division Dogtags",
       expect.objectContaining({
         description:
-          "Redeem five launcher codes, sacrifice any five Black Division dogtags, and uncover the 05:09:00 reward.",
+          "Redeem five launcher codes, sacrifice any five Black Division dogtags, and uncover the 5:55:55 reward.",
         icon: "🔐",
       }),
     );

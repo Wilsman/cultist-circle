@@ -49,7 +49,7 @@ function createRecipeId(requiredItems: string[]): string {
 const recipeDefinitions: RecipeDefinition[] = [
   {
     requiredItems: ["5x BD dogtag •| Ferrum"],
-    craftingTime: "05:09:00",
+    craftingTime: "5:55:55",
     producedItems: ["1x Briefcase with documents"],
     isNew: true,
     specialFlow: {
