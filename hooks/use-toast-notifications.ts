@@ -22,7 +22,18 @@ interface ToastNotificationsState {
 const NOTIFICATIONS_STORAGE_KEY = "cultist_toast_notifications";
 const CURRENT_APP_VERSION = "2.1.2";
 
-const AVAILABLE_NOTIFICATIONS: Notification[] = [];
+const AVAILABLE_NOTIFICATIONS: Notification[] = [
+  {
+    id: "black-division-dogtag-recipe",
+    title: "New Ritual: Black Division Dogtags",
+    description:
+      "Redeem five launcher codes, sacrifice any five Black Division dogtags, and uncover the 05:09:00 reward.",
+    version: CURRENT_APP_VERSION,
+    type: "feature",
+    createdAt: "2026-08-04",
+    icon: "🔐",
+  },
+];
 
 export function useToastNotifications() {
   const [state, setState] = useState<ToastNotificationsState>({

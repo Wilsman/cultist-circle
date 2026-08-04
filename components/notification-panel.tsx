@@ -37,6 +37,27 @@ export interface NotificationAction {
 
 export const NOTIFICATIONS: Notification[] = [
   {
+    id: "black-division-dogtag-recipe",
+    type: "success",
+    icon: "🔐",
+    title: "New Ritual Discovered: Black Division",
+    priority: 0,
+    description: (
+      <>
+        The circle has revealed a new exchange. Redeem five launcher codes, then
+        sacrifice any five <strong>Black Division dogtags</strong> — Ferrum,
+        Green, or Red — to begin a <strong>05:09:00 ritual</strong>
+        and receive a Briefcase with documents.{" "}
+        <Link
+          href="/recipes"
+          className="font-semibold underline transition-colors hover:text-emerald-200"
+        >
+          View the special recipe →
+        </Link>
+      </>
+    ),
+  },
+  {
     id: "weapon-values-warning",
     type: "warning",
     title: "Weapon Base Values - Work in Progress",

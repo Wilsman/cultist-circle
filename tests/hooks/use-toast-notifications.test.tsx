@@ -28,6 +28,23 @@ describe("useToastNotifications", () => {
     window.sessionStorage.clear();
   });
 
+  it("announces the new Black Division recipe once", async () => {
+    render(<ToastHarness />);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+
+    expect(toastMock).toHaveBeenCalledWith(
+      "New Ritual: Black Division Dogtags",
+      expect.objectContaining({
+        description:
+          "Redeem five launcher codes, sacrifice any five Black Division dogtags, and uncover the 05:09:00 reward.",
+        icon: "🔐",
+      }),
+    );
+  });
+
   it("does not show the retired Tarkov.dev API warning toast", async () => {
     render(<ToastHarness />);
 

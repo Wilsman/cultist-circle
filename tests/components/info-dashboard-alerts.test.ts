@@ -4,6 +4,18 @@ import { HOT_SACRIFICES } from "@/components/hot-sacrifices-panel";
 import { NOTIFICATIONS } from "@/components/notification-panel";
 
 describe("Info dashboard alerts", () => {
+  it("features the new Black Division recipe", () => {
+    const recipeNotification = NOTIFICATIONS.find(
+      (notification) => notification.id === "black-division-dogtag-recipe",
+    );
+
+    expect(recipeNotification).toMatchObject({
+      type: "success",
+      title: "New Ritual Discovered: Black Division",
+      priority: 0,
+    });
+  });
+
   it("removes retired priority notices", () => {
     const notificationIds = NOTIFICATIONS.map(
       (notification) => notification.id,

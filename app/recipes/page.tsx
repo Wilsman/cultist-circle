@@ -61,6 +61,11 @@ import {
   Filter,
   Repeat2,
   RotateCcw,
+  Briefcase,
+  Check,
+  Copy,
+  KeyRound,
+  Tag,
 } from "lucide-react";
 
 // ============================================================================
@@ -86,6 +91,15 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 // ============================================================================
 
 function parseCraftingTime(timeStr: string): number {
+  const clockTime = timeStr.trim().match(/^(\d+):([0-5]\d):([0-5]\d)$/);
+  if (clockTime) {
+    return (
+      parseInt(clockTime[1], 10) * 3600 +
+      parseInt(clockTime[2], 10) * 60 +
+      parseInt(clockTime[3], 10)
+    );
+  }
+
   const hours = timeStr.match(/(\d+)\s*hour/i);
   const minutes = timeStr.match(/(\d+)\s*min/i);
   const seconds = timeStr.match(/(\d+)\s*sec/i);
@@ -220,6 +234,8 @@ const ItemBadge = React.memo(function ItemBadge({
   isOutput = false,
   size = "md",
   getItemByName,
+  itemHref,
+  placeholderIcon,
 }: {
   itemName: string;
   isOutput?: boolean;
@@ -227,9 +243,18 @@ const ItemBadge = React.memo(function ItemBadge({
   getItemByName: (
     name: string,
   ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
+  itemHref?: string;
+  placeholderIcon?: "dogtag" | "briefcase";
 }) {
-  const iconUrl = recipeIconMap[itemName];
   const itemData = getItemByName(itemName);
+  const staticIconUrl = recipeIconMap[itemName];
+  const isUsableIcon = (url: string | undefined) =>
+    Boolean(url && !url.includes("unknown-item"));
+  const iconUrl = isUsableIcon(staticIconUrl)
+    ? staticIconUrl
+    : isUsableIcon(itemData?.iconLink)
+      ? itemData?.iconLink
+      : undefined;
   const sizeClasses =
     size === "sm" ? "w-10 h-10 p-1.5" : "w-12 h-12 lg:w-14 lg:h-14 p-2";
 
@@ -241,13 +266,24 @@ const ItemBadge = React.memo(function ItemBadge({
           alt={itemName}
           width={56}
           height={56}
-          className={`rounded-lg flex-shrink-0 bg-gray-900/50 ${sizeClasses} transition-transform group-hover:scale-105`}
+          className={`rounded-lg flex-shrink-0 bg-gray-900/50 object-contain ${sizeClasses} transition-transform group-hover:scale-105`}
           loading="lazy"
         />
       ) : (
         <div
-          className={`${sizeClasses} rounded-lg bg-gray-800/50 flex-shrink-0 border border-gray-700/50`}
-        />
+          role={placeholderIcon ? "img" : undefined}
+          aria-label={placeholderIcon ? `${itemName} placeholder` : undefined}
+          className={`${sizeClasses} rounded-lg bg-gray-800/50 flex flex-shrink-0 items-center justify-center border border-gray-700/50`}
+        >
+          {placeholderIcon === "dogtag" ? (
+            <Tag className="h-5 w-5 text-red-300/75" aria-hidden="true" />
+          ) : placeholderIcon === "briefcase" ? (
+            <Briefcase
+              className="h-5 w-5 text-emerald-300/75"
+              aria-hidden="true"
+            />
+          ) : null}
+        </div>
       )}
       <Badge
         variant="secondary"
@@ -263,17 +299,262 @@ const ItemBadge = React.memo(function ItemBadge({
     </div>
   );
 
+  const linkedBadgeContent = itemHref ? (
+    <a
+      href={itemHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`View ${itemName} on Tarkov.dev`}
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
+    >
+      {badgeContent}
+    </a>
+  ) : (
+    badgeContent
+  );
+
   if (itemData) {
     return (
       <TooltipProvider delayDuration={150}>
         <ItemTooltip item={itemData} iconUrl={iconUrl}>
-          {badgeContent}
+          {linkedBadgeContent}
         </ItemTooltip>
       </TooltipProvider>
     );
   }
 
-  return badgeContent;
+  return linkedBadgeContent;
+});
+
+const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
+  recipe,
+  getItemByName,
+}: {
+  recipe: Recipe & { specialFlow: NonNullable<Recipe["specialFlow"]> };
+  getItemByName: (
+    name: string,
+  ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
+}) {
+  const [copyStatus, setCopyStatus] = useState<{
+    code: string;
+    state: "copied" | "failed";
+  } | null>(null);
+  const resetCopyStatusRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (resetCopyStatusRef.current) {
+        clearTimeout(resetCopyStatusRef.current);
+      }
+    },
+    [],
+  );
+
+  const handleCopy = useCallback(async (code: string) => {
+    if (resetCopyStatusRef.current) {
+      clearTimeout(resetCopyStatusRef.current);
+    }
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable");
+      }
+      await navigator.clipboard.writeText(code);
+      setCopyStatus({ code, state: "copied" });
+    } catch {
+      setCopyStatus({ code, state: "failed" });
+    }
+
+    resetCopyStatusRef.current = setTimeout(() => {
+      setCopyStatus(null);
+      resetCopyStatusRef.current = null;
+    }, 1800);
+  }, []);
+
+  const sacrificeItem = recipe.requiredItems[0];
+  const rewardItem = recipe.producedItems[0];
+
+  return (
+    <div className="space-y-4">
+      <section className="relative overflow-hidden rounded-xl border border-amber-400/20 bg-[linear-gradient(135deg,rgba(120,53,15,0.18),rgba(3,7,18,0.74)_48%,rgba(120,53,15,0.08))] p-3.5 shadow-[inset_0_1px_0_rgba(253,230,138,0.06)] sm:p-4">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full bg-amber-300/[0.055] blur-3xl"
+        />
+        <div className="relative mb-3 flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-amber-300/25 bg-amber-300/10 text-amber-200 shadow-[0_0_18px_rgba(251,191,36,0.08)]">
+              <KeyRound className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300/75">
+                  Step 1 · Launcher unlock
+                </span>
+                <span className="rounded-full border border-amber-300/15 bg-black/20 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-100/50">
+                  5 codes
+                </span>
+              </div>
+              <p className="mt-1 text-sm font-medium text-amber-50/90">
+                Redeem every code in the BSG Launcher
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-gray-400">
+                Open Settings → Activate code. Each code delivers one Ferrum
+                dogtag.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative grid gap-2 lg:grid-cols-2">
+          {recipe.specialFlow.codes.map((code, index) => {
+            const status = copyStatus?.code === code ? copyStatus.state : null;
+            const buttonLabel =
+              status === "copied"
+                ? `Copied promo code ${index + 1}`
+                : status === "failed"
+                  ? `Copy failed for promo code ${index + 1}`
+                  : `Copy promo code ${index + 1}`;
+
+            return (
+              <div
+                key={code}
+                className="group/code flex min-w-0 items-center gap-2 rounded-lg border border-gray-700/70 bg-black/25 p-1.5 pl-2.5 transition-colors hover:border-amber-300/25 hover:bg-black/35"
+              >
+                <span className="hidden w-4 flex-shrink-0 text-center font-mono text-[9px] text-amber-300/35 sm:inline">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <code className="min-w-0 flex-1 select-all whitespace-nowrap font-mono text-[10px] tracking-[0.025em] text-gray-200 sm:text-[11px]">
+                  {code}
+                </code>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void handleCopy(code)}
+                  aria-label={buttonLabel}
+                  className={`h-8 flex-shrink-0 rounded-md border px-2 text-[10px] font-semibold transition-all ${
+                    status === "copied"
+                      ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/15"
+                      : status === "failed"
+                        ? "border-red-400/25 bg-red-400/10 text-red-200 hover:bg-red-400/15"
+                        : "border-gray-700/70 bg-gray-900/70 text-gray-400 hover:border-amber-300/25 hover:bg-amber-300/10 hover:text-amber-100"
+                  }`}
+                >
+                  {status === "copied" ? (
+                    <>
+                      <Check className="mr-1 h-3 w-3" aria-hidden="true" />
+                      Copied
+                    </>
+                  ) : status === "failed" ? (
+                    "Copy failed"
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span className="sr-only">Copy</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+        <p className="sr-only" aria-live="polite">
+          {copyStatus?.state === "copied"
+            ? `${copyStatus.code} copied to clipboard`
+            : copyStatus?.state === "failed"
+              ? `Could not copy ${copyStatus.code}. Select the code and copy it manually.`
+              : ""}
+        </p>
+      </section>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch lg:gap-6">
+        <div className="min-w-0">
+          <div className="mb-3 flex items-center gap-2 border-b border-gray-700/50 pb-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-red-400/20 bg-red-500/10 font-mono text-[10px] font-bold text-red-300">
+              2
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-red-300">
+                Sacrifice
+              </span>
+              <span className="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-gray-400">
+                5 tags
+              </span>
+            </div>
+          </div>
+          <ItemBadge
+            itemName={sacrificeItem}
+            getItemByName={getItemByName}
+            itemHref={recipe.specialFlow.sacrificeItemUrl}
+            placeholderIcon="dogtag"
+          />
+          <div className="mt-2.5 flex items-start gap-2 rounded-lg border border-sky-400/15 bg-sky-400/[0.06] px-2.5 py-2 text-[11px] leading-relaxed text-sky-100/70">
+            <Info
+              className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-sky-300/70"
+              aria-hidden="true"
+            />
+            <p>{recipe.specialFlow.sacrificeNote}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center py-2 lg:border-x lg:border-gray-700/50 lg:px-6 lg:py-0">
+          <div className="mb-2 flex items-center gap-1" aria-hidden="true">
+            {[0, 150, 300].map((delay) => (
+              <ArrowRight
+                key={delay}
+                className="flow-arrow h-3 w-3 text-amber-300"
+                style={{
+                  animationDelay: `${delay}ms`,
+                  opacity: 0.6 + delay / 750,
+                }}
+              />
+            ))}
+          </div>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-950/20 px-4 py-2 shadow-[0_0_20px_rgba(251,191,36,0.05)]">
+                  <Clock3 className="h-4 w-4 text-amber-300/70" />
+                  <span className="font-mono text-sm font-semibold tracking-[0.08em] text-amber-100">
+                    {recipe.craftingTime}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                Cultist Circle timer
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        <div className="min-w-0">
+          <div className="mb-3 flex items-center gap-2 border-b border-gray-700/50 pb-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/10 font-mono text-[10px] font-bold text-emerald-300">
+              3
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                Reward
+              </span>
+              <span className="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-gray-400">
+                1 item
+              </span>
+            </div>
+          </div>
+          {typeof rewardItem === "string" && (
+            <ItemBadge
+              itemName={rewardItem}
+              isOutput={true}
+              getItemByName={getItemByName}
+              itemHref={recipe.specialFlow.rewardItemUrl}
+              placeholderIcon="briefcase"
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 });
 
 const RoomInfoBadge = React.memo(function RoomInfoBadge({
@@ -491,138 +772,151 @@ const RecipeCard = React.memo(function RecipeCard({
         </div>
 
         <div
-          className={`grid grid-cols-1 gap-4 transition-opacity duration-200 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch lg:gap-6 ${
-            isCompleted ? "opacity-70" : ""
-          }`}
+          className={`transition-opacity duration-200 ${isCompleted ? "opacity-70" : ""}`}
         >
-          {/* Inputs Column */}
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
-              <div className="p-1.5 rounded-lg bg-red-500/10">
-                <Package className="h-4 w-4 text-red-400" />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-red-300">
-                  Sacrifice
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
-                  {recipe.requiredItems.length}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              {recipe.requiredItems.map((ing, idx) => (
-                <ItemBadge
-                  key={idx}
-                  itemName={ing}
-                  getItemByName={getItemByName}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Time Column */}
-          <div className="lg:border-x lg:border-gray-700/50 lg:px-6 flex flex-col items-center justify-center py-2 lg:py-0">
-            <div className="flex items-center gap-1 mb-2">
-              <ArrowRight
-                className="flow-arrow h-3 w-3 text-green-400/60"
-                style={{ animationDelay: "0ms" }}
-              />
-              <ArrowRight
-                className="flow-arrow h-3 w-3 text-green-400/80"
-                style={{ animationDelay: "150ms" }}
-              />
-              <ArrowRight
-                className="flow-arrow h-3 w-3 text-green-400"
-                style={{ animationDelay: "300ms" }}
-              />
-            </div>
-            <style jsx global>{`
-              @keyframes flowFlash {
-                0% {
-                  opacity: 0;
-                }
-                30% {
-                  opacity: 1;
-                }
-                60%,
-                100% {
-                  opacity: 0;
+          {recipe.specialFlow?.type === "launcher-promo" ? (
+            <LauncherPromoFlow
+              recipe={
+                recipe as Recipe & {
+                  specialFlow: NonNullable<Recipe["specialFlow"]>;
                 }
               }
-              .flow-arrow {
-                animation: flowFlash 2s ease-in-out infinite;
-                animation-fill-mode: both;
-              }
-            `}</style>
-            <TooltipProvider delayDuration={150}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/60 border border-gray-700/50">
-                    <Clock3 className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-mono font-medium text-gray-200">
-                      {recipe.craftingTime}
+              getItemByName={getItemByName}
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch lg:gap-6">
+              {/* Inputs Column */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
+                  <div className="p-1.5 rounded-lg bg-red-500/10">
+                    <Package className="h-4 w-4 text-red-400" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-red-300">
+                      Sacrifice
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
+                      {recipe.requiredItems.length}
                     </span>
                   </div>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  Crafting time
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-
-          {/* Outputs Column */}
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
-              <div className="p-1.5 rounded-lg bg-green-500/10">
-                <CheckCircle2 className="h-4 w-4 text-green-400" />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-green-300">
-                  Rewards
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
-                  {outputCount}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              {processedOutputs.map((output, idx) => {
-                if (output.type === "normal") {
-                  return (
+                </div>
+                <div className="flex flex-col gap-2">
+                  {recipe.requiredItems.map((ing, idx) => (
                     <ItemBadge
-                      key={`${output.content}-${idx}`}
-                      itemName={output.content as string}
-                      isOutput={true}
+                      key={idx}
+                      itemName={ing}
                       getItemByName={getItemByName}
                     />
-                  );
-                }
-                const content = output.content as {
-                  items: string[];
-                  explanation: string;
-                };
-                return (
-                  <div key={`multiple-wrapper-${idx}`}>
-                    <MultipleOutputBadge
-                      items={content.items}
-                      explanation={content.explanation}
-                      getItemByName={getItemByName}
-                    />
-                    {idx < processedOutputs.length - 1 && (
-                      <div className="flex items-center justify-center my-3">
-                        <span className="text-xs font-bold text-orange-400/80 bg-orange-950/20 px-4 py-1 rounded-full border border-orange-900/30 uppercase tracking-widest">
-                          OR
+                  ))}
+                </div>
+              </div>
+
+              {/* Time Column */}
+              <div className="lg:border-x lg:border-gray-700/50 lg:px-6 flex flex-col items-center justify-center py-2 lg:py-0">
+                <div className="flex items-center gap-1 mb-2">
+                  <ArrowRight
+                    className="flow-arrow h-3 w-3 text-green-400/60"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <ArrowRight
+                    className="flow-arrow h-3 w-3 text-green-400/80"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <ArrowRight
+                    className="flow-arrow h-3 w-3 text-green-400"
+                    style={{ animationDelay: "300ms" }}
+                  />
+                </div>
+                <style>{`
+                  @keyframes flowFlash {
+                    0% {
+                      opacity: 0;
+                    }
+                    30% {
+                      opacity: 1;
+                    }
+                    60%,
+                    100% {
+                      opacity: 0;
+                    }
+                  }
+                  .flow-arrow {
+                    animation: flowFlash 2s ease-in-out infinite;
+                    animation-fill-mode: both;
+                  }
+                `}</style>
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/60 border border-gray-700/50">
+                        <Clock3 className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm font-mono font-medium text-gray-200">
+                          {recipe.craftingTime}
                         </span>
                       </div>
-                    )}
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      Crafting time
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              {/* Outputs Column */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
+                  <div className="p-1.5 rounded-lg bg-green-500/10">
+                    <CheckCircle2 className="h-4 w-4 text-green-400" />
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-green-300">
+                      Rewards
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
+                      {outputCount}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {processedOutputs.map((output, idx) => {
+                    if (output.type === "normal") {
+                      return (
+                        <ItemBadge
+                          key={`${output.content}-${idx}`}
+                          itemName={output.content as string}
+                          isOutput={true}
+                          getItemByName={getItemByName}
+                        />
+                      );
+                    }
+                    const content = output.content as {
+                      items: string[];
+                      explanation: string;
+                    };
+                    return (
+                      <div key={`multiple-wrapper-${idx}`}>
+                        <MultipleOutputBadge
+                          items={content.items}
+                          explanation={content.explanation}
+                          getItemByName={getItemByName}
+                        />
+                        {idx < processedOutputs.length - 1 && (
+                          <div className="flex items-center justify-center my-3">
+                            <span className="text-xs font-bold text-orange-400/80 bg-orange-950/20 px-4 py-1 rounded-full border border-orange-900/30 uppercase tracking-widest">
+                              OR
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {recipe.roomInfo && (
+                  <RoomInfoBadge roomInfo={recipe.roomInfo} />
+                )}
+              </div>
             </div>
-            {recipe.roomInfo && <RoomInfoBadge roomInfo={recipe.roomInfo} />}
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -730,7 +1024,18 @@ export default function RecipesPage() {
         );
       });
 
-      return inInputs || inOutputs;
+      const inSpecialFlow =
+        recipe.specialFlow?.type === "launcher-promo" &&
+        [
+          "launcher",
+          "launcher code",
+          "promo",
+          "promo code",
+          "activate code",
+          ...recipe.specialFlow.codes,
+        ].some((term) => term.toLowerCase().includes(searchLower));
+
+      return inInputs || inOutputs || inSpecialFlow;
     });
 
     // Sort recipes
