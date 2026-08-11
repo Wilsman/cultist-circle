@@ -10,6 +10,11 @@ export interface TraderBuyOffer {
   vendor: TraderVendorInfo;
 }
 
+export interface TraderSellOffer {
+  priceRUB: number;
+  vendor: Pick<TraderVendorInfo, "normalizedName">;
+}
+
 export interface SimplifiedItem {
   // Database fields
   id: string;
@@ -20,21 +25,23 @@ export interface SimplifiedItem {
   englishShortName?: string;
   basePrice: number;
   lastLowPrice?: number;
-  updated?: string;  // Changed from number to string to match Supabase timestamptz
+  updated?: string; // Changed from number to string to match Supabase timestamptz
   lastOfferCount?: number;
   height?: number;
   width?: number;
-  categories?: string[];  // Made optional to match DB schema
+  categories?: string[]; // Made optional to match DB schema
   iconLink?: string;
   avg24hPrice?: number;
   link?: string;
   // Trader offers (buy prices from traders). Present when fetched via minimal data merge.
   buyFor?: TraderBuyOffer[];
+  // Trader offers for selling the item. Used to snapshot realised reward value.
+  sellFor?: TraderSellOffer[];
 
   // UI-specific fields
   tags?: string[];
   isExcluded?: boolean;
-  categories_display?: Array<{ id?: string; name: string }>;  // For UI display of categories (id optional)
+  categories_display?: Array<{ id?: string; name: string }>; // For UI display of categories (id optional)
   // English categories for stable filtering across languages
-  categories_display_en?: Array<{ id?: string; name: string }>;  
+  categories_display_en?: Array<{ id?: string; name: string }>;
 }

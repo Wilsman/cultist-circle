@@ -77,9 +77,10 @@ import { CURRENT_VERSION } from "@/config/changelog";
 interface SettingsPaneProps {
   isOpen: boolean;
   onClose: () => void;
-  onHardReset: () => void;
-  onExportData: () => void;
-  onImportData: (data: string) => void;
+  onHardReset: () => void | Promise<void>;
+  onExportData: () => void | Promise<void>;
+  onImportData: (data: string) => void | Promise<void>;
+  onClearRitualHistory: () => void | Promise<void>;
   onSortChange: (sortOption: string) => void;
   currentSortOption: string;
   fleaPriceType: "lastLowPrice" | "avg24hPrice";
@@ -133,6 +134,7 @@ export default function SettingsPane({
   excludedItems,
   onExcludedItemsChange,
   onHardReset,
+  onClearRitualHistory,
   useLastOfferCountFilter,
   onUseLastOfferCountFilterChange,
   lowOfferCountFilteredCount,
@@ -146,11 +148,12 @@ export default function SettingsPane({
   const [currentFleaPriceType, setCurrentFleaPriceType] =
     useState(fleaPriceType);
   const [currentPriceMode, setCurrentPriceMode] = useState<"flea" | "trader">(
-    priceMode
+    priceMode,
   );
   const [currentUseLastOfferCountFilter, setCurrentUseLastOfferCountFilter] =
     useState(useLastOfferCountFilter);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
+  const [showConfirmTrackerClear, setShowConfirmTrackerClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
   const { language, setLanguage, supported, t } = useLanguage();
@@ -213,16 +216,18 @@ export default function SettingsPane({
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const data = e.target?.result as string;
-          onImportData(data);
+          await onImportData(data);
           sonnerToast(t("Success"), {
             description: t("Data imported successfully"),
           });
         } catch {
           sonnerToast(t("Error"), {
-            description: t("Failed to import data. Please check the file format."),
+            description: t(
+              "Failed to import data. Please check the file format.",
+            ),
           });
         }
       };
@@ -263,7 +268,7 @@ export default function SettingsPane({
                     "flex items-center gap-2 sm:gap-3 px-3 sm:px-3 py-2 sm:py-2.5 rounded-xl transition-all duration-100 group relative whitespace-nowrap",
                     isActive
                       ? "bg-white/10 text-white shadow-lg shadow-black/20"
-                      : "text-gray-400 hover:text-white hover:bg-white/5"
+                      : "text-gray-400 hover:text-white hover:bg-white/5",
                   )}
                 >
                   {isActive && (
@@ -282,7 +287,7 @@ export default function SettingsPane({
                       "h-4 w-4 sm:h-4.5 sm:w-4.5 transition-colors",
                       isActive
                         ? "text-yellow-400"
-                        : "group-hover:text-yellow-400/80"
+                        : "group-hover:text-yellow-400/80",
                     )}
                   />
                   <span className="text-xs sm:text-sm font-medium">
@@ -314,9 +319,7 @@ export default function SettingsPane({
               >
                 v{CURRENT_VERSION}
               </Badge>
-              <span className="text-[10px] text-gray-600">
-                {t("Stable")}
-              </span>
+              <span className="text-[10px] text-gray-600">{t("Stable")}</span>
             </div>
           </div>
         </div>
@@ -373,7 +376,9 @@ export default function SettingsPane({
                           </Select>
                         </div>
                         <p className="text-xs text-gray-400 leading-relaxed italic">
-                          {t('Known issue: the "Excluded Items" list is still shown in English.')}
+                          {t(
+                            'Known issue: the "Excluded Items" list is still shown in English.',
+                          )}
                         </p>
                       </section>
                     )}
@@ -452,7 +457,7 @@ export default function SettingsPane({
                             "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
                             currentPriceMode === "flea"
                               ? "border-yellow-400/50 bg-yellow-400/5"
-                              : "border-white/5 bg-white/5 hover:bg-white/10"
+                              : "border-white/5 bg-white/5 hover:bg-white/10",
                           )}
                         >
                           <div className="flex items-center gap-2">
@@ -475,7 +480,7 @@ export default function SettingsPane({
                             "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
                             currentPriceMode === "trader"
                               ? "border-yellow-400/50 bg-yellow-400/5"
-                              : "border-white/5 bg-white/5 hover:bg-white/10"
+                              : "border-white/5 bg-white/5 hover:bg-white/10",
                           )}
                         >
                           <div className="flex items-center gap-2">
@@ -521,7 +526,7 @@ export default function SettingsPane({
                         value={currentFleaPriceType}
                         onValueChange={(v) =>
                           setCurrentFleaPriceType(
-                            v as "lastLowPrice" | "avg24hPrice"
+                            v as "lastLowPrice" | "avg24hPrice",
                           )
                         }
                         className="space-y-3"
@@ -532,7 +537,7 @@ export default function SettingsPane({
                             "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
                             currentFleaPriceType === "lastLowPrice"
                               ? "border-emerald-400/50 bg-emerald-400/5"
-                              : "border-white/5 bg-white/5 hover:bg-white/10"
+                              : "border-white/5 bg-white/5 hover:bg-white/10",
                           )}
                         >
                           <div className="flex items-center gap-3 text-sm">
@@ -556,7 +561,7 @@ export default function SettingsPane({
                             "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
                             currentFleaPriceType === "avg24hPrice"
                               ? "border-emerald-400/50 bg-emerald-400/5"
-                              : "border-white/5 bg-white/5 hover:bg-white/10"
+                              : "border-white/5 bg-white/5 hover:bg-white/10",
                           )}
                         >
                           <div className="flex items-center gap-3 text-sm">
@@ -657,7 +662,7 @@ export default function SettingsPane({
                                         .sort(
                                           (a, b) =>
                                             a.levelRequirement -
-                                            b.levelRequirement
+                                            b.levelRequirement,
                                         )
                                         .map((cat) => (
                                           <div
@@ -753,7 +758,9 @@ export default function SettingsPane({
                           </Link>
                         </div>
                         <p className="text-sm text-gray-400">
-                          {t("Selection will be hidden from the auto-selector and items lists.")}
+                          {t(
+                            "Selection will be hidden from the auto-selector and items lists.",
+                          )}
                         </p>
                       </div>
                       <div className="w-full space-y-2 md:w-auto md:space-y-0">
@@ -843,7 +850,7 @@ export default function SettingsPane({
                         .filter((c) =>
                           c.name
                             .toLowerCase()
-                            .includes(searchTerm.toLowerCase())
+                            .includes(searchTerm.toLowerCase()),
                         )
                         .sort((a, b) => a.name.localeCompare(b.name))
                         .map((c) => (
@@ -905,25 +912,27 @@ export default function SettingsPane({
                             {t("Individual Exclusions")}
                           </h4>
                           <p className="text-xs text-gray-500">
-                            {t('To add items, use the "Exclude from Auto" button in the selector.')}
+                            {t(
+                              'To add items, use the "Exclude from Auto" button in the selector.',
+                            )}
                           </p>
                         </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              onExcludedItemsChange(
-                                new Set(DEFAULT_EXCLUDED_ITEMS)
-                              );
-                              sonnerToast.success(t("Reset Complete"), {
-                                description: t("Defaults restored."),
-                              });
-                            }}
-                            className="h-8 hover:bg-white/10 text-xs rounded-xl"
-                          >
-                            <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
-                            {t("Restore Defaults")}
-                          </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            onExcludedItemsChange(
+                              new Set(DEFAULT_EXCLUDED_ITEMS),
+                            );
+                            sonnerToast.success(t("Reset Complete"), {
+                              description: t("Defaults restored."),
+                            });
+                          }}
+                          className="h-8 hover:bg-white/10 text-xs rounded-xl"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5 mr-2 text-yellow-400" />
+                          {t("Restore Defaults")}
+                        </Button>
                       </div>
 
                       <div className="relative group">
@@ -944,7 +953,7 @@ export default function SettingsPane({
                             .filter((id) =>
                               id
                                 .toLowerCase()
-                                .includes(excludedItemsSearch.toLowerCase())
+                                .includes(excludedItemsSearch.toLowerCase()),
                             )
                             .sort()
                             .map((id) => (
@@ -991,9 +1000,13 @@ export default function SettingsPane({
                           <Download className="h-6 w-6 text-blue-400" />
                         </div>
                         <div className="space-y-1">
-                          <h4 className="font-semibold">{t("Export Profile")}</h4>
+                          <h4 className="font-semibold">
+                            {t("Export Profile")}
+                          </h4>
                           <p className="text-xs text-gray-500 leading-relaxed">
-                            {t("Save your custom exclusions and preferences as a JSON file.")}
+                            {t(
+                              "Save your custom exclusions and preferences as a JSON file.",
+                            )}
                           </p>
                         </div>
                         <Button
@@ -1009,9 +1022,13 @@ export default function SettingsPane({
                           <Upload className="h-6 w-6 text-indigo-400" />
                         </div>
                         <div className="space-y-1">
-                          <h4 className="font-semibold">{t("Import Profile")}</h4>
+                          <h4 className="font-semibold">
+                            {t("Import Profile")}
+                          </h4>
                           <p className="text-xs text-gray-500 leading-relaxed">
-                            {t("Restore your configuration from a previously exported file.")}
+                            {t(
+                              "Restore your configuration from a previously exported file.",
+                            )}
                           </p>
                         </div>
                         <div className="relative">
@@ -1031,6 +1048,33 @@ export default function SettingsPane({
                       </section>
                     </div>
 
+                    <section className="rounded-[28px] border border-amber-300/10 bg-amber-300/[0.035] p-6">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-start gap-4">
+                          <div className="rounded-2xl bg-amber-300/10 p-3 text-amber-300">
+                            <Database className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-white">
+                              Ritual history
+                            </h4>
+                            <p className="mt-1 max-w-md text-xs leading-relaxed text-gray-500">
+                              Tracker records are included in profile exports
+                              and preserved when calculator settings are reset.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => setShowConfirmTrackerClear(true)}
+                          variant="outline"
+                          className="border-red-400/20 bg-red-400/5 text-red-200 hover:bg-red-400/10 hover:text-red-100"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete ritual history
+                        </Button>
+                      </div>
+                    </section>
+
                     <section className="p-8 bg-red-400/5 rounded-[32px] border border-red-400/10 space-y-6">
                       <div className="flex items-start gap-5">
                         <div className="p-3 bg-red-400/20 rounded-2xl text-red-400 mt-1">
@@ -1041,7 +1085,8 @@ export default function SettingsPane({
                             {t("System Hard Reset")}
                           </h4>
                           <p className="text-sm text-gray-400 leading-relaxed max-w-md">
-                            {t("This will clear all localized storage including custom categories, exclusions, and preferred price modes.")}
+                            This clears calculator settings, exclusions, and
+                            preferred price modes. Ritual history is preserved.
                           </p>
                         </div>
                       </div>
@@ -1071,7 +1116,8 @@ export default function SettingsPane({
                   {t("Clear All Data?")}
                 </DialogTitle>
                 <DialogDescription className="text-gray-400 text-sm leading-relaxed max-w-[320px] mx-auto">
-                  {t("This action is irreversible. All your custom exclusions and settings will be permanently deleted.")}
+                  Your calculator settings and exclusions will be reset. Ritual
+                  history will remain available in the Tracker.
                 </DialogDescription>
               </div>
             </DialogHeader>
@@ -1093,6 +1139,56 @@ export default function SettingsPane({
                 className="h-12 rounded-2xl text-gray-400 hover:text-white hover:bg-white/5 transition-all"
               >
                 {t("Cancel")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={showConfirmTrackerClear}
+          onOpenChange={setShowConfirmTrackerClear}
+        >
+          <DialogContent className="bg-[#1a1c20] border-white/5 text-white rounded-[32px] p-8 shadow-2xl">
+            <DialogHeader className="space-y-4">
+              <div className="p-4 bg-red-400/20 rounded-3xl w-fit mx-auto">
+                <Trash2 className="h-8 w-8 text-red-400" />
+              </div>
+              <div className="text-center space-y-2">
+                <DialogTitle className="text-2xl font-bold">
+                  Delete ritual history?
+                </DialogTitle>
+                <DialogDescription className="text-gray-400 text-sm leading-relaxed max-w-[360px] mx-auto">
+                  Active countdowns, returned rewards, and personal insights
+                  will be permanently removed. Export a backup first if you may
+                  need them later.
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+            <div className="mt-8 flex flex-col gap-3">
+              <Button
+                variant="outline"
+                onClick={() => void onExportData()}
+                className="h-11 rounded-2xl border-white/10 bg-white/5 text-white hover:bg-white/10"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export backup first
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  await onClearRitualHistory();
+                  setShowConfirmTrackerClear(false);
+                }}
+                className="h-12 rounded-2xl font-bold bg-red-400 hover:bg-red-500"
+              >
+                Delete ritual history
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowConfirmTrackerClear(false)}
+                className="h-11 rounded-2xl text-gray-400 hover:text-white hover:bg-white/5"
+              >
+                Cancel
               </Button>
             </div>
           </DialogContent>

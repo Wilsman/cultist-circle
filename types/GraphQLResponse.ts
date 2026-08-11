@@ -22,6 +22,12 @@ export interface TarkovItem {
       minTraderLevel?: number;
     };
   }>;
+  sellFor?: Array<{
+    priceRUB: number;
+    vendor: {
+      normalizedName: string;
+    };
+  }>;
 }
 
 export interface GraphQLResponse {

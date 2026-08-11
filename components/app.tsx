@@ -19,6 +19,7 @@ import SettingsPane from "@/components/settings-pane";
 import { ModeThreshold } from "@/components/mode-threshold";
 import { AutoSelectButton } from "@/components/auto-select-button";
 import { ShareButton } from "@/components/share-button";
+import { StartRitualDialog } from "@/components/ritual-tracker/start-ritual-dialog";
 import {
   ALL_ITEM_CATEGORIES,
   DEFAULT_EXCLUDED_CATEGORY_IDS,
@@ -92,6 +93,12 @@ import {
   type GameMode,
 } from "@/lib/game-mode";
 import { resolveSharedItems } from "@/lib/share-utils";
+import type { RitualInputPriceSource } from "@/types/ritual-tracker";
+import { clearRitualHistory, listRituals } from "@/lib/ritual-tracker-db";
+import {
+  createTrackerBackup,
+  importTrackerBackup,
+} from "@/lib/ritual-tracker-export";
 interface AppProps {
   contributors?: GitHubContributor[];
 }
@@ -1129,6 +1136,17 @@ function AppContent({ contributors = [] }: AppProps) {
       item ? (getEffectivePrice(item) ?? 0) : 0,
     );
   }, [selectedItems, getEffectivePrice]);
+
+  const trackerInputPrices = useMemo(
+    () =>
+      selectedItems.map((item) =>
+        item ? (getEffectivePrice(item) ?? null) : null,
+      ),
+    [getEffectivePrice, selectedItems],
+  );
+
+  const trackerInputPriceSource: RitualInputPriceSource =
+    priceMode === "trader" ? "trader" : fleaPriceType;
 
   // Memoized total flea cost
   const totalFleaCost = useMemo(() => {
@@ -2342,15 +2360,25 @@ function AppContent({ contributors = [] }: AppProps) {
                     <IncompatibleItemsNotice />
                   </div>
 
-                  {/* Right: Share button */}
-                  <ShareButton
-                    selectedItems={selectedItems}
-                    mode={mode}
-                    total={Math.floor(total)}
-                    totalFlea={Math.floor(totalFleaCost || 0)}
-                    sacred={itemBonus > 0}
-                    onCodeLoaded={handleSharedCodeLoad}
-                  />
+                  {/* Right: tracking and sharing */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StartRitualDialog
+                      mode={mode}
+                      selectedItems={selectedItems}
+                      inputPrices={trackerInputPrices}
+                      totalBaseValue={total}
+                      sacredBonus={itemBonus}
+                      inputPriceSource={trackerInputPriceSource}
+                    />
+                    <ShareButton
+                      selectedItems={selectedItems}
+                      mode={mode}
+                      total={Math.floor(total)}
+                      totalFlea={Math.floor(totalFleaCost || 0)}
+                      sacred={itemBonus > 0}
+                      onCodeLoaded={handleSharedCodeLoad}
+                    />
+                  </div>
                 </div>
 
                 {/* Summary Section */}
@@ -2417,8 +2445,11 @@ function AppContent({ contributors = [] }: AppProps) {
                 ),
               });
             }}
-            onExportData={() => {
+            onExportData={async () => {
+              const rituals = await listRituals();
               const data = {
+                format: "cultist-circle-profile",
+                version: 1,
                 selectedItems,
                 pinnedItems,
                 sortOption,
@@ -2431,6 +2462,7 @@ function AppContent({ contributors = [] }: AppProps) {
                 useLastOfferCountFilter,
                 useLevelFilter,
                 playerLevel,
+                ritualTracker: createTrackerBackup(rituals),
               };
               const blob = new Blob([JSON.stringify(data, null, 2)], {
                 type: "application/json",
@@ -2438,15 +2470,19 @@ function AppContent({ contributors = [] }: AppProps) {
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
-              a.download = "cultist-circle-settings.json";
+              a.download = "cultist-circle-profile.json";
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
               URL.revokeObjectURL(url);
             }}
-            onImportData={(data) => {
+            onImportData={async (data) => {
               try {
                 const parsed = JSON.parse(data);
+                if (parsed.format === "cultist-circle-ritual-tracker") {
+                  await importTrackerBackup(parsed);
+                  return;
+                }
                 if (parsed.selectedItems)
                   setSelectedItems(parsed.selectedItems);
                 if (parsed.pinnedItems) setPinnedItems(parsed.pinnedItems);
@@ -2467,9 +2503,20 @@ function AppContent({ contributors = [] }: AppProps) {
                   setUseLevelFilter(parsed.useLevelFilter);
                 if (parsed.playerLevel !== undefined)
                   setPlayerLevel(parsed.playerLevel);
+                if (parsed.ritualTracker) {
+                  await importTrackerBackup(parsed.ritualTracker);
+                }
               } catch (e) {
                 console.error("Failed to parse imported data:", e);
+                throw e;
               }
+            }}
+            onClearRitualHistory={async () => {
+              await clearRitualHistory();
+              sonnerToast.success("Ritual history deleted", {
+                description:
+                  "Active countdowns and completed records were removed.",
+              });
             }}
             onSortChange={handleSortChange}
             currentSortOption={sortOption}

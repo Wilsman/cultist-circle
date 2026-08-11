@@ -10,6 +10,7 @@ import {
   Settings,
   Calculator,
   Globe,
+  TimerReset,
 } from "lucide-react";
 import {
   Select,
@@ -57,7 +58,7 @@ export function SiteNav() {
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("orientationchange", () =>
-        setHideOnMobile(false)
+        setHideOnMobile(false),
       );
     };
   }, []);
@@ -108,6 +109,19 @@ export function SiteNav() {
               <span className="hidden sm:inline">{t("Recipes")}</span>
             </Link>
             <Link
+              href="/tracker"
+              aria-label={t("Tracker")}
+              className={`${linkBase} ${
+                pathname?.startsWith("/tracker") ? active : inactive
+              } px-2 md:px-3`}
+              aria-current={
+                pathname?.startsWith("/tracker") ? "page" : undefined
+              }
+            >
+              <TimerReset className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("Tracker")}</span>
+            </Link>
+            <Link
               href="/base-values"
               aria-label={t("Base Values")}
               className={`${linkBase} ${
@@ -124,17 +138,23 @@ export function SiteNav() {
 
           {/* Right: Language Selector & Settings */}
           {/* Reserve space to avoid layout shift when Settings is hidden */}
-          <div className="flex items-center gap-1 md:gap-2 w-[88px] md:w-[200px] justify-end">
+          <div
+            className={`flex items-center gap-1 md:gap-2 ${
+              isHome ? "w-[104px]" : "w-[64px]"
+            } md:w-[200px] justify-end`}
+          >
             {/* Language Selector */}
             {ENABLE_LANGUAGE_FEATURE && (
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger
-                  className="h-9 w-[52px] md:w-[70px] bg-transparent border-0 hover:bg-gray-800/70 text-gray-300 hover:text-white transition-colors px-2 gap-1"
+                  className="h-9 w-[64px] md:w-[70px] bg-transparent border-0 hover:bg-gray-800/70 text-gray-300 hover:text-white transition-colors px-2 gap-1"
                   aria-label={t("Select language")}
                 >
                   <Globe className="h-4 w-4 shrink-0" />
                   <SelectValue>
-                    <span className="uppercase text-xs font-medium">{language}</span>
+                    <span className="uppercase text-xs font-medium">
+                      {language}
+                    </span>
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1c20] border-white/10 text-white rounded-xl max-h-[300px]">
@@ -165,7 +185,7 @@ export function SiteNav() {
             ) : (
               <span
                 aria-hidden
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md invisible"
+                className="hidden md:inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md invisible"
               >
                 <Settings className="h-4 w-4" />
                 <span className="hidden md:inline">{t("Settings")}</span>

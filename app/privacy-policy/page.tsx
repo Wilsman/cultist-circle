@@ -32,33 +32,57 @@ export default function PrivacyPolicy() {
         <CardContent className="flex-1 overflow-y-auto space-y-6">
           <div className="space-y-4">
             <div className="p-3 bg-gray-800/90 rounded-lg shadow-md">
-              <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">Local Storage</h2>
+              <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">
+                Local Storage
+              </h2>
               <p className="text-gray-100 text-sm leading-relaxed">
-                We store your calculator preferences locally, including excluded item categories, threshold settings, sort options, and custom price overrides. This data stays on your device and helps maintain your preferred calculator configuration between sessions.
+                We store your calculator preferences locally, including excluded
+                item categories, threshold settings, sort options, and custom
+                price overrides. If you use the Ritual Tracker, its countdowns,
+                sacrifices, returned rewards, notes, and price snapshots are
+                stored in IndexedDB in this browser. This data stays on your
+                device and is not uploaded to Cultist Circle.
               </p>
             </div>
 
             <div className="p-3 bg-gray-800/90 rounded-lg shadow-md">
-              <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">Analytics</h2>
+              <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">
+                Analytics
+              </h2>
               <p className="text-gray-100 text-sm leading-relaxed">
-                We use Google Analytics and PostHog to understand how players use our calculator. This helps us improve features like item filtering, price thresholds, and category management. Analytics only run when you allow them through the cookie preferences panel.
+                We use Google Analytics and PostHog to understand how players
+                use our calculator. This helps us improve features like item
+                filtering, price thresholds, and category management. Analytics
+                only run when you allow them through the cookie preferences
+                panel.
               </p>
             </div>
 
             <div className="p-3 bg-gray-800/90 rounded-lg shadow-md">
-              <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">Your Control</h2>
+              <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">
+                Your Control
+              </h2>
               <ul className="text-gray-100 text-sm leading-relaxed list-disc pl-4 space-y-1">
-                <li>Clear browser data to reset calculator preferences and custom settings</li>
-                <li>Use browser settings or extensions to opt-out of analytics</li>
+                <li>
+                  Clear browser data to reset calculator preferences and custom
+                  settings
+                </li>
+                <li>
+                  Export Ritual Tracker history as JSON or CSV, or delete it
+                  separately from calculator settings
+                </li>
+                <li>
+                  Use browser settings or extensions to opt-out of analytics
+                </li>
               </ul>
             </div>
           </div>
 
           <p className="text-xs text-gray-400 text-center">
-            Last updated: February 2, 2025
+            Last updated: August 11, 2026
           </p>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

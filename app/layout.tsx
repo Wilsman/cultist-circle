@@ -11,6 +11,7 @@ import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { NotesWidget } from "@/components/notes-widget";
 import { SupportWidget } from "@/components/support-widget";
 import { SiteNav } from "@/components/site-nav";
+import { RitualReminderWatcher } from "@/components/ritual-tracker/ritual-reminder-watcher";
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
@@ -140,6 +141,7 @@ export default function RootLayout({
                 <NotesWidget />
                 <CookieConsent />
                 <SonnerToaster />
+                <RitualReminderWatcher />
               </div>
             </main>
           </LanguageProvider>

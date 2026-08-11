@@ -531,6 +531,12 @@ function mapJsonSimplifiedItem(
         minTraderLevel: offer.minTraderLevel,
       },
     })),
+    sellFor: (item.sellToTrader ?? []).map((offer) => ({
+      priceRUB: offer.priceRUB,
+      vendor: {
+        normalizedName: getJsonTraderName(offer.trader, bundle.traders),
+      },
+    })),
     tags: [],
     isExcluded: false,
   };
@@ -679,6 +685,12 @@ export async function fetchCombinedTarkovData(
             }
           }
         }
+        sellFor {
+          priceRUB
+          vendor {
+            normalizedName
+          }
+        }
       }
       pveItems: items(gameMode: pve, lang: ${language}) {
         id
@@ -704,6 +716,12 @@ export async function fetchCombinedTarkovData(
             ... on TraderOffer {
               minTraderLevel
             }
+          }
+        }
+        sellFor {
+          priceRUB
+          vendor {
+            normalizedName
           }
         }
       }
@@ -774,6 +792,14 @@ export async function fetchCombinedTarkovData(
                 minTraderLevel: o.vendor.minTraderLevel,
               },
             }))
+        : undefined,
+      sellFor: item.sellFor
+        ? item.sellFor.map((offer) => ({
+            priceRUB: offer.priceRUB,
+            vendor: {
+              normalizedName: offer.vendor.normalizedName,
+            },
+          }))
         : undefined,
     });
 
