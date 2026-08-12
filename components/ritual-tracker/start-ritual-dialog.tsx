@@ -218,7 +218,7 @@ export function StartRitualDialog({
         <Button
           size="sm"
           disabled={!hasItems}
-          className="rounded-full border border-amber-400/25 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20 hover:text-amber-100"
+          className="w-full rounded-none border border-amber-400/25 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20 hover:text-amber-100"
         >
           <TimerReset className="mr-1.5 h-4 w-4" />
           Track ritual

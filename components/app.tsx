@@ -2341,6 +2341,17 @@ function AppContent({ contributors = [] }: AppProps) {
                   </Button>
                 </div>
 
+                <div className="pt-1">
+                  <StartRitualDialog
+                    mode={mode}
+                    selectedItems={selectedItems}
+                    inputPrices={trackerInputPrices}
+                    totalBaseValue={total}
+                    sacredBonus={itemBonus}
+                    inputPriceSource={trackerInputPriceSource}
+                  />
+                </div>
+
                 {/* Bottom Row: Alerts + Share */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                   {/* Left: Alert badges */}
@@ -2360,16 +2371,8 @@ function AppContent({ contributors = [] }: AppProps) {
                     <IncompatibleItemsNotice />
                   </div>
 
-                  {/* Right: tracking and sharing */}
+                  {/* Right: sharing */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <StartRitualDialog
-                      mode={mode}
-                      selectedItems={selectedItems}
-                      inputPrices={trackerInputPrices}
-                      totalBaseValue={total}
-                      sacredBonus={itemBonus}
-                      inputPriceSource={trackerInputPriceSource}
-                    />
                     <ShareButton
                       selectedItems={selectedItems}
                       mode={mode}
