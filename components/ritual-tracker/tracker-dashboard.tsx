@@ -470,8 +470,8 @@ export function TrackerDashboard() {
     .slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_50%_-10%,rgba(180,119,69,0.14),transparent_34%),linear-gradient(180deg,#101720_0%,#0d1117_100%)] pb-20 text-white">
-      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
+    <div className="min-h-screen bg-my_bg_image bg-cover bg-fixed bg-no-repeat px-3 pb-20 pt-4 text-white sm:px-4 sm:pt-6">
+      <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-xl border border-gray-800 bg-gray-900/80 px-4 py-8 shadow-2xl backdrop-blur-md sm:px-6 lg:py-12">
         <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
@@ -555,7 +555,7 @@ export function TrackerDashboard() {
                   key={value}
                   type="button"
                   onClick={() => setValuation(value)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${valuation === value ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${valuation === value ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"}`}
                 >
                   {value}
                 </button>

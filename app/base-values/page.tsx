@@ -861,7 +861,7 @@ export default function ItemsTablePage() {
   ]); // Update dependencies
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto">
+    <div className="relative z-0 mx-auto my-4 w-[calc(100%_-_1.5rem)] max-w-7xl rounded-xl border border-gray-800 p-4 shadow-2xl before:pointer-events-none before:fixed before:inset-0 before:-z-10 before:bg-my_bg_image before:bg-cover before:bg-fixed before:bg-no-repeat before:content-[''] after:pointer-events-none after:absolute after:inset-px after:z-[-5] after:rounded-[11px] after:bg-gray-900/80 after:backdrop-blur-md after:content-[''] sm:my-6 sm:w-[calc(100%_-_2rem)] md:p-8">
       {/* Header Section */}
       <div className="mb-6 text-center space-y-2">
         <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
