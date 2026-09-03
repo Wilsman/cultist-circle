@@ -9,6 +9,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RECIPE_COMPLETION_STORAGE_KEY } from "@/lib/recipe-completion";
+import { useRecipeFeedbackStore } from "@/hooks/use-recipe-feedback";
 import RecipesPage from "@/app/recipes/page";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 
@@ -70,6 +71,44 @@ vi.mock("@/contexts/language-context", () => ({
 describe("RecipesPage completion tracker", () => {
   beforeEach(() => {
     localStorage.clear();
+    useRecipeFeedbackStore.getState().resetForTesting();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (!init?.method || init.method === "GET") {
+          return Response.json({
+            success: true,
+            data: Object.fromEntries(
+              mockRecipes.map((recipe) => [
+                recipe.id,
+                {
+                  workedCount: 10,
+                  didntWorkCount: 2,
+                  lastWorkedAt: "2026-09-03T10:00:00.000Z",
+                },
+              ]),
+            ),
+          });
+        }
+
+        const body = JSON.parse(String(init.body)) as {
+          recipeId: string;
+          vote: "worked" | "didnt_work" | null;
+        };
+        return Response.json({
+          success: true,
+          data: {
+            recipeId: body.recipeId,
+            stats: {
+              workedCount: body.vote === "worked" ? 11 : 10,
+              didntWorkCount: body.vote === "didnt_work" ? 3 : 2,
+              lastWorkedAt: new Date().toISOString(),
+            },
+            userVote: body.vote,
+          },
+        });
+      }),
+    );
     useRecipeItemDataMock.mockClear();
     getItemByNameMock.mockReset();
     getItemByNameMock.mockReturnValue(null);
@@ -83,6 +122,7 @@ describe("RecipesPage completion tracker", () => {
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   it("uses the persisted Season item dataset", () => {
@@ -353,5 +393,27 @@ describe("RecipesPage completion tracker", () => {
     expect(
       screen.getByRole("img", { name: "1x Briefcase with documents" }),
     ).toHaveAttribute("src", "/images/recipes/briefcase-with-documents.png");
+  });
+
+  it("renders community verification buttons on each recipe card and allows voting", async () => {
+    render(<RecipesPage />);
+
+    await screen.findAllByText("10");
+
+    const workedButtons = screen.getAllByRole("button", {
+      name: /mark as worked/i,
+    });
+    const didntWorkButtons = screen.getAllByRole("button", {
+      name: /mark as didn't work/i,
+    });
+
+    expect(workedButtons).toHaveLength(3);
+    expect(didntWorkButtons).toHaveLength(3);
+
+    fireEvent.click(workedButtons[0]);
+    await waitFor(() =>
+      expect(workedButtons[0]).toHaveAttribute("aria-pressed", "true"),
+    );
+    expect(workedButtons[1]).toHaveAttribute("aria-pressed", "false");
   });
 });

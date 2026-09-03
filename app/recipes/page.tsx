@@ -38,6 +38,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ItemTooltip } from "@/components/ui/item-tooltip";
+import { RecipeFeedback } from "@/components/recipe-feedback.component";
 import { recipeIconMap } from "@/data/recipe-icons";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
 import { useLanguage } from "@/contexts/language-context";
@@ -917,6 +918,7 @@ const RecipeCard = React.memo(function RecipeCard({
               </div>
             </div>
           )}
+          <RecipeFeedback recipeId={recipe.id} />
         </div>
       </div>
     </div>

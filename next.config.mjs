@@ -17,6 +17,10 @@ const nextConfig = {
         source: "/api/submit-feedback",
         destination: "http://127.0.0.1:8787/api/submit-feedback",
       },
+      {
+        source: "/api/recipe-feedback",
+        destination: "http://127.0.0.1:8787/api/recipe-feedback",
+      },
     ];
   },
   // Add cache headers for the /404 page to maximize Edge caching

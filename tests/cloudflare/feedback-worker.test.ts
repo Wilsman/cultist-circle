@@ -287,3 +287,179 @@ describe("Cloudflare feedback Worker", () => {
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("Cloudflare recipe feedback API", () => {
+  const clientId = "123e4567-e89b-42d3-a456-426614174000";
+
+  function createRecipeEnvironment({
+    existingVote = null,
+    stats = {
+      recipe_id: "recipe-alpha",
+      worked_count: 1,
+      didnt_work_count: 0,
+      last_worked_at: "2026-09-03T12:00:00.000Z",
+    },
+  }: {
+    existingVote?: "worked" | "didnt_work" | null;
+    stats?: {
+      recipe_id: string;
+      worked_count: number;
+      didnt_work_count: number;
+      last_worked_at: string | null;
+    };
+  } = {}) {
+    const batchMock = vi
+      .fn()
+      .mockResolvedValue([{ success: true }, { success: true }]);
+    const limitMock = vi.fn().mockResolvedValue({ success: true });
+    const prepareMock = vi.fn((query: string) => {
+      const makeStatement = () => ({
+        bind: vi.fn(() => makeStatement()),
+        first: vi
+          .fn()
+          .mockResolvedValue(
+            query.includes("SELECT vote")
+              ? existingVote
+                ? { vote: existingVote }
+                : null
+              : stats,
+          ),
+        all: vi.fn().mockResolvedValue({
+          success: true,
+          results: [stats],
+          meta: {},
+        }),
+        run: vi.fn().mockResolvedValue({ success: true, meta: {} }),
+        raw: vi.fn().mockResolvedValue([]),
+      });
+      return makeStatement();
+    });
+
+    const env = {
+      DB: {
+        prepare: prepareMock,
+        batch: batchMock,
+        exec: vi.fn(),
+        withSession: vi.fn(),
+        dump: vi.fn(),
+      },
+      FEEDBACK_RATE_LIMITER: { limit: limitMock },
+    } as Env;
+
+    return { env, batchMock, limitMock, prepareMock };
+  }
+
+  function makeRecipeRequest(
+    method: "GET" | "POST" | "OPTIONS",
+    body?: unknown,
+    origin = "https://beta.cultistcircle.com",
+  ) {
+    return new Request("https://example.workers.dev/api/recipe-feedback", {
+      method,
+      headers: {
+        Origin: origin,
+        "CF-Connecting-IP": "203.0.113.20",
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+  }
+
+  test("returns all recipe totals in one cacheable request for beta", async () => {
+    const { env, limitMock, prepareMock } = createRecipeEnvironment();
+
+    const response = await handleRequest(makeRecipeRequest("GET"), env);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("access-control-allow-origin")).toBe(
+      "https://beta.cultistcircle.com",
+    );
+    expect(response.headers.get("cache-control")).toContain("max-age=60");
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      data: {
+        "recipe-alpha": {
+          workedCount: 1,
+          didntWorkCount: 0,
+          lastWorkedAt: "2026-09-03T12:00:00.000Z",
+        },
+      },
+    });
+    expect(prepareMock).toHaveBeenCalledTimes(1);
+    expect(limitMock).not.toHaveBeenCalled();
+  });
+
+  test("writes a new vote and returns authoritative totals", async () => {
+    const { env, batchMock, limitMock } = createRecipeEnvironment();
+
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: "recipe-alpha",
+        vote: "worked",
+        clientId,
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(limitMock).toHaveBeenCalledWith({ key: "recipe:203.0.113.20" });
+    expect(batchMock).toHaveBeenCalledTimes(1);
+    expect(batchMock.mock.calls[0][0]).toHaveLength(2);
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      data: {
+        recipeId: "recipe-alpha",
+        stats: {
+          workedCount: 1,
+          didntWorkCount: 0,
+          lastWorkedAt: "2026-09-03T12:00:00.000Z",
+        },
+        userVote: "worked",
+      },
+    });
+  });
+
+  test("does not rewrite an unchanged vote", async () => {
+    const { env, batchMock } = createRecipeEnvironment({
+      existingVote: "worked",
+    });
+
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: "recipe-alpha",
+        vote: "worked",
+        clientId,
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(batchMock).not.toHaveBeenCalled();
+  });
+
+  test("rejects malformed recipe identities and client IDs", async () => {
+    const { env, batchMock } = createRecipeEnvironment();
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: "not-a-recipe",
+        vote: "worked",
+        clientId: "not-a-uuid",
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(400);
+    expect(batchMock).not.toHaveBeenCalled();
+  });
+
+  test("advertises both recipe methods in CORS preflight", async () => {
+    const { env, limitMock } = createRecipeEnvironment();
+    const response = await handleRequest(makeRecipeRequest("OPTIONS"), env);
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-methods")).toBe(
+      "GET, POST",
+    );
+    expect(limitMock).not.toHaveBeenCalled();
+  });
+});
