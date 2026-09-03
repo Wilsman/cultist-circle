@@ -25,7 +25,7 @@ export interface SimplifiedItem {
   englishShortName?: string;
   basePrice: number;
   lastLowPrice?: number;
-  updated?: string; // Changed from number to string to match Supabase timestamptz
+  updated?: string; // Upstream timestamps are serialized as strings
   lastOfferCount?: number;
   height?: number;
   width?: number;

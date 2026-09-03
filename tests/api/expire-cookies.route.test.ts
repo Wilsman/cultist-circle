@@ -37,7 +37,7 @@ describe("expire-cookies route", () => {
     vi.restoreAllMocks();
   });
 
-  test("expires non-Supabase cookies and preserves sb- auth cookies", async () => {
+  test("expires every cookie", async () => {
     const { GET, mocks } = await loadRouteModule([
       { name: "theme" },
       { name: "sb-access-token" },
@@ -49,29 +49,32 @@ describe("expire-cookies route", () => {
 
     expect(mocks.cookiesMock).toHaveBeenCalledTimes(1);
     expect(mocks.getAllMock).toHaveBeenCalledTimes(1);
-    expect(mocks.setMock).toHaveBeenCalledTimes(2);
+    expect(mocks.setMock).toHaveBeenCalledTimes(4);
     expect(mocks.setMock).toHaveBeenNthCalledWith(1, "theme", "", {
       maxAge: 0,
     });
-    expect(mocks.setMock).toHaveBeenNthCalledWith(2, "session", "", {
+    expect(mocks.setMock).toHaveBeenNthCalledWith(2, "sb-access-token", "", {
+      maxAge: 0,
+    });
+    expect(mocks.setMock).toHaveBeenNthCalledWith(3, "session", "", {
+      maxAge: 0,
+    });
+    expect(mocks.setMock).toHaveBeenNthCalledWith(4, "sb-refresh-token", "", {
       maxAge: 0,
     });
     await expect(response.json()).resolves.toEqual({
-      message: "Non-authentication cookies cleared",
+      message: "Cookies cleared",
     });
   });
 
-  test("returns success without expiring anything when only sb- cookies exist", async () => {
-    const { GET, mocks } = await loadRouteModule([
-      { name: "sb-access-token" },
-      { name: "sb-refresh-token" },
-    ]);
+  test("returns success when there are no cookies", async () => {
+    const { GET, mocks } = await loadRouteModule([]);
 
     const response = await GET();
 
     expect(mocks.setMock).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({
-      message: "Non-authentication cookies cleared",
+      message: "Cookies cleared",
     });
   });
 });

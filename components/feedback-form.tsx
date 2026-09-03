@@ -19,6 +19,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+const FEEDBACK_ENDPOINT =
+  process.env.NODE_ENV === "development"
+    ? "/api/submit-feedback"
+    : "https://cultist-circle-feedback.cultistcircle.workers.dev/api/submit-feedback";
+
 export function FeedbackForm({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -29,7 +34,7 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/submit-feedback", {
+      const response = await fetch(FEEDBACK_ENDPOINT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -37,9 +42,11 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({ type, description, version: CURRENT_VERSION }),
       });
 
-      const result = await response.json();
+      const result: { error?: string; data?: unknown } = await response.json();
 
-      if (!response.ok) throw new Error(result.error);
+      if (!response.ok) {
+        throw new Error(result.error ?? "Failed to submit feedback");
+      }
 
       console.log("Feedback submitted successfully", result.data);
       onClose();
@@ -53,19 +60,28 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
   return (
     <Card className="w-full max-w-md mx-auto rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-slate-600/30 shadow-2xl">
       <CardHeader className="pb-2 text-center">
-        <CardTitle className="text-lg font-semibold text-slate-100">Submit Feedback or Report Issue</CardTitle>
+        <CardTitle className="text-lg font-semibold text-slate-100">
+          Submit Feedback or Report Issue
+        </CardTitle>
       </CardHeader>
       <p className="px-6 text-center text-xs text-slate-400">
-        If you have any issues, please try resetting the app in the settings first.
+        If you have any issues, please try resetting the app in the settings
+        first.
       </p>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4 pt-4">
           <div className="space-y-2">
-            <label htmlFor="type" className="text-sm font-medium text-slate-200">
+            <label
+              htmlFor="type"
+              className="text-sm font-medium text-slate-200"
+            >
               Type
             </label>
             <Select onValueChange={setType}>
-              <SelectTrigger id="type" className="h-9 rounded-full bg-slate-800/60 border-slate-600/30 text-slate-100">
+              <SelectTrigger
+                id="type"
+                className="h-9 rounded-full bg-slate-800/60 border-slate-600/30 text-slate-100"
+              >
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-slate-600/30 bg-slate-900/90 backdrop-blur-xl">
@@ -77,7 +93,10 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
           <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium text-slate-200">
+            <label
+              htmlFor="description"
+              className="text-sm font-medium text-slate-200"
+            >
               Description
             </label>
             <Textarea
@@ -89,7 +108,7 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
               className="min-h-[110px] rounded-2xl bg-slate-800/60 border-slate-600/30 text-slate-100 placeholder:text-slate-400"
             />
             <p className="text-xs text-slate-400">
-              Alternatively, you can {" "}
+              Alternatively, you can{" "}
               <a
                 href="https://discord.gg/3dFmr5qaJK"
                 target="_blank"

@@ -19,6 +19,7 @@ const config = [
       "**/*.test.tsx",
       "**/__tests__/**",
       "next-env.d.ts",
+      "cloudflare/feedback/worker-configuration.d.ts",
       "vitest.config.ts",
       "tests/setup.ts",
     ],

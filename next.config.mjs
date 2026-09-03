@@ -7,6 +7,18 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: __dirname,
+  async rewrites() {
+    if (process.env.NODE_ENV !== "development") {
+      return [];
+    }
+
+    return [
+      {
+        source: "/api/submit-feedback",
+        destination: "http://127.0.0.1:8787/api/submit-feedback",
+      },
+    ];
+  },
   // Add cache headers for the /404 page to maximize Edge caching
   async headers() {
     return [
@@ -15,7 +27,8 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=31536000, stale-while-revalidate=31536000, immutable",
+            value:
+              "public, s-maxage=31536000, stale-while-revalidate=31536000, immutable",
           },
           {
             key: "CDN-Cache-Control",
