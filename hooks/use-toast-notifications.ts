@@ -27,7 +27,7 @@ const AVAILABLE_NOTIFICATIONS: Notification[] = [
     id: "black-division-dogtag-recipe",
     title: "New Ritual: Black Division Dogtags",
     description:
-      "Redeem five launcher codes, sacrifice any five Black Division dogtags, and uncover the 05:09:00 reward.",
+      "Redeem five launcher codes, sacrifice any five Black Division dogtags, and uncover the 5:55:55 reward.",
     version: CURRENT_APP_VERSION,
     type: "feature",
     createdAt: "2026-08-04",
