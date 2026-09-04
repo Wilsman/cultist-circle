@@ -153,7 +153,19 @@ const recipeDefinitions: RecipeDefinition[] = [
   {
     requiredItems: ["1x Peacekeeper figurine"],
     craftingTime: "66 mins",
-    producedItems: ["2x MF-UNTAR body armor"],
+    producedItems: [
+      {
+        type: "multiple_possible",
+        items: ["2x MF-UNTAR body armor"],
+        explanation: "Outcome 1: 2x armor",
+      },
+      {
+        type: "multiple_possible",
+        items: ["1x MF-UNTAR body armor", "1x UNTAR helmet"],
+        explanation: "Outcome 2: armor + helmet",
+      },
+    ],
+    isUpdated: true,
   },
   {
     requiredItems: ["1x Prapor figurine"],
