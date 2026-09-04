@@ -69,6 +69,12 @@ vi.mock("@/contexts/language-context", () => ({
 }));
 
 describe("RecipesPage completion tracker", () => {
+  const highlightedState = (id: string) =>
+    document
+      .getElementById(id)
+      ?.querySelector("[data-highlighted]")
+      ?.getAttribute("data-highlighted") ?? null;
+
   beforeEach(() => {
     localStorage.clear();
     useRecipeFeedbackStore.getState().resetForTesting();
@@ -430,6 +436,152 @@ describe("RecipesPage completion tracker", () => {
     expect(JSON.parse(String(post?.[1]?.body))).toMatchObject({
       vote: "worked",
       gameMode: "pve",
+    });
+  });
+
+  it("scrolls to and highlights the recipe from a share link", async () => {
+    const scrollIntoViewMock = vi.fn();
+    const proto = window.HTMLElement.prototype as unknown as {
+      scrollIntoView?: unknown;
+    };
+    const originalScrollIntoView = proto.scrollIntoView;
+    proto.scrollIntoView = scrollIntoViewMock;
+    window.history.replaceState({}, "", "/recipes?recipe=recipe-bravo");
+
+    try {
+      render(<RecipesPage />);
+
+      expect(highlightedState("recipe-alpha")).toBe("false");
+      expect(highlightedState("recipe-bravo")).toBe("true");
+      // The deep-link target renders at its real size for accurate scrolling.
+      expect(
+        document.getElementById("recipe-bravo")?.className,
+      ).toContain("[content-visibility:visible]");
+      expect(
+        document.getElementById("recipe-alpha")?.className,
+      ).toContain("[content-visibility:auto]");
+
+      await waitFor(() => {
+        expect(scrollIntoViewMock).toHaveBeenCalledWith(
+          expect.objectContaining({ behavior: "smooth", block: "center" }),
+        );
+      });
+      expect(scrollIntoViewMock.mock.instances[0]).toBe(
+        document.getElementById("recipe-bravo"),
+      );
+    } finally {
+      window.history.replaceState({}, "", "/");
+      proto.scrollIntoView = originalScrollIntoView;
+    }
+  });
+
+  it("ignores unknown recipe share links", () => {
+    window.history.replaceState({}, "", "/recipes?recipe=recipe-missing");
+
+    try {
+      render(<RecipesPage />);
+
+      for (const id of ["recipe-promo", "recipe-alpha", "recipe-bravo"]) {
+        expect(highlightedState(id)).toBe("false");
+      }
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("copies a share link and highlights the shared recipe", async () => {
+    window.history.replaceState({}, "", "/recipes");
+
+    try {
+      render(<RecipesPage />);
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: /copy link to recipe requiring 1x alpha sacrifice/i,
+        }),
+      );
+
+      await waitFor(() => {
+        expect(clipboardWriteTextMock).toHaveBeenCalledWith(
+          `${window.location.origin}/recipes?recipe=recipe-alpha`,
+        );
+      });
+      expect(
+        screen.getByRole("button", {
+          name: /copied link to recipe requiring 1x alpha sacrifice/i,
+        }),
+      ).toBeInTheDocument();
+      expect(highlightedState("recipe-alpha")).toBe("true");
+      expect(window.location.search).toBe("?recipe=recipe-alpha");
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("re-scrolls when layout shift moves the shared recipe", async () => {
+    const scrollIntoViewMock = vi.fn();
+    const proto = window.HTMLElement.prototype as unknown as {
+      scrollIntoView?: unknown;
+    };
+    const originalScrollIntoView = proto.scrollIntoView;
+    proto.scrollIntoView = scrollIntoViewMock;
+    window.history.replaceState({}, "", "/recipes?recipe=recipe-alpha");
+
+    try {
+      render(<RecipesPage />);
+
+      await waitFor(() => {
+        expect(scrollIntoViewMock).toHaveBeenCalled();
+      });
+      const callsAfterArrival = scrollIntoViewMock.mock.calls.length;
+
+      // Simulate cards above growing and pushing the target far down.
+      const target = document.getElementById("recipe-alpha");
+      expect(target).not.toBeNull();
+      vi.spyOn(target as HTMLElement, "getBoundingClientRect").mockReturnValue(
+        {
+          x: 0,
+          y: 2000,
+          width: 100,
+          height: 400,
+          top: 2000,
+          right: 100,
+          bottom: 2400,
+          left: 0,
+          toJSON: () => ({}),
+        } as DOMRect,
+      );
+
+      await waitFor(
+        () => {
+          expect(scrollIntoViewMock.mock.calls.length).toBeGreaterThan(
+            callsAfterArrival,
+          );
+        },
+        { timeout: 3000 },
+      );
+    } finally {
+      window.history.replaceState({}, "", "/");
+      proto.scrollIntoView = originalScrollIntoView;
+    }
+  });
+
+  it("reports share link copy failure", async () => {
+    render(<RecipesPage />);
+
+    clipboardWriteTextMock.mockRejectedValueOnce(new Error("blocked"));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /copy link to recipe requiring 1x bravo sacrifice/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", {
+          name: /copy failed for recipe requiring 1x bravo sacrifice/i,
+        }),
+      ).toBeInTheDocument();
     });
   });
 });

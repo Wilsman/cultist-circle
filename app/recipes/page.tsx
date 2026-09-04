@@ -53,6 +53,11 @@ import {
   RECIPE_COMPLETION_STORAGE_KEY,
   setRecipeCompletion,
 } from "@/lib/recipe-completion";
+import {
+  buildRecipeShareUrl,
+  getSharedRecipeIdFromSearch,
+  RECIPE_SHARE_PARAM,
+} from "@/lib/recipe-share";
 import { getStoredGameMode, type GameMode } from "@/lib/game-mode";
 import {
   Package,
@@ -69,6 +74,7 @@ import {
   Check,
   Copy,
   KeyRound,
+  Link2,
   Tag,
 } from "lucide-react";
 
@@ -666,6 +672,8 @@ interface RecipeCardProps {
   t: (key: string) => string;
   isCompleted: boolean;
   onCompletedChange: (recipeId: string, isCompleted: boolean) => void;
+  isHighlighted: boolean;
+  onShare: (recipeId: string) => void;
 }
 
 const RecipeCard = React.memo(function RecipeCard({
@@ -674,7 +682,51 @@ const RecipeCard = React.memo(function RecipeCard({
   t,
   isCompleted,
   onCompletedChange,
+  isHighlighted,
+  onShare,
 }: RecipeCardProps) {
+  const [shareState, setShareState] = useState<
+    "idle" | "copied" | "failed"
+  >("idle");
+  const shareResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (shareResetTimer.current) {
+        clearTimeout(shareResetTimer.current);
+      }
+    };
+  }, []);
+
+  const scheduleShareReset = useCallback(() => {
+    if (shareResetTimer.current) {
+      clearTimeout(shareResetTimer.current);
+    }
+    shareResetTimer.current = setTimeout(() => setShareState("idle"), 2000);
+  }, []);
+
+  const handleShareClick = useCallback(async () => {
+    const url = buildRecipeShareUrl(
+      window.location.origin,
+      window.location.pathname,
+      recipe.id,
+    );
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareState("copied");
+      onShare(recipe.id);
+    } catch {
+      setShareState("failed");
+    }
+    scheduleShareReset();
+  }, [onShare, recipe.id, scheduleShareReset]);
+
+  const shareLabel =
+    shareState === "copied"
+      ? `Copied link to recipe requiring ${recipe.requiredItems.join(", ")}`
+      : shareState === "failed"
+        ? `Copy failed for recipe requiring ${recipe.requiredItems.join(", ")}`
+        : `Copy link to recipe requiring ${recipe.requiredItems.join(", ")}`;
   const processOutputs = useCallback((): ProcessedOutput[] => {
     const outputs: ProcessedOutput[] = [];
 
@@ -731,7 +783,14 @@ const RecipeCard = React.memo(function RecipeCard({
     : `Mark recipe requiring ${recipe.requiredItems.join(", ")} as completed`;
 
   return (
-    <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_420px] sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-3">
+    <div
+      id={recipe.id}
+      className={`grid scroll-mt-24 grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 [contain-intrinsic-size:auto_420px] sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-3 ${
+        // Render the deep-link target at its real size instead of the
+        // estimated height so scroll math lands on the right spot.
+        isHighlighted ? "[content-visibility:visible]" : "[content-visibility:auto]"
+      }`}
+    >
       <div className="flex justify-center pt-4 sm:pt-5">
         <TooltipProvider delayDuration={150}>
           <Tooltip>
@@ -755,10 +814,15 @@ const RecipeCard = React.memo(function RecipeCard({
       </div>
 
       <div
+        data-highlighted={isHighlighted ? "true" : "false"}
         className={`group relative rounded-xl border p-4 pt-9 backdrop-blur-sm transition-all duration-200 lg:p-5 lg:pt-9 ${
           isCompleted
             ? "border-emerald-500/30 bg-emerald-950/10 shadow-[inset_0_0_24px_rgba(16,185,129,0.035)] hover:border-emerald-400/40 hover:bg-emerald-950/15"
             : "border-gray-700/50 bg-gray-800/40 hover:border-gray-600/50 hover:bg-gray-800/60 hover:shadow-lg hover:shadow-black/20"
+        } ${
+          isHighlighted
+            ? "ring-2 ring-emerald-400/50 shadow-[0_0_28px_rgba(52,211,153,0.18)]"
+            : ""
         }`}
       >
         {recipe.isUpdated ? (
@@ -767,6 +831,33 @@ const RecipeCard = React.memo(function RecipeCard({
           <StatusBadge variant="new" />
         ) : null}
         <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleShareClick}
+            aria-label={shareLabel}
+            title={
+              shareState === "copied"
+                ? "Copied!"
+                : shareState === "failed"
+                  ? "Copy failed, try again"
+                  : "Copy link to this recipe"
+            }
+            className={`inline-flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
+              shareState === "copied"
+                ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300"
+                : shareState === "failed"
+                  ? "border-red-400/60 bg-red-500/20 text-red-300"
+                  : "border-gray-700/60 bg-gray-900/60 text-gray-400 hover:border-emerald-400/50 hover:text-emerald-300"
+            }`}
+          >
+            {shareState === "copied" ? (
+              <Check className="h-3.5 w-3.5" />
+            ) : shareState === "failed" ? (
+              <X className="h-3.5 w-3.5" />
+            ) : (
+              <Link2 className="h-3.5 w-3.5" />
+            )}
+          </button>
           <FoundInRaidBadge t={t} />
           <ModeRestrictionBadge
             t={t}
@@ -967,6 +1058,16 @@ export default function RecipesPage() {
   );
   const completedRecipeCount = completedRecipeIds.size;
 
+  // Shared recipe deep link (?recipe=<id>): validated against known ids so
+  // unknown params degrade gracefully to the full list.
+  const [sharedRecipeId, setSharedRecipeId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return getSharedRecipeIdFromSearch(
+      window.location.search,
+      knownRecipeIds,
+    );
+  });
+
   const handleCompletedChange = useCallback(
     (recipeId: string, isCompleted: boolean) => {
       setStoredCompletedRecipeIds((currentRecipeIds) =>
@@ -980,6 +1081,92 @@ export default function RecipesPage() {
     },
     [knownRecipeIds, setStoredCompletedRecipeIds],
   );
+
+  const handleShareRecipe = useCallback((recipeId: string) => {
+    setSharedRecipeId(recipeId);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set(RECIPE_SHARE_PARAM, recipeId);
+      window.history.replaceState(null, "", url.toString());
+    } catch {
+      // The copied link stays usable even if the address bar can't update.
+    }
+  }, []);
+
+  // Scroll a shared recipe into view, re-checking until layout settles.
+  // Cards above the target can grow after arrival (async vote counts,
+  // lazy-loaded images), and off-screen cards render at estimated heights,
+  // so a single scroll can land off-spot.
+  useEffect(() => {
+    if (!sharedRecipeId) return;
+
+    const reduceMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let attempts = 0;
+    let settledChecks = 0;
+    let cancelled = false;
+    const maxAttempts = 14;
+    const tolerancePx = 8;
+
+    const scrollToTarget = (behavior: ScrollBehavior) => {
+      const target = document.getElementById(sharedRecipeId);
+      if (!target || typeof target.scrollIntoView !== "function") return null;
+      target.scrollIntoView({ behavior, block: "center" });
+      return target;
+    };
+
+    const isSettled = (target: Element) => {
+      const rect = target.getBoundingClientRect();
+      const targetCenter = rect.top + rect.height / 2;
+      return Math.abs(targetCenter - window.innerHeight / 2) <= tolerancePx;
+    };
+
+    const cancel = () => {
+      cancelled = true;
+    };
+    window.addEventListener("wheel", cancel, { passive: true });
+    window.addEventListener("touchmove", cancel, { passive: true });
+
+    const stopListening = () => {
+      window.removeEventListener("wheel", cancel);
+      window.removeEventListener("touchmove", cancel);
+    };
+
+    if (reduceMotion) {
+      scrollToTarget("auto");
+      return stopListening;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      scrollToTarget("smooth");
+    });
+
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      if (cancelled || attempts > maxAttempts) {
+        window.clearInterval(timer);
+        return;
+      }
+      const target = document.getElementById(sharedRecipeId);
+      if (!target) return;
+      if (isSettled(target)) {
+        settledChecks += 1;
+        if (settledChecks >= 2) window.clearInterval(timer);
+        return;
+      }
+      settledChecks = 0;
+      scrollToTarget("auto");
+    }, 150);
+
+    return () => {
+      cancel();
+      cancelAnimationFrame(frame);
+      window.clearInterval(timer);
+      stopListening();
+    };
+  }, [sharedRecipeId]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1265,6 +1452,8 @@ export default function RecipesPage() {
                       t={t}
                       isCompleted={completedRecipeIds.has(recipe.id)}
                       onCompletedChange={handleCompletedChange}
+                      isHighlighted={sharedRecipeId === recipe.id}
+                      onShare={handleShareRecipe}
                     />
                   ))}
                 </div>
