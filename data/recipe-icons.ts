@@ -25,6 +25,10 @@ export const recipeIconMap: Record<string, string> = {
     "https://assets.tarkov.dev/68f25eef19a2b503d70dc291-icon.webp",
   "2x MF-UNTAR body armor":
     "https://assets.tarkov.dev/5ab8e4ed86f7742d8e50c7fa-icon.webp",
+  "1x MF-UNTAR body armor":
+    "https://assets.tarkov.dev/5ab8e4ed86f7742d8e50c7fa-icon.webp",
+  "1x UNTAR helmet":
+    "https://assets.tarkov.dev/5aa7d03ae5b5b00016327db5-icon.webp",
   "1x Prapor figurine":
     "https://assets.tarkov.dev/68f25c64b2b53abd200b954f-icon.webp",
   "1x 42 Signature Blend English Tea":
