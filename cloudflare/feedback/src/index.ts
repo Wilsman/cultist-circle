@@ -4,7 +4,7 @@ const MAX_BODY_BYTES = 8 * 1024;
 const RATE_LIMIT_SECONDS = 60;
 const FEEDBACK_TYPES = ["Issue", "Feature", "Suggestion", "Recipe"] as const;
 const RECIPE_VOTES = ["worked", "didnt_work"] as const;
-const RECIPE_ID_PATTERN = /^recipe-[a-z0-9-]{1,64}$/;
+const RECIPE_GAME_MODES = ["pvp", "pve", "season"] as const;
 const CLIENT_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ALLOWED_ORIGINS = new Set([
@@ -16,6 +16,11 @@ const ALLOWED_ORIGINS = new Set([
 
 type FeedbackType = (typeof FEEDBACK_TYPES)[number];
 type RecipeVote = (typeof RECIPE_VOTES)[number];
+type RecipeGameMode = (typeof RECIPE_GAME_MODES)[number];
+
+const RECIPE_CATALOG = new Map(
+  tarkovRecipes.map((recipe) => [recipe.id, recipe.modeRestriction] as const),
+);
 
 type FeedbackPayload = {
   type: FeedbackType;
@@ -27,12 +32,20 @@ type RecipeFeedbackPayload = {
   recipeId: string;
   vote: RecipeVote | null;
   clientId: string;
+  gameMode: RecipeGameMode | null;
+};
+
+type RecipeFeedbackModeCounts = {
+  worked: number;
+  didntWork: number;
 };
 
 type RecipeFeedbackStats = {
   workedCount: number;
   didntWorkCount: number;
   lastWorkedAt: string | null;
+  lastWorkedMode: RecipeGameMode | null;
+  modes: Record<RecipeGameMode, RecipeFeedbackModeCounts>;
 };
 
 type RecipeStatsRow = {
@@ -40,6 +53,13 @@ type RecipeStatsRow = {
   worked_count: number;
   didnt_work_count: number;
   last_worked_at: string | null;
+  last_worked_mode: RecipeGameMode | null;
+  worked_pvp: number | null;
+  worked_pve: number | null;
+  worked_season: number | null;
+  didnt_work_pvp: number | null;
+  didnt_work_pve: number | null;
+  didnt_work_season: number | null;
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -151,12 +171,28 @@ function parseRecipeFeedbackPayload(
   }
 
   const payload = value as JsonRecord;
+  const recipeRestriction =
+    typeof payload.recipeId === "string"
+      ? RECIPE_CATALOG.get(payload.recipeId)
+      : undefined;
   if (
     typeof payload.recipeId !== "string" ||
-    !RECIPE_ID_PATTERN.test(payload.recipeId) ||
+    !RECIPE_CATALOG.has(payload.recipeId) ||
     (payload.vote !== null &&
       (typeof payload.vote !== "string" ||
         !RECIPE_VOTES.includes(payload.vote as RecipeVote))) ||
+    (payload.gameMode !== undefined &&
+      payload.gameMode !== null &&
+      (typeof payload.gameMode !== "string" ||
+        !RECIPE_GAME_MODES.includes(payload.gameMode as RecipeGameMode))) ||
+    (payload.vote !== null &&
+      (payload.gameMode === undefined || payload.gameMode === null)) ||
+    (payload.vote === null &&
+      payload.gameMode !== undefined &&
+      payload.gameMode !== null) ||
+    (payload.vote !== null &&
+      recipeRestriction === "pvp-only" &&
+      payload.gameMode !== "pvp") ||
     typeof payload.clientId !== "string" ||
     !CLIENT_ID_PATTERN.test(payload.clientId)
   ) {
@@ -167,6 +203,7 @@ function parseRecipeFeedbackPayload(
     recipeId: payload.recipeId,
     vote: payload.vote as RecipeVote | null,
     clientId: payload.clientId,
+    gameMode: (payload.gameMode ?? null) as RecipeGameMode | null,
   };
 }
 
@@ -193,22 +230,27 @@ function mapRecipeStats(row: RecipeStatsRow | null): RecipeFeedbackStats {
     workedCount: Number(row?.worked_count ?? 0),
     didntWorkCount: Number(row?.didnt_work_count ?? 0),
     lastWorkedAt: row?.last_worked_at ?? null,
+    lastWorkedMode: row?.last_worked_mode ?? null,
+    modes: {
+      pvp: {
+        worked: Number(row?.worked_pvp ?? 0),
+        didntWork: Number(row?.didnt_work_pvp ?? 0),
+      },
+      pve: {
+        worked: Number(row?.worked_pve ?? 0),
+        didntWork: Number(row?.didnt_work_pve ?? 0),
+      },
+      season: {
+        worked: Number(row?.worked_season ?? 0),
+        didntWork: Number(row?.didnt_work_season ?? 0),
+      },
+    },
   };
 }
 
-async function readRecipeStats(
-  env: Env,
-  recipeId: string,
-): Promise<RecipeFeedbackStats> {
-  const row = await env.DB.prepare(
-    `SELECT recipe_id, worked_count, didnt_work_count, last_worked_at
-     FROM recipe_feedback_stats
-     WHERE recipe_id = ?`,
-  )
-    .bind(recipeId)
-    .first<RecipeStatsRow>();
-  return mapRecipeStats(row);
-}
+const RECIPE_STATS_COLUMNS = `recipe_id, worked_count, didnt_work_count, last_worked_at, last_worked_mode,
+   worked_pvp, worked_pve, worked_season,
+   didnt_work_pvp, didnt_work_pve, didnt_work_season`;
 
 async function handleRecipeFeedback(
   request: Request,
@@ -240,7 +282,7 @@ async function handleRecipeFeedback(
 
     try {
       const result = await env.DB.prepare(
-        `SELECT recipe_id, worked_count, didnt_work_count, last_worked_at
+        `SELECT ${RECIPE_STATS_COLUMNS}
          FROM recipe_feedback_stats`,
       ).all<RecipeStatsRow>();
       const data = Object.fromEntries(
@@ -251,8 +293,8 @@ async function handleRecipeFeedback(
         { success: true, data },
         200,
         {
-          "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
-          "CDN-Cache-Control": "public, max-age=300",
+          "Cache-Control": "public, max-age=30, stale-while-revalidate=60",
+          "CDN-Cache-Control": "public, max-age=60",
         },
         origin ?? undefined,
       );
@@ -343,124 +385,78 @@ async function handleRecipeFeedback(
   const updatedAt = new Date().toISOString();
 
   try {
-    const existing = await env.DB.prepare(
-      `SELECT vote FROM recipe_feedback
-       WHERE recipe_id = ? AND client_hash = ?`,
-    )
-      .bind(payload.recipeId, clientHash)
-      .first<{ vote: RecipeVote }>();
+    const mutation = payload.vote
+      ? env.DB.prepare(
+          `INSERT INTO recipe_feedback
+             (recipe_id, client_hash, vote, game_mode, updated_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(recipe_id, client_hash) DO UPDATE SET
+             vote = excluded.vote,
+             game_mode = excluded.game_mode,
+             updated_at = excluded.updated_at
+           WHERE recipe_feedback.vote IS NOT excluded.vote
+              OR recipe_feedback.game_mode IS NOT excluded.game_mode`,
+        ).bind(
+          payload.recipeId,
+          clientHash,
+          payload.vote,
+          payload.gameMode,
+          updatedAt,
+        )
+      : env.DB.prepare(
+          `DELETE FROM recipe_feedback
+           WHERE recipe_id = ? AND client_hash = ?`,
+        ).bind(payload.recipeId, clientHash);
 
-    if ((existing?.vote ?? null) !== payload.vote) {
-      const statements: D1PreparedStatement[] = [];
+    const rebuildAggregate = env.DB.prepare(
+      `INSERT INTO recipe_feedback_stats
+         (recipe_id, worked_count, didnt_work_count, last_worked_at, last_worked_mode,
+          worked_pvp, worked_pve, worked_season,
+          didnt_work_pvp, didnt_work_pve, didnt_work_season)
+       SELECT ?,
+         COALESCE(SUM(CASE WHEN vote = 'worked' THEN 1 ELSE 0 END), 0),
+         COALESCE(SUM(CASE WHEN vote = 'didnt_work' THEN 1 ELSE 0 END), 0),
+         MAX(CASE WHEN vote = 'worked' THEN updated_at END),
+         (SELECT latest.game_mode
+            FROM recipe_feedback AS latest
+           WHERE latest.recipe_id = ? AND latest.vote = 'worked'
+           ORDER BY latest.updated_at DESC
+           LIMIT 1),
+         COALESCE(SUM(CASE WHEN vote = 'worked' AND game_mode = 'pvp' THEN 1 ELSE 0 END), 0),
+         COALESCE(SUM(CASE WHEN vote = 'worked' AND game_mode = 'pve' THEN 1 ELSE 0 END), 0),
+         COALESCE(SUM(CASE WHEN vote = 'worked' AND game_mode = 'season' THEN 1 ELSE 0 END), 0),
+         COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'pvp' THEN 1 ELSE 0 END), 0),
+         COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'pve' THEN 1 ELSE 0 END), 0),
+         COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'season' THEN 1 ELSE 0 END), 0)
+       FROM recipe_feedback
+       WHERE recipe_id = ?
+       ON CONFLICT(recipe_id) DO UPDATE SET
+         worked_count = excluded.worked_count,
+         didnt_work_count = excluded.didnt_work_count,
+         last_worked_at = excluded.last_worked_at,
+         last_worked_mode = excluded.last_worked_mode,
+         worked_pvp = excluded.worked_pvp,
+         worked_pve = excluded.worked_pve,
+         worked_season = excluded.worked_season,
+         didnt_work_pvp = excluded.didnt_work_pvp,
+         didnt_work_pve = excluded.didnt_work_pve,
+         didnt_work_season = excluded.didnt_work_season`,
+    ).bind(payload.recipeId, payload.recipeId, payload.recipeId);
+    const readAggregate = env.DB.prepare(
+      `SELECT ${RECIPE_STATS_COLUMNS}
+       FROM recipe_feedback_stats
+       WHERE recipe_id = ?`,
+    ).bind(payload.recipeId);
 
-      if (!payload.vote && existing) {
-        const removedWorked = existing.vote === "worked" ? 1 : 0;
-        const removedDidntWork = existing.vote === "didnt_work" ? 1 : 0;
-        statements.push(
-          env.DB.prepare(
-            `DELETE FROM recipe_feedback
-             WHERE recipe_id = ? AND client_hash = ?`,
-          ).bind(payload.recipeId, clientHash),
-          env.DB.prepare(
-            `UPDATE recipe_feedback_stats
-             SET worked_count = MAX(0, worked_count - ?),
-                 didnt_work_count = MAX(0, didnt_work_count - ?),
-                 last_worked_at = CASE
-                   WHEN ? = 1 THEN (
-                     SELECT MAX(updated_at) FROM recipe_feedback
-                     WHERE recipe_id = ? AND vote = 'worked'
-                   )
-                   ELSE last_worked_at
-                 END
-             WHERE recipe_id = ?`,
-          ).bind(
-            removedWorked,
-            removedDidntWork,
-            removedWorked,
-            payload.recipeId,
-            payload.recipeId,
-          ),
-        );
-      } else if (payload.vote && !existing) {
-        const addedWorked = payload.vote === "worked" ? 1 : 0;
-        const addedDidntWork = payload.vote === "didnt_work" ? 1 : 0;
-        statements.push(
-          env.DB.prepare(
-            `INSERT INTO recipe_feedback
-               (recipe_id, client_hash, vote, updated_at)
-             VALUES (?, ?, ?, ?)`,
-          ).bind(payload.recipeId, clientHash, payload.vote, updatedAt),
-          env.DB.prepare(
-            `INSERT INTO recipe_feedback_stats
-               (recipe_id, worked_count, didnt_work_count, last_worked_at)
-             VALUES (?, ?, ?, ?)
-             ON CONFLICT(recipe_id) DO UPDATE SET
-               worked_count = worked_count + excluded.worked_count,
-               didnt_work_count = didnt_work_count + excluded.didnt_work_count,
-               last_worked_at = COALESCE(
-                 excluded.last_worked_at,
-                 last_worked_at
-               )`,
-          ).bind(
-            payload.recipeId,
-            addedWorked,
-            addedDidntWork,
-            addedWorked ? updatedAt : null,
-          ),
-        );
-      } else if (payload.vote && existing) {
-        const addedWorked = payload.vote === "worked" ? 1 : 0;
-        const addedDidntWork = payload.vote === "didnt_work" ? 1 : 0;
-        const removedWorked = existing.vote === "worked" ? 1 : 0;
-        const removedDidntWork = existing.vote === "didnt_work" ? 1 : 0;
-        statements.push(
-          env.DB.prepare(
-            `UPDATE recipe_feedback
-             SET vote = ?, updated_at = ?
-             WHERE recipe_id = ? AND client_hash = ?`,
-          ).bind(payload.vote, updatedAt, payload.recipeId, clientHash),
-          env.DB.prepare(
-            `UPDATE recipe_feedback_stats
-             SET worked_count = MAX(
-                   0,
-                   worked_count + ? - ?
-                 ),
-                 didnt_work_count = MAX(
-                   0,
-                   didnt_work_count + ? - ?
-                 ),
-                 last_worked_at = CASE
-                   WHEN ? = 1 THEN ?
-                   WHEN ? = 1 THEN (
-                     SELECT MAX(updated_at) FROM recipe_feedback
-                     WHERE recipe_id = ? AND vote = 'worked'
-                   )
-                   ELSE last_worked_at
-                 END
-             WHERE recipe_id = ?`,
-          ).bind(
-            addedWorked,
-            removedWorked,
-            addedDidntWork,
-            removedDidntWork,
-            addedWorked,
-            updatedAt,
-            removedWorked,
-            payload.recipeId,
-            payload.recipeId,
-          ),
-        );
-      }
-
-      if (statements.length > 0) {
-        const results = await env.DB.batch(statements);
-        if (results.some((result) => !result.success)) {
-          throw new Error("D1 recipe feedback update was unsuccessful");
-        }
-      }
+    const results = await env.DB.batch<RecipeStatsRow>([
+      mutation,
+      rebuildAggregate,
+      readAggregate,
+    ]);
+    if (results.some((result) => !result.success)) {
+      throw new Error("D1 recipe feedback transaction was unsuccessful");
     }
-
-    const stats = await readRecipeStats(env, payload.recipeId);
+    const stats = mapRecipeStats(results[2]?.results?.[0] ?? null);
     return jsonResponse(
       {
         success: true,
@@ -468,6 +464,7 @@ async function handleRecipeFeedback(
           recipeId: payload.recipeId,
           stats,
           userVote: payload.vote,
+          userMode: payload.vote ? payload.gameMode : null,
         },
       },
       200,
@@ -651,3 +648,4 @@ export default {
     return handleRequest(request, env);
   },
 } satisfies ExportedHandler<Env>;
+import { tarkovRecipes } from "../../../data/recipes";

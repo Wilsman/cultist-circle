@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { handleRequest } from "@/cloudflare/feedback/src/index";
+import { tarkovRecipes } from "@/data/recipes";
 
 type TestEnvironment = {
   env: Env;
@@ -290,40 +291,58 @@ describe("Cloudflare feedback Worker", () => {
 
 describe("Cloudflare recipe feedback API", () => {
   const clientId = "123e4567-e89b-42d3-a456-426614174000";
+  const regularRecipeId = tarkovRecipes.find(
+    (recipe) => recipe.modeRestriction !== "pvp-only",
+  )!.id;
+  const pvpOnlyRecipeId = tarkovRecipes.find(
+    (recipe) => recipe.modeRestriction === "pvp-only",
+  )!.id;
 
   function createRecipeEnvironment({
-    existingVote = null,
+    batchSuccess = true,
+    batchError,
     stats = {
-      recipe_id: "recipe-alpha",
+      recipe_id: regularRecipeId,
       worked_count: 1,
       didnt_work_count: 0,
       last_worked_at: "2026-09-03T12:00:00.000Z",
+      last_worked_mode: "pvp" as const,
+      worked_pvp: 1,
+      worked_pve: 0,
+      worked_season: 0,
+      didnt_work_pvp: 0,
+      didnt_work_pve: 0,
+      didnt_work_season: 0,
     },
   }: {
-    existingVote?: "worked" | "didnt_work" | null;
+    batchSuccess?: boolean;
+    batchError?: Error;
     stats?: {
       recipe_id: string;
       worked_count: number;
       didnt_work_count: number;
       last_worked_at: string | null;
+      last_worked_mode: "pvp" | "pve" | "season" | null;
+      worked_pvp: number;
+      worked_pve: number;
+      worked_season: number;
+      didnt_work_pvp: number;
+      didnt_work_pve: number;
+      didnt_work_season: number;
     };
   } = {}) {
-    const batchMock = vi
-      .fn()
-      .mockResolvedValue([{ success: true }, { success: true }]);
+    const batchMock = batchError
+      ? vi.fn().mockRejectedValue(batchError)
+      : vi.fn().mockResolvedValue([
+          { success: batchSuccess, results: [] },
+          { success: batchSuccess, results: [] },
+          { success: batchSuccess, results: [stats] },
+        ]);
     const limitMock = vi.fn().mockResolvedValue({ success: true });
     const prepareMock = vi.fn((query: string) => {
       const makeStatement = () => ({
         bind: vi.fn(() => makeStatement()),
-        first: vi
-          .fn()
-          .mockResolvedValue(
-            query.includes("SELECT vote")
-              ? existingVote
-                ? { vote: existingVote }
-                : null
-              : stats,
-          ),
+        first: vi.fn().mockResolvedValue(stats),
         all: vi.fn().mockResolvedValue({
           success: true,
           results: [stats],
@@ -374,14 +393,20 @@ describe("Cloudflare recipe feedback API", () => {
     expect(response.headers.get("access-control-allow-origin")).toBe(
       "https://beta.cultistcircle.com",
     );
-    expect(response.headers.get("cache-control")).toContain("max-age=60");
+    expect(response.headers.get("cache-control")).toContain("max-age=30");
     await expect(response.json()).resolves.toEqual({
       success: true,
       data: {
-        "recipe-alpha": {
+        [regularRecipeId]: {
           workedCount: 1,
           didntWorkCount: 0,
           lastWorkedAt: "2026-09-03T12:00:00.000Z",
+          lastWorkedMode: "pvp",
+          modes: {
+            pvp: { worked: 1, didntWork: 0 },
+            pve: { worked: 0, didntWork: 0 },
+            season: { worked: 0, didntWork: 0 },
+          },
         },
       },
     });
@@ -394,8 +419,9 @@ describe("Cloudflare recipe feedback API", () => {
 
     const response = await handleRequest(
       makeRecipeRequest("POST", {
-        recipeId: "recipe-alpha",
+        recipeId: regularRecipeId,
         vote: "worked",
+        gameMode: "pvp",
         clientId,
       }),
       env,
@@ -404,50 +430,216 @@ describe("Cloudflare recipe feedback API", () => {
     expect(response.status).toBe(200);
     expect(limitMock).toHaveBeenCalledWith({ key: "recipe:203.0.113.20" });
     expect(batchMock).toHaveBeenCalledTimes(1);
-    expect(batchMock.mock.calls[0][0]).toHaveLength(2);
+    expect(batchMock.mock.calls[0][0]).toHaveLength(3);
     await expect(response.json()).resolves.toEqual({
       success: true,
       data: {
-        recipeId: "recipe-alpha",
+        recipeId: regularRecipeId,
         stats: {
           workedCount: 1,
           didntWorkCount: 0,
           lastWorkedAt: "2026-09-03T12:00:00.000Z",
+          lastWorkedMode: "pvp",
+          modes: {
+            pvp: { worked: 1, didntWork: 0 },
+            pve: { worked: 0, didntWork: 0 },
+            season: { worked: 0, didntWork: 0 },
+          },
         },
         userVote: "worked",
+        userMode: "pvp",
       },
     });
   });
 
-  test("does not rewrite an unchanged vote", async () => {
-    const { env, batchMock } = createRecipeEnvironment({
-      existingVote: "worked",
-    });
+  test("guards unchanged rows while rebuilding totals in the same transaction", async () => {
+    const { env, batchMock, prepareMock } = createRecipeEnvironment();
 
     const response = await handleRequest(
       makeRecipeRequest("POST", {
-        recipeId: "recipe-alpha",
+        recipeId: regularRecipeId,
         vote: "worked",
+        gameMode: "pvp",
         clientId,
       }),
       env,
     );
 
     expect(response.status).toBe(200);
-    expect(batchMock).not.toHaveBeenCalled();
+    expect(batchMock).toHaveBeenCalledTimes(1);
+    expect(
+      prepareMock.mock.calls.some(([query]) =>
+        String(query).includes("SELECT vote, game_mode"),
+      ),
+    ).toBe(false);
+    expect(String(prepareMock.mock.calls[0][0])).toContain(
+      "WHERE recipe_feedback.vote IS NOT excluded.vote",
+    );
   });
 
-  test("rejects malformed recipe identities and client IDs", async () => {
-    const { env, batchMock } = createRecipeEnvironment();
+  test("accepts a game mode and stores it with the vote", async () => {
+    const { env, batchMock, prepareMock } = createRecipeEnvironment();
+
     const response = await handleRequest(
       makeRecipeRequest("POST", {
-        recipeId: "not-a-recipe",
-        vote: "worked",
-        clientId: "not-a-uuid",
+        recipeId: regularRecipeId,
+        vote: "didnt_work",
+        gameMode: "pve",
+        clientId,
       }),
       env,
     );
 
+    expect(response.status).toBe(200);
+    expect(batchMock).toHaveBeenCalledTimes(1);
+    const insertQuery: string = prepareMock.mock.calls
+      .map((call) => String(call[0]))
+      .find((query) => query.includes("INSERT INTO recipe_feedback"))!;
+    expect(insertQuery).toContain("game_mode");
+  });
+
+  test("rejects an invalid game mode", async () => {
+    const { env, batchMock } = createRecipeEnvironment();
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: regularRecipeId,
+        vote: "worked",
+        gameMode: "coop",
+        clientId,
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(400);
+    expect(batchMock).not.toHaveBeenCalled();
+  });
+
+  test("requires a game mode for every non-null report", async () => {
+    const { env, batchMock } = createRecipeEnvironment();
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: regularRecipeId,
+        vote: "worked",
+        clientId,
+      }),
+      env,
+    );
+    expect(response.status).toBe(400);
+    expect(batchMock).not.toHaveBeenCalled();
+  });
+
+  test("requires removals to omit their game mode", async () => {
+    const { env, batchMock } = createRecipeEnvironment();
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: regularRecipeId,
+        vote: null,
+        gameMode: "pvp",
+        clientId,
+      }),
+      env,
+    );
+    expect(response.status).toBe(400);
+    expect(batchMock).not.toHaveBeenCalled();
+  });
+
+  test("enforces PVP-only recipe restrictions", async () => {
+    const blocked = createRecipeEnvironment();
+    const blockedResponse = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: pvpOnlyRecipeId,
+        vote: "worked",
+        gameMode: "pve",
+        clientId,
+      }),
+      blocked.env,
+    );
+    expect(blockedResponse.status).toBe(400);
+    expect(blocked.batchMock).not.toHaveBeenCalled();
+
+    const allowed = createRecipeEnvironment();
+    const allowedResponse = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: pvpOnlyRecipeId,
+        vote: "worked",
+        gameMode: "pvp",
+        clientId,
+      }),
+      allowed.env,
+    );
+    expect(allowedResponse.status).toBe(200);
+    expect(allowed.batchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("removes a report and rebuilds totals atomically", async () => {
+    const { env, batchMock, prepareMock } = createRecipeEnvironment();
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: regularRecipeId,
+        vote: null,
+        clientId,
+      }),
+      env,
+    );
+    expect(response.status).toBe(200);
+    expect(batchMock.mock.calls[0][0]).toHaveLength(3);
+    expect(String(prepareMock.mock.calls[0][0])).toContain(
+      "DELETE FROM recipe_feedback",
+    );
+    await expect(response.json()).resolves.toMatchObject({
+      data: { userVote: null, userMode: null },
+    });
+  });
+
+  test.each([
+    ["an unsuccessful transaction", { batchSuccess: false }],
+    ["a rejected transaction", { batchError: new Error("D1 unavailable") }],
+  ])("returns 500 for %s", async (_label, options) => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { env } = createRecipeEnvironment(options);
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: regularRecipeId,
+        vote: "didnt_work",
+        gameMode: "season",
+        clientId,
+      }),
+      env,
+    );
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      error: "Failed to save recipe feedback",
+    });
+  });
+
+  test("rejects an unknown but well-shaped recipe ID", async () => {
+    const { env, batchMock } = createRecipeEnvironment();
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: "recipe-fake",
+        vote: "worked",
+        gameMode: "pvp",
+        clientId,
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(400);
+    expect(batchMock).not.toHaveBeenCalled();
+  });
+
+  test("rejects a malformed client ID", async () => {
+    const { env, batchMock } = createRecipeEnvironment();
+    const response = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: regularRecipeId,
+        vote: "worked",
+        gameMode: "pvp",
+        clientId: "not-a-uuid",
+      }),
+      env,
+    );
     expect(response.status).toBe(400);
     expect(batchMock).not.toHaveBeenCalled();
   });

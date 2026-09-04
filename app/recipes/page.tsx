@@ -38,7 +38,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ItemTooltip } from "@/components/ui/item-tooltip";
-import { RecipeFeedback } from "@/components/recipe-feedback.component";
+import {
+  RecipeFeedback,
+  RecipeFeedbackProvider,
+} from "@/components/recipe-feedback.component";
 import { recipeIconMap } from "@/data/recipe-icons";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
 import { useLanguage } from "@/contexts/language-context";
@@ -137,7 +140,7 @@ const StatusBadge = React.memo(function StatusBadge({
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold text-white absolute -top-2 -left-2 shadow-lg animate-pulse z-10 ${badgeClassName}`}
+      className={`absolute left-2 top-2 z-10 inline-flex items-center rounded px-2 py-0.5 text-xs font-bold text-white shadow-lg animate-pulse ${badgeClassName}`}
     >
       {badgeLabel}
     </span>
@@ -728,7 +731,7 @@ const RecipeCard = React.memo(function RecipeCard({
     : `Mark recipe requiring ${recipe.requiredItems.join(", ")} as completed`;
 
   return (
-    <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-3">
+    <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_420px] sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-3">
       <div className="flex justify-center pt-4 sm:pt-5">
         <TooltipProvider delayDuration={150}>
           <Tooltip>
@@ -752,7 +755,7 @@ const RecipeCard = React.memo(function RecipeCard({
       </div>
 
       <div
-        className={`relative rounded-xl border p-4 backdrop-blur-sm transition-all duration-200 lg:p-5 group ${
+        className={`group relative rounded-xl border p-4 pt-9 backdrop-blur-sm transition-all duration-200 lg:p-5 lg:pt-9 ${
           isCompleted
             ? "border-emerald-500/30 bg-emerald-950/10 shadow-[inset_0_0_24px_rgba(16,185,129,0.035)] hover:border-emerald-400/40 hover:bg-emerald-950/15"
             : "border-gray-700/50 bg-gray-800/40 hover:border-gray-600/50 hover:bg-gray-800/60 hover:shadow-lg hover:shadow-black/20"
@@ -763,7 +766,7 @@ const RecipeCard = React.memo(function RecipeCard({
         ) : recipe.isNew ? (
           <StatusBadge variant="new" />
         ) : null}
-        <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5">
+        <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5">
           <FoundInRaidBadge t={t} />
           <ModeRestrictionBadge
             t={t}
@@ -918,7 +921,10 @@ const RecipeCard = React.memo(function RecipeCard({
               </div>
             </div>
           )}
-          <RecipeFeedback recipeId={recipe.id} />
+          <RecipeFeedback
+            recipeId={recipe.id}
+            modeRestriction={recipe.modeRestriction}
+          />
         </div>
       </div>
     </div>
@@ -1073,223 +1079,225 @@ export default function RecipesPage() {
     sortBy !== "default" || Boolean(debouncedSearch) || showIncompleteOnly;
 
   return (
-    <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100">
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-6xl">
-        <Card className="bg-gray-900/80 backdrop-blur-md border-gray-800 shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="bg-gray-900/95 border-b border-gray-800 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-md">
-            <CardHeader className="p-0 mb-4 sm:mb-5 text-center">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-red-400">
-                Cultist Circle Recipes
-              </h1>
-              <p className="text-center text-sm text-gray-400 mt-2">
-                Discover what you can sacrifice and receive
-              </p>
-            </CardHeader>
+    <RecipeFeedbackProvider>
+      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-6xl">
+          <Card className="bg-gray-900/80 backdrop-blur-md border-gray-800 shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gray-900/95 border-b border-gray-800 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-md">
+              <CardHeader className="p-0 mb-4 sm:mb-5 text-center">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-red-400">
+                  Cultist Circle Recipes
+                </h1>
+                <p className="text-center text-sm text-gray-400 mt-2">
+                  Discover what you can sacrifice and receive
+                </p>
+              </CardHeader>
 
-            {/* Search Bar */}
-            <div className="relative max-w-2xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
-              <Input
-                type="text"
-                placeholder="Search items or recipes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                ref={searchRef}
-                className="w-full pl-12 pr-24 py-3 rounded-xl bg-gray-800/70 text-white border-gray-700 focus:border-gray-500 focus:ring-2 focus:ring-gray-600/50 placeholder-gray-500 text-base transition-all"
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                {searchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSearchQuery("")}
-                    className="h-8 w-8 p-0 rounded-lg hover:bg-gray-700"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-                <kbd className="hidden sm:inline-flex items-center px-2 py-1 rounded bg-gray-800 text-[10px] text-gray-500 border border-gray-700">
-                  /
-                </kbd>
-              </div>
-            </div>
-
-            {/* Always-visible filters, sort, and progress */}
-            <div className="mt-4 border-t border-gray-800/80 pt-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-600">
-                  Sort
-                </span>
-                {SORT_OPTIONS.map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={sortBy === option.value ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSortBy(option.value)}
-                    className={`h-7 rounded-full px-3 text-[11px] transition-all ${
-                      sortBy === option.value
-                        ? "border-gray-600 bg-gray-700 text-white"
-                        : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
-                    }`}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-                <span className="mx-1 hidden h-4 w-px bg-gray-700/70 sm:block" />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-pressed={showIncompleteOnly}
-                  onClick={() => setShowIncompleteOnly((current) => !current)}
-                  className={`h-7 rounded-full px-3 text-[11px] transition-all ${
-                    showIncompleteOnly
-                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100"
-                      : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
-                  }`}
-                >
-                  <Filter className="mr-1.5 h-3 w-3" />
-                  Unfinished only
-                </Button>
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-sm text-gray-400">
-                  <span
-                    className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-emerald-300/90"
-                    aria-live="polite"
-                  >
-                    {completedRecipeCount} / {tarkovRecipes.length} done
-                  </span>
-                  {completedRecipeCount > 0 && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-red-950/30 hover:text-red-300"
-                        >
-                          <RotateCcw className="mr-1 h-3 w-3" />
-                          Reset progress
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="border-gray-700 bg-gray-900 text-gray-100 shadow-2xl sm:max-w-md">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Reset recipe progress?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription className="text-gray-400">
-                            This will mark all {tarkovRecipes.length} recipes as
-                            unfinished on this device.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white">
-                            Cancel
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => setStoredCompletedRecipeIds([])}
-                            className="bg-red-600 text-white hover:bg-red-500"
-                          >
-                            Reset progress
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-gray-400">
-                  <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5">
-                    {filteredAndSortedItems.length} recipe
-                    {filteredAndSortedItems.length === 1 ? "" : "s"}
-                  </span>
-                  {hasActiveFilters && (
+              {/* Search Bar */}
+              <div className="relative max-w-2xl mx-auto">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
+                <Input
+                  type="text"
+                  placeholder="Search items or recipes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  ref={searchRef}
+                  className="w-full pl-12 pr-24 py-3 rounded-xl bg-gray-800/70 text-white border-gray-700 focus:border-gray-500 focus:ring-2 focus:ring-gray-600/50 placeholder-gray-500 text-base transition-all"
+                />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  {searchQuery && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        setSearchQuery("");
-                        setSortBy("default");
-                        setShowIncompleteOnly(false);
-                      }}
-                      className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-gray-800 hover:text-gray-300"
+                      onClick={() => setSearchQuery("")}
+                      className="h-8 w-8 p-0 rounded-lg hover:bg-gray-700"
                     >
-                      Clear filters
+                      <X className="h-4 w-4" />
                     </Button>
                   )}
+                  <kbd className="hidden sm:inline-flex items-center px-2 py-1 rounded bg-gray-800 text-[10px] text-gray-500 border border-gray-700">
+                    /
+                  </kbd>
+                </div>
+              </div>
+
+              {/* Always-visible filters, sort, and progress */}
+              <div className="mt-4 border-t border-gray-800/80 pt-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-600">
+                    Sort
+                  </span>
+                  {SORT_OPTIONS.map((option) => (
+                    <Button
+                      key={option.value}
+                      variant={sortBy === option.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSortBy(option.value)}
+                      className={`h-7 rounded-full px-3 text-[11px] transition-all ${
+                        sortBy === option.value
+                          ? "border-gray-600 bg-gray-700 text-white"
+                          : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
+                      }`}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                  <span className="mx-1 hidden h-4 w-px bg-gray-700/70 sm:block" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-pressed={showIncompleteOnly}
+                    onClick={() => setShowIncompleteOnly((current) => !current)}
+                    className={`h-7 rounded-full px-3 text-[11px] transition-all ${
+                      showIncompleteOnly
+                        ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100"
+                        : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
+                    }`}
+                  >
+                    <Filter className="mr-1.5 h-3 w-3" />
+                    Unfinished only
+                  </Button>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-sm text-gray-400">
+                    <span
+                      className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-emerald-300/90"
+                      aria-live="polite"
+                    >
+                      {completedRecipeCount} / {tarkovRecipes.length} done
+                    </span>
+                    {completedRecipeCount > 0 && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-red-950/30 hover:text-red-300"
+                          >
+                            <RotateCcw className="mr-1 h-3 w-3" />
+                            Reset progress
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="border-gray-700 bg-gray-900 text-gray-100 shadow-2xl sm:max-w-md">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Reset recipe progress?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-gray-400">
+                              This will mark all {tarkovRecipes.length} recipes
+                              as unfinished on this device.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white">
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => setStoredCompletedRecipeIds([])}
+                              className="bg-red-600 text-white hover:bg-red-500"
+                            >
+                              Reset progress
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5">
+                      {filteredAndSortedItems.length} recipe
+                      {filteredAndSortedItems.length === 1 ? "" : "s"}
+                    </span>
+                    {hasActiveFilters && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setSortBy("default");
+                          setShowIncompleteOnly(false);
+                        }}
+                        className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-gray-800 hover:text-gray-300"
+                      >
+                        Clear filters
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Recipe List */}
-          <CardContent className="p-4 sm:p-6">
-            {filteredAndSortedItems.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800/50 mb-4">
-                  <Search className="h-8 w-8 text-gray-600" />
+            {/* Recipe List */}
+            <CardContent className="p-4 sm:p-6">
+              {filteredAndSortedItems.length === 0 ? (
+                <div className="py-16 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800/50 mb-4">
+                    <Search className="h-8 w-8 text-gray-600" />
+                  </div>
+                  <p className="text-lg font-medium text-gray-300 mb-2">
+                    No recipes found
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Try adjusting your search or filters
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSortBy("default");
+                      setShowIncompleteOnly(false);
+                    }}
+                    className="border-gray-700 hover:bg-gray-800"
+                  >
+                    Clear all filters
+                  </Button>
                 </div>
-                <p className="text-lg font-medium text-gray-300 mb-2">
-                  No recipes found
-                </p>
-                <p className="text-sm text-gray-500 mb-4">
-                  Try adjusting your search or filters
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSortBy("default");
-                    setShowIncompleteOnly(false);
-                  }}
-                  className="border-gray-700 hover:bg-gray-800"
-                >
-                  Clear all filters
-                </Button>
-              </div>
-            ) : (
-              <div className="grid gap-3 sm:gap-4">
-                {filteredAndSortedItems.map((recipe) => (
-                  <RecipeCard
-                    key={recipe.id}
-                    recipe={recipe}
-                    getItemByName={getItemByName}
-                    t={t}
-                    isCompleted={completedRecipeIds.has(recipe.id)}
-                    onCompletedChange={handleCompletedChange}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
+              ) : (
+                <div className="grid gap-3 sm:gap-4">
+                  {filteredAndSortedItems.map((recipe) => (
+                    <RecipeCard
+                      key={recipe.id}
+                      recipe={recipe}
+                      getItemByName={getItemByName}
+                      t={t}
+                      isCompleted={completedRecipeIds.has(recipe.id)}
+                      onCompletedChange={handleCompletedChange}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
 
-          {/* Footer */}
-          <CardFooter className="border-t border-gray-800 px-4 sm:px-6 py-4 bg-gray-900/50">
-            <p className="text-center text-xs text-gray-500 w-full">
-              Data sourced from{" "}
-              <a
-                href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline transition-colors"
-              >
-                Escape from Tarkov Wiki
-              </a>{" "}
-              and our{" "}
-              <a
-                href="https://discord.com/invite/3dFmr5qaJK"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline transition-colors"
-              >
-                Cultist Circle Discord
-              </a>
-              . Thank you to all contributors!
-            </p>
-          </CardFooter>
-        </Card>
+            {/* Footer */}
+            <CardFooter className="border-t border-gray-800 px-4 sm:px-6 py-4 bg-gray-900/50">
+              <p className="text-center text-xs text-gray-500 w-full">
+                Data sourced from{" "}
+                <a
+                  href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                >
+                  Escape from Tarkov Wiki
+                </a>{" "}
+                and our{" "}
+                <a
+                  href="https://discord.com/invite/3dFmr5qaJK"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                >
+                  Cultist Circle Discord
+                </a>
+                . Thank you to all contributors!
+              </p>
+            </CardFooter>
+          </Card>
+        </div>
       </div>
-    </div>
+    </RecipeFeedbackProvider>
   );
 }

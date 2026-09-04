@@ -94,6 +94,7 @@ describe("RecipesPage completion tracker", () => {
         const body = JSON.parse(String(init.body)) as {
           recipeId: string;
           vote: "worked" | "didnt_work" | null;
+          gameMode: "pvp" | "pve" | "season" | null;
         };
         return Response.json({
           success: true,
@@ -105,6 +106,7 @@ describe("RecipesPage completion tracker", () => {
               lastWorkedAt: new Date().toISOString(),
             },
             userVote: body.vote,
+            userMode: body.vote ? body.gameMode : null,
           },
         });
       }),
@@ -395,7 +397,7 @@ describe("RecipesPage completion tracker", () => {
     ).toHaveAttribute("src", "/images/recipes/briefcase-with-documents.png");
   });
 
-  it("renders community verification buttons on each recipe card and allows voting", async () => {
+  it("chooses the reporting mode from the clicked recipe action", async () => {
     render(<RecipesPage />);
 
     await screen.findAllByText("10");
@@ -410,10 +412,24 @@ describe("RecipesPage completion tracker", () => {
     expect(workedButtons).toHaveLength(3);
     expect(didntWorkButtons).toHaveLength(3);
 
+    expect(
+      screen.queryByText("Community recipe reports"),
+    ).not.toBeInTheDocument();
     fireEvent.click(workedButtons[0]);
+    const modeGroup = screen.getByRole("radiogroup", {
+      name: /game mode for worked report/i,
+    });
+    fireEvent.click(within(modeGroup).getByRole("radio", { name: "PVE" }));
     await waitFor(() =>
       expect(workedButtons[0]).toHaveAttribute("aria-pressed", "true"),
     );
     expect(workedButtons[1]).toHaveAttribute("aria-pressed", "false");
+    const post = vi
+      .mocked(fetch)
+      .mock.calls.find(([, init]) => init?.method === "POST");
+    expect(JSON.parse(String(post?.[1]?.body))).toMatchObject({
+      vote: "worked",
+      gameMode: "pve",
+    });
   });
 });

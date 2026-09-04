@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyModeVote,
   applyUserVote,
+  formatLastWorkedDetail,
   formatRecency,
+  getUnspecifiedModeCounts,
+  isRecipeFeedbackStats,
   isRecipeRecentlyActive,
+  isUserModeMap,
   isUserVoteMap,
 } from "@/lib/recipe-feedback";
-import type { RecipeFeedbackStats } from "@/types/recipe-feedback";
+import type {
+  RecipeFeedbackModeBreakdown,
+  RecipeFeedbackStats,
+} from "@/types/recipe-feedback";
 
 describe("recipe-feedback utilities", () => {
   describe("isUserVoteMap", () => {
@@ -35,23 +43,40 @@ describe("recipe-feedback utilities", () => {
 
     it("formats minutes ago", () => {
       const zeroMins = new Date("2026-09-03T11:59:45.000Z").toISOString();
-      expect(formatRecency(zeroMins, fixedNow)).toBe("Worked just now");
+      expect(formatRecency(zeroMins, fixedNow)).toBe("Confirmed just now");
 
       const tenMins = new Date("2026-09-03T11:50:00.000Z").toISOString();
-      expect(formatRecency(tenMins, fixedNow)).toBe("Worked 10m ago");
+      expect(formatRecency(tenMins, fixedNow)).toBe("Confirmed 10m ago");
     });
 
     it("formats hours ago", () => {
       const twoHours = new Date("2026-09-03T10:00:00.000Z").toISOString();
-      expect(formatRecency(twoHours, fixedNow)).toBe("Worked 2h ago");
+      expect(formatRecency(twoHours, fixedNow)).toBe("Confirmed 2h ago");
     });
 
     it("formats days ago", () => {
       const yesterday = new Date("2026-09-02T10:00:00.000Z").toISOString();
-      expect(formatRecency(yesterday, fixedNow)).toBe("Worked yesterday");
+      expect(formatRecency(yesterday, fixedNow)).toBe("Confirmed yesterday");
 
       const threeDays = new Date("2026-08-31T10:00:00.000Z").toISOString();
-      expect(formatRecency(threeDays, fixedNow)).toBe("Worked 3d ago");
+      expect(formatRecency(threeDays, fixedNow)).toBe("Confirmed 3d ago");
+    });
+  });
+
+  describe("formatLastWorkedDetail", () => {
+    const fixedNow = new Date("2026-09-03T12:00:00.000Z").getTime();
+
+    it("includes the mode and compact relative time", () => {
+      expect(
+        formatLastWorkedDetail("pve", "2026-09-02T22:00:00.000Z", fixedNow),
+      ).toBe("Last worked on PVE · 14h ago");
+    });
+
+    it("omits the detail when the mode or timestamp is unavailable", () => {
+      expect(formatLastWorkedDetail(null, null, fixedNow)).toBeNull();
+      expect(
+        formatLastWorkedDetail("pvp", "invalid-date", fixedNow),
+      ).toBeNull();
     });
   });
 
@@ -92,10 +117,9 @@ describe("recipe-feedback utilities", () => {
         "worked",
         testTimestamp,
       );
-      expect(result.nextVote).toBe("worked");
-      expect(result.updatedStats.workedCount).toBe(11);
-      expect(result.updatedStats.didntWorkCount).toBe(2);
-      expect(result.updatedStats.lastWorkedAt).toBe(testTimestamp);
+      expect(result.workedCount).toBe(11);
+      expect(result.didntWorkCount).toBe(2);
+      expect(result.lastWorkedAt).toBe(testTimestamp);
     });
 
     it("increments didntWorkCount without updating lastWorkedAt when voting didnt_work", () => {
@@ -105,31 +129,23 @@ describe("recipe-feedback utilities", () => {
         "didnt_work",
         testTimestamp,
       );
-      expect(result.nextVote).toBe("didnt_work");
-      expect(result.updatedStats.workedCount).toBe(10);
-      expect(result.updatedStats.didntWorkCount).toBe(3);
-      expect(result.updatedStats.lastWorkedAt).toBe(initialStats.lastWorkedAt);
+      expect(result.workedCount).toBe(10);
+      expect(result.didntWorkCount).toBe(3);
+      expect(result.lastWorkedAt).toBe(initialStats.lastWorkedAt);
     });
 
-    it("unvotes when clicking the active vote", () => {
-      const result = applyUserVote(
-        initialStats,
-        "worked",
-        "worked",
-        testTimestamp,
-      );
-      expect(result.nextVote).toBeNull();
-      expect(result.updatedStats.workedCount).toBe(9);
-      expect(result.updatedStats.didntWorkCount).toBe(2);
+    it("removes the current vote when the desired vote is null", () => {
+      const result = applyUserVote(initialStats, "worked", null, testTimestamp);
+      expect(result.workedCount).toBe(9);
+      expect(result.didntWorkCount).toBe(2);
 
       const resultDidntWork = applyUserVote(
         initialStats,
         "didnt_work",
-        "didnt_work",
+        null,
         testTimestamp,
       );
-      expect(resultDidntWork.nextVote).toBeNull();
-      expect(resultDidntWork.updatedStats.didntWorkCount).toBe(1);
+      expect(resultDidntWork.didntWorkCount).toBe(1);
     });
 
     it("switches vote from worked to didnt_work", () => {
@@ -139,9 +155,8 @@ describe("recipe-feedback utilities", () => {
         "didnt_work",
         testTimestamp,
       );
-      expect(result.nextVote).toBe("didnt_work");
-      expect(result.updatedStats.workedCount).toBe(9);
-      expect(result.updatedStats.didntWorkCount).toBe(3);
+      expect(result.workedCount).toBe(9);
+      expect(result.didntWorkCount).toBe(3);
     });
 
     it("switches vote from didnt_work to worked", () => {
@@ -151,10 +166,151 @@ describe("recipe-feedback utilities", () => {
         "worked",
         testTimestamp,
       );
-      expect(result.nextVote).toBe("worked");
-      expect(result.updatedStats.workedCount).toBe(11);
-      expect(result.updatedStats.didntWorkCount).toBe(1);
-      expect(result.updatedStats.lastWorkedAt).toBe(testTimestamp);
+      expect(result.workedCount).toBe(11);
+      expect(result.didntWorkCount).toBe(1);
+      expect(result.lastWorkedAt).toBe(testTimestamp);
+    });
+
+    it("keeps aggregate totals stable when a vote moves between modes", () => {
+      const result = applyUserVote(
+        initialStats,
+        "worked",
+        "worked",
+        testTimestamp,
+      );
+      expect(result.workedCount).toBe(10);
+      expect(result.lastWorkedAt).toBe(testTimestamp);
+    });
+  });
+
+  it("derives legacy unspecified counts from aggregate totals", () => {
+    expect(
+      getUnspecifiedModeCounts({
+        workedCount: 10,
+        didntWorkCount: 3,
+        lastWorkedAt: null,
+        modes: {
+          pvp: { worked: 6, didntWork: 1 },
+          pve: { worked: 2, didntWork: 1 },
+          season: { worked: 1, didntWork: 0 },
+        },
+      }),
+    ).toEqual({ worked: 1, didntWork: 1 });
+  });
+
+  describe("isUserModeMap", () => {
+    it("validates valid mode maps", () => {
+      expect(isUserModeMap({ "recipe-1": "pvp", "recipe-2": "season" })).toBe(
+        true,
+      );
+      expect(isUserModeMap({})).toBe(true);
+    });
+
+    it("rejects invalid mode maps", () => {
+      expect(isUserModeMap(null)).toBe(false);
+      expect(isUserModeMap({ "recipe-1": "pvp-s" })).toBe(false);
+      expect(isUserModeMap({ "recipe-1": "coop" })).toBe(false);
+    });
+  });
+
+  describe("isRecipeFeedbackStats", () => {
+    it("accepts stats with and without a mode breakdown", () => {
+      expect(
+        isRecipeFeedbackStats({
+          workedCount: 1,
+          didntWorkCount: 0,
+          lastWorkedAt: null,
+        }),
+      ).toBe(true);
+      expect(
+        isRecipeFeedbackStats({
+          workedCount: 1,
+          didntWorkCount: 0,
+          lastWorkedAt: null,
+          modes: {
+            pvp: { worked: 1, didntWork: 0 },
+            pve: { worked: 0, didntWork: 0 },
+            season: { worked: 0, didntWork: 0 },
+          },
+        }),
+      ).toBe(true);
+    });
+
+    it("rejects malformed breakdowns", () => {
+      expect(
+        isRecipeFeedbackStats({
+          workedCount: 1,
+          didntWorkCount: 0,
+          lastWorkedAt: null,
+          modes: { pvp: { worked: -1, didntWork: 0 } },
+        }),
+      ).toBe(false);
+      expect(
+        isRecipeFeedbackStats({
+          workedCount: 1,
+          didntWorkCount: 0,
+          lastWorkedAt: null,
+          modes: { pvp: { worked: 1, didntWork: 0 } },
+        }),
+      ).toBe(false);
+      expect(
+        isRecipeFeedbackStats({
+          workedCount: 1,
+          didntWorkCount: 0,
+          lastWorkedAt: null,
+          lastWorkedMode: "coop",
+        }),
+      ).toBe(false);
+    });
+  });
+
+  describe("applyModeVote", () => {
+    const baseModes: RecipeFeedbackModeBreakdown = {
+      pvp: { worked: 5, didntWork: 1 },
+      pve: { worked: 2, didntWork: 0 },
+      season: { worked: 0, didntWork: 0 },
+    };
+
+    it("increments the picked bucket for a fresh vote", () => {
+      const result = applyModeVote(baseModes, null, {
+        vote: "worked",
+        mode: "pve",
+      });
+      expect(result.pve).toEqual({ worked: 3, didntWork: 0 });
+      expect(result.pvp).toEqual({ worked: 5, didntWork: 1 });
+    });
+
+    it("moves a count between buckets when switching votes", () => {
+      const result = applyModeVote(
+        baseModes,
+        { vote: "worked", mode: "pvp" },
+        { vote: "didnt_work", mode: "season" },
+      );
+      expect(result.pvp).toEqual({ worked: 4, didntWork: 1 });
+      expect(result.season).toEqual({ worked: 0, didntWork: 1 });
+    });
+
+    it("decrements the stored bucket when removing a vote", () => {
+      const result = applyModeVote(
+        baseModes,
+        { vote: "didnt_work", mode: "pvp" },
+        null,
+      );
+      expect(result.pvp).toEqual({ worked: 5, didntWork: 0 });
+    });
+
+    it("clamps at zero and tolerates missing buckets", () => {
+      const result = applyModeVote(
+        undefined,
+        { vote: "worked", mode: "pvp" },
+        null,
+      );
+      expect(result.pvp).toEqual({ worked: 0, didntWork: 0 });
+      const added = applyModeVote(undefined, null, {
+        vote: "worked",
+        mode: "season",
+      });
+      expect(added.season).toEqual({ worked: 1, didntWork: 0 });
     });
   });
 });
