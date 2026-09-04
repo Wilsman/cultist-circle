@@ -434,7 +434,7 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
                 <span className="hidden w-4 flex-shrink-0 text-center font-mono text-[9px] text-amber-300/35 sm:inline">
                   {String(index + 1).padStart(2, "0")}
                 </span>
-                <code className="min-w-0 flex-1 select-all whitespace-nowrap font-mono text-[10px] tracking-[0.025em] text-gray-200 sm:text-[11px]">
+                <code className="min-w-0 flex-1 select-all whitespace-normal break-all font-mono text-[10px] tracking-[0.025em] text-gray-200 sm:text-[11px]">
                   {code}
                 </code>
                 <Button
@@ -785,7 +785,7 @@ const RecipeCard = React.memo(function RecipeCard({
   return (
     <div
       id={recipe.id}
-      className={`grid scroll-mt-24 grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 [contain-intrinsic-size:auto_420px] sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-3 ${
+      className={`grid min-w-0 scroll-mt-24 grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 [contain-intrinsic-height:auto_420px] sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-3 ${
         // Render the deep-link target at its real size instead of the
         // estimated height so scroll math lands on the right spot.
         isHighlighted ? "[content-visibility:visible]" : "[content-visibility:auto]"

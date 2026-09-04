@@ -341,7 +341,7 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <VoteModePicker
             vote="worked"
             count={stats.workedCount}
