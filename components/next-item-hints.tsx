@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useId, useState } from "react";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { motion, AnimatePresence } from "framer-motion";
@@ -195,12 +194,14 @@ export function NextItemHints({
                     )}
                   >
                     {it.iconLink ? (
-                      <Image
+                      // eslint-disable-next-line @next/next/no-img-element -- tiny pre-optimized icons (<10KB); next/image would bill Vercel transformations for no benefit
+                      <img
                         src={it.iconLink}
                         alt=""
                         aria-hidden
                         width={28}
                         height={28}
+                        loading="lazy"
                         className="h-7 w-7 object-contain"
                       />
                     ) : (
