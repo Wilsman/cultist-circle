@@ -23,7 +23,7 @@ describe("launcher promo recipe data", () => {
         sacrificeItemUrl: "https://tarkov.dev/item/bd-dogtag-ferrum",
         rewardItemUrl: "https://tarkov.dev/item/briefcase-with-documents",
         sacrificeNote:
-          "ONLY the Black Division dogtags from the Redeem Code works, normal Black Division dogtags may *not* work - please report if you try",
+          "ONLY the Black Division dogtags from the Redeem Code work, normal Black Division dogtags may not work - please report if you try",
       },
     });
     expect(recipe.specialFlow?.codes).toHaveLength(5);
