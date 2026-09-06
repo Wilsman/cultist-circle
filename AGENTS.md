@@ -1,39 +1,30 @@
-﻿# Repository Guidelines
+﻿# Repository guidelines
 
-## Project Structure & Module Organization
+`app/` contains Next.js routes and server actions. Reuse the existing components,
+hooks, contexts and helpers; follow adjacent filenames (for example
+`components/item-selector.tsx` and `hooks/use-something.ts`). Use TypeScript,
+functional React components, 2-space indentation and the existing Radix/Tailwind
+design system. Extract repeated variants only when the change benefits from it.
 
-- `app/` houses Next.js route handlers, layouts, and server actions; treat each route folder as an independent feature module with colocated loading/error UI.
-- `components/` contains reusable UI built with Radix primitives and Tailwind utilities. `hooks/`, `contexts/`, and `lib/` hold shared logic, state, and helpers, while domain settings live in `config/` and mock data sits in `data/`.
-- Static assets stay under `public/`, and automated verification resides in `tests/` (mirroring the source folder names for clarity).
+`cloudflare/feedback/` is the feedback Worker and its configuration. Treat its
+deployment and data changes separately from the Next.js app. The root
+`package.json` is the command source of truth; this project uses Bun.
 
-## Build, Test, and Development Commands
+- `bun run dev` starts the Next.js app and feedback Worker together.
+- `bun run dev:app` starts only Next.js; `bun run feedback:dev` starts only the Worker.
+- `bun run build` builds the app; `bun run start` serves that build.
+- `bun run test` runs Vitest; `bun run test:watch` starts watch mode.
+- `bun run lint` runs ESLint. Feedback type/deploy commands are in `package.json`.
 
-- `bun run dev` – starts the local Next dev server with hot reloading.
-- `bun run build` – creates the production bundle; run before pushing sizable changes.
-- `bun run start` – serves the compiled build to smoke-test deployments.
-- `bun run test` / `bun run test:watch` – executes the Vitest suite once or in watch mode.
-- `bun run lint` – enforces ESLint rules aligned with `eslint-config-next` and Prettier.
+Carry the requested change through relevant verification. Choose checks for the
+affected behavior and run required CI checks; do not repeat a successful check
+without a new change or unresolved concern. Add behavior-level regression tests
+when they meaningfully protect the fix. Use changed-file formatting checks rather
+than a repository-wide formatting pass for a narrow edit. Report unrelated
+failures without expanding the fix.
 
-## Coding Style & Naming Conventions
-
-- Use TypeScript, functional React components, and 2-space indentation; favor hooks over class lifecycles.
-- Component files follow `feature-name.component.tsx`, hooks use `use-something.ts`, and tests append `.test.ts(x)`.
-- Tailwind classes should remain composable; extract variants into `class-variance-authority` helpers when styles repeat.
-- Run `bun run lint` + `bunx prettier --check "**/*.{ts,tsx,md}"` before committing to maintain formatting.
-
-## Testing Guidelines
-
-- Tests live in `tests/<area>` and mirror the module they cover; name suites after behavior (`item-selector.exclusions.test.tsx`).
-- Use Vitest + Testing Library for components and mock external service calls.
-- Cover critical state transitions, API boundaries, and edge-case rendering states; add regression tests for reported issues before fixing them.
-
-## Commit & Pull Request Guidelines
-
-- Follow Conventional Commits (`feat(scope): summary`) with imperative, lowercase descriptions; group atomic changes into separate commits.
-- PRs should describe motivation, highlight affected routes/components, reference related issues, and attach screenshots or logs for UI/API changes.
-- Confirm `bun run build && bun run test` locally, and note any skipped checks or environment assumptions in the PR description.
-
-## Security & Configuration Tips
-
-- Load secrets via `.env.local` and never commit them; document required keys in Notion or the issue thread.
-- Be mindful of user data in analytics hooks; scrub or mock identifiers inside tests and preview builds.
+Use Conventional Commits and group changes logically. PRs should explain the
+resulting behavior and relevant validation, including screenshots or logs when
+they help assess a UI/API change. Keep secrets in the established environment or
+secret-store workflow and out of git. Scrub or mock user identifiers in tests and
+preview data.
