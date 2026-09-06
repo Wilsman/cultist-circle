@@ -48,7 +48,7 @@ next-env.d.ts
 /public/all_items_*
 repomix-output.txt
 CCC.md
-/.opencode/skills
+/.opencode/
 /.agents/skills
 
 # vscode
