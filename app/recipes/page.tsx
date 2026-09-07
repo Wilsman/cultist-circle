@@ -265,7 +265,7 @@ const NonRepeatableBadge = React.memo(function NonRepeatableBadge() {
               </p>
             </div>
             <p className="whitespace-normal leading-relaxed text-gray-300">
-              This sacrifice can only be completed once.
+              This sacrifice can only be completed once per wipe/prestige.
             </p>
           </div>
         </TooltipContent>
