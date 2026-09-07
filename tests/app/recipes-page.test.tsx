@@ -141,6 +141,26 @@ describe("RecipesPage completion tracker", () => {
     expect(useRecipeItemDataMock).toHaveBeenCalledWith("season");
   });
 
+  it("marks one-time recipes with a crossed-out repeatable badge", () => {
+    render(<RecipesPage />);
+
+    expect(screen.queryByLabelText("Repeatable")).not.toBeInTheDocument();
+    expect(screen.getAllByLabelText("Non-repeatable")).toHaveLength(3);
+  });
+
+  it("keeps the repeatable badge for repeatable recipes", () => {
+    const alpha = mockRecipes[1] as { isRepeatable?: boolean };
+    alpha.isRepeatable = true;
+    try {
+      render(<RecipesPage />);
+
+      expect(screen.getByLabelText("Repeatable")).toBeInTheDocument();
+      expect(screen.getAllByLabelText("Non-repeatable")).toHaveLength(2);
+    } finally {
+      delete alpha.isRepeatable;
+    }
+  });
+
   it("checks recipes independently and restores progress after remount", () => {
     render(<RecipesPage />);
 

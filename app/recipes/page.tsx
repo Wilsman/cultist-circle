@@ -69,6 +69,7 @@ import {
   Clock3,
   Filter,
   Repeat2,
+  RepeatOff,
   RotateCcw,
   Briefcase,
   Check,
@@ -231,6 +232,40 @@ const RepeatableBadge = React.memo(function RepeatableBadge() {
             </div>
             <p className="whitespace-normal leading-relaxed text-gray-300">
               The sacrifices listed below can be repeated indefinitely.
+            </p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+});
+
+const NonRepeatableBadge = React.memo(function NonRepeatableBadge() {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className="inline-flex cursor-help items-center justify-center rounded border border-gray-700/60 bg-gray-800/50 p-1 text-gray-500 shadow-lg"
+            aria-label="Non-repeatable"
+            title="Non-repeatable"
+          >
+            <RepeatOff className="h-3.5 w-3.5" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          sideOffset={8}
+          className="w-[250px] overflow-hidden rounded-lg border border-gray-700/80 bg-gray-900/98 p-0 text-left text-xs text-gray-200 shadow-2xl backdrop-blur-md"
+        >
+          <div className="space-y-2 p-3">
+            <div className="border-b border-gray-700/60 pb-2">
+              <p className="text-sm font-semibold text-gray-300">
+                One-time recipe
+              </p>
+            </div>
+            <p className="whitespace-normal leading-relaxed text-gray-300">
+              This sacrifice can only be completed once.
             </p>
           </div>
         </TooltipContent>
@@ -863,7 +898,7 @@ const RecipeCard = React.memo(function RecipeCard({
             t={t}
             modeRestriction={recipe.modeRestriction}
           />
-          {recipe.isRepeatable && <RepeatableBadge />}
+          {recipe.isRepeatable ? <RepeatableBadge /> : <NonRepeatableBadge />}
         </div>
 
         <div
