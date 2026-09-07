@@ -239,19 +239,33 @@ export const useRecipeFeedbackStore = create<RecipeFeedbackStoreState>(
       const nextVote = removing ? null : vote;
       const nextMode = nextVote ? gameMode : null;
       const updatedStats = applyUserVote(previousStats, previousVote, nextVote);
+      const nowIso = new Date().toISOString();
+      const optimisticModesBreakdown = applyModeVote(
+        previousStats.modes,
+        previousVote && previousMode
+          ? { vote: previousVote, mode: previousMode }
+          : null,
+        nextVote && nextMode ? { vote: nextVote, mode: nextMode } : null,
+      );
+      if (nextVote && nextMode) {
+        const bucket = {
+          ...optimisticModesBreakdown[nextMode],
+        };
+        if (nextVote === "worked") bucket.lastWorkedAt = nowIso;
+        else bucket.lastDidntWorkAt = nowIso;
+        optimisticModesBreakdown[nextMode] = bucket;
+      }
       const statsWithModes = {
         ...updatedStats,
         lastWorkedMode:
           nextVote === "worked" && nextMode
             ? nextMode
             : previousStats.lastWorkedMode,
-        modes: applyModeVote(
-          previousStats.modes,
-          previousVote && previousMode
-            ? { vote: previousVote, mode: previousMode }
-            : null,
-          nextVote && nextMode ? { vote: nextVote, mode: nextMode } : null,
-        ),
+        lastDidntWorkMode:
+          nextVote === "didnt_work" && nextMode
+            ? nextMode
+            : (previousStats.lastDidntWorkMode ?? null),
+        modes: optimisticModesBreakdown,
       };
       const optimisticVotes = { ...state.userVotes };
       const optimisticModes = { ...state.userModes };
@@ -445,6 +459,7 @@ export function useRecipeFeedback(recipeId: string) {
     stats,
     userVote,
     userMode,
+    now,
     castVote: (vote: UserVote, gameMode: GameMode) =>
       castVote(recipeId, vote, gameMode),
     formattedRecency: useMemo(

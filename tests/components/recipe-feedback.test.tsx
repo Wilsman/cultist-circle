@@ -175,11 +175,76 @@ describe("RecipeFeedback component", () => {
     });
     fireEvent.click(details);
     const popover = await screen.findByText("Community reports");
-    const content = within(popover.parentElement as HTMLElement);
+    const content = within(
+      (popover.parentElement?.parentElement ?? popover.parentElement) as HTMLElement,
+    );
     expect(content.getByText("PVP")).toBeInTheDocument();
     expect(content.getByText("PVE")).toBeInTheDocument();
     expect(content.getByText("PVP-S")).toBeInTheDocument();
     expect(content.getByText("Unspecified")).toBeInTheDocument();
+  });
+
+  it("shows per-mode recency and highlights the latest report", async () => {
+    vi.mocked(fetch).mockReset();
+    const now = Date.now();
+    const minutesAgo = (m: number, extraSecs = 30) =>
+      new Date(now - (m * 60 + extraSecs) * 1000).toISOString();
+    const hoursAgo = (h: number, extraMins = 5) =>
+      new Date(now - (h * 3600 + extraMins * 60) * 1000).toISOString();
+    const daysAgo = (d: number, extraHours = 1) =>
+      new Date(now - (d * 24 * 3600 + extraHours * 3600) * 1000).toISOString();
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({
+        success: true,
+        data: {
+          [testRecipeId]: {
+            workedCount: 3,
+            didntWorkCount: 15,
+            lastWorkedAt: minutesAgo(47),
+            lastWorkedMode: "pve",
+            lastDidntWorkAt: minutesAgo(5),
+            lastDidntWorkMode: "pve",
+            modes: {
+              pvp: {
+                worked: 1,
+                didntWork: 1,
+                lastWorkedAt: hoursAgo(2),
+                lastDidntWorkAt: hoursAgo(26),
+              },
+              pve: {
+                worked: 1,
+                didntWork: 7,
+                lastWorkedAt: minutesAgo(47),
+                lastDidntWorkAt: minutesAgo(5),
+              },
+              season: {
+                worked: 1,
+                didntWork: 7,
+                lastWorkedAt: daysAgo(3),
+                lastDidntWorkAt: daysAgo(4),
+              },
+            },
+          },
+        },
+      }),
+    );
+    renderFeedback();
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /view community report details/i,
+      }),
+    );
+    const popover = await screen.findByText("Community reports");
+    const content = within(
+      (popover.parentElement?.parentElement ?? popover.parentElement) as HTMLElement,
+    );
+    expect(content.getByText("Worked 2h ago")).toBeInTheDocument();
+    expect(content.getByText("Worked 47m ago")).toBeInTheDocument();
+    expect(content.getByText("Failed 5m ago")).toBeInTheDocument();
+    expect(content.getByText("Latest")).toBeInTheDocument();
+    expect(
+      content.getByText(/Latest: Didn't work on PVE/),
+    ).toBeInTheDocument();
   });
 
   it("disables reporting after initial load failure and offers Retry", async () => {

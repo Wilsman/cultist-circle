@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   applyModeVote,
   applyUserVote,
+  formatCompactRecency,
   formatLastWorkedDetail,
+  formatLatestReport,
   formatRecency,
   formatReportStatus,
+  getLatestReport,
+  getModeLatestSignal,
   getUnspecifiedModeCounts,
   isRecipeFeedbackStats,
   isRecipeRecentlyActive,
@@ -323,6 +327,29 @@ describe("recipe-feedback utilities", () => {
       ).toBe(true);
     });
 
+    it("accepts per-mode recency timestamps and didnt-work mode", () => {
+      expect(
+        isRecipeFeedbackStats({
+          workedCount: 2,
+          didntWorkCount: 1,
+          lastWorkedAt: "2026-09-03T10:00:00.000Z",
+          lastWorkedMode: "pve",
+          lastDidntWorkAt: "2026-09-03T11:00:00.000Z",
+          lastDidntWorkMode: "pve",
+          modes: {
+            pvp: { worked: 0, didntWork: 0 },
+            pve: {
+              worked: 2,
+              didntWork: 1,
+              lastWorkedAt: "2026-09-03T10:00:00.000Z",
+              lastDidntWorkAt: "2026-09-03T11:00:00.000Z",
+            },
+            season: { worked: 0, didntWork: 0 },
+          },
+        }),
+      ).toBe(true);
+    });
+
     it("rejects malformed breakdowns", () => {
       expect(
         isRecipeFeedbackStats({
@@ -348,6 +375,99 @@ describe("recipe-feedback utilities", () => {
           lastWorkedMode: "coop",
         }),
       ).toBe(false);
+    });
+  });
+
+  describe("per-mode recency helpers", () => {
+    const fixedNow = new Date("2026-09-03T12:00:00.000Z").getTime();
+
+    it("formats compact recency without a prefix", () => {
+      expect(
+        formatCompactRecency("2026-09-03T11:13:00.000Z", fixedNow),
+      ).toBe("47m ago");
+      expect(formatCompactRecency(null, fixedNow)).toBeNull();
+      expect(formatCompactRecency("invalid", fixedNow)).toBeNull();
+    });
+
+    it("picks the newest signal within a mode bucket", () => {
+      expect(
+        getModeLatestSignal({
+          worked: 1,
+          didntWork: 7,
+          lastWorkedAt: "2026-09-03T11:13:00.000Z",
+          lastDidntWorkAt: "2026-09-03T11:55:00.000Z",
+        }),
+      ).toEqual({
+        vote: "didnt_work",
+        at: "2026-09-03T11:55:00.000Z",
+      });
+      expect(
+        getModeLatestSignal({ worked: 0, didntWork: 0 }),
+      ).toEqual({ vote: null, at: null });
+    });
+
+    it("finds the overall latest report across modes", () => {
+      expect(
+        getLatestReport({
+          workedCount: 3,
+          didntWorkCount: 15,
+          lastWorkedAt: "2026-09-03T11:13:00.000Z",
+          lastWorkedMode: "pve",
+          lastDidntWorkAt: "2026-09-03T11:55:00.000Z",
+          lastDidntWorkMode: "pve",
+          modes: {
+            pvp: {
+              worked: 1,
+              didntWork: 1,
+              lastWorkedAt: "2026-09-03T10:00:00.000Z",
+              lastDidntWorkAt: null,
+            },
+            pve: {
+              worked: 1,
+              didntWork: 7,
+              lastWorkedAt: "2026-09-03T11:13:00.000Z",
+              lastDidntWorkAt: "2026-09-03T11:55:00.000Z",
+            },
+            season: { worked: 1, didntWork: 7 },
+          },
+        }),
+      ).toEqual({
+        vote: "didnt_work",
+        mode: "pve",
+        at: "2026-09-03T11:55:00.000Z",
+      });
+    });
+
+    it("formats the popover footer line with mode and time", () => {
+      expect(
+        formatLatestReport(
+          {
+            workedCount: 3,
+            didntWorkCount: 15,
+            lastWorkedAt: "2026-09-03T11:13:00.000Z",
+            lastWorkedMode: "pve",
+            lastDidntWorkAt: "2026-09-03T11:55:00.000Z",
+            lastDidntWorkMode: "pve",
+            modes: {
+              pvp: { worked: 1, didntWork: 1 },
+              pve: {
+                worked: 1,
+                didntWork: 7,
+                lastWorkedAt: "2026-09-03T11:13:00.000Z",
+                lastDidntWorkAt: "2026-09-03T11:55:00.000Z",
+              },
+              season: { worked: 1, didntWork: 7 },
+            },
+          },
+          fixedNow,
+        ),
+      ).toBe("Latest: Didn't work on PVE · 5m ago");
+      expect(
+        formatLatestReport(
+          { workedCount: 0, didntWorkCount: 0, lastWorkedAt: null },
+          fixedNow,
+        ),
+      ).toBeNull();
     });
   });
 

@@ -405,15 +405,31 @@ describe("Cloudflare recipe feedback API", () => {
           lastWorkedAt: "2026-09-03T12:00:00.000Z",
           lastWorkedMode: "pvp",
           lastDidntWorkAt: null,
+          lastDidntWorkMode: null,
           modes: {
-            pvp: { worked: 1, didntWork: 0 },
-            pve: { worked: 0, didntWork: 0 },
-            season: { worked: 0, didntWork: 0 },
+            pvp: {
+              worked: 1,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+            pve: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+            season: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
           },
         },
       },
     });
-    expect(prepareMock).toHaveBeenCalledTimes(1);
+    expect(prepareMock).toHaveBeenCalledTimes(2);
     expect(limitMock).not.toHaveBeenCalled();
   });
 
@@ -444,10 +460,26 @@ describe("Cloudflare recipe feedback API", () => {
           lastWorkedAt: "2026-09-03T12:00:00.000Z",
           lastWorkedMode: "pvp",
           lastDidntWorkAt: null,
+          lastDidntWorkMode: null,
           modes: {
-            pvp: { worked: 1, didntWork: 0 },
-            pve: { worked: 0, didntWork: 0 },
-            season: { worked: 0, didntWork: 0 },
+            pvp: {
+              worked: 1,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+            pve: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+            season: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
           },
         },
         userVote: "worked",

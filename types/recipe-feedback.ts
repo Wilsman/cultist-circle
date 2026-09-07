@@ -3,6 +3,8 @@ import type { GameMode } from "@/lib/game-mode";
 export interface RecipeFeedbackModeCounts {
   worked: number;
   didntWork: number;
+  lastWorkedAt?: string | null;
+  lastDidntWorkAt?: string | null;
 }
 
 export type RecipeFeedbackModeBreakdown = Record<
@@ -16,6 +18,7 @@ export interface RecipeFeedbackStats {
   lastWorkedAt: string | null;
   lastWorkedMode?: GameMode | null;
   lastDidntWorkAt?: string | null;
+  lastDidntWorkMode?: GameMode | null;
   modes?: RecipeFeedbackModeBreakdown;
 }
 

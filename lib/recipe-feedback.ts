@@ -43,7 +43,13 @@ export function isRecipeFeedbackModeCounts(
     Number.isInteger(counts.worked) &&
     Number(counts.worked) >= 0 &&
     Number.isInteger(counts.didntWork) &&
-    Number(counts.didntWork) >= 0
+    Number(counts.didntWork) >= 0 &&
+    (counts.lastWorkedAt === undefined ||
+      counts.lastWorkedAt === null ||
+      typeof counts.lastWorkedAt === "string") &&
+    (counts.lastDidntWorkAt === undefined ||
+      counts.lastDidntWorkAt === null ||
+      typeof counts.lastDidntWorkAt === "string")
   );
 }
 
@@ -81,6 +87,10 @@ export function isRecipeFeedbackStats(
       stats.lastWorkedMode === null ||
       (typeof stats.lastWorkedMode === "string" &&
         isGameMode(stats.lastWorkedMode))) &&
+    (stats.lastDidntWorkMode === undefined ||
+      stats.lastDidntWorkMode === null ||
+      (typeof stats.lastDidntWorkMode === "string" &&
+        isGameMode(stats.lastDidntWorkMode))) &&
     (stats.modes === undefined || isRecipeFeedbackModeBreakdown(stats.modes))
   );
 }
@@ -237,6 +247,124 @@ export function formatReportStatus(
   if (stats.workedCount > 0) return "Confirmed";
   if (stats.didntWorkCount > 0) return "Not confirmed yet";
   return "No reports yet";
+}
+
+/**
+ * Compact relative time without a prefix, for per-mode rows.
+ * Returns null when there is no timestamp.
+ */
+export function formatCompactRecency(
+  isoDateString: string | null | undefined,
+  now: number = Date.now(),
+): string | null {
+  if (!isoDateString) return null;
+  const timestamp = new Date(isoDateString).getTime();
+  if (isNaN(timestamp)) return null;
+  const diffMs = Math.max(0, now - timestamp);
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 30) return `${diffDays}d ago`;
+  return `${Math.floor(diffDays / 30)}mo ago`;
+}
+
+export interface ModeLatestSignal {
+  vote: UserVote | null;
+  at: string | null;
+}
+
+function parseTime(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  return isNaN(time) ? null : time;
+}
+
+/**
+ * Most recent signal for a single mode bucket. Returns null vote when the
+ * bucket has no timestamps (legacy counts-only data).
+ */
+export function getModeLatestSignal(
+  counts: RecipeFeedbackModeCounts | undefined,
+): ModeLatestSignal {
+  if (!counts) return { vote: null, at: null };
+  const workedTime = parseTime(counts.lastWorkedAt ?? null);
+  const didntTime = parseTime(counts.lastDidntWorkAt ?? null);
+  if (workedTime === null && didntTime === null)
+    return { vote: null, at: null };
+  if (workedTime !== null && (didntTime === null || workedTime >= didntTime))
+    return { vote: "worked", at: counts.lastWorkedAt ?? null };
+  return { vote: "didnt_work", at: counts.lastDidntWorkAt ?? null };
+}
+
+export interface LatestReport {
+  vote: UserVote;
+  mode: GameMode | null;
+  at: string;
+}
+
+/**
+ * Overall latest report across all modes. Prefers per-mode timestamps when
+ * present so the badge can point at the exact mode; falls back to the
+ * aggregate lastWorkedAt / lastDidntWorkAt with their stored modes.
+ */
+export function getLatestReport(
+  stats: RecipeFeedbackStats,
+): LatestReport | null {
+  const modes = stats.modes;
+  let latest: LatestReport | null = null;
+  if (modes) {
+    for (const mode of GAME_MODES) {
+      const bucket = modes[mode];
+      if (!bucket) continue;
+      for (const [vote, at] of [
+        ["worked", bucket.lastWorkedAt],
+        ["didnt_work", bucket.lastDidntWorkAt],
+      ] as const) {
+        const time = parseTime(at ?? null);
+        if (time === null || !at) continue;
+        if (!latest || time > parseTime(latest.at)!) {
+          latest = { vote: vote as UserVote, mode, at };
+        }
+      }
+    }
+  }
+  if (latest) return latest;
+  const workedTime = parseTime(stats.lastWorkedAt);
+  const didntTime = parseTime(stats.lastDidntWorkAt ?? null);
+  if (workedTime === null && didntTime === null) return null;
+  if (workedTime !== null && (didntTime === null || workedTime >= didntTime)) {
+    return {
+      vote: "worked",
+      mode: stats.lastWorkedMode ?? null,
+      at: stats.lastWorkedAt as string,
+    };
+  }
+  return {
+    vote: "didnt_work",
+    mode: stats.lastDidntWorkMode ?? null,
+    at: stats.lastDidntWorkAt as string,
+  };
+}
+
+/**
+ * Human-readable latest line for the popover footer, e.g.
+ * "Latest: Worked on PVE · 47m ago".
+ */
+export function formatLatestReport(
+  stats: RecipeFeedbackStats,
+  now: number = Date.now(),
+): string | null {
+  const latest = getLatestReport(stats);
+  if (!latest) return null;
+  const relative = formatCompactRecency(latest.at, now);
+  if (!relative) return null;
+  const action = latest.vote === "worked" ? "Worked" : "Didn't work";
+  const modeLabel = latest.mode ? ` on ${GAME_MODE_LABELS[latest.mode]}` : "";
+  return `Latest: ${action}${modeLabel} · ${relative}`;
 }
 
 /**

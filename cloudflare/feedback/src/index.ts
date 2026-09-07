@@ -38,6 +38,8 @@ type RecipeFeedbackPayload = {
 type RecipeFeedbackModeCounts = {
   worked: number;
   didntWork: number;
+  lastWorkedAt: string | null;
+  lastDidntWorkAt: string | null;
 };
 
 type RecipeFeedbackStats = {
@@ -46,6 +48,7 @@ type RecipeFeedbackStats = {
   lastWorkedAt: string | null;
   lastWorkedMode: RecipeGameMode | null;
   lastDidntWorkAt: string | null;
+  lastDidntWorkMode: RecipeGameMode | null;
   modes: Record<RecipeGameMode, RecipeFeedbackModeCounts>;
 };
 
@@ -227,27 +230,97 @@ async function hashClientId(clientId: string): Promise<string> {
   ).join("");
 }
 
-function mapRecipeStats(row: RecipeStatsRow | null): RecipeFeedbackStats {
+type ModeRecency = Record<
+  string,
+  Partial<Record<RecipeGameMode, Partial<Record<RecipeVote, string>>>>
+>;
+
+type ModeRecencyRow = {
+  recipe_id: string;
+  game_mode: RecipeGameMode | null;
+  vote: RecipeVote | null;
+  last_at: string | null;
+};
+
+function isRecipeGameMode(value: unknown): value is RecipeGameMode {
+  return (
+    typeof value === "string" &&
+    (RECIPE_GAME_MODES as readonly string[]).includes(value)
+  );
+}
+
+function buildModeRecency(rows: ModeRecencyRow[] | undefined): ModeRecency {
+  const recency: ModeRecency = {};
+  for (const row of rows ?? []) {
+    if (
+      !row ||
+      typeof row.recipe_id !== "string" ||
+      !isRecipeGameMode(row.game_mode) ||
+      (row.vote !== "worked" && row.vote !== "didnt_work") ||
+      typeof row.last_at !== "string"
+    ) {
+      continue;
+    }
+    const byRecipe = (recency[row.recipe_id] ??= {});
+    const byMode = (byRecipe[row.game_mode] ??= {});
+    byMode[row.vote] = row.last_at;
+  }
+  return recency;
+}
+
+function latestModeFor(
+  recency: ModeRecency[string] | undefined,
+  vote: RecipeVote,
+): RecipeGameMode | null {
+  if (!recency) return null;
+  let latestMode: RecipeGameMode | null = null;
+  let latestTime = -1;
+  for (const mode of RECIPE_GAME_MODES) {
+    const at = recency[mode]?.[vote];
+    if (!at) continue;
+    const time = new Date(at).getTime();
+    if (isNaN(time) || time <= latestTime) continue;
+    latestTime = time;
+    latestMode = mode;
+  }
+  return latestMode;
+}
+
+function mapRecipeStats(
+  row: RecipeStatsRow | null,
+  recency?: ModeRecency[string],
+): RecipeFeedbackStats {
+  const modes = {
+    pvp: {
+      worked: Number(row?.worked_pvp ?? 0),
+      didntWork: Number(row?.didnt_work_pvp ?? 0),
+      lastWorkedAt: recency?.pvp?.worked ?? null,
+      lastDidntWorkAt: recency?.pvp?.didnt_work ?? null,
+    },
+    pve: {
+      worked: Number(row?.worked_pve ?? 0),
+      didntWork: Number(row?.didnt_work_pve ?? 0),
+      lastWorkedAt: recency?.pve?.worked ?? null,
+      lastDidntWorkAt: recency?.pve?.didnt_work ?? null,
+    },
+    season: {
+      worked: Number(row?.worked_season ?? 0),
+      didntWork: Number(row?.didnt_work_season ?? 0),
+      lastWorkedAt: recency?.season?.worked ?? null,
+      lastDidntWorkAt: recency?.season?.didnt_work ?? null,
+    },
+  } satisfies RecipeFeedbackStats["modes"];
+  const lastDidntWorkAt = row?.last_didnt_work_at ?? null;
   return {
     workedCount: Number(row?.worked_count ?? 0),
     didntWorkCount: Number(row?.didnt_work_count ?? 0),
     lastWorkedAt: row?.last_worked_at ?? null,
     lastWorkedMode: row?.last_worked_mode ?? null,
-    lastDidntWorkAt: row?.last_didnt_work_at ?? null,
-    modes: {
-      pvp: {
-        worked: Number(row?.worked_pvp ?? 0),
-        didntWork: Number(row?.didnt_work_pvp ?? 0),
-      },
-      pve: {
-        worked: Number(row?.worked_pve ?? 0),
-        didntWork: Number(row?.didnt_work_pve ?? 0),
-      },
-      season: {
-        worked: Number(row?.worked_season ?? 0),
-        didntWork: Number(row?.didnt_work_season ?? 0),
-      },
-    },
+    lastDidntWorkAt,
+    lastDidntWorkMode: lastDidntWorkAt
+      ? latestModeFor(recency, "didnt_work")
+      : null,
+    modes,
   };
 }
 
@@ -296,8 +369,31 @@ async function handleRecipeFeedback(
           ${LAST_DIDNT_WORK_SUBQUERY}
          FROM recipe_feedback_stats`,
       ).all<RecipeStatsRow>();
+      // Per-mode last-report times come from the raw votes so the popover can
+      // show e.g. "PVE worked 1h ago" instead of just totals.
+      let recency: ModeRecency = {};
+      try {
+        const recencyResult = await env.DB.prepare(
+          `SELECT recipe_id, game_mode, vote, MAX(updated_at) AS last_at
+           FROM recipe_feedback
+           WHERE game_mode IS NOT NULL
+           GROUP BY recipe_id, game_mode, vote`,
+        ).all<ModeRecencyRow>();
+        recency = buildModeRecency(recencyResult.results);
+      } catch (error) {
+        // Totals remain useful without per-mode times; degrade gracefully.
+        console.error(
+          JSON.stringify({
+            event: "recipe_feedback_recency_failed",
+            error: error instanceof Error ? error.message : "Unknown error",
+          }),
+        );
+      }
       const data = Object.fromEntries(
-        result.results.map((row) => [row.recipe_id, mapRecipeStats(row)]),
+        result.results.map((row) => [
+          row.recipe_id,
+          mapRecipeStats(row, recency[row.recipe_id]),
+        ]),
       );
 
       return jsonResponse(
@@ -470,7 +566,30 @@ async function handleRecipeFeedback(
     if (results.some((result) => !result.success)) {
       throw new Error("D1 recipe feedback transaction was unsuccessful");
     }
-    const stats = mapRecipeStats(results[2]?.results?.[0] ?? null);
+    let singleRecency: ModeRecency[string] | undefined;
+    try {
+      const recencyResult = await env.DB.prepare(
+        `SELECT recipe_id, game_mode, vote, MAX(updated_at) AS last_at
+         FROM recipe_feedback
+         WHERE recipe_id = ? AND game_mode IS NOT NULL
+         GROUP BY game_mode, vote`,
+      )
+        .bind(payload.recipeId)
+        .all<ModeRecencyRow>();
+      singleRecency = buildModeRecency(recencyResult.results)[payload.recipeId];
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          event: "recipe_feedback_recency_failed",
+          recipeId: payload.recipeId,
+          error: error instanceof Error ? error.message : "Unknown error",
+        }),
+      );
+    }
+    const stats = mapRecipeStats(
+      results[2]?.results?.[0] ?? null,
+      singleRecency,
+    );
     return jsonResponse(
       {
         success: true,
