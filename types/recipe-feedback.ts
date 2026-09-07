@@ -15,6 +15,7 @@ export interface RecipeFeedbackStats {
   didntWorkCount: number;
   lastWorkedAt: string | null;
   lastWorkedMode?: GameMode | null;
+  lastDidntWorkAt?: string | null;
   modes?: RecipeFeedbackModeBreakdown;
 }
 

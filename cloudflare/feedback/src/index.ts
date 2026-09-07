@@ -45,6 +45,7 @@ type RecipeFeedbackStats = {
   didntWorkCount: number;
   lastWorkedAt: string | null;
   lastWorkedMode: RecipeGameMode | null;
+  lastDidntWorkAt: string | null;
   modes: Record<RecipeGameMode, RecipeFeedbackModeCounts>;
 };
 
@@ -54,6 +55,7 @@ type RecipeStatsRow = {
   didnt_work_count: number;
   last_worked_at: string | null;
   last_worked_mode: RecipeGameMode | null;
+  last_didnt_work_at: string | null;
   worked_pvp: number | null;
   worked_pve: number | null;
   worked_season: number | null;
@@ -231,6 +233,7 @@ function mapRecipeStats(row: RecipeStatsRow | null): RecipeFeedbackStats {
     didntWorkCount: Number(row?.didnt_work_count ?? 0),
     lastWorkedAt: row?.last_worked_at ?? null,
     lastWorkedMode: row?.last_worked_mode ?? null,
+    lastDidntWorkAt: row?.last_didnt_work_at ?? null,
     modes: {
       pvp: {
         worked: Number(row?.worked_pvp ?? 0),
@@ -251,6 +254,13 @@ function mapRecipeStats(row: RecipeStatsRow | null): RecipeFeedbackStats {
 const RECIPE_STATS_COLUMNS = `recipe_id, worked_count, didnt_work_count, last_worked_at, last_worked_mode,
    worked_pvp, worked_pve, worked_season,
    didnt_work_pvp, didnt_work_pve, didnt_work_season`;
+
+// The stats table only stores the last worked timestamp, so the latest
+// "didn't work" report is derived from the raw votes at read time.
+const LAST_DIDNT_WORK_SUBQUERY = `(SELECT MAX(updated_at)
+     FROM recipe_feedback AS latest_didnt_work
+     WHERE latest_didnt_work.recipe_id = recipe_feedback_stats.recipe_id
+       AND latest_didnt_work.vote = 'didnt_work') AS last_didnt_work_at`;
 
 async function handleRecipeFeedback(
   request: Request,
@@ -282,7 +292,8 @@ async function handleRecipeFeedback(
 
     try {
       const result = await env.DB.prepare(
-        `SELECT ${RECIPE_STATS_COLUMNS}
+        `SELECT ${RECIPE_STATS_COLUMNS},
+          ${LAST_DIDNT_WORK_SUBQUERY}
          FROM recipe_feedback_stats`,
       ).all<RecipeStatsRow>();
       const data = Object.fromEntries(
@@ -443,10 +454,13 @@ async function handleRecipeFeedback(
          didnt_work_season = excluded.didnt_work_season`,
     ).bind(payload.recipeId, payload.recipeId, payload.recipeId);
     const readAggregate = env.DB.prepare(
-      `SELECT ${RECIPE_STATS_COLUMNS}
+      `SELECT ${RECIPE_STATS_COLUMNS},
+        (SELECT MAX(updated_at)
+         FROM recipe_feedback AS latest_didnt_work
+         WHERE latest_didnt_work.recipe_id = ? AND latest_didnt_work.vote = 'didnt_work') AS last_didnt_work_at
        FROM recipe_feedback_stats
        WHERE recipe_id = ?`,
-    ).bind(payload.recipeId);
+    ).bind(payload.recipeId, payload.recipeId);
 
     const results = await env.DB.batch<RecipeStatsRow>([
       mutation,

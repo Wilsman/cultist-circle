@@ -245,6 +245,34 @@ describe("RecipeFeedback component", () => {
     );
   });
 
+  it("shows didnt-work recency instead of no reports for didnt-work-only recipes", async () => {
+    vi.mocked(fetch).mockReset();
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({
+        success: true,
+        data: {
+          [testRecipeId]: {
+            workedCount: 0,
+            didntWorkCount: 2,
+            lastWorkedAt: null,
+            lastWorkedMode: null,
+            lastDidntWorkAt: new Date(
+              Date.now() - (3 * 24 * 3600 * 1000 + 3600 * 1000),
+            ).toISOString(),
+            modes: {
+              pvp: { worked: 0, didntWork: 1 },
+              pve: { worked: 0, didntWork: 1 },
+              season: { worked: 0, didntWork: 0 },
+            },
+          },
+        },
+      }),
+    );
+    renderFeedback();
+    expect(await screen.findByText("Didn't work 3d ago")).toBeInTheDocument();
+    expect(screen.queryByText("No reports yet")).not.toBeInTheDocument();
+  });
+
   it("shows the latest worked mode beneath the confirmation time", async () => {
     renderFeedback();
     expect(

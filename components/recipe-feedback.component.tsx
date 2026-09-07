@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { cva } from "class-variance-authority";
 import {
   BarChart3,
@@ -253,6 +253,22 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
   } = useRecipeFeedback(recipeId);
   const controlsDisabled = !canVote || isPending;
   const unspecified = getUnspecifiedModeCounts(stats);
+  const thanksKey =
+    message === "Report saved." && userVote
+      ? `${userVote}-${stats.workedCount}-${stats.didntWorkCount}`
+      : null;
+  const [dismissedThanksKey, setDismissedThanksKey] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!thanksKey) return;
+    const timer = setTimeout(() => setDismissedThanksKey(thanksKey), 4000);
+    return () => clearTimeout(timer);
+  }, [thanksKey]);
+
+  const showThanks =
+    !!thanksKey && dismissedThanksKey !== thanksKey && !voteError;
 
   return (
     <div className="mt-3.5 border-t border-gray-700/40 pt-2.5 text-xs">
@@ -287,7 +303,11 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
                   <span
                     className={cn(
                       "h-1.5 w-1.5 shrink-0 rounded-full",
-                      isRecentlyActive ? "bg-emerald-400" : "bg-gray-500",
+                      isRecentlyActive
+                        ? "bg-emerald-400"
+                        : stats.didntWorkCount > 0
+                          ? "bg-rose-400"
+                          : "bg-gray-500",
                     )}
                   />
                   <span>{formattedRecency}</span>
@@ -335,6 +355,23 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
           )}
           {voteError && (
             <p className="mt-1 text-[11px] text-rose-300">{voteError}</p>
+          )}
+          {showThanks && userVote && thanksKey && (
+            <p
+              aria-hidden="true"
+              key={thanksKey}
+              className={cn(
+                "mt-1.5 flex animate-in items-center gap-1.5 text-[11px] font-medium fade-in-0 slide-in-from-bottom-1 duration-300",
+                userVote === "worked"
+                  ? "text-emerald-300/90"
+                  : "text-rose-300/90",
+              )}
+            >
+              <Check className="h-3 w-3 shrink-0" />
+              {userVote === "worked"
+                ? "Thanks - the Circle approves."
+                : "Noted - thanks for keeping the Circle honest."}
+            </p>
           )}
           <span className="sr-only" role="status" aria-live="polite">
             {voteError ?? message ?? ""}

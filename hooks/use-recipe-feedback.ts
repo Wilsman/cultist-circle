@@ -9,7 +9,7 @@ import {
   createRecipeFeedbackClientId,
   EMPTY_RECIPE_FEEDBACK_STATS,
   formatLastWorkedDetail,
-  formatRecency,
+  formatReportStatus,
   isRecipeFeedbackMap,
   isRecipeFeedbackStats,
   isRecipeRecentlyActive,
@@ -448,8 +448,8 @@ export function useRecipeFeedback(recipeId: string) {
     castVote: (vote: UserVote, gameMode: GameMode) =>
       castVote(recipeId, vote, gameMode),
     formattedRecency: useMemo(
-      () => formatRecency(stats.lastWorkedAt, now),
-      [now, stats.lastWorkedAt],
+      () => formatReportStatus(stats, now),
+      [now, stats],
     ),
     formattedModeRecency: useMemo(
       () =>

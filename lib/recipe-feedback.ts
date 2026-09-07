@@ -27,6 +27,7 @@ export const EMPTY_RECIPE_FEEDBACK_STATS: RecipeFeedbackStats = {
   didntWorkCount: 0,
   lastWorkedAt: null,
   lastWorkedMode: null,
+  lastDidntWorkAt: null,
   modes: { ...EMPTY_RECIPE_FEEDBACK_MODES },
 };
 
@@ -73,6 +74,9 @@ export function isRecipeFeedbackStats(
     Number.isInteger(stats.didntWorkCount) &&
     Number(stats.didntWorkCount) >= 0 &&
     (stats.lastWorkedAt === null || typeof stats.lastWorkedAt === "string") &&
+    (stats.lastDidntWorkAt === undefined ||
+      stats.lastDidntWorkAt === null ||
+      typeof stats.lastDidntWorkAt === "string") &&
     (stats.lastWorkedMode === undefined ||
       stats.lastWorkedMode === null ||
       (typeof stats.lastWorkedMode === "string" &&
@@ -125,20 +129,18 @@ export function isUserModeMap(value: unknown): value is UserModeMap {
 }
 
 /**
- * Calculate human-readable relative time for when a recipe last worked
+ * Shared relative-time formatter. Returns null when there is no timestamp so
+ * callers can distinguish "no reports" from a real recency.
  */
-export function formatRecency(
+function formatRelativeTime(
+  prefix: string,
   isoDateString: string | null,
-  now: number = Date.now(),
-): string {
-  if (!isoDateString) {
-    return "No reports yet";
-  }
+  now: number,
+): string | null {
+  if (!isoDateString) return null;
 
   const timestamp = new Date(isoDateString).getTime();
-  if (isNaN(timestamp)) {
-    return "No reports yet";
-  }
+  if (isNaN(timestamp)) return null;
 
   const diffMs = Math.max(0, now - timestamp);
   const diffSecs = Math.floor(diffMs / 1000);
@@ -147,22 +149,43 @@ export function formatRecency(
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffMins < 1) {
-    return "Confirmed just now";
+    return `${prefix} just now`;
   }
   if (diffMins < 60) {
-    return `Confirmed ${diffMins}m ago`;
+    return `${prefix} ${diffMins}m ago`;
   }
   if (diffHours < 24) {
-    return `Confirmed ${diffHours}h ago`;
+    return `${prefix} ${diffHours}h ago`;
   }
   if (diffDays === 1) {
-    return "Confirmed yesterday";
+    return `${prefix} yesterday`;
   }
   if (diffDays < 30) {
-    return `Confirmed ${diffDays}d ago`;
+    return `${prefix} ${diffDays}d ago`;
   }
 
-  return `Confirmed ${Math.floor(diffDays / 30)}mo ago`;
+  return `${prefix} ${Math.floor(diffDays / 30)}mo ago`;
+}
+
+/**
+ * Calculate human-readable relative time for when a recipe last worked
+ */
+export function formatRecency(
+  isoDateString: string | null,
+  now: number = Date.now(),
+): string {
+  return formatRelativeTime("Confirmed", isoDateString, now) ?? "No reports yet";
+}
+
+/**
+ * Calculate human-readable relative time for when a recipe was last reported
+ * as not working. Returns null when there is no such report.
+ */
+export function formatDidntWorkRecency(
+  isoDateString: string | null,
+  now: number = Date.now(),
+): string | null {
+  return formatRelativeTime("Didn't work", isoDateString, now);
 }
 
 export function formatLastWorkedDetail(
@@ -173,13 +196,47 @@ export function formatLastWorkedDetail(
   if (!mode || !isoDateString) return null;
 
   const recency = formatRecency(isoDateString, now);
-  if (recency === "No reports yet") return null;
+  if (!recency.startsWith("Confirmed")) return null;
 
   const relativeTime =
     recency === "Confirmed just now"
       ? "just now"
       : recency.replace(/^Confirmed /, "");
   return `Last worked on ${GAME_MODE_LABELS[mode]} · ${relativeTime}`;
+}
+
+/**
+ * Status line for the aggregate report counts. When both kinds of reports
+ * exist, the most recent signal wins so a fresh "didn't work" isn't hidden
+ * behind an older confirmation (and vice versa).
+ */
+export function formatReportStatus(
+  stats: Pick<
+    RecipeFeedbackStats,
+    "workedCount" | "didntWorkCount" | "lastWorkedAt" | "lastDidntWorkAt"
+  >,
+  now: number = Date.now(),
+): string {
+  const worked = formatRelativeTime(
+    "Confirmed",
+    stats.lastWorkedAt ?? null,
+    now,
+  );
+  const didntWork = formatRelativeTime(
+    "Didn't work",
+    stats.lastDidntWorkAt ?? null,
+    now,
+  );
+  if (worked && didntWork) {
+    const workedTime = new Date(stats.lastWorkedAt as string).getTime();
+    const didntTime = new Date(stats.lastDidntWorkAt as string).getTime();
+    return didntTime > workedTime ? didntWork : worked;
+  }
+  if (worked) return worked;
+  if (didntWork) return didntWork;
+  if (stats.workedCount > 0) return "Confirmed";
+  if (stats.didntWorkCount > 0) return "Not confirmed yet";
+  return "No reports yet";
 }
 
 /**
@@ -217,6 +274,7 @@ export function applyUserVote(
   let workedCount = currentStats.workedCount;
   let didntWorkCount = currentStats.didntWorkCount;
   let lastWorkedAt = currentStats.lastWorkedAt;
+  let lastDidntWorkAt = currentStats.lastDidntWorkAt ?? null;
 
   if (currentVote !== undefined && currentVote !== nextVote) {
     if (currentVote === "worked") {
@@ -231,9 +289,16 @@ export function applyUserVote(
     lastWorkedAt = nowIso;
   } else if (nextVote === "didnt_work" && currentVote !== "didnt_work") {
     didntWorkCount += 1;
+    lastDidntWorkAt = nowIso;
   }
 
-  return { ...currentStats, workedCount, didntWorkCount, lastWorkedAt };
+  return {
+    ...currentStats,
+    workedCount,
+    didntWorkCount,
+    lastWorkedAt,
+    lastDidntWorkAt,
+  };
 }
 
 export function getUnspecifiedModeCounts(

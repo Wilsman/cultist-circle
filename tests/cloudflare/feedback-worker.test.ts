@@ -307,6 +307,7 @@ describe("Cloudflare recipe feedback API", () => {
       didnt_work_count: 0,
       last_worked_at: "2026-09-03T12:00:00.000Z",
       last_worked_mode: "pvp" as const,
+      last_didnt_work_at: null,
       worked_pvp: 1,
       worked_pve: 0,
       worked_season: 0,
@@ -323,6 +324,7 @@ describe("Cloudflare recipe feedback API", () => {
       didnt_work_count: number;
       last_worked_at: string | null;
       last_worked_mode: "pvp" | "pve" | "season" | null;
+      last_didnt_work_at: string | null;
       worked_pvp: number;
       worked_pve: number;
       worked_season: number;
@@ -402,6 +404,7 @@ describe("Cloudflare recipe feedback API", () => {
           didntWorkCount: 0,
           lastWorkedAt: "2026-09-03T12:00:00.000Z",
           lastWorkedMode: "pvp",
+          lastDidntWorkAt: null,
           modes: {
             pvp: { worked: 1, didntWork: 0 },
             pve: { worked: 0, didntWork: 0 },
@@ -440,6 +443,7 @@ describe("Cloudflare recipe feedback API", () => {
           didntWorkCount: 0,
           lastWorkedAt: "2026-09-03T12:00:00.000Z",
           lastWorkedMode: "pvp",
+          lastDidntWorkAt: null,
           modes: {
             pvp: { worked: 1, didntWork: 0 },
             pve: { worked: 0, didntWork: 0 },
