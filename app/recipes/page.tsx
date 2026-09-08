@@ -122,6 +122,38 @@ function parseCraftingTime(timeStr: string): number {
   );
 }
 
+function getCraftingTimeMinsEquivalent(timeStr: string): string | null {
+  if (!/\bsec/i.test(timeStr)) {
+    return null;
+  }
+  const totalSeconds = parseCraftingTime(timeStr);
+  if (!totalSeconds || totalSeconds < 60) {
+    return null;
+  }
+  return `${Math.round(totalSeconds / 60)} mins`;
+}
+
+const CraftingTimeDisplay = React.memo(function CraftingTimeDisplay({
+  timeStr,
+  className,
+  convertedClassName,
+}: {
+  timeStr: string;
+  className: string;
+  convertedClassName: string;
+}) {
+  const converted = getCraftingTimeMinsEquivalent(timeStr);
+  if (!converted) {
+    return <span className={className}>{timeStr}</span>;
+  }
+  return (
+    <span className="flex flex-col items-center leading-tight">
+      <span className={className}>{timeStr}</span>
+      <span className={convertedClassName}>({converted})</span>
+    </span>
+  );
+});
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -562,9 +594,11 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-950/20 px-4 py-2 shadow-[0_0_20px_rgba(251,191,36,0.05)]">
                   <Clock3 className="h-4 w-4 text-amber-300/70" />
-                  <span className="font-mono text-sm font-semibold tracking-[0.08em] text-amber-100">
-                    {recipe.craftingTime}
-                  </span>
+                  <CraftingTimeDisplay
+                    timeStr={recipe.craftingTime}
+                    className="font-mono text-sm font-semibold tracking-[0.08em] text-amber-100"
+                    convertedClassName="font-mono text-xs font-medium tracking-[0.08em] text-amber-200/70"
+                  />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
@@ -981,9 +1015,11 @@ const RecipeCard = React.memo(function RecipeCard({
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/60 border border-gray-700/50">
                         <Clock3 className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm font-mono font-medium text-gray-200">
-                          {recipe.craftingTime}
-                        </span>
+                        <CraftingTimeDisplay
+                          timeStr={recipe.craftingTime}
+                          className="text-sm font-mono font-medium text-gray-200"
+                          convertedClassName="font-mono text-xs font-normal text-gray-400"
+                        />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="text-xs">
