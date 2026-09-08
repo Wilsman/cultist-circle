@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "bun@1.3.9",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "changelog:preview": "node scripts/extract-notes.mjs --print",
     "changelog:write": "node scripts/extract-notes.mjs --write",

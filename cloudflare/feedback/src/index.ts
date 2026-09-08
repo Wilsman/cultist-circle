@@ -1,4 +1,7 @@
+import { recipeSubmissionSchema } from "../../../lib/recipe-submission";
+
 const FEEDBACK_PATH = "/api/submit-feedback";
+const RECIPE_SUBMISSIONS_PATH = "/api/recipe-submissions";
 const RECIPE_FEEDBACK_PATH = "/api/recipe-feedback";
 const MAX_BODY_BYTES = 8 * 1024;
 const RATE_LIMIT_SECONDS = 60;
@@ -630,7 +633,10 @@ export async function handleRequest(
     return handleRecipeFeedback(request, env);
   }
 
-  if (url.pathname !== FEEDBACK_PATH) {
+  if (
+    url.pathname !== FEEDBACK_PATH &&
+    url.pathname !== RECIPE_SUBMISSIONS_PATH
+  ) {
     return jsonResponse({ success: false, error: "Not found" }, 404);
   }
 
@@ -707,6 +713,64 @@ export async function handleRequest(
       undefined,
       origin,
     );
+  }
+
+  if (url.pathname === RECIPE_SUBMISSIONS_PATH) {
+    const parsed = recipeSubmissionSchema.safeParse(rawPayload);
+    if (!parsed.success) {
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            "Select valid items, quantities, game mode and a special recipe timer.",
+        },
+        400,
+        undefined,
+        origin,
+      );
+    }
+
+    const payload = parsed.data;
+    try {
+      const result = await env.DB.prepare(
+        `INSERT INTO recipe_submissions
+          (id, game_mode, timer_seconds, sacrifices_json, rewards_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO NOTHING`,
+      )
+        .bind(
+          payload.submissionId,
+          payload.gameMode,
+          payload.timerSeconds,
+          JSON.stringify(payload.sacrifices),
+          JSON.stringify(payload.rewards),
+          new Date().toISOString(),
+        )
+        .run();
+      if (!result.success) throw new Error("D1 insert was unsuccessful");
+      return jsonResponse(
+        { success: true, id: payload.submissionId, status: "pending" },
+        201,
+        undefined,
+        origin,
+      );
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          event: "recipe_submission_failed",
+          error: error instanceof Error ? error.message : "Unknown error",
+        }),
+      );
+      return jsonResponse(
+        {
+          success: false,
+          error: "Could not submit your recipe. Please try again.",
+        },
+        500,
+        undefined,
+        origin,
+      );
+    }
   }
 
   const payload = parseFeedbackPayload(rawPayload);

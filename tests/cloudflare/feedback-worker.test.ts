@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { handleRequest } from "@/cloudflare/feedback/src/index";
 import { tarkovRecipes } from "@/data/recipes";
+import type { RecipeSubmission } from "@/lib/recipe-submission";
 
 type TestEnvironment = {
   env: Env;
@@ -9,6 +10,146 @@ type TestEnvironment = {
   prepareMock: ReturnType<typeof vi.fn>;
   runMock: ReturnType<typeof vi.fn>;
 };
+
+const submission: RecipeSubmission = {
+  submissionId: "b20cd771-a824-4538-854a-6ff12d1dfd95",
+  gameMode: "pve",
+  timerSeconds: 3960,
+  sacrifices: [
+    { id: "5d1b3a5d86f774252167ba22", name: "  Test sacrifice  ", quantity: 2 },
+  ],
+  rewards: [
+    { id: "5d1b3a5d86f774252167ba23", name: "Test reward", quantity: 1 },
+  ],
+};
+
+function submissionRequest(
+  payload: unknown = submission,
+  method = "POST",
+  origin = "https://beta.cultistcircle.com",
+) {
+  return new Request("https://cultistcircle.com/api/recipe-submissions", {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Origin: origin,
+      "CF-Connecting-IP": "203.0.113.10",
+    },
+    ...(method === "POST" ? { body: JSON.stringify(payload) } : {}),
+  });
+}
+
+describe("Special recipe submissions", () => {
+  test.each([360, 3960, 39960, 666, 21355, 777])(
+    "queues a %i-second recipe for private review",
+    async (timerSeconds) => {
+      const { env, bindMock, prepareMock } = createEnvironment();
+      const response = await handleRequest(
+        submissionRequest({ ...submission, timerSeconds }),
+        env,
+      );
+      expect(response.status).toBe(201);
+      expect(await response.json()).toEqual({
+        success: true,
+        id: submission.submissionId,
+        status: "pending",
+      });
+      expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
+        "https://beta.cultistcircle.com",
+      );
+      expect(prepareMock.mock.calls[0][0]).toContain(
+        "ON CONFLICT(id) DO NOTHING",
+      );
+      expect(bindMock).toHaveBeenCalledWith(
+        submission.submissionId,
+        "pve",
+        timerSeconds,
+        JSON.stringify([
+          { ...submission.sacrifices[0], name: "Test sacrifice" },
+        ]),
+        JSON.stringify(submission.rewards),
+        expect.any(String),
+      );
+    },
+  );
+
+  test.each([
+    { timerSeconds: 7200 },
+    { timerSeconds: 10800 },
+    { timerSeconds: 14400 },
+    { timerSeconds: 18000 },
+    { timerSeconds: 28800 },
+    { timerSeconds: 21600 },
+    { timerSeconds: 43200 },
+    { timerSeconds: 50400 },
+    { timerSeconds: 0 },
+    { timerSeconds: 1.5 },
+    { timerSeconds: 360000 },
+    { sacrifices: [] },
+    { rewards: [] },
+    { gameMode: "unknown" },
+    { submissionId: "bad-id" },
+    { sacrifices: [{ ...submission.sacrifices[0], quantity: 6 }] },
+    { rewards: [{ ...submission.rewards[0], quantity: -1 }] },
+    { sacrifices: [submission.sacrifices[0], submission.sacrifices[0]] },
+    { rewards: [{ ...submission.rewards[0], id: "not-an-item-id" }] },
+    { status: "approved" },
+  ])("rejects invalid or regular recipes: %j", async (change) => {
+    const { env, prepareMock } = createEnvironment();
+    const response = await handleRequest(
+      submissionRequest({ ...submission, ...change }),
+      env,
+    );
+    expect(response.status).toBe(400);
+    expect(prepareMock).not.toHaveBeenCalled();
+  });
+
+  test("does not expose the review queue and allows trusted preflights", async () => {
+    const { env, prepareMock } = createEnvironment();
+    expect(
+      (await handleRequest(submissionRequest(undefined, "GET"), env)).status,
+    ).toBe(405);
+    expect(
+      (await handleRequest(submissionRequest(undefined, "OPTIONS"), env))
+        .status,
+    ).toBe(204);
+    expect(
+      (
+        await handleRequest(
+          submissionRequest(undefined, "POST", "https://untrusted.example"),
+          env,
+        )
+      ).status,
+    ).toBe(403);
+    expect(prepareMock).not.toHaveBeenCalled();
+  });
+
+  test("enforces rate limits before writing", async () => {
+    const { env, prepareMock } = createEnvironment({ rateLimitSuccess: false });
+    const response = await handleRequest(submissionRequest(), env);
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("60");
+    expect(prepareMock).not.toHaveBeenCalled();
+  });
+
+  test("rejects oversized bodies", async () => {
+    const { env, prepareMock } = createEnvironment();
+    const response = await handleRequest(
+      submissionRequest({ ...submission, extra: "x".repeat(9000) }),
+      env,
+    );
+    expect(response.status).toBe(413);
+    expect(prepareMock).not.toHaveBeenCalled();
+  });
+
+  test("returns a retryable failure when storage fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { env } = createEnvironment({ insertSuccess: false });
+    const response = await handleRequest(submissionRequest(), env);
+    expect(response.status).toBe(500);
+    expect(await response.json()).toMatchObject({ success: false });
+  });
+});
 
 function createEnvironment({
   rateLimitSuccess = true,

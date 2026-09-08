@@ -59,6 +59,7 @@ import {
   RECIPE_SHARE_PARAM,
 } from "@/lib/recipe-share";
 import { getStoredGameMode, type GameMode } from "@/lib/game-mode";
+import { RecipeSubmissionButton } from "@/components/recipe-submission";
 import {
   Package,
   CheckCircle2,
@@ -1314,6 +1315,9 @@ export default function RecipesPage() {
                 <p className="text-center text-sm text-gray-400 mt-2">
                   Discover what you can sacrifice and receive
                 </p>
+                <div className="flex justify-center pt-3">
+                  <RecipeSubmissionButton mode={mode} />
+                </div>
               </CardHeader>
 
               {/* Search Bar */}
