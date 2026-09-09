@@ -38,6 +38,8 @@ function renderPopover(
   const props: React.ComponentProps<typeof SelectorSettingsPopover> = {
     sortOption: "az",
     onSortChange: vi.fn(),
+    sacrificeSlotCount: 5,
+    onSacrificeSlotCountChange: vi.fn(),
     priceMode: "flea",
     onPriceModeChange: vi.fn(),
     traderLevels,
@@ -107,8 +109,7 @@ describe("SelectorSettingsPopover search filters", () => {
     );
   });
 
-  it("shows active filter state, trader loyalty, and clears both filters", () => {
-    const props = renderPopover({
+  it("shows active filter state, trader loyalty, and clears both filters", () => {    const props = renderPopover({
       categoryFilter: "5422acb9af1c889c16000029",
       traderFilter: "prapor",
     });
@@ -122,5 +123,42 @@ describe("SelectorSettingsPopover search filters", () => {
 
     expect(props.onCategoryFilterChange).toHaveBeenCalledWith("all");
     expect(props.onTraderFilterChange).toHaveBeenCalledWith("any");
+  });
+});
+
+describe("SelectorSettingsPopover sacrifice slots", () => {
+  it("shows the current slot count and steps it up or down", () => {
+    const props = renderPopover({ sacrificeSlotCount: 3 });
+
+    expect(screen.getByText("Number of sacrifices")).toBeInTheDocument();
+    expect(screen.getByLabelText("Active sacrifice slots")).toHaveTextContent(
+      "3 / 5",
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Use one fewer sacrifice slot" }),
+    );
+    expect(props.onSacrificeSlotCountChange).toHaveBeenCalledWith(2);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Use one more sacrifice slot" }),
+    );
+    expect(props.onSacrificeSlotCountChange).toHaveBeenCalledWith(4);
+  });
+
+  it("disables stepping past 1 or 5 slots", () => {
+    renderPopover({ sacrificeSlotCount: 1 });
+    expect(
+      screen.getByRole("button", { name: "Use one fewer sacrifice slot" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Use one more sacrifice slot" }),
+    ).not.toBeDisabled();
+  });
+
+  it("flags a non-default slot count on the trigger", () => {
+    renderPopover({ sacrificeSlotCount: 3 });
+
+    expect(screen.getByText("3 slots")).toBeInTheDocument();
   });
 });

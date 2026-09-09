@@ -10,8 +10,8 @@ describe("Info dashboard alerts", () => {
     );
 
     expect(recipeNotification).toMatchObject({
-      type: "success",
-      title: "New Ritual Discovered: Black Division",
+      type: "warning",
+      title: "Update: Black Division ritual may no longer work",
       priority: 0,
     });
   });

@@ -454,6 +454,23 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
 
   return (
     <div className="space-y-4">
+      <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-3.5 py-3 text-xs leading-relaxed text-amber-100/90">
+        <Info
+          className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300"
+          aria-hidden="true"
+        />
+        <p>
+          <span className="font-semibold text-amber-200">
+            Heads up: these codes and this recipe might not work anymore.
+          </span>{" "}
+          Many users report it no longer works. If you try it, please report{" "}
+          <span className="font-semibold">Worked or Didn&apos;t work</span>{" "}
+          below - thank you. Found a new recipe? Use the{" "}
+          <span className="font-semibold">Submit a recipe</span> button at the
+          top of this page. New submissions are reviewed and tested before
+          being added.
+        </p>
+      </div>
       <section className="relative overflow-hidden rounded-xl border border-amber-400/20 bg-[linear-gradient(135deg,rgba(120,53,15,0.18),rgba(3,7,18,0.74)_48%,rgba(120,53,15,0.08))] p-3.5 shadow-[inset_0_1px_0_rgba(253,230,138,0.06)] sm:p-4">
         <div
           aria-hidden="true"
