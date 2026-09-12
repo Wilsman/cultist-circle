@@ -39,6 +39,13 @@ import {
 } from "@/components/ui/tooltip";
 import { ItemTooltip } from "@/components/ui/item-tooltip";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   RecipeFeedback,
   RecipeFeedbackProvider,
 } from "@/components/recipe-feedback.component";
@@ -46,6 +53,7 @@ import { recipeIconMap } from "@/data/recipe-icons";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
 import { useLanguage } from "@/contexts/language-context";
 import { tarkovRecipes, type Recipe } from "@/data/recipes";
+import { useRecipeFeedbackStore } from "@/hooks/use-recipe-feedback";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import {
   isRecipeCompletionList,
@@ -64,6 +72,7 @@ import {
   Package,
   CheckCircle2,
   Info,
+  ArrowDownWideNarrow,
   ArrowRight,
   Search,
   X,
@@ -89,13 +98,27 @@ interface ProcessedOutput {
   content: string | { items: string[]; explanation: string };
 }
 
-type SortOption = "default" | "time-asc" | "time-desc" | "newest";
+type SortOption =
+  | "default"
+  | "time-asc"
+  | "time-desc"
+  | "newest"
+  | "recently-worked"
+  | "recently-failed";
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+interface SortOptionMeta {
+  value: SortOption;
+  label: string;
+  requiresFeedback?: boolean;
+}
+
+const SORT_OPTIONS: SortOptionMeta[] = [
   { value: "default", label: "Default" },
   { value: "time-asc", label: "Fastest First" },
   { value: "time-desc", label: "Slowest First" },
   { value: "newest", label: "Newest First" },
+  { value: "recently-worked", label: "Recently Worked", requiresFeedback: true },
+  { value: "recently-failed", label: "Recently Failed", requiresFeedback: true },
 ];
 
 // ============================================================================
@@ -153,6 +176,12 @@ const CraftingTimeDisplay = React.memo(function CraftingTimeDisplay({
     </span>
   );
 });
+
+function getReportTimeMs(isoDate: string | null | undefined): number {
+  if (!isoDate) return 0;
+  const time = Date.parse(isoDate);
+  return Number.isFinite(time) ? time : 0;
+}
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -1125,6 +1154,11 @@ export default function RecipesPage() {
 
   const { getItemByName } = useRecipeItemData(mode);
   const { t } = useLanguage();
+  const feedbackStats = useRecipeFeedbackStore((state) => state.stats);
+  const feedbackLoadStatus = useRecipeFeedbackStore(
+    (state) => state.loadStatus,
+  );
+  const feedbackReady = feedbackLoadStatus === "ready";
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
@@ -1323,6 +1357,15 @@ export default function RecipesPage() {
     });
 
     // Sort recipes
+    // Community sorts prefer recency in the selected game mode so e.g. PVE
+    // players are not topped by PVP confirmations, falling back to the
+    // global timestamp when per-mode data is unavailable.
+    const modeWorkedAt = (id: string) =>
+      feedbackStats[id]?.modes?.[mode]?.lastWorkedAt ??
+      feedbackStats[id]?.lastWorkedAt;
+    const modeDidntWorkAt = (id: string) =>
+      feedbackStats[id]?.modes?.[mode]?.lastDidntWorkAt ??
+      feedbackStats[id]?.lastDidntWorkAt;
     switch (sortBy) {
       case "time-asc":
         filtered = [...filtered].sort(
@@ -1346,10 +1389,31 @@ export default function RecipesPage() {
             (Number(Boolean(a.isUpdated)) * 2 + Number(Boolean(a.isNew))),
         );
         break;
+      case "recently-worked":
+        filtered = [...filtered].sort(
+          (a, b) =>
+            getReportTimeMs(modeWorkedAt(b.id)) -
+            getReportTimeMs(modeWorkedAt(a.id)),
+        );
+        break;
+      case "recently-failed":
+        filtered = [...filtered].sort(
+          (a, b) =>
+            getReportTimeMs(modeDidntWorkAt(b.id)) -
+            getReportTimeMs(modeDidntWorkAt(a.id)),
+        );
+        break;
     }
 
     return filtered;
-  }, [completedRecipeIds, debouncedSearch, showIncompleteOnly, sortBy]);
+  }, [
+    completedRecipeIds,
+    debouncedSearch,
+    feedbackStats,
+    mode,
+    showIncompleteOnly,
+    sortBy,
+  ]);
 
   const hasActiveFilters =
     sortBy !== "default" || Boolean(debouncedSearch) || showIncompleteOnly;
@@ -1401,28 +1465,47 @@ export default function RecipesPage() {
                 </div>
               </div>
 
-              {/* Always-visible filters, sort, and progress */}
+              {/* Filters, sort, and progress */}
               <div className="mt-4 border-t border-gray-800/80 pt-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-600">
-                    Sort
-                  </span>
-                  {SORT_OPTIONS.map((option) => (
-                    <Button
-                      key={option.value}
-                      variant={sortBy === option.value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSortBy(option.value)}
-                      className={`h-7 rounded-full px-3 text-[11px] transition-all ${
-                        sortBy === option.value
-                          ? "border-gray-600 bg-gray-700 text-white"
-                          : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
-                      }`}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+                  <ArrowDownWideNarrow
+                    className="h-3.5 w-3.5 shrink-0 text-gray-600"
+                    aria-hidden
+                  />
+                  <Select
+                    value={sortBy}
+                    onValueChange={(value) =>
+                      setSortBy(value as SortOption)
+                    }
+                  >
+                    <SelectTrigger
+                      aria-label="Sort recipes"
+                      className="h-7 w-auto gap-2 rounded-full border-gray-700/80 bg-transparent px-3 text-[11px] text-gray-200 hover:border-gray-600"
                     >
-                      {option.label}
-                    </Button>
-                  ))}
-                  <span className="mx-1 hidden h-4 w-px bg-gray-700/70 sm:block" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-gray-700 bg-gray-900 text-gray-100">
+                      {SORT_OPTIONS.map((option) => {
+                        const unavailable =
+                          option.requiresFeedback && !feedbackReady;
+                        return (
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            disabled={unavailable}
+                            title={
+                              unavailable
+                                ? "Loading community reports..."
+                                : undefined
+                            }
+                            className="text-[12px]"
+                          >
+                            {option.label}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1437,12 +1520,9 @@ export default function RecipesPage() {
                     <Filter className="mr-1.5 h-3 w-3" />
                     Unfinished only
                   </Button>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-sm text-gray-400">
+                  <div className="ms-auto flex flex-wrap items-center gap-2">
                     <span
-                      className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-emerald-300/90"
+                      className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-sm text-emerald-300/90"
                       aria-live="polite"
                     >
                       {completedRecipeCount} / {tarkovRecipes.length} done
@@ -1483,10 +1563,7 @@ export default function RecipesPage() {
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
-                  </div>
-
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5">
+                    <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5 text-sm text-gray-400">
                       {filteredAndSortedItems.length} recipe
                       {filteredAndSortedItems.length === 1 ? "" : "s"}
                     </span>

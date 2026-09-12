@@ -77,6 +77,12 @@ describe("RecipesPage completion tracker", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    // Radix Select scrolls the active option into view on open; jsdom lacks it.
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      writable: true,
+      value: vi.fn(),
+    });
     useRecipeFeedbackStore.getState().resetForTesting();
     vi.stubGlobal(
       "fetch",
@@ -132,6 +138,19 @@ describe("RecipesPage completion tracker", () => {
     cleanup();
     vi.unstubAllGlobals();
   });
+
+  async function selectSort(label: string) {
+    const trigger = screen.getByRole("combobox", { name: "Sort recipes" });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    fireEvent.click(await screen.findByRole("option", { name: label }));
+  }
+
+  function checkboxOrder() {
+    return screen
+      .getAllByRole("checkbox")
+      .map((checkbox) => checkbox.getAttribute("aria-label"));
+  }
 
   it("uses the persisted Season item dataset", () => {
     localStorage.setItem("gameMode", "season");
@@ -228,7 +247,7 @@ describe("RecipesPage completion tracker", () => {
       ).toHaveAttribute("data-state", "checked");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Slowest First" }));
+    await selectSort("Slowest First");
 
     expect(
       screen.getByRole("checkbox", {
@@ -387,19 +406,190 @@ describe("RecipesPage completion tracker", () => {
     expect(screen.getByText("UFK1-W2TX-6NU9-89RW-M96B")).toBeInTheDocument();
   });
 
-  it("sorts HH:MM:SS crafting times numerically", () => {
+  it("sorts HH:MM:SS crafting times numerically", async () => {
     render(<RecipesPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Fastest First" }));
+    await selectSort("Fastest First");
 
-    const checkboxNames = screen
-      .getAllByRole("checkbox")
-      .map((checkbox) => checkbox.getAttribute("aria-label"));
-    expect(checkboxNames).toEqual([
+    expect(checkboxOrder()).toEqual([
       "Mark recipe requiring 1x Alpha sacrifice as completed",
       "Mark recipe requiring 5x BD dogtag •| Ferrum as completed",
       "Mark recipe requiring 1x Bravo sacrifice as completed",
     ]);
+  });
+
+  it("sorts by most recently worked, with unreported recipes last", async () => {
+    render(<RecipesPage />);
+
+    await waitFor(() => {
+      expect(useRecipeFeedbackStore.getState().loadStatus).toBe("ready");
+    });
+
+    useRecipeFeedbackStore.setState({
+      stats: {
+        "recipe-alpha": {
+          workedCount: 5,
+          didntWorkCount: 1,
+          lastWorkedAt: "2026-09-01T10:00:00.000Z",
+          lastWorkedMode: "pvp",
+          lastDidntWorkAt: null,
+          lastDidntWorkMode: null,
+        },
+        "recipe-bravo": {
+          workedCount: 8,
+          didntWorkCount: 0,
+          lastWorkedAt: "2026-09-05T10:00:00.000Z",
+          lastWorkedMode: "pve",
+          lastDidntWorkAt: null,
+          lastDidntWorkMode: null,
+        },
+      },
+    });
+
+    await selectSort("Recently Worked");
+
+    expect(checkboxOrder()).toEqual([
+      "Mark recipe requiring 1x Bravo sacrifice as completed",
+      "Mark recipe requiring 1x Alpha sacrifice as completed",
+      "Mark recipe requiring 5x BD dogtag •| Ferrum as completed",
+    ]);
+  });
+
+  it("sorts by most recently failed, with clean recipes last", async () => {
+    render(<RecipesPage />);
+
+    await waitFor(() => {
+      expect(useRecipeFeedbackStore.getState().loadStatus).toBe("ready");
+    });
+
+    useRecipeFeedbackStore.setState({
+      stats: {
+        "recipe-alpha": {
+          workedCount: 5,
+          didntWorkCount: 2,
+          lastWorkedAt: "2026-09-05T10:00:00.000Z",
+          lastWorkedMode: "pvp",
+          lastDidntWorkAt: "2026-09-04T10:00:00.000Z",
+          lastDidntWorkMode: "pvp",
+        },
+        "recipe-bravo": {
+          workedCount: 8,
+          didntWorkCount: 1,
+          lastWorkedAt: "2026-09-05T10:00:00.000Z",
+          lastWorkedMode: "pve",
+          lastDidntWorkAt: "2026-09-02T10:00:00.000Z",
+          lastDidntWorkMode: "pve",
+        },
+      },
+    });
+
+    await selectSort("Recently Failed");
+
+    expect(checkboxOrder()).toEqual([
+      "Mark recipe requiring 1x Alpha sacrifice as completed",
+      "Mark recipe requiring 1x Bravo sacrifice as completed",
+      "Mark recipe requiring 5x BD dogtag •| Ferrum as completed",
+    ]);
+  });
+
+  it("prefers community recency in the selected game mode", async () => {
+    localStorage.setItem("gameMode", "pve");
+    render(<RecipesPage />);
+
+    await waitFor(() => {
+      expect(useRecipeFeedbackStore.getState().loadStatus).toBe("ready");
+    });
+
+    useRecipeFeedbackStore.setState({
+      stats: {
+        "recipe-alpha": {
+          workedCount: 5,
+          didntWorkCount: 0,
+          lastWorkedAt: "2026-09-05T10:00:00.000Z",
+          lastWorkedMode: "pvp",
+          lastDidntWorkAt: null,
+          lastDidntWorkMode: null,
+          modes: {
+            pvp: {
+              worked: 5,
+              didntWork: 0,
+              lastWorkedAt: "2026-09-05T10:00:00.000Z",
+              lastDidntWorkAt: null,
+            },
+            pve: {
+              worked: 1,
+              didntWork: 0,
+              lastWorkedAt: "2026-09-02T10:00:00.000Z",
+              lastDidntWorkAt: null,
+            },
+            season: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+          },
+        },
+        "recipe-bravo": {
+          workedCount: 8,
+          didntWorkCount: 0,
+          lastWorkedAt: "2026-09-01T10:00:00.000Z",
+          lastWorkedMode: "pve",
+          lastDidntWorkAt: null,
+          lastDidntWorkMode: null,
+          modes: {
+            pvp: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+            pve: {
+              worked: 8,
+              didntWork: 0,
+              lastWorkedAt: "2026-09-03T10:00:00.000Z",
+              lastDidntWorkAt: null,
+            },
+            season: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+          },
+        },
+      },
+    });
+
+    await selectSort("Recently Worked");
+
+    expect(checkboxOrder()).toEqual([
+      "Mark recipe requiring 1x Bravo sacrifice as completed",
+      "Mark recipe requiring 1x Alpha sacrifice as completed",
+      "Mark recipe requiring 5x BD dogtag •| Ferrum as completed",
+    ]);
+  });
+
+  it("disables community sorts until reports load", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
+    render(<RecipesPage />);
+
+    const trigger = screen.getByRole("combobox", { name: "Sort recipes" });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+
+    expect(
+      await screen.findByRole("option", { name: "Recently Worked" }),
+    ).toHaveAttribute("aria-disabled", "true");
+    expect(
+      screen.getByRole("option", { name: "Recently Failed" }),
+    ).toHaveAttribute("aria-disabled", "true");
+    expect(
+      screen.getByRole("option", { name: "Fastest First" }),
+    ).not.toHaveAttribute("aria-disabled", "true");
   });
 
   it("keeps the supplied reward image when API item data is available", () => {
