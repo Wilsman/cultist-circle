@@ -449,12 +449,19 @@ describe("Cloudflare recipe feedback API", () => {
       last_worked_at: "2026-09-03T12:00:00.000Z",
       last_worked_mode: "pvp" as const,
       last_didnt_work_at: null,
+      last_didnt_work_mode: null,
       worked_pvp: 1,
       worked_pve: 0,
       worked_season: 0,
       didnt_work_pvp: 0,
       didnt_work_pve: 0,
       didnt_work_season: 0,
+      last_worked_pvp_at: null,
+      last_worked_pve_at: null,
+      last_worked_season_at: null,
+      last_didnt_work_pvp_at: null,
+      last_didnt_work_pve_at: null,
+      last_didnt_work_season_at: null,
     },
   }: {
     batchSuccess?: boolean;
@@ -466,12 +473,19 @@ describe("Cloudflare recipe feedback API", () => {
       last_worked_at: string | null;
       last_worked_mode: "pvp" | "pve" | "season" | null;
       last_didnt_work_at: string | null;
+      last_didnt_work_mode: "pvp" | "pve" | "season" | null;
       worked_pvp: number;
       worked_pve: number;
       worked_season: number;
       didnt_work_pvp: number;
       didnt_work_pve: number;
       didnt_work_season: number;
+      last_worked_pvp_at: string | null;
+      last_worked_pve_at: string | null;
+      last_worked_season_at: string | null;
+      last_didnt_work_pvp_at: string | null;
+      last_didnt_work_pve_at: string | null;
+      last_didnt_work_season_at: string | null;
     };
   } = {}) {
     const batchMock = batchError
@@ -570,8 +584,81 @@ describe("Cloudflare recipe feedback API", () => {
         },
       },
     });
-    expect(prepareMock).toHaveBeenCalledTimes(2);
+    expect(prepareMock).toHaveBeenCalledTimes(1);
     expect(limitMock).not.toHaveBeenCalled();
+    expect(
+      prepareMock.mock.calls.some(([query]) =>
+        /FROM recipe_feedback(?!_stats)/.test(String(query)),
+      ),
+    ).toBe(false);
+    expect(
+      prepareMock.mock.calls.some(([query]) =>
+        String(query).includes("GROUP BY"),
+      ),
+    ).toBe(false);
+  });
+
+  test("serves materialized per-mode recency without touching raw votes", async () => {
+    const { env } = createRecipeEnvironment({
+      stats: {
+        recipe_id: regularRecipeId,
+        worked_count: 2,
+        didnt_work_count: 1,
+        last_worked_at: "2026-09-03T12:00:00.000Z",
+        last_worked_mode: "pve",
+        last_didnt_work_at: "2026-09-04T12:00:00.000Z",
+        last_didnt_work_mode: "season",
+        worked_pvp: 1,
+        worked_pve: 1,
+        worked_season: 0,
+        didnt_work_pvp: 0,
+        didnt_work_pve: 0,
+        didnt_work_season: 1,
+        last_worked_pvp_at: "2026-09-02T12:00:00.000Z",
+        last_worked_pve_at: "2026-09-03T12:00:00.000Z",
+        last_worked_season_at: null,
+        last_didnt_work_pvp_at: null,
+        last_didnt_work_pve_at: null,
+        last_didnt_work_season_at: "2026-09-04T12:00:00.000Z",
+      },
+    });
+
+    const response = await handleRequest(makeRecipeRequest("GET"), env);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      data: {
+        [regularRecipeId]: {
+          workedCount: 2,
+          didntWorkCount: 1,
+          lastWorkedAt: "2026-09-03T12:00:00.000Z",
+          lastWorkedMode: "pve",
+          lastDidntWorkAt: "2026-09-04T12:00:00.000Z",
+          lastDidntWorkMode: "season",
+          modes: {
+            pvp: {
+              worked: 1,
+              didntWork: 0,
+              lastWorkedAt: "2026-09-02T12:00:00.000Z",
+              lastDidntWorkAt: null,
+            },
+            pve: {
+              worked: 1,
+              didntWork: 0,
+              lastWorkedAt: "2026-09-03T12:00:00.000Z",
+              lastDidntWorkAt: null,
+            },
+            season: {
+              worked: 0,
+              didntWork: 1,
+              lastWorkedAt: null,
+              lastDidntWorkAt: "2026-09-04T12:00:00.000Z",
+            },
+          },
+        },
+      },
+    });
   });
 
   test("writes a new vote and returns authoritative totals", async () => {
@@ -649,9 +736,23 @@ describe("Cloudflare recipe feedback API", () => {
         String(query).includes("SELECT vote, game_mode"),
       ),
     ).toBe(false);
+    expect(
+      prepareMock.mock.calls.some(([query]) =>
+        String(query).includes("GROUP BY"),
+      ),
+    ).toBe(false);
     expect(String(prepareMock.mock.calls[0][0])).toContain(
       "WHERE recipe_feedback.vote IS NOT excluded.vote",
     );
+    const rebuildQuery: string = prepareMock.mock.calls
+      .map((call) => String(call[0]))
+      .find((query) =>
+        query.includes("INSERT INTO recipe_feedback_stats"),
+      )!;
+    expect(rebuildQuery).toContain("last_didnt_work_at");
+    expect(rebuildQuery).toContain("last_didnt_work_mode");
+    expect(rebuildQuery).toContain("last_worked_pvp_at");
+    expect(rebuildQuery).toContain("last_didnt_work_season_at");
   });
 
   test("accepts a game mode and stores it with the vote", async () => {

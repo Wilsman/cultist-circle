@@ -62,12 +62,19 @@ type RecipeStatsRow = {
   last_worked_at: string | null;
   last_worked_mode: RecipeGameMode | null;
   last_didnt_work_at: string | null;
+  last_didnt_work_mode: RecipeGameMode | null;
   worked_pvp: number | null;
   worked_pve: number | null;
   worked_season: number | null;
   didnt_work_pvp: number | null;
   didnt_work_pve: number | null;
   didnt_work_season: number | null;
+  last_worked_pvp_at: string | null;
+  last_worked_pve_at: string | null;
+  last_worked_season_at: string | null;
+  last_didnt_work_pvp_at: string | null;
+  last_didnt_work_pve_at: string | null;
+  last_didnt_work_season_at: string | null;
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -233,110 +240,44 @@ async function hashClientId(clientId: string): Promise<string> {
   ).join("");
 }
 
-type ModeRecency = Record<
-  string,
-  Partial<Record<RecipeGameMode, Partial<Record<RecipeVote, string>>>>
->;
-
-type ModeRecencyRow = {
-  recipe_id: string;
-  game_mode: RecipeGameMode | null;
-  vote: RecipeVote | null;
-  last_at: string | null;
-};
-
-function isRecipeGameMode(value: unknown): value is RecipeGameMode {
-  return (
-    typeof value === "string" &&
-    (RECIPE_GAME_MODES as readonly string[]).includes(value)
-  );
-}
-
-function buildModeRecency(rows: ModeRecencyRow[] | undefined): ModeRecency {
-  const recency: ModeRecency = {};
-  for (const row of rows ?? []) {
-    if (
-      !row ||
-      typeof row.recipe_id !== "string" ||
-      !isRecipeGameMode(row.game_mode) ||
-      (row.vote !== "worked" && row.vote !== "didnt_work") ||
-      typeof row.last_at !== "string"
-    ) {
-      continue;
-    }
-    const byRecipe = (recency[row.recipe_id] ??= {});
-    const byMode = (byRecipe[row.game_mode] ??= {});
-    byMode[row.vote] = row.last_at;
-  }
-  return recency;
-}
-
-function latestModeFor(
-  recency: ModeRecency[string] | undefined,
-  vote: RecipeVote,
-): RecipeGameMode | null {
-  if (!recency) return null;
-  let latestMode: RecipeGameMode | null = null;
-  let latestTime = -1;
-  for (const mode of RECIPE_GAME_MODES) {
-    const at = recency[mode]?.[vote];
-    if (!at) continue;
-    const time = new Date(at).getTime();
-    if (isNaN(time) || time <= latestTime) continue;
-    latestTime = time;
-    latestMode = mode;
-  }
-  return latestMode;
-}
-
-function mapRecipeStats(
-  row: RecipeStatsRow | null,
-  recency?: ModeRecency[string],
-): RecipeFeedbackStats {
+function mapRecipeStats(row: RecipeStatsRow | null): RecipeFeedbackStats {
   const modes = {
     pvp: {
       worked: Number(row?.worked_pvp ?? 0),
       didntWork: Number(row?.didnt_work_pvp ?? 0),
-      lastWorkedAt: recency?.pvp?.worked ?? null,
-      lastDidntWorkAt: recency?.pvp?.didnt_work ?? null,
+      lastWorkedAt: row?.last_worked_pvp_at ?? null,
+      lastDidntWorkAt: row?.last_didnt_work_pvp_at ?? null,
     },
     pve: {
       worked: Number(row?.worked_pve ?? 0),
       didntWork: Number(row?.didnt_work_pve ?? 0),
-      lastWorkedAt: recency?.pve?.worked ?? null,
-      lastDidntWorkAt: recency?.pve?.didnt_work ?? null,
+      lastWorkedAt: row?.last_worked_pve_at ?? null,
+      lastDidntWorkAt: row?.last_didnt_work_pve_at ?? null,
     },
     season: {
       worked: Number(row?.worked_season ?? 0),
       didntWork: Number(row?.didnt_work_season ?? 0),
-      lastWorkedAt: recency?.season?.worked ?? null,
-      lastDidntWorkAt: recency?.season?.didnt_work ?? null,
+      lastWorkedAt: row?.last_worked_season_at ?? null,
+      lastDidntWorkAt: row?.last_didnt_work_season_at ?? null,
     },
   } satisfies RecipeFeedbackStats["modes"];
-  const lastDidntWorkAt = row?.last_didnt_work_at ?? null;
   return {
     workedCount: Number(row?.worked_count ?? 0),
     didntWorkCount: Number(row?.didnt_work_count ?? 0),
     lastWorkedAt: row?.last_worked_at ?? null,
     lastWorkedMode: row?.last_worked_mode ?? null,
-    lastDidntWorkAt,
-    lastDidntWorkMode: lastDidntWorkAt
-      ? latestModeFor(recency, "didnt_work")
-      : null,
+    lastDidntWorkAt: row?.last_didnt_work_at ?? null,
+    lastDidntWorkMode: row?.last_didnt_work_mode ?? null,
     modes,
   };
 }
 
 const RECIPE_STATS_COLUMNS = `recipe_id, worked_count, didnt_work_count, last_worked_at, last_worked_mode,
+   last_didnt_work_at, last_didnt_work_mode,
    worked_pvp, worked_pve, worked_season,
-   didnt_work_pvp, didnt_work_pve, didnt_work_season`;
-
-// The stats table only stores the last worked timestamp, so the latest
-// "didn't work" report is derived from the raw votes at read time.
-const LAST_DIDNT_WORK_SUBQUERY = `(SELECT MAX(updated_at)
-     FROM recipe_feedback AS latest_didnt_work
-     WHERE latest_didnt_work.recipe_id = recipe_feedback_stats.recipe_id
-       AND latest_didnt_work.vote = 'didnt_work') AS last_didnt_work_at`;
+   didnt_work_pvp, didnt_work_pve, didnt_work_season,
+   last_worked_pvp_at, last_worked_pve_at, last_worked_season_at,
+   last_didnt_work_pvp_at, last_didnt_work_pve_at, last_didnt_work_season_at`;
 
 async function handleRecipeFeedback(
   request: Request,
@@ -367,36 +308,15 @@ async function handleRecipeFeedback(
     }
 
     try {
+      // All recency timestamps are materialized in recipe_feedback_stats by
+      // the write path, so this stays a bounded scan of one small table no
+      // matter how many raw votes accumulate.
       const result = await env.DB.prepare(
-        `SELECT ${RECIPE_STATS_COLUMNS},
-          ${LAST_DIDNT_WORK_SUBQUERY}
+        `SELECT ${RECIPE_STATS_COLUMNS}
          FROM recipe_feedback_stats`,
       ).all<RecipeStatsRow>();
-      // Per-mode last-report times come from the raw votes so the popover can
-      // show e.g. "PVE worked 1h ago" instead of just totals.
-      let recency: ModeRecency = {};
-      try {
-        const recencyResult = await env.DB.prepare(
-          `SELECT recipe_id, game_mode, vote, MAX(updated_at) AS last_at
-           FROM recipe_feedback
-           WHERE game_mode IS NOT NULL
-           GROUP BY recipe_id, game_mode, vote`,
-        ).all<ModeRecencyRow>();
-        recency = buildModeRecency(recencyResult.results);
-      } catch (error) {
-        // Totals remain useful without per-mode times; degrade gracefully.
-        console.error(
-          JSON.stringify({
-            event: "recipe_feedback_recency_failed",
-            error: error instanceof Error ? error.message : "Unknown error",
-          }),
-        );
-      }
       const data = Object.fromEntries(
-        result.results.map((row) => [
-          row.recipe_id,
-          mapRecipeStats(row, recency[row.recipe_id]),
-        ]),
+        result.results.map((row) => [row.recipe_id, mapRecipeStats(row)]),
       );
 
       return jsonResponse(
@@ -521,8 +441,11 @@ async function handleRecipeFeedback(
     const rebuildAggregate = env.DB.prepare(
       `INSERT INTO recipe_feedback_stats
          (recipe_id, worked_count, didnt_work_count, last_worked_at, last_worked_mode,
+          last_didnt_work_at, last_didnt_work_mode,
           worked_pvp, worked_pve, worked_season,
-          didnt_work_pvp, didnt_work_pve, didnt_work_season)
+          didnt_work_pvp, didnt_work_pve, didnt_work_season,
+          last_worked_pvp_at, last_worked_pve_at, last_worked_season_at,
+          last_didnt_work_pvp_at, last_didnt_work_pve_at, last_didnt_work_season_at)
        SELECT ?,
          COALESCE(SUM(CASE WHEN vote = 'worked' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'didnt_work' THEN 1 ELSE 0 END), 0),
@@ -532,12 +455,24 @@ async function handleRecipeFeedback(
            WHERE latest.recipe_id = ? AND latest.vote = 'worked'
            ORDER BY latest.updated_at DESC
            LIMIT 1),
+         MAX(CASE WHEN vote = 'didnt_work' THEN updated_at END),
+         (SELECT latest.game_mode
+            FROM recipe_feedback AS latest
+           WHERE latest.recipe_id = ? AND latest.vote = 'didnt_work'
+           ORDER BY latest.updated_at DESC
+           LIMIT 1),
          COALESCE(SUM(CASE WHEN vote = 'worked' AND game_mode = 'pvp' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'worked' AND game_mode = 'pve' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'worked' AND game_mode = 'season' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'pvp' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'pve' THEN 1 ELSE 0 END), 0),
-         COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'season' THEN 1 ELSE 0 END), 0)
+         COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'season' THEN 1 ELSE 0 END), 0),
+         MAX(CASE WHEN vote = 'worked' AND game_mode = 'pvp' THEN updated_at END),
+         MAX(CASE WHEN vote = 'worked' AND game_mode = 'pve' THEN updated_at END),
+         MAX(CASE WHEN vote = 'worked' AND game_mode = 'season' THEN updated_at END),
+         MAX(CASE WHEN vote = 'didnt_work' AND game_mode = 'pvp' THEN updated_at END),
+         MAX(CASE WHEN vote = 'didnt_work' AND game_mode = 'pve' THEN updated_at END),
+         MAX(CASE WHEN vote = 'didnt_work' AND game_mode = 'season' THEN updated_at END)
        FROM recipe_feedback
        WHERE recipe_id = ?
        ON CONFLICT(recipe_id) DO UPDATE SET
@@ -545,21 +480,26 @@ async function handleRecipeFeedback(
          didnt_work_count = excluded.didnt_work_count,
          last_worked_at = excluded.last_worked_at,
          last_worked_mode = excluded.last_worked_mode,
+         last_didnt_work_at = excluded.last_didnt_work_at,
+         last_didnt_work_mode = excluded.last_didnt_work_mode,
          worked_pvp = excluded.worked_pvp,
          worked_pve = excluded.worked_pve,
          worked_season = excluded.worked_season,
          didnt_work_pvp = excluded.didnt_work_pvp,
          didnt_work_pve = excluded.didnt_work_pve,
-         didnt_work_season = excluded.didnt_work_season`,
-    ).bind(payload.recipeId, payload.recipeId, payload.recipeId);
+         didnt_work_season = excluded.didnt_work_season,
+         last_worked_pvp_at = excluded.last_worked_pvp_at,
+         last_worked_pve_at = excluded.last_worked_pve_at,
+         last_worked_season_at = excluded.last_worked_season_at,
+         last_didnt_work_pvp_at = excluded.last_didnt_work_pvp_at,
+         last_didnt_work_pve_at = excluded.last_didnt_work_pve_at,
+         last_didnt_work_season_at = excluded.last_didnt_work_season_at`,
+    ).bind(payload.recipeId, payload.recipeId, payload.recipeId, payload.recipeId);
     const readAggregate = env.DB.prepare(
-      `SELECT ${RECIPE_STATS_COLUMNS},
-        (SELECT MAX(updated_at)
-         FROM recipe_feedback AS latest_didnt_work
-         WHERE latest_didnt_work.recipe_id = ? AND latest_didnt_work.vote = 'didnt_work') AS last_didnt_work_at
+      `SELECT ${RECIPE_STATS_COLUMNS}
        FROM recipe_feedback_stats
        WHERE recipe_id = ?`,
-    ).bind(payload.recipeId, payload.recipeId);
+    ).bind(payload.recipeId);
 
     const results = await env.DB.batch<RecipeStatsRow>([
       mutation,
@@ -569,30 +509,7 @@ async function handleRecipeFeedback(
     if (results.some((result) => !result.success)) {
       throw new Error("D1 recipe feedback transaction was unsuccessful");
     }
-    let singleRecency: ModeRecency[string] | undefined;
-    try {
-      const recencyResult = await env.DB.prepare(
-        `SELECT recipe_id, game_mode, vote, MAX(updated_at) AS last_at
-         FROM recipe_feedback
-         WHERE recipe_id = ? AND game_mode IS NOT NULL
-         GROUP BY game_mode, vote`,
-      )
-        .bind(payload.recipeId)
-        .all<ModeRecencyRow>();
-      singleRecency = buildModeRecency(recencyResult.results)[payload.recipeId];
-    } catch (error) {
-      console.error(
-        JSON.stringify({
-          event: "recipe_feedback_recency_failed",
-          recipeId: payload.recipeId,
-          error: error instanceof Error ? error.message : "Unknown error",
-        }),
-      );
-    }
-    const stats = mapRecipeStats(
-      results[2]?.results?.[0] ?? null,
-      singleRecency,
-    );
+    const stats = mapRecipeStats(results[2]?.results?.[0] ?? null);
     return jsonResponse(
       {
         success: true,
