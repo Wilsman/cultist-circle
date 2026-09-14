@@ -138,6 +138,10 @@ export const InlineCitationCarouselIndex = ({
       return;
     }
 
+    // Initial sync with the external embla store on subscribe. The snap
+    // count and index can only be read from the imperative api after mount,
+    // so they cannot be derived during render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCount(api.scrollSnapList().length);
     setCurrent(api.selectedScrollSnap() + 1);
 

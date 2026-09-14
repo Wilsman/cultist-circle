@@ -110,6 +110,10 @@ const Carousel = React.forwardRef<
         return
       }
 
+      // Initial sync with the external embla store on subscribe. The button
+      // enabled state can only be read from the imperative api after mount,
+      // so it cannot be derived during render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       onSelect(api)
       api.on("reInit", onSelect)
       api.on("select", onSelect)

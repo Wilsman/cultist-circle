@@ -472,7 +472,13 @@ function AppContent({ contributors = [] }: AppProps) {
     }
   }, [hasError, t]);
 
-  // Initialize client-side state (run once after data is available)
+  // Initialize client-side state (run once after data is available).
+  // This stays an effect on purpose: it hydrates from localStorage (which
+  // does not exist during SSR prerendering) and it only runs once the
+  // asynchronously fetched item data arrives, so it cannot be a lazy state
+  // initializer. It also performs idempotent one-time storage migrations.
+  /* eslint-disable react-hooks/set-state-in-effect -- one-time async-gated
+     client hydration from localStorage with storage migrations; see above. */
   useEffect(() => {
     if (didInitStateRef.current) return;
     // Only initialize if we have data
@@ -601,29 +607,30 @@ function AppContent({ contributors = [] }: AppProps) {
     // Mark initialization complete
     didInitStateRef.current = true;
   }, [rawItemsData]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  useEffect(() => {
-    if (!didInitStateRef.current) {
-      return;
+  // Remap selected items when the underlying data changes. Render-phase
+  // adjustment with previous-data tracking replaces the effect to avoid
+  // cascading renders. The functional update returns the current state
+  // untouched when nothing changed, so this no-ops most renders.
+  const [prevRawItemsData, setPrevRawItemsData] = useState(rawItemsData);
+  if (prevRawItemsData !== rawItemsData) {
+    setPrevRawItemsData(rawItemsData);
+    if (rawItemsData && rawItemsData.length > 0) {
+      setSelectedItems((currentSelectedItems) => {
+        const remappedSelectedItems = remapSelectedItemsToCurrentData(
+          currentSelectedItems,
+          rawItemsData,
+        );
+
+        const hasChanged = remappedSelectedItems.some(
+          (item, index) => item !== currentSelectedItems[index],
+        );
+
+        return hasChanged ? remappedSelectedItems : currentSelectedItems;
+      });
     }
-
-    if (!rawItemsData || rawItemsData.length === 0) {
-      return;
-    }
-
-    setSelectedItems((currentSelectedItems) => {
-      const remappedSelectedItems = remapSelectedItemsToCurrentData(
-        currentSelectedItems,
-        rawItemsData,
-      );
-
-      const hasChanged = remappedSelectedItems.some(
-        (item, index) => item !== currentSelectedItems[index],
-      );
-
-      return hasChanged ? remappedSelectedItems : currentSelectedItems;
-    });
-  }, [rawItemsData]);
+  }
 
   // Auto-trigger notifications after onboarding completion and data load
   useEffect(() => {
@@ -1340,6 +1347,12 @@ function AppContent({ contributors = [] }: AppProps) {
     );
 
   // Handler to update selected item
+  // Declared before use so the setter is initialized before this callback
+  // is defined (react-hooks/immutability).
+  const [loadingSlots, setLoadingSlots] = useState<boolean[]>(
+    Array(5).fill(false),
+  );
+
   const handleItemSelect = useCallback(
     (
       index: number,
@@ -1935,12 +1948,9 @@ function AppContent({ contributors = [] }: AppProps) {
       // Now that we have cleared out the old data, update the version in local storage
       localStorage.setItem("appVersion", CURRENT_VERSION);
 
-      // Reset all state to defaults to prevent immediate re-saving to localStorage
-      setSortOption("az");
-      setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
-      setExcludeIncompatible(true);
-      setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
-      setOverriddenPrices({});
+      // NOTE: no state resets here. The synchronous reload below discards
+      // this render's state updates before React could commit them, so
+      // setState calls would be dead code (and trip set-state-in-effect).
 
       // Force a page reload to ensure all state is properly reset
       window.location.reload();
@@ -1973,11 +1983,6 @@ function AppContent({ contributors = [] }: AppProps) {
       description: t("All item fields have been cleared."),
     });
   }, [t]);
-
-  // Add loading state
-  const [loadingSlots, setLoadingSlots] = useState<boolean[]>(
-    Array(5).fill(false),
-  );
 
   // Reset overrides and exclusions
   const resetOverridesAndExclusions = useCallback(() => {
