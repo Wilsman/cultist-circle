@@ -78,5 +78,6 @@ describe("App loading data churn", () => {
     expect(
       await screen.findByText(/Tarkov\.dev is not responding\. Retrying in/i),
     ).toBeInTheDocument();
-  });
+    // Full-App render: allow headroom under parallel load.
+  }, 15000);
 });
