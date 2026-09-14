@@ -613,23 +613,28 @@ function AppContent({ contributors = [] }: AppProps) {
   // adjustment with previous-data tracking replaces the effect to avoid
   // cascading renders. The functional update returns the current state
   // untouched when nothing changed, so this no-ops most renders.
+  // NOTE: the non-empty gate must come first. useItemsData returns a fresh
+  // `data || []` array on every render while loading, so tracking prev data
+  // unconditionally would schedule a re-render on every render (React #301).
   const [prevRawItemsData, setPrevRawItemsData] = useState(rawItemsData);
-  if (prevRawItemsData !== rawItemsData) {
+  if (
+    rawItemsData &&
+    rawItemsData.length > 0 &&
+    prevRawItemsData !== rawItemsData
+  ) {
     setPrevRawItemsData(rawItemsData);
-    if (rawItemsData && rawItemsData.length > 0) {
-      setSelectedItems((currentSelectedItems) => {
-        const remappedSelectedItems = remapSelectedItemsToCurrentData(
-          currentSelectedItems,
-          rawItemsData,
-        );
+    setSelectedItems((currentSelectedItems) => {
+      const remappedSelectedItems = remapSelectedItemsToCurrentData(
+        currentSelectedItems,
+        rawItemsData,
+      );
 
-        const hasChanged = remappedSelectedItems.some(
-          (item, index) => item !== currentSelectedItems[index],
-        );
+      const hasChanged = remappedSelectedItems.some(
+        (item, index) => item !== currentSelectedItems[index],
+      );
 
-        return hasChanged ? remappedSelectedItems : currentSelectedItems;
-      });
-    }
+      return hasChanged ? remappedSelectedItems : currentSelectedItems;
+    });
   }
 
   // Auto-trigger notifications after onboarding completion and data load
