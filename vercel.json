@@ -1,4 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "bun run i18n:generate && node ./node_modules/next/dist/bin/next build"
+  "buildCommand": "bun run i18n:generate && node ./node_modules/next/dist/bin/next build",
+  "git": {
+    "deploymentEnabled": {
+      "master": true,
+      "*": false,
+      "**": false
+    }
+  }
 }
