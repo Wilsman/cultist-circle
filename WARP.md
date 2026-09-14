@@ -63,7 +63,6 @@ npm run lint
 - `cloudflare/feedback/` - Feedback submission Worker, D1 migrations, and Wrangler configuration
 - `components/` - React components
   - `components/ui/` - Shadcn UI base components
-  - `components/ai-chatbot/` - AI chatbot widget
   - `components/ItemSelector/` - Item selection components
 - `hooks/` - Custom React hooks
 - `contexts/` - React Context providers
