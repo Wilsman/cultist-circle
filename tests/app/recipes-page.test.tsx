@@ -265,7 +265,7 @@ describe("RecipesPage completion tracker", () => {
       }),
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Unfinished only", exact: true }),
+      screen.getByRole("button", { name: "Unfinished only" }),
     );
 
     expect(
@@ -280,7 +280,7 @@ describe("RecipesPage completion tracker", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Reset progress", exact: true }),
+      screen.getByRole("button", { name: "Reset progress" }),
     );
 
     const resetDialog = screen.getByRole("alertdialog");
@@ -291,7 +291,6 @@ describe("RecipesPage completion tracker", () => {
     fireEvent.click(
       within(resetDialog).getByRole("button", {
         name: "Reset progress",
-        exact: true,
       }),
     );
 

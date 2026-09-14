@@ -172,7 +172,7 @@ function createEnvironment({
 
   const env: Env = {
     DB: {
-      prepare: prepareMock,
+      prepare: prepareMock as unknown as Env["DB"]["prepare"],
       batch: vi.fn(),
       exec: vi.fn(),
       withSession: vi.fn(),

@@ -14,6 +14,9 @@ const config = [
     name: "cultist-circle/ignores",
     ignores: [
       ".next/**",
+      "coverage/**",
+      "output/**",
+      "**/.wrangler/**",
       "tests/**",
       "**/*.test.ts",
       "**/*.test.tsx",

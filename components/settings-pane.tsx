@@ -168,24 +168,32 @@ export default function SettingsPane({
     onFleaPriceTypeChange(currentFleaPriceType);
   }, [currentFleaPriceType, onFleaPriceTypeChange]);
 
-  // Update local state if prop changes (e.g., initial load or reset)
-  useEffect(() => {
+  // Update local state if prop changes (e.g., initial load or reset).
+  // Render-phase adjustment replaces the effect to avoid cascading renders.
+  const [prevFleaPriceType, setPrevFleaPriceType] = useState(fleaPriceType);
+  if (fleaPriceType !== prevFleaPriceType) {
+    setPrevFleaPriceType(fleaPriceType);
     setCurrentFleaPriceType(fleaPriceType);
-  }, [fleaPriceType]);
+  }
 
   // Update parent when price mode changes
   useEffect(() => {
     onPriceModeChange(currentPriceMode);
   }, [currentPriceMode, onPriceModeChange]);
 
-  // Sync local price mode when prop changes
-  useEffect(() => {
+  // Sync local price mode when prop changes (render-phase adjustment).
+  const [prevPriceMode, setPrevPriceMode] = useState(priceMode);
+  if (priceMode !== prevPriceMode) {
+    setPrevPriceMode(priceMode);
     setCurrentPriceMode(priceMode);
-  }, [priceMode]);
+  }
 
-  useEffect(() => {
+  const [prevUseLastOfferCountFilter, setPrevUseLastOfferCountFilter] =
+    useState(useLastOfferCountFilter);
+  if (useLastOfferCountFilter !== prevUseLastOfferCountFilter) {
+    setPrevUseLastOfferCountFilter(useLastOfferCountFilter);
     setCurrentUseLastOfferCountFilter(useLastOfferCountFilter);
-  }, [useLastOfferCountFilter]);
+  }
 
   useEffect(() => {
     onUseLastOfferCountFilterChange(currentUseLastOfferCountFilter);

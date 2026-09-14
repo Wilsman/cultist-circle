@@ -80,7 +80,7 @@ const response = (body: unknown, status = 200) =>
     status,
     headers: { get: () => null },
     json: async () => body,
-  }) as Response;
+  }) as unknown as Response;
 
 function installJsonFetchMock(
   options: {
@@ -88,7 +88,7 @@ function installJsonFetchMock(
     germanBody?: { data: Record<string, string> };
   } = {},
 ) {
-  return vi.spyOn(global, "fetch" as any).mockImplementation(async (input) => {
+  return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = String(input);
     if (url.endsWith("/regular/items")) return response(itemResponse);
     if (url.endsWith("/regular/items_en")) return response(englishResponse);
@@ -307,7 +307,7 @@ describe("Tarkov.dev JSON fetchers", () => {
       },
     };
     const fetchMock = vi
-      .spyOn(global, "fetch" as any)
+      .spyOn(globalThis, "fetch")
       .mockImplementation(async (input, init) => {
         const url = String(input);
         if (url.endsWith("/regular/items")) return response({}, 404);
