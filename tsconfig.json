@@ -16,6 +16,15 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    // Only auto-include these @types packages globally. In particular this
+    // keeps a stale node_modules/@types/jest (e.g. restored from a deploy
+    // cache after it was removed from devDependencies) from shadowing the
+    // vitest globals and breaking the production type-check. Test globals
+    // come from tests/vitest-globals.d.ts and jest-dom matchers from
+    // tests/setup.ts; all other @types packages resolve via imports.
+    "types": [
+      "node"
+    ],
     "plugins": [
       {
         "name": "next"
