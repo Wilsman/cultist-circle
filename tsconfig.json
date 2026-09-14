@@ -49,6 +49,11 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    "coverage",
+    "output",
+    "bun-test",
+    "**/.wrangler"
   ]
 }
