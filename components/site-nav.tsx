@@ -114,7 +114,7 @@ export function SiteNav() {
                       strokeWidth={1.8}
                     />
                     <span className="hidden md:inline">{t(label)}</span>
-                    {label === "Tracker" && (
+                    {(label === "Tracker" || label === "Stash Scan") && (
                       <span
                         aria-hidden
                         className="hidden rounded-sm border border-cyan-300/20 bg-cyan-300/[0.07] px-1.5 py-0.5 text-[8px] font-bold leading-none tracking-[0.12em] text-cyan-200/80 md:inline-flex"

@@ -45,13 +45,21 @@ export interface ScanErrorResponse {
     | "unreadable-image"
     | "rate-limited"
     | "busy"
-    | "warming-up";
+    | "warming-up"
+    | "unavailable";
   retryAfterSeconds?: number;
 }
 
 export const SCAN_LIMITS = {
+  /** Screenshots per scan session; the client uploads them one per request. */
   maxImages: 6,
-  maxBytesPerImage: 12 * 1024 * 1024,
+  /**
+   * Largest upload the API accepts. Vercel rejects request bodies over
+   * 4.5 MB, so the client downscales and re-encodes screenshots to fit.
+   */
+  maxBytesPerImage: 4 * 1024 * 1024,
+  /** Largest file the client accepts before preparing it. */
+  maxSourceBytes: 50 * 1024 * 1024,
   /** Decoded pixel cap per image (roughly 8K). */
   maxPixels: 7680 * 4320,
   acceptedTypes: ["image/png", "image/jpeg", "image/webp"],

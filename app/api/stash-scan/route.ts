@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import sharp from "sharp";
+import { decodeRgb } from "@/lib/stash-scan/index-builder";
 import {
   getIconIndex,
   getIndexStatus,
-  warmIconIndex,
+  isIndexUnavailable,
 } from "@/lib/stash-scan/index-store";
 import { scanImage } from "@/lib/stash-scan/scan";
 import {
@@ -15,12 +15,17 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/** A full 1440p container takes about a second of CPU; allow cold starts. */
+export const maxDuration = 60;
 
 /** How long a request waits for the icon index on a cold start. */
 const INDEX_WAIT_MS = 20000;
 /** Scans run one at a time; this many more may wait in line. */
 const MAX_QUEUED_SCANS = 8;
-/** Images per client IP per window. */
+/**
+ * Images per client IP per window. Both this and the queue are per server
+ * instance; on Vercel, pair them with a WAF rate limit rule on this path.
+ */
 const RATE_LIMIT_IMAGES = 30;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
@@ -82,7 +87,7 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> | null {
 }
 
 export async function GET() {
-  warmIconIndex();
+  await getIconIndex(0);
   return NextResponse.json(getIndexStatus());
 }
 
@@ -120,7 +125,7 @@ export async function POST(request: NextRequest) {
     if (file.size > SCAN_LIMITS.maxBytesPerImage) {
       return errorResponse(
         {
-          error: `Each image must be under ${Math.round(SCAN_LIMITS.maxBytesPerImage / 1024 / 1024)} MB.`,
+          error: `Each upload must be under ${Math.round(SCAN_LIMITS.maxBytesPerImage / 1024 / 1024)} MB.`,
           code: "image-too-large",
         },
         413,
@@ -141,6 +146,12 @@ export async function POST(request: NextRequest) {
   }
 
   const index = await getIconIndex(INDEX_WAIT_MS);
+  if (!index && isIndexUnavailable()) {
+    return errorResponse(
+      { error: "Stash Scan is not available on this deployment.", code: "unavailable" },
+      503,
+    );
+  }
   if (!index) {
     return errorResponse(
       {
@@ -157,22 +168,7 @@ export async function POST(request: NextRequest) {
   const scan = enqueue(async () => {
     const images: ScanImageResult[] = [];
     for (const buffer of buffers) {
-      const { data, info } = await sharp(buffer, {
-        limitInputPixels: SCAN_LIMITS.maxPixels,
-      })
-        .removeAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-      images.push(
-        await scanImage(
-          {
-            data,
-            width: info.width,
-            height: info.height,
-          },
-          index,
-        ),
-      );
+      images.push(await scanImage(await decodeRgb(buffer, SCAN_LIMITS.maxPixels), index));
     }
     return images;
   });

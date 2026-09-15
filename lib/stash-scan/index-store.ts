@@ -1,44 +1,30 @@
-// Server-side icon index lifecycle: fetch the Tarkov.dev catalog, keep grid
-// images in a disk cache, build the template index and persist it so a
-// restart loads in about a second instead of rebuilding.
+// Runtime icon index.
+//
+// Every deployment loads the index built at build time
+// (scripts/build-stash-scan-index.ts, written to .stash-scan/). Vercel stops
+// there: its functions cannot write to the project directory and have no
+// long-lived timers, so new items arrive with the next deploy. A long-running
+// self-hosted server additionally checks the catalog daily and rebuilds into
+// .cache/stash-scan/, preferring whichever index is newer.
 
-import { createHash } from "node:crypto";
-import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import sharp from "sharp";
-import type { RgbImage } from "./grid";
-import { FEATURE_VERSION, type QuantisedVector } from "./features";
-import {
-  addCatalogIcon,
-  addTemplate,
-  createIconIndex,
-  type IconIndex,
-} from "./matcher";
+import { buildIndex, catalogHash, fetchCatalog } from "./index-builder";
+import { decodeIndex, encodeIndex, indexFileName, type IndexMetadata } from "./index-file";
+import type { IconIndex } from "./matcher";
 
-const JSON_API_URL =
-  process.env.TARKOV_JSON_URL ??
-  process.env.NEXT_PUBLIC_TARKOV_JSON_URL ??
-  "https://json.tarkov.dev";
-
-// The cache is runtime data; keep the bundler's file tracing out of it.
+// Runtime data: keep the bundler's file tracing out of these paths. The
+// bundled index is added to the scan route by next.config.mjs instead.
+const BUNDLED_DIR = path.join(/* turbopackIgnore: true */ process.cwd(), ".stash-scan");
 const CACHE_DIR =
   process.env.STASH_SCAN_CACHE_DIR ??
   path.join(/* turbopackIgnore: true */ process.cwd(), ".cache", "stash-scan");
 
-/** Grid images are re-downloaded after this long. */
-const IMAGE_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
-/** How often the catalog is checked for new or changed items. */
+/** How often a self-hosted server checks the catalog for new or changed items. */
 const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const DOWNLOAD_CONCURRENCY = 8;
-const REQUEST_TIMEOUT_MS = 20000;
 
-interface CatalogEntry {
-  id: string;
-  shortName: string;
-  width: number;
-  height: number;
-  gridImageLink: string;
-}
+/** Vercel and other serverless hosts: serve the bundled index only. */
+const READ_ONLY = process.env.VERCEL === "1" || process.env.STASH_SCAN_READ_ONLY === "1";
 
 export interface IndexStatus {
   ready: boolean;
@@ -49,26 +35,10 @@ export interface IndexStatus {
   lastError: string | null;
 }
 
-interface JsonEnvelope<T> {
-  data: T;
-}
-
-interface JsonItem {
-  id: string;
-  shortName: string;
-  width?: number;
-  height?: number;
-  gridImageLink?: string;
-}
-
 interface StoreState {
-  current: {
-    index: IconIndex;
-    items: number;
-    builtAt: Date;
-    catalogHash: string;
-  } | null;
-  building: Promise<IconIndex> | null;
+  current: { index: IconIndex; metadata: IndexMetadata } | null;
+  loading: Promise<void> | null;
+  building: Promise<void> | null;
   lastError: string | null;
   refreshTimer: ReturnType<typeof setInterval> | null;
 }
@@ -80,6 +50,7 @@ const globalStore = globalThis as typeof globalThis & {
 };
 const state: StoreState = (globalStore.__stashScanIndexStore ??= {
   current: null,
+  loading: null,
   building: null,
   lastError: null,
   refreshTimer: null,
@@ -87,304 +58,109 @@ const state: StoreState = (globalStore.__stashScanIndexStore ??= {
 
 const log = (message: string) => console.log(`[stash-scan] ${message}`);
 
-const yieldToEventLoop = () => new Promise<void>((resolve) => setImmediate(resolve));
+// A function, not `state.current` inline: TypeScript keeps a property's
+// narrowing across awaits, but the state changes while callers wait.
+const currentIndex = (): IconIndex | null => state.current?.index ?? null;
 
-async function fetchWithTimeout(url: string): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+async function readIndex(dir: string) {
   try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText} (${url})`);
-    return response;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function fetchCatalog(): Promise<CatalogEntry[]> {
-  const [itemsResponse, englishResponse] = await Promise.all([
-    fetchWithTimeout(`${JSON_API_URL}/regular/items`),
-    fetchWithTimeout(`${JSON_API_URL}/regular/items_en`),
-  ]);
-  const items = (await itemsResponse.json()) as JsonEnvelope<{
-    items: Record<string, JsonItem>;
-  }>;
-  const english = (await englishResponse.json()) as JsonEnvelope<Record<string, string>>;
-
-  const entries: CatalogEntry[] = [];
-  for (const item of Object.values(items.data.items)) {
-    if (!item.gridImageLink || !item.width || !item.height) continue;
-    entries.push({
-      id: item.id,
-      shortName: english.data[item.shortName] ?? item.shortName,
-      width: item.width,
-      height: item.height,
-      gridImageLink: item.gridImageLink,
-    });
-  }
-  entries.sort((a, b) => a.id.localeCompare(b.id));
-  return entries;
-}
-
-function catalogHash(entries: CatalogEntry[]): string {
-  const hash = createHash("sha256");
-  hash.update(`v${FEATURE_VERSION}\n`);
-  for (const e of entries) {
-    hash.update(`${e.id}\t${e.shortName}\t${e.width}\t${e.height}\t${e.gridImageLink}\n`);
-  }
-  return hash.digest("hex").slice(0, 16);
-}
-
-async function cachedGridImage(entry: CatalogEntry): Promise<Buffer | null> {
-  const file = path.join(/* turbopackIgnore: true */ CACHE_DIR, "grid", `${entry.id}.webp`);
-  try {
-    const info = await stat(file);
-    if (Date.now() - info.mtimeMs < IMAGE_MAX_AGE_MS) return await readFile(file);
-  } catch {
-    // Not cached yet.
-  }
-
-  try {
-    const response = await fetchWithTimeout(entry.gridImageLink);
-    const bytes = Buffer.from(await response.arrayBuffer());
-    const temporary = `${file}.${process.pid}.tmp`;
-    await writeFile(temporary, bytes);
-    await rename(temporary, file);
-    return bytes;
-  } catch (error) {
-    // Fall back to a stale copy rather than dropping the item.
-    try {
-      return await readFile(file);
-    } catch {
-      log(`could not fetch grid image for ${entry.id}: ${String(error)}`);
-      return null;
-    }
-  }
-}
-
-async function decode(bytes: Buffer): Promise<RgbImage> {
-  const { data, info } = await sharp(bytes)
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  return {
-    data,
-    width: info.width,
-    height: info.height,
-  };
-}
-
-// Compiled index file:
-//   "CCSI" | uint32 header length | JSON header | Int8 feature data
-// The header lists templates as
-//   [itemId, shortName, rotated, slotsWide, slotsHigh, textWidth,
-//    coarseScale, coarseLength, fineScale, fineLength, textScale, textLength]
-const MAGIC = "CCSI";
-
-type HeaderTemplate = [
-  string, string, 0 | 1, number, number, number,
-  number, number, number, number, number, number,
-];
-
-interface IndexHeader {
-  featureVersion: number;
-  catalogHash: string;
-  builtAt: string;
-  items: number;
-  templates: HeaderTemplate[];
-}
-
-function indexFile(): string {
-  return path.join(/* turbopackIgnore: true */ CACHE_DIR, `index-v${FEATURE_VERSION}.bin`);
-}
-
-async function saveIndex(index: IconIndex, header: Omit<IndexHeader, "templates">) {
-  const templates: HeaderTemplate[] = [];
-  const chunks: Buffer[] = [];
-  const push = (vector: QuantisedVector) => {
-    chunks.push(Buffer.from(vector.values.buffer, vector.values.byteOffset, vector.values.length));
-  };
-  for (const [key, list] of index.bySize) {
-    const [slotsWide, slotsHigh] = key.split("x").map(Number);
-    for (const t of list) {
-      const f = t.features;
-      templates.push([
-        t.itemId, t.shortName, t.rotated ? 1 : 0, slotsWide, slotsHigh, f.textWidth,
-        f.artCoarse.scale, f.artCoarse.values.length,
-        f.artFine.scale, f.artFine.values.length,
-        f.text.scale, f.text.values.length,
-      ]);
-      push(f.artCoarse);
-      push(f.artFine);
-      push(f.text);
-    }
-  }
-  const json = Buffer.from(JSON.stringify({ ...header, templates } satisfies IndexHeader));
-  const prefix = Buffer.alloc(8);
-  prefix.write(MAGIC, 0, "ascii");
-  prefix.writeUInt32LE(json.length, 4);
-  const file = indexFile();
-  const temporary = `${file}.${process.pid}.tmp`;
-  await writeFile(temporary, Buffer.concat([prefix, json, ...chunks]));
-  await rename(temporary, file);
-}
-
-async function loadIndex(): Promise<{ index: IconIndex; header: IndexHeader } | null> {
-  let bytes: Buffer;
-  try {
-    bytes = await readFile(indexFile());
+    return decodeIndex(await readFile(path.join(/* turbopackIgnore: true */ dir, indexFileName())));
   } catch {
     return null;
   }
-  if (bytes.toString("ascii", 0, 4) !== MAGIC) return null;
-  const headerLength = bytes.readUInt32LE(4);
-  const header = JSON.parse(bytes.toString("utf8", 8, 8 + headerLength)) as IndexHeader;
-  if (header.featureVersion !== FEATURE_VERSION) return null;
-
-  const index = createIconIndex();
-  let offset = 8 + headerLength;
-  const take = (scale: number, length: number): QuantisedVector => {
-    const values = new Int8Array(bytes.buffer, bytes.byteOffset + offset, length);
-    offset += length;
-    return { values, scale };
-  };
-  for (const [
-    itemId, shortName, rotated, slotsWide, slotsHigh, textWidth,
-    coarseScale, coarseLength, fineScale, fineLength, textScale, textLength,
-  ] of header.templates) {
-    addTemplate(index, slotsWide, slotsHigh, {
-      itemId,
-      shortName,
-      rotated: rotated === 1,
-      features: {
-        artCoarse: take(coarseScale, coarseLength),
-        artFine: take(fineScale, fineLength),
-        textWidth,
-        text: take(textScale, textLength),
-      },
-    });
-  }
-  return { index, header };
 }
 
-async function build(): Promise<IconIndex> {
-  await mkdir(path.join(/* turbopackIgnore: true */ CACHE_DIR, "grid"), { recursive: true });
-  const started = Date.now();
-
-  // Serve the persisted index right away, even if Tarkov.dev is unreachable.
-  if (state.current === null) {
-    const saved = await loadIndex();
-    if (saved) {
-      state.current = {
-        index: saved.index,
-        items: saved.header.items,
-        builtAt: new Date(saved.header.builtAt),
-        catalogHash: saved.header.catalogHash,
-      };
-      log(`loaded ${saved.index.size} templates from cache`);
+/** Loads the newest index available on disk, once. */
+function load(): Promise<void> {
+  state.loading ??= (async () => {
+    const candidates = READ_ONLY
+      ? [await readIndex(BUNDLED_DIR)]
+      : await Promise.all([readIndex(BUNDLED_DIR), readIndex(CACHE_DIR)]);
+    const newest = candidates
+      .filter((c) => c !== null)
+      .sort((a, b) => b.metadata.builtAt.localeCompare(a.metadata.builtAt))[0];
+    if (newest && !state.current) {
+      state.current = newest;
+      log(`loaded ${newest.index.size} templates built ${newest.metadata.builtAt}`);
+    } else if (!newest) {
+      state.lastError = READ_ONLY
+        ? "No stash scan index was bundled with this deployment."
+        : "No stash scan index on disk yet.";
     }
-  }
+  })();
+  return state.loading;
+}
 
-  let catalog: CatalogEntry[];
-  try {
-    catalog = await fetchCatalog();
-  } catch (error) {
-    if (state.current) {
-      log(`catalog check failed, keeping the cached index: ${String(error)}`);
-      return state.current.index;
-    }
-    throw error;
-  }
+async function rebuild(): Promise<void> {
+  await load();
+  const catalog = await fetchCatalog();
   const hash = catalogHash(catalog);
-  if (state.current?.catalogHash === hash) return state.current.index;
-  if (state.current) log("catalog changed; rebuilding the index in the background");
+  if (state.current?.metadata.catalogHash === hash) return;
+  log(state.current ? "catalog changed; rebuilding the index" : "building the index");
 
-  const index = createIconIndex();
-  let items = 0;
-  let next = 0;
-  // Downloads and decodes run concurrently; feature extraction is synchronous
-  // CPU work, so hand the event loop back after every item.
-  await Promise.all(
-    Array.from({ length: DOWNLOAD_CONCURRENCY }, async () => {
-      while (next < catalog.length) {
-        const entry = catalog[next++];
-        const bytes = await cachedGridImage(entry);
-        if (!bytes) continue;
-        try {
-          const grid = await decode(bytes);
-          if (addCatalogIcon(index, { ...entry, grid })) items++;
-        } catch (error) {
-          log(`could not index ${entry.id}: ${String(error)}`);
-        }
-        await yieldToEventLoop();
-      }
-    }),
+  const started = Date.now();
+  const built = await buildIndex(
+    catalog,
+    path.join(/* turbopackIgnore: true */ CACHE_DIR, "grid"),
+    log,
   );
-
-  const builtAt = new Date();
-  await saveIndex(index, {
-    featureVersion: FEATURE_VERSION,
-    catalogHash: hash,
-    builtAt: builtAt.toISOString(),
-    items,
-  });
-  state.current = { index, items, builtAt, catalogHash: hash };
-  log(`built ${index.size} templates for ${items} items in ${Date.now() - started}ms`);
-  return index;
+  await mkdir(CACHE_DIR, { recursive: true });
+  const file = path.join(/* turbopackIgnore: true */ CACHE_DIR, indexFileName());
+  const temporary = `${file}.${process.pid}.tmp`;
+  await writeFile(temporary, encodeIndex(built.index, built.metadata));
+  await rename(temporary, file);
+  state.current = built;
+  state.lastError = null;
+  log(`built ${built.index.size} templates for ${built.metadata.items} items in ${Date.now() - started}ms`);
 }
 
-function startBuild(): Promise<IconIndex> {
-  if (!state.building) {
-    state.building = build()
-      .then((index) => {
-        state.lastError = null;
-        return index;
-      })
-      .catch((error) => {
-        state.lastError = error instanceof Error ? error.message : String(error);
-        log(`index build failed: ${state.lastError}`);
-        throw error;
-      })
-      .finally(() => {
-        state.building = null;
-      });
-  }
-  return state.building;
+function startRebuild(): void {
+  if (READ_ONLY || state.building) return;
+  state.building = rebuild()
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      // A failed refresh keeps serving the index already loaded.
+      if (!state.current) state.lastError = message;
+      log(`index refresh failed: ${message}`);
+    })
+    .finally(() => {
+      state.building = null;
+    });
 }
 
 function scheduleRefresh() {
-  if (state.refreshTimer) return;
-  state.refreshTimer = setInterval(() => {
-    startBuild().catch(() => undefined);
-  }, REFRESH_INTERVAL_MS);
+  if (READ_ONLY || state.refreshTimer) return;
+  state.refreshTimer = setInterval(startRebuild, REFRESH_INTERVAL_MS);
   state.refreshTimer.unref?.();
 }
 
-/** Starts loading or building the index without waiting for it. */
+/** Self-hosted servers: load the index and check the catalog in the background. */
 export function warmIconIndex(): void {
   scheduleRefresh();
-  if (!state.current) startBuild().catch(() => undefined);
+  load().then(startRebuild, () => undefined);
 }
 
 /**
- * Resolves with the current index, waiting up to `timeoutMs` for the first
- * one to load or build. Resolves with null when none is ready in time.
+ * Resolves with the current index. When none is on disk, a self-hosted server
+ * builds one and this waits up to `timeoutMs`; resolves with null otherwise.
  */
 export async function getIconIndex(timeoutMs: number): Promise<IconIndex | null> {
+  if (currentIndex()) return currentIndex();
+  await load();
+  if (currentIndex() || READ_ONLY) return currentIndex();
+
   scheduleRefresh();
-  if (state.current) return state.current.index;
-  startBuild().catch(() => undefined);
-  // A persisted index becomes available long before a rebuild finishes.
-  // (Read through a function: the state changes while this awaits.)
-  const loaded = () => state.current;
+  startRebuild();
   const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
+  while (Date.now() < deadline && state.building) {
     await new Promise((resolve) => setTimeout(resolve, 200));
-    const ready = loaded();
-    if (ready) return ready.index;
-    if (!state.building && state.lastError) return null;
   }
-  return null;
+  return currentIndex();
+}
+
+/** True when this deployment has no index and will never build one. */
+export function isIndexUnavailable(): boolean {
+  return READ_ONLY && state.current === null;
 }
 
 export function getIndexStatus(): IndexStatus {
@@ -392,8 +168,8 @@ export function getIndexStatus(): IndexStatus {
     ready: state.current !== null,
     building: state.building !== null,
     templates: state.current?.index.size ?? 0,
-    items: state.current?.items ?? 0,
-    builtAt: state.current?.builtAt.toISOString() ?? null,
+    items: state.current?.metadata.items ?? 0,
+    builtAt: state.current?.metadata.builtAt ?? null,
     lastError: state.lastError,
   };
 }

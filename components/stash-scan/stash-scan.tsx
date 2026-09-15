@@ -25,6 +25,10 @@ import {
 } from "@/lib/sacrifice-slots";
 import { planSacrifice } from "@/lib/stash-scan/optimize";
 import {
+  prepareScreenshot,
+  ScreenshotTooLargeError,
+} from "@/lib/stash-scan/prepare-screenshot";
+import {
   cellKey,
   groupOwnedItems,
   initialAssignments,
@@ -53,6 +57,59 @@ interface ScanSession {
 }
 
 type DemoStatus = "loading" | "missing" | "error" | "ready";
+
+/** Uploads at the same time; each screenshot is its own request. */
+const UPLOAD_CONCURRENCY = 2;
+
+interface ScanOutcome {
+  image: QueuedImage;
+  result?: ScanImageResult;
+  error?: string;
+}
+
+/**
+ * Prepares and scans screenshots one per request, so each upload stays under
+ * the host's request body limit. Results keep the input order.
+ */
+async function scanEach(
+  images: QueuedImage[],
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): Promise<ScanOutcome[]> {
+  const outcomes: ScanOutcome[] = images.map((image) => ({ image }));
+  let next = 0;
+  const worker = async () => {
+    while (next < images.length) {
+      const outcome = outcomes[next++];
+      try {
+        const upload = await prepareScreenshot(outcome.image.file);
+        const form = new FormData();
+        form.append("images", upload, outcome.image.file.name);
+        const response = await fetch("/api/stash-scan", { method: "POST", body: form });
+        if (!response.ok) {
+          const body = (await response.json().catch(() => null)) as ScanErrorResponse | null;
+          outcome.error =
+            body?.error ??
+            (response.status === 413
+              ? t("The screenshot is too large to upload.")
+              : t("The scan failed. Try again."));
+          continue;
+        }
+        const { images: [result] } = (await response.json()) as ScanResponse;
+        if (result) outcome.result = result;
+        else outcome.error = t("The scan failed. Try again.");
+      } catch (error) {
+        outcome.error =
+          error instanceof ScreenshotTooLargeError
+            ? t("The screenshot is too large to upload.")
+            : error instanceof TypeError
+              ? t("Could not reach the scanner. Check your connection and try again.")
+              : t("The screenshot could not be read.");
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, images.length) }, worker));
+  return outcomes;
+}
 
 function readExcludedNames(): Set<string> {
   const names = new Set([...DEFAULT_EXCLUDED_ITEMS].map((name) => name.toLowerCase()));
@@ -90,8 +147,13 @@ export function StashScan({ demo = false }: StashScanProps) {
   useEffect(() => {
     if (!demo) return;
     let cancelled = false;
-    fetch("/api/stash-scan/demo")
+    // Scanned at build time by scripts/build-stash-scan-index.ts.
+    fetch("/scan-demo/demo.json", { cache: "no-cache" })
       .then(async (response) => {
+        if (response.status === 404) {
+          if (!cancelled) setDemoStatus("missing");
+          return;
+        }
         if (!response.ok) throw new Error(String(response.status));
         const body = (await response.json()) as DemoScanResponse;
         if (cancelled) return;
@@ -152,16 +214,16 @@ export function StashScan({ demo = false }: StashScanProps) {
     setError(null);
     setQueued((current) => {
       const room = SCAN_LIMITS.maxImages - current.length;
-      const tooLarge = files.filter((file) => file.size > SCAN_LIMITS.maxBytesPerImage);
+      const tooLarge = files.filter((file) => file.size > SCAN_LIMITS.maxSourceBytes);
       if (tooLarge.length) {
         sonnerToast.error(t("Some screenshots are too large"), {
           description: t("Each image must be under {size} MB.", {
-            size: Math.round(SCAN_LIMITS.maxBytesPerImage / 1024 / 1024),
+            size: Math.round(SCAN_LIMITS.maxSourceBytes / 1024 / 1024),
           }),
         });
       }
       const added = files
-        .filter((file) => file.size <= SCAN_LIMITS.maxBytesPerImage)
+        .filter((file) => file.size <= SCAN_LIMITS.maxSourceBytes)
         .slice(0, Math.max(0, room))
         .map((file) => {
           const url = URL.createObjectURL(file);
@@ -181,22 +243,25 @@ export function StashScan({ demo = false }: StashScanProps) {
     setScanning(true);
     setError(null);
     try {
-      const form = new FormData();
-      for (const image of queued) form.append("images", image.file);
-      const response = await fetch("/api/stash-scan", { method: "POST", body: form });
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as ScanErrorResponse | null;
-        setError(body?.error ?? t("The scan failed. Try again."));
+      const outcomes = await scanEach(queued, t);
+      const scanned = outcomes.filter((o) => o.result);
+      const failed = outcomes.filter((o) => o.error);
+      if (!scanned.length) {
+        setError(failed[0]?.error ?? t("The scan failed. Try again."));
         return;
       }
-      const { images } = (await response.json()) as ScanResponse;
-      setSession({ images: queued, results: images });
-      setAssignments(initialAssignments(images));
+      if (failed.length) {
+        sonnerToast.error(
+          t("{count} screenshots could not be scanned", { count: failed.length }),
+          { description: failed.map((o) => `${o.image.file.name}: ${o.error}`).join("\n") },
+        );
+      }
+      const results = scanned.map((o) => o.result!);
+      setSession({ images: scanned.map((o) => o.image), results });
+      setAssignments(initialAssignments(results));
       setInclusion({});
       setActiveCell(null);
       setQueued([]);
-    } catch {
-      setError(t("Could not reach the scanner. Check your connection and try again."));
     } finally {
       setScanning(false);
     }

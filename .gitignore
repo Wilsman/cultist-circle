@@ -70,3 +70,7 @@ output/
 
 # stash scan icon cache
 /.cache
+
+# stash scan build output
+/.stash-scan
+/public/scan-demo/demo.json
