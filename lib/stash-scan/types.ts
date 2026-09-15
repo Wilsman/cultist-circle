@@ -23,6 +23,16 @@ export interface ScanCell {
   matches: ScanCandidate[];
 }
 
+/** A cell rectangle to match, for re-checking part of a screenshot. */
+export interface ScanRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  slotsWide: number;
+  slotsHigh: number;
+}
+
 export interface ScanImageResult {
   width: number;
   height: number;
@@ -60,6 +70,8 @@ export const SCAN_LIMITS = {
   maxBytesPerImage: 4 * 1024 * 1024,
   /** Largest file the client accepts before preparing it. */
   maxSourceBytes: 50 * 1024 * 1024,
+  /** Rectangles accepted in one re-match request. */
+  maxRects: 24,
   /** Decoded pixel cap per image (roughly 8K). */
   maxPixels: 7680 * 4320,
   acceptedTypes: ["image/png", "image/jpeg", "image/webp"],

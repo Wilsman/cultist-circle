@@ -29,17 +29,20 @@ import {
   ScreenshotTooLargeError,
 } from "@/lib/stash-scan/prepare-screenshot";
 import {
-  cellKey,
+  displayCells,
   groupOwnedItems,
   initialAssignments,
+  splitCellRects,
   toOwnedItems,
   type CellAssignments,
   type CellKey,
+  type DisplayCell,
   type PricingSettings,
 } from "@/lib/stash-scan/owned-items";
 import {
   SCAN_LIMITS,
   type DemoScanResponse,
+  type ScanCell,
   type ScanErrorResponse,
   type ScanImageResult,
   type ScanResponse,
@@ -52,7 +55,8 @@ import { OverlayLegend, ScreenshotOverlay } from "./screenshot-overlay";
 import { UploadZone, type QueuedImage } from "./upload-zone";
 
 interface ScanSession {
-  images: Array<{ id: string; url: string }>;
+  /** `upload` is what was sent to the API, so re-matching uses the same pixels. */
+  images: Array<{ id: string; url: string; upload?: Blob }>;
   results: ScanImageResult[];
 }
 
@@ -64,6 +68,8 @@ const UPLOAD_CONCURRENCY = 2;
 interface ScanOutcome {
   image: QueuedImage;
   result?: ScanImageResult;
+  /** What was actually uploaded, reused when re-matching split cells. */
+  upload?: Blob;
   error?: string;
 }
 
@@ -82,6 +88,7 @@ async function scanEach(
       const outcome = outcomes[next++];
       try {
         const upload = await prepareScreenshot(outcome.image.file);
+        outcome.upload = upload;
         const form = new FormData();
         form.append("images", upload, outcome.image.file.name);
         const response = await fetch("/api/stash-scan", { method: "POST", body: form });
@@ -141,6 +148,9 @@ export function StashScan({ demo = false }: StashScanProps) {
   const [assignments, setAssignments] = useState<CellAssignments>({});
   // The user's include/exclude choices; everything else follows the defaults.
   const [inclusion, setInclusion] = useState<Record<string, boolean>>({});
+  // Cells the user split into their separate slots, re-matched by the server.
+  const [splits, setSplits] = useState<Record<CellKey, ScanCell[]>>({});
+  const [splitting, setSplitting] = useState<CellKey | null>(null);
   const [excludedNames] = useState(readExcludedNames);
   const [demoStatus, setDemoStatus] = useState<DemoStatus>("loading");
 
@@ -162,7 +172,8 @@ export function StashScan({ demo = false }: StashScanProps) {
           return;
         }
         setSession({ images: [{ id: "demo", url: body.imageUrl }], results: body.images });
-        setAssignments(initialAssignments(body.images));
+        setAssignments(initialAssignments(displayCells(body.images, {})));
+        setSplits({});
         setDemoStatus("ready");
       })
       .catch(() => {
@@ -257,9 +268,13 @@ export function StashScan({ demo = false }: StashScanProps) {
         );
       }
       const results = scanned.map((o) => o.result!);
-      setSession({ images: scanned.map((o) => o.image), results });
-      setAssignments(initialAssignments(results));
+      setSession({
+        images: scanned.map((o) => ({ ...o.image, upload: o.upload })),
+        results,
+      });
+      setAssignments(initialAssignments(displayCells(results, {})));
       setInclusion({});
+      setSplits({});
       setActiveCell(null);
       setQueued([]);
     } finally {
@@ -268,9 +283,10 @@ export function StashScan({ demo = false }: StashScanProps) {
   };
 
   const results = useMemo(() => session?.results ?? [], [session]);
+  const cells = useMemo(() => displayCells(results, splits), [results, splits]);
   const groups = useMemo(
-    () => groupOwnedItems(results, assignments, itemsById),
-    [results, assignments, itemsById],
+    () => groupOwnedItems(cells, assignments, itemsById),
+    [cells, assignments, itemsById],
   );
 
   // Items the calculator excludes start unticked here too.
@@ -330,13 +346,8 @@ export function StashScan({ demo = false }: StashScanProps) {
     [groups, hoveredItem],
   );
   const unrecognisedCount = useMemo(
-    () =>
-      results.reduce(
-        (sum, image, i) =>
-          sum + image.cells.filter((cell, c) => !cell.empty && !assignments[cellKey(i, c)]).length,
-        0,
-      ),
-    [results, assignments],
+    () => cells.filter((cell) => !cell.empty && !assignments[cell.key]).length,
+    [cells, assignments],
   );
 
   const loadIntoCalculator = () => {
@@ -351,16 +362,82 @@ export function StashScan({ demo = false }: StashScanProps) {
     setSession(null);
     setAssignments({});
     setInclusion({});
+    setSplits({});
     setActiveCell(null);
     setError(null);
   };
 
-  const active = activeCell
-    ? (() => {
-        const [imageIndex, cellIndex] = activeCell.split(":").map(Number);
-        return { imageIndex, cellIndex };
-      })()
-    : null;
+  const active = activeCell ? cells.find((cell) => cell.key === activeCell) : undefined;
+
+  /** Puts a split cell back together and restores its original match. */
+  const undoSplit = (parentKey: CellKey) => {
+    const [imageIndex, cellIndex] = parentKey.split(":").map(Number);
+    const original = session?.results[imageIndex]?.cells[cellIndex];
+    setSplits((current) => {
+      const next = { ...current };
+      delete next[parentKey];
+      return next;
+    });
+    setAssignments((current) => {
+      const next = { ...current };
+      for (const key of Object.keys(next)) {
+        if (key.startsWith(`${parentKey}#`)) delete next[key];
+      }
+      const best = original?.matches[0];
+      next[parentKey] =
+        original && best && !original.empty && original.confidence !== "low"
+          ? best.itemId
+          : null;
+      return next;
+    });
+    setActiveCell(null);
+  };
+
+  /**
+   * Re-matches each slot of a cell that holds more than one item. The server
+   * matches the given rectangles instead of detecting the grid again.
+   */
+  const splitCell = async (cell: DisplayCell) => {
+    const image = session?.images[cell.imageIndex];
+    const result = session?.results[cell.imageIndex];
+    if (!image || !result) return;
+    setSplitting(cell.key);
+    try {
+      const blob = image.upload ?? (await (await fetch(image.url)).blob());
+      const rects = splitCellRects(cell);
+      const form = new FormData();
+      form.append("images", blob, "screenshot");
+      form.append("rects", JSON.stringify(rects));
+      const response = await fetch("/api/stash-scan", { method: "POST", body: form });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as ScanErrorResponse | null;
+        sonnerToast.error(t("Could not split this cell"), {
+          description: body?.error ?? t("The scan failed. Try again."),
+        });
+        return;
+      }
+      const { images: [matched] } = (await response.json()) as ScanResponse;
+      if (!matched?.cells.length) return;
+      setSplits((current) => ({ ...current, [cell.key]: matched.cells }));
+      setAssignments((current) => {
+        const next = { ...current };
+        delete next[cell.key];
+        matched.cells.forEach((part, slot) => {
+          const best = part.matches[0];
+          next[`${cell.key}#${slot}`] =
+            best && !part.empty && part.confidence !== "low" ? best.itemId : null;
+        });
+        return next;
+      });
+      setActiveCell(null);
+    } catch {
+      sonnerToast.error(t("Could not split this cell"), {
+        description: t("Could not reach the scanner. Check your connection and try again."),
+      });
+    } finally {
+      setSplitting(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-my_bg_image bg-cover bg-fixed bg-no-repeat px-3 pb-20 pt-4 text-white sm:px-4 sm:pt-6">
@@ -490,9 +567,9 @@ export function StashScan({ demo = false }: StashScanProps) {
               {session.results.map((result, imageIndex) => (
                 <div key={session.images[imageIndex]?.id ?? imageIndex} className="space-y-3">
                   <ScreenshotOverlay
-                    imageIndex={imageIndex}
                     url={session.images[imageIndex].url}
                     result={result}
+                    cells={cells.filter((cell) => cell.imageIndex === imageIndex)}
                     assignments={assignments}
                     plannedCells={plannedCells}
                     highlightedCells={highlightedCells}
@@ -504,13 +581,23 @@ export function StashScan({ demo = false }: StashScanProps) {
                       <CellInspector
                         key={activeCell}
                         url={session.images[imageIndex].url}
-                        result={result}
-                        cellIndex={active.cellIndex}
-                        assignedItemId={assignments[activeCell!] ?? null}
+                        imageWidth={result.width}
+                        imageHeight={result.height}
+                        cell={active}
+                        assignedItemId={assignments[active.key] ?? null}
                         itemsById={itemsById}
                         items={items}
+                        onSplit={
+                          active.key.includes("#") ? undefined : () => void splitCell(active)
+                        }
+                        splitting={splitting === active.key}
+                        onUndoSplit={
+                          active.key.includes("#")
+                            ? () => undoSplit(active.key.split("#")[0])
+                            : undefined
+                        }
                         onAssign={(itemId) => {
-                          setAssignments((current) => ({ ...current, [activeCell!]: itemId }));
+                          setAssignments((current) => ({ ...current, [active.key]: itemId }));
                           setActiveCell(null);
                         }}
                         onClose={() => setActiveCell(null)}
@@ -537,12 +624,8 @@ export function StashScan({ demo = false }: StashScanProps) {
                   if (cell) openCellFromList(cell);
                 }}
                 onShowUnrecognised={() => {
-                  for (const [i, image] of results.entries()) {
-                    const c = image.cells.findIndex(
-                      (cell, index) => !cell.empty && !assignments[cellKey(i, index)],
-                    );
-                    if (c >= 0) return openCellFromList(cellKey(i, c));
-                  }
+                  const cell = cells.find((c) => !c.empty && !assignments[c.key]);
+                  if (cell) openCellFromList(cell.key);
                 }}
               />
             </div>

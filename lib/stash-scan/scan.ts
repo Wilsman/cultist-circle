@@ -3,7 +3,7 @@
 import { cellFeatures } from "./features";
 import { detectGrid, type RgbImage } from "./grid";
 import { matchCell, type IconIndex } from "./matcher";
-import type { ScanCell, ScanConfidence, ScanImageResult } from "./types";
+import type { ScanCell, ScanConfidence, ScanImageResult, ScanRect } from "./types";
 
 /** Scores from the matcher's calibration on sample screenshots. */
 const HIGH_SCORE = 0.72;
@@ -18,6 +18,49 @@ function confidenceOf(score: number, margin: number): ScanConfidence {
 
 const yieldToEventLoop = () => new Promise<void>((resolve) => setImmediate(resolve));
 
+/** Matches one cell rectangle of an already decoded screenshot. */
+function matchRect(image: RgbImage, rect: ScanRect, index: IconIndex): ScanCell {
+  const features = cellFeatures(
+    image,
+    rect.x,
+    rect.y,
+    rect.width,
+    rect.height,
+    rect.slotsWide,
+    rect.slotsHigh,
+  );
+  const result = matchCell(features, index);
+  const best = result.matches[0];
+  return {
+    ...rect,
+    empty: result.empty,
+    confidence: best ? confidenceOf(best.score, result.margin) : "low",
+    matches: result.matches.map((m) => ({
+      itemId: m.itemId,
+      shortName: m.shortName,
+      rotated: m.rotated,
+      score: Math.round(m.score * 1000) / 1000,
+    })),
+  };
+}
+
+/**
+ * Matches the given rectangles instead of detecting the grid. Used when a
+ * detected cell turns out to hold more than one item and is split by hand.
+ */
+export async function scanRects(
+  image: RgbImage,
+  rects: ScanRect[],
+  index: IconIndex,
+): Promise<ScanImageResult> {
+  const cells: ScanCell[] = [];
+  for (const rect of rects) {
+    cells.push(matchRect(image, rect, index));
+    await yieldToEventLoop();
+  }
+  return { width: image.width, height: image.height, pitch: 0, cells };
+}
+
 /**
  * Scans one decoded screenshot. Matching is CPU-bound, so the event loop is
  * handed back between cells to keep the web server responsive.
@@ -30,28 +73,7 @@ export async function scanImage(
   const cells: ScanCell[] = [];
 
   for (const cell of grid.cells) {
-    const features = cellFeatures(
-      image,
-      cell.x,
-      cell.y,
-      cell.width,
-      cell.height,
-      cell.slotsWide,
-      cell.slotsHigh,
-    );
-    const result = matchCell(features, index);
-    const best = result.matches[0];
-    cells.push({
-      ...cell,
-      empty: result.empty,
-      confidence: best ? confidenceOf(best.score, result.margin) : "low",
-      matches: result.matches.map((m) => ({
-        itemId: m.itemId,
-        shortName: m.shortName,
-        rotated: m.rotated,
-        score: Math.round(m.score * 1000) / 1000,
-      })),
-    });
+    cells.push(matchRect(image, cell, index));
     await yieldToEventLoop();
   }
 

@@ -2,21 +2,27 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Search, X } from "lucide-react";
+import { Check, Loader2, Scissors, Search, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/language-context";
-import type { ScanImageResult } from "@/lib/stash-scan/types";
+import type { DisplayCell } from "@/lib/stash-scan/owned-items";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { CellPreview } from "./screenshot-overlay";
 
 interface CellInspectorProps {
   url: string;
-  result: ScanImageResult;
-  cellIndex: number;
+  imageWidth: number;
+  imageHeight: number;
+  cell: DisplayCell;
   assignedItemId: string | null;
   itemsById: Map<string, SimplifiedItem>;
   items: SimplifiedItem[];
+  /** Absent when the cell is already one slot, or is itself a split slot. */
+  onSplit?: () => void;
+  splitting?: boolean;
+  /** Present on a slot of a split cell: puts the cell back together. */
+  onUndoSplit?: () => void;
   onAssign: (itemId: string | null) => void;
   onClose: () => void;
 }
@@ -25,17 +31,20 @@ const SEARCH_LIMIT = 30;
 
 export function CellInspector({
   url,
-  result,
-  cellIndex,
+  imageWidth,
+  imageHeight,
+  cell,
   assignedItemId,
   itemsById,
   items,
+  onSplit,
+  splitting = false,
+  onUndoSplit,
   onAssign,
   onClose,
 }: CellInspectorProps) {
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
-  const cell = result.cells[cellIndex];
 
   const searchResults = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -49,11 +58,11 @@ export function CellInspector({
       .slice(0, SEARCH_LIMIT);
   }, [items, query]);
 
-  if (!cell) return null;
-
   const candidates = cell.matches
     .map((match) => ({ match, item: itemsById.get(match.itemId) }))
     .filter((entry, index, all) => all.findIndex((e) => e.match.itemId === entry.match.itemId) === index);
+
+  const slots = cell.slotsWide * cell.slotsHigh;
 
   const option = (item: SimplifiedItem | undefined, itemId: string, detail?: string) => {
     const selected = assignedItemId === itemId;
@@ -88,7 +97,13 @@ export function CellInspector({
   return (
     <div className="space-y-3 rounded-2xl border border-white/10 bg-[#11161d]/95 p-3 sm:p-4">
       <div className="flex items-start gap-3">
-        <CellPreview url={url} result={result} cellIndex={cellIndex} size={Math.min(160, 64 * cell.slotsWide)} />
+        <CellPreview
+          url={url}
+          imageWidth={imageWidth}
+          imageHeight={imageHeight}
+          cell={cell}
+          size={Math.min(160, 64 * cell.slotsWide)}
+        />
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium text-slate-100">{t("What is this item?")}</div>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">
@@ -99,6 +114,35 @@ export function CellInspector({
           <X className="h-4 w-4" />
         </Button>
       </div>
+
+      {onSplit && slots > 1 && (
+        <Button
+          variant="outline"
+          onClick={onSplit}
+          disabled={splitting}
+          className="w-full border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+        >
+          {splitting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Scissors className="mr-2 h-4 w-4" />
+          )}
+          {slots === 2
+            ? t("This is two items, not one")
+            : t("This is {count} separate items", { count: slots })}
+        </Button>
+      )}
+
+      {onUndoSplit && (
+        <Button
+          variant="outline"
+          onClick={onUndoSplit}
+          className="w-full border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+        >
+          <Undo2 className="mr-2 h-4 w-4" />
+          {t("Undo the split, this is one item")}
+        </Button>
+      )}
 
       {candidates.length > 0 && (
         <div className="space-y-1.5">

@@ -2,13 +2,18 @@
 "use client";
 
 import { useLanguage } from "@/contexts/language-context";
-import { cellKey, type CellAssignments, type CellKey } from "@/lib/stash-scan/owned-items";
+import type {
+  CellAssignments,
+  CellKey,
+  DisplayCell,
+} from "@/lib/stash-scan/owned-items";
 import type { ScanImageResult } from "@/lib/stash-scan/types";
 
 interface ScreenshotOverlayProps {
-  imageIndex: number;
   url: string;
   result: ScanImageResult;
+  /** This screenshot's cells, split cells already expanded. */
+  cells: DisplayCell[];
   assignments: CellAssignments;
   /** Cells chosen for the sacrifice. */
   plannedCells: ReadonlySet<CellKey>;
@@ -19,9 +24,9 @@ interface ScreenshotOverlayProps {
 }
 
 export function ScreenshotOverlay({
-  imageIndex,
   url,
   result,
+  cells: allCells,
   assignments,
   plannedCells,
   highlightedCells,
@@ -30,9 +35,9 @@ export function ScreenshotOverlay({
 }: ScreenshotOverlayProps) {
   const { t } = useLanguage();
 
-  const cells = result.cells
-    .map((cell, index) => ({ cell, key: cellKey(imageIndex, index) }))
-    .filter(({ cell }) => !cell.empty);
+  const cells = allCells
+    .filter((cell) => !cell.empty)
+    .map((cell) => ({ cell, key: cell.key }));
   // Draw the boxes that need attention last, so neighbours never cover them.
   const layer = (key: CellKey) =>
     activeCell === key ? 3 : !assignments[key] ? 2 : plannedCells.has(key) ? 1 : 0;
@@ -138,15 +143,14 @@ export function OverlayLegend() {
 
 interface CellPreviewProps {
   url: string;
-  result: ScanImageResult;
-  cellIndex: number;
+  imageWidth: number;
+  imageHeight: number;
+  cell: { x: number; y: number; width: number; height: number };
   size: number;
 }
 
 /** The cell's region of the screenshot, scaled to `size` px wide. */
-export function CellPreview({ url, result, cellIndex, size }: CellPreviewProps) {
-  const cell = result.cells[cellIndex];
-  if (!cell) return null;
+export function CellPreview({ url, imageWidth, imageHeight, cell, size }: CellPreviewProps) {
   const scale = size / cell.width;
   return (
     <div
@@ -157,7 +161,7 @@ export function CellPreview({ url, result, cellIndex, size }: CellPreviewProps) 
         height: cell.height * scale,
         backgroundImage: `url(${url})`,
         backgroundRepeat: "no-repeat",
-        backgroundSize: `${result.width * scale}px ${result.height * scale}px`,
+        backgroundSize: `${imageWidth * scale}px ${imageHeight * scale}px`,
         backgroundPosition: `${-cell.x * scale}px ${-cell.y * scale}px`,
       }}
     />

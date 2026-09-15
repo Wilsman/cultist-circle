@@ -5,11 +5,12 @@ import {
   getIndexStatus,
   isIndexUnavailable,
 } from "@/lib/stash-scan/index-store";
-import { scanImage } from "@/lib/stash-scan/scan";
+import { scanImage, scanRects } from "@/lib/stash-scan/scan";
 import {
   SCAN_LIMITS,
   type ScanErrorResponse,
   type ScanImageResult,
+  type ScanRect,
   type ScanResponse,
 } from "@/lib/stash-scan/types";
 
@@ -72,6 +73,43 @@ function consumeRateLimit(key: string, count: number): number {
   return 0;
 }
 
+/**
+ * Parses the optional `rects` field: cell rectangles to match instead of
+ * detecting the grid, used when one detected cell holds several items.
+ * Returns null when the field is absent, or "invalid" when it is unusable.
+ */
+function parseRects(value: FormDataEntryValue | null): ScanRect[] | null | "invalid" {
+  if (typeof value !== "string") return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return "invalid";
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) return "invalid";
+  if (parsed.length > SCAN_LIMITS.maxRects) return "invalid";
+
+  const rects: ScanRect[] = [];
+  for (const entry of parsed) {
+    const rect = entry as Partial<ScanRect>;
+    const numbers = [rect.x, rect.y, rect.width, rect.height, rect.slotsWide, rect.slotsHigh];
+    if (numbers.some((n) => typeof n !== "number" || !Number.isFinite(n))) return "invalid";
+    if (rect.width! < 8 || rect.height! < 8 || rect.x! < 0 || rect.y! < 0) return "invalid";
+    if (rect.slotsWide! < 1 || rect.slotsHigh! < 1 || rect.slotsWide! > 10 || rect.slotsHigh! > 10) {
+      return "invalid";
+    }
+    rects.push({
+      x: Math.round(rect.x!),
+      y: Math.round(rect.y!),
+      width: Math.round(rect.width!),
+      height: Math.round(rect.height!),
+      slotsWide: Math.round(rect.slotsWide!),
+      slotsHigh: Math.round(rect.slotsHigh!),
+    });
+  }
+  return rects;
+}
+
 /** Runs scans strictly one after another so they never compete for CPU. */
 function enqueue<T>(task: () => Promise<T>): Promise<T> | null {
   if (queued >= MAX_QUEUED_SCANS) return null;
@@ -84,6 +122,17 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> | null {
   return run.finally(() => {
     queued--;
   });
+}
+
+/** Keeps rectangles inside the image. */
+function clampRects(rects: ScanRect[], width: number, height: number): ScanRect[] {
+  return rects.map((rect) => ({
+    ...rect,
+    x: Math.min(rect.x, Math.max(0, width - 2)),
+    y: Math.min(rect.y, Math.max(0, height - 2)),
+    width: Math.min(rect.width, width - Math.min(rect.x, width - 2)),
+    height: Math.min(rect.height, height - Math.min(rect.y, height - 2)),
+  }));
 }
 
 export async function GET() {
@@ -102,7 +151,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const rects = parseRects(form.get("rects"));
+  if (rects === "invalid") {
+    return errorResponse(
+      { error: "The cell rectangles were not understood.", code: "no-images" },
+      400,
+    );
+  }
+
   const files = form.getAll("images").filter((value): value is File => value instanceof File);
+  if (rects && files.length !== 1) {
+    return errorResponse(
+      { error: "Re-matching cells takes exactly one screenshot.", code: "too-many-images" },
+      400,
+    );
+  }
   if (files.length === 0) {
     return errorResponse({ error: "No images were uploaded.", code: "no-images" }, 400);
   }
@@ -168,7 +231,12 @@ export async function POST(request: NextRequest) {
   const scan = enqueue(async () => {
     const images: ScanImageResult[] = [];
     for (const buffer of buffers) {
-      images.push(await scanImage(await decodeRgb(buffer, SCAN_LIMITS.maxPixels), index));
+      const decoded = await decodeRgb(buffer, SCAN_LIMITS.maxPixels);
+      images.push(
+        rects
+          ? await scanRects(decoded, clampRects(rects, decoded.width, decoded.height), index)
+          : await scanImage(decoded, index),
+      );
     }
     return images;
   });

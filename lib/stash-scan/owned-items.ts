@@ -4,12 +4,71 @@
 import type { FleaPriceType, PriceMode } from "@/hooks/use-app-settings";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { OwnedItem } from "./optimize";
-import type { ScanImageResult } from "./types";
+import type { ScanCell, ScanImageResult, ScanRect } from "./types";
 
-/** Identifies a cell across all scanned screenshots. */
-export type CellKey = `${number}:${number}`;
+/**
+ * Identifies a cell across all scanned screenshots: "image:cell", or
+ * "image:cell#slot" for one slot of a cell the user split apart.
+ */
+export type CellKey = string;
 
 export const cellKey = (image: number, cell: number): CellKey => `${image}:${cell}`;
+export const splitCellKey = (parent: CellKey, slot: number): CellKey => `${parent}#${slot}`;
+
+/** A cell as shown: either a detected cell or one slot of a split one. */
+export interface DisplayCell extends ScanCell {
+  key: CellKey;
+  imageIndex: number;
+}
+
+/**
+ * The slots of a cell, as rectangles to re-match. A detected cell spans
+ * `slotsWide x slotsHigh` inventory slots and includes both border lines, so
+ * each slot is an even division of its interior.
+ */
+export function splitCellRects(cell: ScanCell): ScanRect[] {
+  const rects: ScanRect[] = [];
+  const columnAt = (i: number) => cell.x + Math.round((i * (cell.width - 1)) / cell.slotsWide);
+  const rowAt = (j: number) => cell.y + Math.round((j * (cell.height - 1)) / cell.slotsHigh);
+  for (let j = 0; j < cell.slotsHigh; j++) {
+    for (let i = 0; i < cell.slotsWide; i++) {
+      rects.push({
+        x: columnAt(i),
+        y: rowAt(j),
+        width: columnAt(i + 1) - columnAt(i) + 1,
+        height: rowAt(j + 1) - rowAt(j) + 1,
+        slotsWide: 1,
+        slotsHigh: 1,
+      });
+    }
+  }
+  return rects;
+}
+
+/**
+ * The cells to show for one screenshot: detected cells, with any the user
+ * split replaced by their slots.
+ */
+export function displayCells(
+  images: ScanImageResult[],
+  splits: Record<CellKey, ScanCell[]>,
+): DisplayCell[] {
+  const cells: DisplayCell[] = [];
+  images.forEach((image, imageIndex) => {
+    image.cells.forEach((cell, index) => {
+      const key = cellKey(imageIndex, index);
+      const parts = splits[key];
+      if (!parts) {
+        cells.push({ ...cell, key, imageIndex });
+        return;
+      }
+      parts.forEach((part, slot) => {
+        cells.push({ ...part, key: splitCellKey(key, slot), imageIndex });
+      });
+    });
+  });
+  return cells;
+}
 
 /**
  * What each non-empty cell was resolved to: an item id, or null when the user
@@ -26,28 +85,26 @@ export interface OwnedGroup {
 }
 
 /** Initial assignments: the best match of every recognised, non-empty cell. */
-export function initialAssignments(images: ScanImageResult[]): CellAssignments {
+export function initialAssignments(cells: DisplayCell[]): CellAssignments {
   const assignments: CellAssignments = {};
-  images.forEach((image, i) => {
-    image.cells.forEach((cell, c) => {
-      if (cell.empty) return;
-      const best = cell.matches[0];
-      assignments[cellKey(i, c)] = best && cell.confidence !== "low" ? best.itemId : null;
-    });
-  });
+  for (const cell of cells) {
+    if (cell.empty) continue;
+    const best = cell.matches[0];
+    assignments[cell.key] = best && cell.confidence !== "low" ? best.itemId : null;
+  }
   return assignments;
 }
 
 export function groupOwnedItems(
-  images: ScanImageResult[],
+  cells: DisplayCell[],
   assignments: CellAssignments,
   itemsById: Map<string, SimplifiedItem>,
 ): OwnedGroup[] {
+  const byKey = new Map(cells.map((cell) => [cell.key, cell] as const));
   const groups = new Map<string, OwnedGroup>();
   for (const [key, itemId] of Object.entries(assignments) as Array<[CellKey, string | null]>) {
     if (!itemId) continue;
-    const [imageIndex, cellIndex] = key.split(":").map(Number);
-    const cell = images[imageIndex]?.cells[cellIndex];
+    const cell = byKey.get(key);
     if (!cell) continue;
     const group = groups.get(itemId) ?? {
       itemId,
