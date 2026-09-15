@@ -1,0 +1,13 @@
+import type { Metadata } from "next";
+import { StashScan } from "@/components/stash-scan/stash-scan";
+
+export const metadata: Metadata = {
+  title: "Stash Scan demo",
+  description:
+    "See Stash Scan recognise the items in a sample Escape from Tarkov stash screenshot and pick the cheapest Cultist Circle sacrifice.",
+  alternates: { canonical: "/scan/demo" },
+};
+
+export default function ScanDemoPage() {
+  return <StashScan demo />;
+}
