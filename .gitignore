@@ -67,3 +67,6 @@ CLAUDE.md
 
 # dev screenshots
 output/
+
+# stash scan icon cache
+/.cache
