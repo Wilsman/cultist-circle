@@ -12,6 +12,7 @@ import {
   Calculator,
   Globe,
   TimerReset,
+  ScanSearch,
 } from "lucide-react";
 import {
   Select,
@@ -27,6 +28,7 @@ const primaryLinks = [
   { href: "/", label: "Calculator", icon: Calculator },
   { href: "/recipes", label: "Recipes", icon: BookOpen },
   { href: "/tracker", label: "Tracker", icon: TimerReset },
+  { href: "/scan", label: "Stash Scan", icon: ScanSearch },
   { href: "/base-values", label: "Base Values", icon: Table },
 ] as const;
 
