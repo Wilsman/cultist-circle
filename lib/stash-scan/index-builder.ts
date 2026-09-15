@@ -10,10 +10,12 @@ import type { RgbImage } from "./grid";
 import type { IndexMetadata } from "./index-file";
 import { addCatalogIcon, createIconIndex, type IconIndex } from "./matcher";
 
-const JSON_API_URL =
-  process.env.TARKOV_JSON_URL ??
-  process.env.NEXT_PUBLIC_TARKOV_JSON_URL ??
-  "https://json.tarkov.dev";
+// `||`, not `??`: hosts often define these variables with an empty value.
+const JSON_API_URL = (
+  process.env.TARKOV_JSON_URL ||
+  process.env.NEXT_PUBLIC_TARKOV_JSON_URL ||
+  "https://json.tarkov.dev"
+).replace(/\/+$/, "");
 
 /** Grid images are re-downloaded after this long. */
 const IMAGE_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
