@@ -2,6 +2,7 @@ import {
   displayCells,
   initialAssignments,
   splitCellRects,
+  splitOptions,
 } from "@/lib/stash-scan/owned-items";
 import type { ScanCell, ScanImageResult } from "@/lib/stash-scan/types";
 import { describe, expect, it } from "vitest";
@@ -46,6 +47,45 @@ describe("splitCellRects", () => {
       [163, 200],
       [100, 263],
       [163, 263],
+    ]);
+  });
+});
+
+describe("splitOptions", () => {
+  it("offers nothing for a single-slot cell", () => {
+    expect(splitOptions({ slotsWide: 1, slotsHigh: 1 })).toEqual([]);
+  });
+
+  it("offers each way a cell divides evenly", () => {
+    expect(splitOptions({ slotsWide: 1, slotsHigh: 2 })).toEqual([
+      { direction: "rows", count: 2 },
+    ]);
+    expect(splitOptions({ slotsWide: 4, slotsHigh: 8 })).toEqual([
+      { direction: "rows", count: 2 },
+      { direction: "rows", count: 4 },
+      { direction: "rows", count: 8 },
+      { direction: "columns", count: 2 },
+      { direction: "columns", count: 4 },
+      { direction: "slots", count: 32 },
+    ]);
+  });
+});
+
+describe("splitCellRects with a count", () => {
+  it("cuts a tall cell into the asked-for number of stacked items", () => {
+    const tall = cell({ width: 127, height: 505, slotsWide: 2, slotsHigh: 8 });
+    const halves = splitCellRects(tall, "rows", 2);
+    expect(halves).toHaveLength(2);
+    expect(halves[0]).toMatchObject({ x: 100, y: 200, width: 127, slotsWide: 2, slotsHigh: 4 });
+    expect(halves[1]).toMatchObject({ x: 100, y: 452, width: 127, slotsWide: 2, slotsHigh: 4 });
+  });
+
+  it("cuts a wide cell into side-by-side items", () => {
+    const wide = cell({ width: 253, height: 127, slotsWide: 4, slotsHigh: 2 });
+    const parts = splitCellRects(wide, "columns", 2);
+    expect(parts.map((r) => [r.x, r.slotsWide, r.slotsHigh])).toEqual([
+      [100, 2, 2],
+      [226, 2, 2],
     ]);
   });
 });

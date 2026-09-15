@@ -6,7 +6,11 @@ import { Check, Loader2, Scissors, Search, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/language-context";
-import type { DisplayCell } from "@/lib/stash-scan/owned-items";
+import {
+  splitOptions,
+  type DisplayCell,
+  type SplitDirection,
+} from "@/lib/stash-scan/owned-items";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { CellPreview } from "./screenshot-overlay";
 
@@ -19,7 +23,7 @@ interface CellInspectorProps {
   itemsById: Map<string, SimplifiedItem>;
   items: SimplifiedItem[];
   /** Absent when the cell is already one slot, or is itself a split slot. */
-  onSplit?: () => void;
+  onSplit?: (direction: SplitDirection, count: number) => void;
   splitting?: boolean;
   /** Present on a slot of a split cell: puts the cell back together. */
   onUndoSplit?: () => void;
@@ -62,7 +66,10 @@ export function CellInspector({
     .map((match) => ({ match, item: itemsById.get(match.itemId) }))
     .filter((entry, index, all) => all.findIndex((e) => e.match.itemId === entry.match.itemId) === index);
 
-  const slots = cell.slotsWide * cell.slotsHigh;
+  const options = onSplit ? splitOptions(cell) : [];
+  const rowOptions = options.filter((o) => o.direction === "rows");
+  const columnOptions = options.filter((o) => o.direction === "columns");
+  const slotOption = options.find((o) => o.direction === "slots");
 
   const option = (item: SimplifiedItem | undefined, itemId: string, detail?: string) => {
     const selected = assignedItemId === itemId;
@@ -115,22 +122,50 @@ export function CellInspector({
         </Button>
       </div>
 
-      {onSplit && slots > 1 && (
-        <Button
-          variant="outline"
-          onClick={onSplit}
-          disabled={splitting}
-          className="w-full border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
-        >
-          {splitting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Scissors className="mr-2 h-4 w-4" />
+      {onSplit && options.length > 0 && (
+        <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            {splitting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+            ) : (
+              <Scissors className="h-3.5 w-3.5 text-slate-400" />
+            )}
+            {t("Holds more than one item? Split it into:")}
+          </div>
+          {[
+            { label: t("stacked"), list: rowOptions },
+            { label: t("side by side"), list: columnOptions },
+          ].map(({ label, list }) =>
+            list.length === 0 ? null : (
+              <div key={label} className="flex flex-wrap items-center gap-1.5">
+                <span className="w-20 shrink-0 text-[11px] text-slate-500">{label}</span>
+                {list.map((option) => (
+                  <Button
+                    key={`${option.direction}-${option.count}`}
+                    size="sm"
+                    variant="outline"
+                    disabled={splitting}
+                    onClick={() => onSplit(option.direction, option.count)}
+                    className="h-7 border-white/10 bg-white/5 px-2.5 text-xs text-slate-200 hover:bg-white/10 hover:text-white"
+                  >
+                    {t("{count} items", { count: option.count })}
+                  </Button>
+                ))}
+              </div>
+            ),
           )}
-          {slots === 2
-            ? t("This is two items, not one")
-            : t("This is {count} separate items", { count: slots })}
-        </Button>
+          {slotOption && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={splitting}
+              onClick={() => onSplit(slotOption.direction, slotOption.count)}
+              className="h-7 w-full border-white/10 bg-white/5 px-2.5 text-xs text-slate-200 hover:bg-white/10 hover:text-white"
+            >
+              {t("every slot ({count} items)", { count: slotOption.count })}
+            </Button>
+          )}
+        </div>
       )}
 
       {onUndoSplit && (

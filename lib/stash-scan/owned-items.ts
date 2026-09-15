@@ -21,24 +21,60 @@ export interface DisplayCell extends ScanCell {
   imageIndex: number;
 }
 
+/** How a cell is cut up: into stacked rows, side-by-side columns, or slots. */
+export type SplitDirection = "rows" | "columns" | "slots";
+
+export interface SplitOption {
+  direction: SplitDirection;
+  /** Number of items the cell is split into. */
+  count: number;
+}
+
+const divisors = (slots: number): number[] =>
+  Array.from({ length: slots }, (_, i) => i + 1).filter((n) => n > 1 && slots % n === 0);
+
 /**
- * The slots of a cell, as rectangles to re-match. A detected cell spans
- * `slotsWide x slotsHigh` inventory slots and includes both border lines, so
- * each slot is an even division of its interior.
+ * The ways a cell can be split. A cell spanning several slots may hold items
+ * stacked vertically, side by side, or one item per slot.
  */
-export function splitCellRects(cell: ScanCell): ScanRect[] {
+export function splitOptions(cell: Pick<ScanCell, "slotsWide" | "slotsHigh">): SplitOption[] {
+  const options: SplitOption[] = [
+    ...divisors(cell.slotsHigh).map((count) => ({ direction: "rows" as const, count })),
+    ...divisors(cell.slotsWide).map((count) => ({ direction: "columns" as const, count })),
+  ];
+  const slots = cell.slotsWide * cell.slotsHigh;
+  // "Every slot" only when it is not already covered by a row/column split.
+  if (slots > 1 && !options.some((o) => o.count === slots)) {
+    options.push({ direction: "slots", count: slots });
+  }
+  return options;
+}
+
+/**
+ * Cuts a cell into `count` equal parts, as rectangles to re-match. A detected
+ * cell spans `slotsWide x slotsHigh` inventory slots and includes both border
+ * lines, so the parts share the borders between them.
+ */
+export function splitCellRects(
+  cell: ScanCell,
+  direction: SplitDirection = "slots",
+  count?: number,
+): ScanRect[] {
+  const columns = direction === "columns" ? (count ?? cell.slotsWide) : direction === "slots" ? cell.slotsWide : 1;
+  const rows = direction === "rows" ? (count ?? cell.slotsHigh) : direction === "slots" ? cell.slotsHigh : 1;
+
   const rects: ScanRect[] = [];
-  const columnAt = (i: number) => cell.x + Math.round((i * (cell.width - 1)) / cell.slotsWide);
-  const rowAt = (j: number) => cell.y + Math.round((j * (cell.height - 1)) / cell.slotsHigh);
-  for (let j = 0; j < cell.slotsHigh; j++) {
-    for (let i = 0; i < cell.slotsWide; i++) {
+  const columnAt = (i: number) => cell.x + Math.round((i * (cell.width - 1)) / columns);
+  const rowAt = (j: number) => cell.y + Math.round((j * (cell.height - 1)) / rows);
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < columns; i++) {
       rects.push({
         x: columnAt(i),
         y: rowAt(j),
         width: columnAt(i + 1) - columnAt(i) + 1,
         height: rowAt(j + 1) - rowAt(j) + 1,
-        slotsWide: 1,
-        slotsHigh: 1,
+        slotsWide: Math.max(1, Math.round(cell.slotsWide / columns)),
+        slotsHigh: Math.max(1, Math.round(cell.slotsHigh / rows)),
       });
     }
   }

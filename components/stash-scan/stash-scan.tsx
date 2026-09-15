@@ -38,6 +38,7 @@ import {
   type CellKey,
   type DisplayCell,
   type PricingSettings,
+  type SplitDirection,
 } from "@/lib/stash-scan/owned-items";
 import {
   SCAN_LIMITS,
@@ -397,14 +398,14 @@ export function StashScan({ demo = false }: StashScanProps) {
    * Re-matches each slot of a cell that holds more than one item. The server
    * matches the given rectangles instead of detecting the grid again.
    */
-  const splitCell = async (cell: DisplayCell) => {
+  const splitCell = async (cell: DisplayCell, direction: SplitDirection, count: number) => {
     const image = session?.images[cell.imageIndex];
     const result = session?.results[cell.imageIndex];
     if (!image || !result) return;
     setSplitting(cell.key);
     try {
       const blob = image.upload ?? (await (await fetch(image.url)).blob());
-      const rects = splitCellRects(cell);
+      const rects = splitCellRects(cell, direction, count);
       const form = new FormData();
       form.append("images", blob, "screenshot");
       form.append("rects", JSON.stringify(rects));
@@ -588,7 +589,9 @@ export function StashScan({ demo = false }: StashScanProps) {
                         itemsById={itemsById}
                         items={items}
                         onSplit={
-                          active.key.includes("#") ? undefined : () => void splitCell(active)
+                          active.key.includes("#")
+                            ? undefined
+                            : (direction, count) => void splitCell(active, direction, count)
                         }
                         splitting={splitting === active.key}
                         onUndoSplit={

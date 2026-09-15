@@ -71,7 +71,7 @@ export const SCAN_LIMITS = {
   /** Largest file the client accepts before preparing it. */
   maxSourceBytes: 50 * 1024 * 1024,
   /** Rectangles accepted in one re-match request. */
-  maxRects: 24,
+  maxRects: 64,
   /** Decoded pixel cap per image (roughly 8K). */
   maxPixels: 7680 * 4320,
   acceptedTypes: ["image/png", "image/jpeg", "image/webp"],
