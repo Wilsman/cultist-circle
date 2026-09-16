@@ -39,6 +39,13 @@ import {
 } from "@/components/ui/tooltip";
 import { ItemTooltip } from "@/components/ui/item-tooltip";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   RecipeFeedback,
   RecipeFeedbackProvider,
 } from "@/components/recipe-feedback.component";
@@ -46,6 +53,7 @@ import { recipeIconMap } from "@/data/recipe-icons";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
 import { useLanguage } from "@/contexts/language-context";
 import { tarkovRecipes, type Recipe } from "@/data/recipes";
+import { useRecipeFeedbackStore } from "@/hooks/use-recipe-feedback";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import {
   isRecipeCompletionList,
@@ -59,16 +67,19 @@ import {
   RECIPE_SHARE_PARAM,
 } from "@/lib/recipe-share";
 import { getStoredGameMode, type GameMode } from "@/lib/game-mode";
+import { RecipeSubmissionButton } from "@/components/recipe-submission";
 import {
   Package,
   CheckCircle2,
   Info,
+  ArrowDownWideNarrow,
   ArrowRight,
   Search,
   X,
   Clock3,
   Filter,
   Repeat2,
+  RepeatOff,
   RotateCcw,
   Briefcase,
   Check,
@@ -87,13 +98,27 @@ interface ProcessedOutput {
   content: string | { items: string[]; explanation: string };
 }
 
-type SortOption = "default" | "time-asc" | "time-desc" | "newest";
+type SortOption =
+  | "default"
+  | "time-asc"
+  | "time-desc"
+  | "newest"
+  | "recently-worked"
+  | "recently-failed";
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+interface SortOptionMeta {
+  value: SortOption;
+  label: string;
+  requiresFeedback?: boolean;
+}
+
+const SORT_OPTIONS: SortOptionMeta[] = [
   { value: "default", label: "Default" },
   { value: "time-asc", label: "Fastest First" },
   { value: "time-desc", label: "Slowest First" },
   { value: "newest", label: "Newest First" },
+  { value: "recently-worked", label: "Recently Worked", requiresFeedback: true },
+  { value: "recently-failed", label: "Recently Failed", requiresFeedback: true },
 ];
 
 // ============================================================================
@@ -118,6 +143,44 @@ function parseCraftingTime(timeStr: string): number {
     (minutes ? parseInt(minutes[1], 10) * 60 : 0) +
     (seconds ? parseInt(seconds[1], 10) : 0)
   );
+}
+
+function getCraftingTimeMinsEquivalent(timeStr: string): string | null {
+  if (!/\bsec/i.test(timeStr)) {
+    return null;
+  }
+  const totalSeconds = parseCraftingTime(timeStr);
+  if (!totalSeconds || totalSeconds < 60) {
+    return null;
+  }
+  return `${Math.round(totalSeconds / 60)} mins`;
+}
+
+const CraftingTimeDisplay = React.memo(function CraftingTimeDisplay({
+  timeStr,
+  className,
+  convertedClassName,
+}: {
+  timeStr: string;
+  className: string;
+  convertedClassName: string;
+}) {
+  const converted = getCraftingTimeMinsEquivalent(timeStr);
+  if (!converted) {
+    return <span className={className}>{timeStr}</span>;
+  }
+  return (
+    <span className="flex flex-col items-center leading-tight">
+      <span className={className}>{timeStr}</span>
+      <span className={convertedClassName}>({converted})</span>
+    </span>
+  );
+});
+
+function getReportTimeMs(isoDate: string | null | undefined): number {
+  if (!isoDate) return 0;
+  const time = Date.parse(isoDate);
+  return Number.isFinite(time) ? time : 0;
 }
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -231,6 +294,40 @@ const RepeatableBadge = React.memo(function RepeatableBadge() {
             </div>
             <p className="whitespace-normal leading-relaxed text-gray-300">
               The sacrifices listed below can be repeated indefinitely.
+            </p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+});
+
+const NonRepeatableBadge = React.memo(function NonRepeatableBadge() {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className="inline-flex cursor-help items-center justify-center rounded border border-gray-700/60 bg-gray-800/50 p-1 text-gray-500 shadow-lg"
+            aria-label="Non-repeatable"
+            title="Non-repeatable"
+          >
+            <RepeatOff className="h-3.5 w-3.5" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          sideOffset={8}
+          className="w-[250px] overflow-hidden rounded-lg border border-gray-700/80 bg-gray-900/98 p-0 text-left text-xs text-gray-200 shadow-2xl backdrop-blur-md"
+        >
+          <div className="space-y-2 p-3">
+            <div className="border-b border-gray-700/60 pb-2">
+              <p className="text-sm font-semibold text-gray-300">
+                One-time recipe
+              </p>
+            </div>
+            <p className="whitespace-normal leading-relaxed text-gray-300">
+              This sacrifice can only be completed once per wipe/prestige.
             </p>
           </div>
         </TooltipContent>
@@ -386,6 +483,23 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
 
   return (
     <div className="space-y-4">
+      <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-3.5 py-3 text-xs leading-relaxed text-amber-100/90">
+        <Info
+          className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300"
+          aria-hidden="true"
+        />
+        <p>
+          <span className="font-semibold text-amber-200">
+            Heads up: these codes and this recipe might not work anymore.
+          </span>{" "}
+          Many users report it no longer works. If you try it, please report{" "}
+          <span className="font-semibold">Worked or Didn&apos;t work</span>{" "}
+          below - thank you. Found a new recipe? Use the{" "}
+          <span className="font-semibold">Submit a recipe</span> button at the
+          top of this page. New submissions are reviewed and tested before
+          being added.
+        </p>
+      </div>
       <section className="relative overflow-hidden rounded-xl border border-amber-400/20 bg-[linear-gradient(135deg,rgba(120,53,15,0.18),rgba(3,7,18,0.74)_48%,rgba(120,53,15,0.08))] p-3.5 shadow-[inset_0_1px_0_rgba(253,230,138,0.06)] sm:p-4">
         <div
           aria-hidden="true"
@@ -526,9 +640,11 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-950/20 px-4 py-2 shadow-[0_0_20px_rgba(251,191,36,0.05)]">
                   <Clock3 className="h-4 w-4 text-amber-300/70" />
-                  <span className="font-mono text-sm font-semibold tracking-[0.08em] text-amber-100">
-                    {recipe.craftingTime}
-                  </span>
+                  <CraftingTimeDisplay
+                    timeStr={recipe.craftingTime}
+                    className="font-mono text-sm font-semibold tracking-[0.08em] text-amber-100"
+                    convertedClassName="font-mono text-xs font-medium tracking-[0.08em] text-amber-200/70"
+                  />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
@@ -863,7 +979,7 @@ const RecipeCard = React.memo(function RecipeCard({
             t={t}
             modeRestriction={recipe.modeRestriction}
           />
-          {recipe.isRepeatable && <RepeatableBadge />}
+          {recipe.isRepeatable ? <RepeatableBadge /> : <NonRepeatableBadge />}
         </div>
 
         <div
@@ -945,9 +1061,11 @@ const RecipeCard = React.memo(function RecipeCard({
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/60 border border-gray-700/50">
                         <Clock3 className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm font-mono font-medium text-gray-200">
-                          {recipe.craftingTime}
-                        </span>
+                        <CraftingTimeDisplay
+                          timeStr={recipe.craftingTime}
+                          className="text-sm font-mono font-medium text-gray-200"
+                          convertedClassName="font-mono text-xs font-normal text-gray-400"
+                        />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="text-xs">
@@ -1036,6 +1154,11 @@ export default function RecipesPage() {
 
   const { getItemByName } = useRecipeItemData(mode);
   const { t } = useLanguage();
+  const feedbackStats = useRecipeFeedbackStore((state) => state.stats);
+  const feedbackLoadStatus = useRecipeFeedbackStore(
+    (state) => state.loadStatus,
+  );
+  const feedbackReady = feedbackLoadStatus === "ready";
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
@@ -1234,6 +1357,15 @@ export default function RecipesPage() {
     });
 
     // Sort recipes
+    // Community sorts prefer recency in the selected game mode so e.g. PVE
+    // players are not topped by PVP confirmations, falling back to the
+    // global timestamp when per-mode data is unavailable.
+    const modeWorkedAt = (id: string) =>
+      feedbackStats[id]?.modes?.[mode]?.lastWorkedAt ??
+      feedbackStats[id]?.lastWorkedAt;
+    const modeDidntWorkAt = (id: string) =>
+      feedbackStats[id]?.modes?.[mode]?.lastDidntWorkAt ??
+      feedbackStats[id]?.lastDidntWorkAt;
     switch (sortBy) {
       case "time-asc":
         filtered = [...filtered].sort(
@@ -1257,10 +1389,31 @@ export default function RecipesPage() {
             (Number(Boolean(a.isUpdated)) * 2 + Number(Boolean(a.isNew))),
         );
         break;
+      case "recently-worked":
+        filtered = [...filtered].sort(
+          (a, b) =>
+            getReportTimeMs(modeWorkedAt(b.id)) -
+            getReportTimeMs(modeWorkedAt(a.id)),
+        );
+        break;
+      case "recently-failed":
+        filtered = [...filtered].sort(
+          (a, b) =>
+            getReportTimeMs(modeDidntWorkAt(b.id)) -
+            getReportTimeMs(modeDidntWorkAt(a.id)),
+        );
+        break;
     }
 
     return filtered;
-  }, [completedRecipeIds, debouncedSearch, showIncompleteOnly, sortBy]);
+  }, [
+    completedRecipeIds,
+    debouncedSearch,
+    feedbackStats,
+    mode,
+    showIncompleteOnly,
+    sortBy,
+  ]);
 
   const hasActiveFilters =
     sortBy !== "default" || Boolean(debouncedSearch) || showIncompleteOnly;
@@ -1279,6 +1432,9 @@ export default function RecipesPage() {
                 <p className="text-center text-sm text-gray-400 mt-2">
                   Discover what you can sacrifice and receive
                 </p>
+                <div className="flex justify-center pt-3">
+                  <RecipeSubmissionButton mode={mode} />
+                </div>
               </CardHeader>
 
               {/* Search Bar */}
@@ -1309,28 +1465,47 @@ export default function RecipesPage() {
                 </div>
               </div>
 
-              {/* Always-visible filters, sort, and progress */}
+              {/* Filters, sort, and progress */}
               <div className="mt-4 border-t border-gray-800/80 pt-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-600">
-                    Sort
-                  </span>
-                  {SORT_OPTIONS.map((option) => (
-                    <Button
-                      key={option.value}
-                      variant={sortBy === option.value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSortBy(option.value)}
-                      className={`h-7 rounded-full px-3 text-[11px] transition-all ${
-                        sortBy === option.value
-                          ? "border-gray-600 bg-gray-700 text-white"
-                          : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
-                      }`}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+                  <ArrowDownWideNarrow
+                    className="h-3.5 w-3.5 shrink-0 text-gray-600"
+                    aria-hidden
+                  />
+                  <Select
+                    value={sortBy}
+                    onValueChange={(value) =>
+                      setSortBy(value as SortOption)
+                    }
+                  >
+                    <SelectTrigger
+                      aria-label="Sort recipes"
+                      className="h-7 w-auto gap-2 rounded-full border-gray-700/80 bg-transparent px-3 text-[11px] text-gray-200 hover:border-gray-600"
                     >
-                      {option.label}
-                    </Button>
-                  ))}
-                  <span className="mx-1 hidden h-4 w-px bg-gray-700/70 sm:block" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-gray-700 bg-gray-900 text-gray-100">
+                      {SORT_OPTIONS.map((option) => {
+                        const unavailable =
+                          option.requiresFeedback && !feedbackReady;
+                        return (
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            disabled={unavailable}
+                            title={
+                              unavailable
+                                ? "Loading community reports..."
+                                : undefined
+                            }
+                            className="text-[12px]"
+                          >
+                            {option.label}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1345,12 +1520,9 @@ export default function RecipesPage() {
                     <Filter className="mr-1.5 h-3 w-3" />
                     Unfinished only
                   </Button>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-sm text-gray-400">
+                  <div className="ms-auto flex flex-wrap items-center gap-2">
                     <span
-                      className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-emerald-300/90"
+                      className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-sm text-emerald-300/90"
                       aria-live="polite"
                     >
                       {completedRecipeCount} / {tarkovRecipes.length} done
@@ -1391,10 +1563,7 @@ export default function RecipesPage() {
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
-                  </div>
-
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5">
+                    <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5 text-sm text-gray-400">
                       {filteredAndSortedItems.length} recipe
                       {filteredAndSortedItems.length === 1 ? "" : "s"}
                     </span>

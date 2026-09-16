@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState } from "react";
@@ -20,6 +21,8 @@ export interface Notification {
     | "hot-sacrifice"
     | "weapon-warning";
   icon?: string;
+  imageUrl?: string;
+  imageAlt?: string;
   title: string;
   description:
     | string
@@ -38,22 +41,49 @@ export interface NotificationAction {
 export const NOTIFICATIONS: Notification[] = [
   {
     id: "black-division-dogtag-recipe",
-    type: "success",
-    icon: "🔐",
-    title: "New Ritual Discovered: Black Division",
+    type: "warning",
+    imageUrl: "/images/recipes/bd-dogtag-ferrum.png",
+    imageAlt: "Black Division dogtag",
+    title: "Update: Black Division ritual may no longer work",
     priority: 0,
     description: (
       <>
-        The circle has revealed a new exchange. Redeem five launcher codes, then
-        sacrifice any five <strong>Black Division dogtags</strong> — Ferrum,
-        Green, or Red — to begin a <strong>5:55:55 ritual </strong>
-        and receive a Briefcase with documents.{" "}
+        Many users report these launcher codes and this recipe might not work
+        anymore. If you try it, please report{" "}
+        <strong>Worked or Didn&apos;t work</strong> on the{" "}
         <Link
           href="/recipes"
-          className="font-semibold underline transition-colors hover:text-emerald-200"
+          className="font-semibold underline transition-colors hover:text-amber-200"
+        >
+          recipes page
+        </Link>{" "}
+        - thank you.{" "}
+        <Link
+          href="/recipes"
+          className="font-semibold underline transition-colors hover:text-amber-200"
         >
           View the special recipe →
         </Link>
+      </>
+    ),
+  },
+  {
+    id: "submit-recipe",
+    type: "info",
+    icon: "📝",
+    title: "Found a new recipe? Submit it",
+    priority: 0,
+    description: (
+      <>
+        Use the <strong>Submit a recipe</strong> button on the{" "}
+        <Link
+          href="/recipes"
+          className="font-semibold underline transition-colors hover:text-slate-200"
+        >
+          recipes page
+        </Link>{" "}
+        to share what you sacrificed and received. Every submission is reviewed
+        and tested before being added - thank you.
       </>
     ),
   },
@@ -149,7 +179,17 @@ export function NotificationCard({
         <div
           className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-700/80 bg-slate-950/45 ${styles.icon}`}
         >
-          {notification.icon ? (
+          {notification.imageUrl ? (
+            <img
+              src={notification.imageUrl}
+              alt={notification.imageAlt ?? notification.title}
+              width={28}
+              height={28}
+              loading="lazy"
+              aria-hidden="true"
+              className="h-7 w-7 rounded object-contain"
+            />
+          ) : notification.icon ? (
             <span className="text-sm" aria-hidden="true">
               {notification.icon}
             </span>
@@ -157,6 +197,11 @@ export function NotificationCard({
             <Icon className="h-4 w-4" />
           )}
         </div>
+        {notification.imageUrl ? (
+          <span className="sr-only mt-0.5 flex-shrink-0">
+            {notification.imageAlt ?? notification.title}
+          </span>
+        ) : null}
         {notification.icon && (
           <span className="sr-only mt-0.5 flex-shrink-0">
             {notification.icon}

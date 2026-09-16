@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { handleRequest } from "@/cloudflare/feedback/src/index";
 import { tarkovRecipes } from "@/data/recipes";
+import type { RecipeSubmission } from "@/lib/recipe-submission";
 
 type TestEnvironment = {
   env: Env;
@@ -9,6 +10,146 @@ type TestEnvironment = {
   prepareMock: ReturnType<typeof vi.fn>;
   runMock: ReturnType<typeof vi.fn>;
 };
+
+const submission: RecipeSubmission = {
+  submissionId: "b20cd771-a824-4538-854a-6ff12d1dfd95",
+  gameMode: "pve",
+  timerSeconds: 3960,
+  sacrifices: [
+    { id: "5d1b3a5d86f774252167ba22", name: "  Test sacrifice  ", quantity: 2 },
+  ],
+  rewards: [
+    { id: "5d1b3a5d86f774252167ba23", name: "Test reward", quantity: 1 },
+  ],
+};
+
+function submissionRequest(
+  payload: unknown = submission,
+  method = "POST",
+  origin = "https://beta.cultistcircle.com",
+) {
+  return new Request("https://cultistcircle.com/api/recipe-submissions", {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Origin: origin,
+      "CF-Connecting-IP": "203.0.113.10",
+    },
+    ...(method === "POST" ? { body: JSON.stringify(payload) } : {}),
+  });
+}
+
+describe("Special recipe submissions", () => {
+  test.each([360, 3960, 39960, 666, 21355, 777])(
+    "queues a %i-second recipe for private review",
+    async (timerSeconds) => {
+      const { env, bindMock, prepareMock } = createEnvironment();
+      const response = await handleRequest(
+        submissionRequest({ ...submission, timerSeconds }),
+        env,
+      );
+      expect(response.status).toBe(201);
+      expect(await response.json()).toEqual({
+        success: true,
+        id: submission.submissionId,
+        status: "pending",
+      });
+      expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
+        "https://beta.cultistcircle.com",
+      );
+      expect(prepareMock.mock.calls[0][0]).toContain(
+        "ON CONFLICT(id) DO NOTHING",
+      );
+      expect(bindMock).toHaveBeenCalledWith(
+        submission.submissionId,
+        "pve",
+        timerSeconds,
+        JSON.stringify([
+          { ...submission.sacrifices[0], name: "Test sacrifice" },
+        ]),
+        JSON.stringify(submission.rewards),
+        expect.any(String),
+      );
+    },
+  );
+
+  test.each([
+    { timerSeconds: 7200 },
+    { timerSeconds: 10800 },
+    { timerSeconds: 14400 },
+    { timerSeconds: 18000 },
+    { timerSeconds: 28800 },
+    { timerSeconds: 21600 },
+    { timerSeconds: 43200 },
+    { timerSeconds: 50400 },
+    { timerSeconds: 0 },
+    { timerSeconds: 1.5 },
+    { timerSeconds: 360000 },
+    { sacrifices: [] },
+    { rewards: [] },
+    { gameMode: "unknown" },
+    { submissionId: "bad-id" },
+    { sacrifices: [{ ...submission.sacrifices[0], quantity: 6 }] },
+    { rewards: [{ ...submission.rewards[0], quantity: -1 }] },
+    { sacrifices: [submission.sacrifices[0], submission.sacrifices[0]] },
+    { rewards: [{ ...submission.rewards[0], id: "not-an-item-id" }] },
+    { status: "approved" },
+  ])("rejects invalid or regular recipes: %j", async (change) => {
+    const { env, prepareMock } = createEnvironment();
+    const response = await handleRequest(
+      submissionRequest({ ...submission, ...change }),
+      env,
+    );
+    expect(response.status).toBe(400);
+    expect(prepareMock).not.toHaveBeenCalled();
+  });
+
+  test("does not expose the review queue and allows trusted preflights", async () => {
+    const { env, prepareMock } = createEnvironment();
+    expect(
+      (await handleRequest(submissionRequest(undefined, "GET"), env)).status,
+    ).toBe(405);
+    expect(
+      (await handleRequest(submissionRequest(undefined, "OPTIONS"), env))
+        .status,
+    ).toBe(204);
+    expect(
+      (
+        await handleRequest(
+          submissionRequest(undefined, "POST", "https://untrusted.example"),
+          env,
+        )
+      ).status,
+    ).toBe(403);
+    expect(prepareMock).not.toHaveBeenCalled();
+  });
+
+  test("enforces rate limits before writing", async () => {
+    const { env, prepareMock } = createEnvironment({ rateLimitSuccess: false });
+    const response = await handleRequest(submissionRequest(), env);
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("60");
+    expect(prepareMock).not.toHaveBeenCalled();
+  });
+
+  test("rejects oversized bodies", async () => {
+    const { env, prepareMock } = createEnvironment();
+    const response = await handleRequest(
+      submissionRequest({ ...submission, extra: "x".repeat(9000) }),
+      env,
+    );
+    expect(response.status).toBe(413);
+    expect(prepareMock).not.toHaveBeenCalled();
+  });
+
+  test("returns a retryable failure when storage fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { env } = createEnvironment({ insertSuccess: false });
+    const response = await handleRequest(submissionRequest(), env);
+    expect(response.status).toBe(500);
+    expect(await response.json()).toMatchObject({ success: false });
+  });
+});
 
 function createEnvironment({
   rateLimitSuccess = true,
@@ -31,7 +172,7 @@ function createEnvironment({
 
   const env: Env = {
     DB: {
-      prepare: prepareMock,
+      prepare: prepareMock as unknown as Env["DB"]["prepare"],
       batch: vi.fn(),
       exec: vi.fn(),
       withSession: vi.fn(),
@@ -307,12 +448,20 @@ describe("Cloudflare recipe feedback API", () => {
       didnt_work_count: 0,
       last_worked_at: "2026-09-03T12:00:00.000Z",
       last_worked_mode: "pvp" as const,
+      last_didnt_work_at: null,
+      last_didnt_work_mode: null,
       worked_pvp: 1,
       worked_pve: 0,
       worked_season: 0,
       didnt_work_pvp: 0,
       didnt_work_pve: 0,
       didnt_work_season: 0,
+      last_worked_pvp_at: null,
+      last_worked_pve_at: null,
+      last_worked_season_at: null,
+      last_didnt_work_pvp_at: null,
+      last_didnt_work_pve_at: null,
+      last_didnt_work_season_at: null,
     },
   }: {
     batchSuccess?: boolean;
@@ -323,12 +472,20 @@ describe("Cloudflare recipe feedback API", () => {
       didnt_work_count: number;
       last_worked_at: string | null;
       last_worked_mode: "pvp" | "pve" | "season" | null;
+      last_didnt_work_at: string | null;
+      last_didnt_work_mode: "pvp" | "pve" | "season" | null;
       worked_pvp: number;
       worked_pve: number;
       worked_season: number;
       didnt_work_pvp: number;
       didnt_work_pve: number;
       didnt_work_season: number;
+      last_worked_pvp_at: string | null;
+      last_worked_pve_at: string | null;
+      last_worked_season_at: string | null;
+      last_didnt_work_pvp_at: string | null;
+      last_didnt_work_pve_at: string | null;
+      last_didnt_work_season_at: string | null;
     };
   } = {}) {
     const batchMock = batchError
@@ -402,16 +559,106 @@ describe("Cloudflare recipe feedback API", () => {
           didntWorkCount: 0,
           lastWorkedAt: "2026-09-03T12:00:00.000Z",
           lastWorkedMode: "pvp",
+          lastDidntWorkAt: null,
+          lastDidntWorkMode: null,
           modes: {
-            pvp: { worked: 1, didntWork: 0 },
-            pve: { worked: 0, didntWork: 0 },
-            season: { worked: 0, didntWork: 0 },
+            pvp: {
+              worked: 1,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+            pve: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+            season: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
           },
         },
       },
     });
     expect(prepareMock).toHaveBeenCalledTimes(1);
     expect(limitMock).not.toHaveBeenCalled();
+    expect(
+      prepareMock.mock.calls.some(([query]) =>
+        /FROM recipe_feedback(?!_stats)/.test(String(query)),
+      ),
+    ).toBe(false);
+    expect(
+      prepareMock.mock.calls.some(([query]) =>
+        String(query).includes("GROUP BY"),
+      ),
+    ).toBe(false);
+  });
+
+  test("serves materialized per-mode recency without touching raw votes", async () => {
+    const { env } = createRecipeEnvironment({
+      stats: {
+        recipe_id: regularRecipeId,
+        worked_count: 2,
+        didnt_work_count: 1,
+        last_worked_at: "2026-09-03T12:00:00.000Z",
+        last_worked_mode: "pve",
+        last_didnt_work_at: "2026-09-04T12:00:00.000Z",
+        last_didnt_work_mode: "season",
+        worked_pvp: 1,
+        worked_pve: 1,
+        worked_season: 0,
+        didnt_work_pvp: 0,
+        didnt_work_pve: 0,
+        didnt_work_season: 1,
+        last_worked_pvp_at: "2026-09-02T12:00:00.000Z",
+        last_worked_pve_at: "2026-09-03T12:00:00.000Z",
+        last_worked_season_at: null,
+        last_didnt_work_pvp_at: null,
+        last_didnt_work_pve_at: null,
+        last_didnt_work_season_at: "2026-09-04T12:00:00.000Z",
+      },
+    });
+
+    const response = await handleRequest(makeRecipeRequest("GET"), env);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      data: {
+        [regularRecipeId]: {
+          workedCount: 2,
+          didntWorkCount: 1,
+          lastWorkedAt: "2026-09-03T12:00:00.000Z",
+          lastWorkedMode: "pve",
+          lastDidntWorkAt: "2026-09-04T12:00:00.000Z",
+          lastDidntWorkMode: "season",
+          modes: {
+            pvp: {
+              worked: 1,
+              didntWork: 0,
+              lastWorkedAt: "2026-09-02T12:00:00.000Z",
+              lastDidntWorkAt: null,
+            },
+            pve: {
+              worked: 1,
+              didntWork: 0,
+              lastWorkedAt: "2026-09-03T12:00:00.000Z",
+              lastDidntWorkAt: null,
+            },
+            season: {
+              worked: 0,
+              didntWork: 1,
+              lastWorkedAt: null,
+              lastDidntWorkAt: "2026-09-04T12:00:00.000Z",
+            },
+          },
+        },
+      },
+    });
   });
 
   test("writes a new vote and returns authoritative totals", async () => {
@@ -440,10 +687,27 @@ describe("Cloudflare recipe feedback API", () => {
           didntWorkCount: 0,
           lastWorkedAt: "2026-09-03T12:00:00.000Z",
           lastWorkedMode: "pvp",
+          lastDidntWorkAt: null,
+          lastDidntWorkMode: null,
           modes: {
-            pvp: { worked: 1, didntWork: 0 },
-            pve: { worked: 0, didntWork: 0 },
-            season: { worked: 0, didntWork: 0 },
+            pvp: {
+              worked: 1,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+            pve: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
+            season: {
+              worked: 0,
+              didntWork: 0,
+              lastWorkedAt: null,
+              lastDidntWorkAt: null,
+            },
           },
         },
         userVote: "worked",
@@ -472,9 +736,23 @@ describe("Cloudflare recipe feedback API", () => {
         String(query).includes("SELECT vote, game_mode"),
       ),
     ).toBe(false);
+    expect(
+      prepareMock.mock.calls.some(([query]) =>
+        String(query).includes("GROUP BY"),
+      ),
+    ).toBe(false);
     expect(String(prepareMock.mock.calls[0][0])).toContain(
       "WHERE recipe_feedback.vote IS NOT excluded.vote",
     );
+    const rebuildQuery: string = prepareMock.mock.calls
+      .map((call) => String(call[0]))
+      .find((query) =>
+        query.includes("INSERT INTO recipe_feedback_stats"),
+      )!;
+    expect(rebuildQuery).toContain("last_didnt_work_at");
+    expect(rebuildQuery).toContain("last_didnt_work_mode");
+    expect(rebuildQuery).toContain("last_worked_pvp_at");
+    expect(rebuildQuery).toContain("last_didnt_work_season_at");
   });
 
   test("accepts a game mode and stores it with the vote", async () => {

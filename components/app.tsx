@@ -11,7 +11,7 @@ import React, {
 import dynamic from "next/dynamic";
 // import Link from "next/link";
 import ItemSocket from "@/components/item-socket";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Minus, Plus } from "lucide-react";
 // cn moved to components that need it
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -93,6 +93,14 @@ import {
   type GameMode,
 } from "@/lib/game-mode";
 import { resolveSharedItems } from "@/lib/share-utils";
+import {
+  clampSacrificeSlotCount,
+  DEFAULT_SACRIFICE_SLOTS,
+  MAX_SACRIFICE_SLOTS,
+  MIN_SACRIFICE_SLOTS,
+  parseSacrificeSlotCount,
+  SACRIFICE_SLOT_COUNT_KEY,
+} from "@/lib/sacrifice-slots";
 import type { RitualInputPriceSource } from "@/types/ritual-tracker";
 import { clearRitualHistory, listRituals } from "@/lib/ritual-tracker-db";
 import {
@@ -260,6 +268,30 @@ function AppContent({ contributors = [] }: AppProps) {
   const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
   const [itemBonus, setItemBonus] = useState<number>(0);
   const [ignoreFilters, setIgnoreFilters] = useState(false);
+  const [sacrificeSlotCount, setSacrificeSlotCountState] = useState<number>(
+    () => {
+      if (typeof window !== "undefined") {
+        return parseSacrificeSlotCount(
+          localStorage.getItem(SACRIFICE_SLOT_COUNT_KEY),
+        );
+      }
+      return DEFAULT_SACRIFICE_SLOTS;
+    },
+  );
+
+  const handleSacrificeSlotCountChange = useCallback((nextCount: number) => {
+    const clamped = clampSacrificeSlotCount(nextCount);
+    setSacrificeSlotCountState(clamped);
+    setHasAutoSelected(false);
+    // Slots beyond the new count are removed so hidden items never count
+    // toward totals or auto-select. Kept slots are untouched.
+    setSelectedItems((current) =>
+      current.map((item, index) => (index < clamped ? item : null)),
+    );
+    setPinnedItems((current) =>
+      current.map((pinned, index) => (index < clamped ? pinned : false)),
+    );
+  }, []);
 
   // Refs for item selectors to enable keyboard focus
   const selectorRefs = useRef<(ItemSelectorHandle | null)[]>([]);
@@ -440,7 +472,13 @@ function AppContent({ contributors = [] }: AppProps) {
     }
   }, [hasError, t]);
 
-  // Initialize client-side state (run once after data is available)
+  // Initialize client-side state (run once after data is available).
+  // This stays an effect on purpose: it hydrates from localStorage (which
+  // does not exist during SSR prerendering) and it only runs once the
+  // asynchronously fetched item data arrives, so it cannot be a lazy state
+  // initializer. It also performs idempotent one-time storage migrations.
+  /* eslint-disable react-hooks/set-state-in-effect -- one-time async-gated
+     client hydration from localStorage with storage migrations; see above. */
   useEffect(() => {
     if (didInitStateRef.current) return;
     // Only initialize if we have data
@@ -569,16 +607,22 @@ function AppContent({ contributors = [] }: AppProps) {
     // Mark initialization complete
     didInitStateRef.current = true;
   }, [rawItemsData]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  useEffect(() => {
-    if (!didInitStateRef.current) {
-      return;
-    }
-
-    if (!rawItemsData || rawItemsData.length === 0) {
-      return;
-    }
-
+  // Remap selected items when the underlying data changes. Render-phase
+  // adjustment with previous-data tracking replaces the effect to avoid
+  // cascading renders. The functional update returns the current state
+  // untouched when nothing changed, so this no-ops most renders.
+  // NOTE: the non-empty gate must come first. useItemsData returns a fresh
+  // `data || []` array on every render while loading, so tracking prev data
+  // unconditionally would schedule a re-render on every render (React #301).
+  const [prevRawItemsData, setPrevRawItemsData] = useState(rawItemsData);
+  if (
+    rawItemsData &&
+    rawItemsData.length > 0 &&
+    prevRawItemsData !== rawItemsData
+  ) {
+    setPrevRawItemsData(rawItemsData);
     setSelectedItems((currentSelectedItems) => {
       const remappedSelectedItems = remapSelectedItemsToCurrentData(
         currentSelectedItems,
@@ -591,7 +635,7 @@ function AppContent({ contributors = [] }: AppProps) {
 
       return hasChanged ? remappedSelectedItems : currentSelectedItems;
     });
-  }, [rawItemsData]);
+  }
 
   // Auto-trigger notifications after onboarding completion and data load
   useEffect(() => {
@@ -642,6 +686,11 @@ function AppContent({ contributors = [] }: AppProps) {
   useEffect(() => {
     localStorage.setItem("userThreshold", threshold.toString());
   }, [threshold]);
+
+  // Save sacrifice slot count to localStorage
+  useEffect(() => {
+    localStorage.setItem(SACRIFICE_SLOT_COUNT_KEY, sacrificeSlotCount.toString());
+  }, [sacrificeSlotCount]);
 
   // Save excludeIncompatible to localStorage
   useEffect(() => {
@@ -705,8 +754,10 @@ function AppContent({ contributors = [] }: AppProps) {
       ) {
         e.preventDefault();
 
-        // Find index of first empty slot
-        let targetIndex = selectedItems.findIndex((item) => !item);
+        // Find index of first empty slot within the active sacrifice slots
+        let targetIndex = selectedItems
+          .slice(0, sacrificeSlotCount)
+          .findIndex((item) => !item);
 
         // If all are full, default to the first one
         if (targetIndex === -1) targetIndex = 0;
@@ -718,7 +769,7 @@ function AppContent({ contributors = [] }: AppProps) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedItems]);
+  }, [selectedItems, sacrificeSlotCount]);
 
   // Handler for category changes
   const handleCategoryChange = useCallback((categories: string[]) => {
@@ -755,6 +806,7 @@ function AppContent({ contributors = [] }: AppProps) {
       setUseLevelFilter,
       setPlayerLevel,
     );
+    setSacrificeSlotCountState(DEFAULT_SACRIFICE_SLOTS);
   }, [
     setSelectedItems,
     setPinnedItems,
@@ -1194,7 +1246,10 @@ function AppContent({ contributors = [] }: AppProps) {
 
     // Deterministic seeded randomness helpers (stable for same selection/threshold/slot)
     const selKey =
-      selectedItems.map((s) => (s ? s.id : "-")).join("|") + `:${threshold}`;
+      selectedItems
+        .slice(0, sacrificeSlotCount)
+        .map((s) => (s ? s.id : "-"))
+        .join("|") + `:${threshold}:${sacrificeSlotCount}`;
     // Deterministic seeded randomness helpers imported from lib/item-utils
 
     // Helper: build a cheap plan of up to k items that covers need by greedy on price,
@@ -1232,7 +1287,9 @@ function AppContent({ contributors = [] }: AppProps) {
       return plan;
     }
 
-    const totalEmpty = selectedItems.filter((x) => !x).length;
+    const totalEmpty = selectedItems
+      .slice(0, sacrificeSlotCount)
+      .filter((x) => !x).length;
 
     return selectedItems.map((slotItem, idx) => {
       if (slotItem) return [] as SimplifiedItem[];
@@ -1279,7 +1336,7 @@ function AppContent({ contributors = [] }: AppProps) {
       if (out.length === 0) return candidates.slice(0, 3).map((c) => c.item);
       return out;
     });
-  }, [items, selectedItems, threshold, itemBonus, getEffectivePrice]);
+  }, [items, selectedItems, threshold, itemBonus, getEffectivePrice, sacrificeSlotCount]);
 
   const shouldShowNextItemHints = (
     slotItem: SimplifiedItem | null,
@@ -1290,10 +1347,17 @@ function AppContent({ contributors = [] }: AppProps) {
       !slotItem &&
       nextItemSuggestions[index] &&
       nextItemSuggestions[index].length > 0 &&
-      index === selectedItems.findIndex((item) => !item),
+      index ===
+        selectedItems.slice(0, sacrificeSlotCount).findIndex((item) => !item),
     );
 
   // Handler to update selected item
+  // Declared before use so the setter is initialized before this callback
+  // is defined (react-hooks/immutability).
+  const [loadingSlots, setLoadingSlots] = useState<boolean[]>(
+    Array(5).fill(false),
+  );
+
   const handleItemSelect = useCallback(
     (
       index: number,
@@ -1364,9 +1428,9 @@ function AppContent({ contributors = [] }: AppProps) {
     const willPin = !pinnedItems[index];
     if (willPin) {
       const newPinnedCount = pinnedItems.filter(Boolean).length + 1;
-      // Guardrail: prevent pinning all 5 when threshold is not met (would make auto-select impossible)
-      if (newPinnedCount === 5 && total < threshold) {
-        sonnerToast.error(t("Cannot pin all 5 items"), {
+      // Guardrail: prevent pinning every active slot when threshold is not met (would make auto-select impossible)
+      if (newPinnedCount === sacrificeSlotCount && total < threshold) {
+        sonnerToast.error(t("Cannot pin all items"), {
           description: t(
             "Current total {total} is below threshold {threshold}. Unpin one item or increase item values.",
             {
@@ -1390,8 +1454,11 @@ function AppContent({ contributors = [] }: AppProps) {
     setIsCalculating(true);
 
     try {
-      // Determine remaining slots before heavy work
-      const slotsLeft = 5 - pinnedItems.filter(Boolean).length;
+      // Determine remaining slots before heavy work (active slots only)
+      const activePinnedCount = pinnedItems
+        .slice(0, sacrificeSlotCount)
+        .filter(Boolean).length;
+      const slotsLeft = sacrificeSlotCount - activePinnedCount;
 
       // Single-pass filter with all conditions, then sort; only cap to top-100 when more than one slot left
       let ranked = items
@@ -1416,11 +1483,13 @@ function AppContent({ contributors = [] }: AppProps) {
       // Small delay to prevent UI freezing
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      const pinnedTotal = selectedItems.reduce(
-        (sum, item, index) =>
-          sum + (pinnedItems[index] && item ? item.basePrice : 0),
-        0,
-      );
+      const pinnedTotal = selectedItems
+        .slice(0, sacrificeSlotCount)
+        .reduce(
+          (sum, item, index) =>
+            sum + (pinnedItems[index] && item ? item.basePrice : 0),
+          0,
+        );
 
       const remainingThreshold = Math.max(0, threshold - pinnedTotal);
 
@@ -1432,9 +1501,12 @@ function AppContent({ contributors = [] }: AppProps) {
 
       const filteredItems = validItems.filter(
         (item) =>
-          !selectedItems.some(
-            (selected, index) => pinnedItems[index] && selected?.id === item.id,
-          ),
+          !selectedItems
+            .slice(0, sacrificeSlotCount)
+            .some(
+              (selected, index) =>
+                pinnedItems[index] && selected?.id === item.id,
+            ),
       );
 
       // Adjust prices in filteredItems to use overridden prices where applicable
@@ -1478,7 +1550,9 @@ function AppContent({ contributors = [] }: AppProps) {
         const newSelectedItems: Array<SimplifiedItem | null> = [
           ...selectedItems,
         ];
-        const targetIndex = pinnedItems.findIndex((p) => !p);
+        const targetIndex = pinnedItems
+          .slice(0, sacrificeSlotCount)
+          .findIndex((p) => !p);
         const currentId =
           targetIndex !== -1 ? newSelectedItems[targetIndex]?.id : undefined;
         const currentIdxInList = currentId
@@ -1536,7 +1610,7 @@ function AppContent({ contributors = [] }: AppProps) {
 
       const newSelectedItems: Array<SimplifiedItem | null> = [...selectedItems];
       let combinationIndex = 0;
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < sacrificeSlotCount; i++) {
         if (!pinnedItems[i]) {
           newSelectedItems[i] =
             bestCombination.selected[combinationIndex] || null;
@@ -1569,6 +1643,7 @@ function AppContent({ contributors = [] }: AppProps) {
     excludedItems,
     pinnedItems,
     selectedItems,
+    sacrificeSlotCount,
     overriddenPrices,
     findBestCombination,
     getEffectivePrice,
@@ -1714,7 +1789,11 @@ function AppContent({ contributors = [] }: AppProps) {
 
         if (matchingItem) {
           // Fill multiple slots if count > 1
-          for (let i = 0; i < ingredient.count && slotIndex < 5; i++) {
+          for (
+            let i = 0;
+            i < ingredient.count && slotIndex < sacrificeSlotCount;
+            i++
+          ) {
             updateSelectedItem(matchingItem, slotIndex);
             successItems.push(ingredient.shortName || ingredient.name);
             slotIndex++;
@@ -1740,7 +1819,7 @@ function AppContent({ contributors = [] }: AppProps) {
         });
       }
     },
-    [findMatchingItem, t, updateSelectedItem],
+    [findMatchingItem, t, updateSelectedItem, sacrificeSlotCount],
   );
 
   const handleModeChange = useCallback((nextMode: GameMode): void => {
@@ -1874,12 +1953,9 @@ function AppContent({ contributors = [] }: AppProps) {
       // Now that we have cleared out the old data, update the version in local storage
       localStorage.setItem("appVersion", CURRENT_VERSION);
 
-      // Reset all state to defaults to prevent immediate re-saving to localStorage
-      setSortOption("az");
-      setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
-      setExcludeIncompatible(true);
-      setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
-      setOverriddenPrices({});
+      // NOTE: no state resets here. The synchronous reload below discards
+      // this render's state updates before React could commit them, so
+      // setState calls would be dead code (and trip set-state-in-effect).
 
       // Force a page reload to ensure all state is properly reset
       window.location.reload();
@@ -1912,11 +1988,6 @@ function AppContent({ contributors = [] }: AppProps) {
       description: t("All item fields have been cleared."),
     });
   }, [t]);
-
-  // Add loading state
-  const [loadingSlots, setLoadingSlots] = useState<boolean[]>(
-    Array(5).fill(false),
-  );
 
   // Reset overrides and exclusions
   const resetOverridesAndExclusions = useCallback(() => {
@@ -2091,12 +2162,45 @@ function AppContent({ contributors = [] }: AppProps) {
 
                 {/* Items Selection Area Headers */}
                 <div className="flex items-center justify-between px-1">
-                  <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-                    {t("Items")}
-                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                      {t("Item slots")} · {sacrificeSlotCount}/
+                      {MAX_SACRIFICE_SLOTS}
+                    </h3>
+                    <div
+                      className="flex items-center gap-0.5"
+                      role="group"
+                      aria-label={t("Number of sacrifice slots")}
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleSacrificeSlotCountChange(sacrificeSlotCount - 1)
+                        }
+                        disabled={sacrificeSlotCount <= MIN_SACRIFICE_SLOTS}
+                        aria-label={t("Remove one sacrifice slot")}
+                        className="flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500"
+                      >
+                        <Minus className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleSacrificeSlotCountChange(sacrificeSlotCount + 1)
+                        }
+                        disabled={sacrificeSlotCount >= MAX_SACRIFICE_SLOTS}
+                        aria-label={t("Add one sacrifice slot")}
+                        className="flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500"
+                      >
+                        <Plus className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    </div>
+                  </div>
                   <SelectorSettingsPopover
                     sortOption={sortOption}
                     onSortChange={handleSortChange}
+                    sacrificeSlotCount={sacrificeSlotCount}
+                    onSacrificeSlotCountChange={handleSacrificeSlotCountChange}
                     priceMode={priceMode}
                     onPriceModeChange={handlePriceModeChange}
                     traderLevels={traderLevels}
@@ -2154,7 +2258,7 @@ function AppContent({ contributors = [] }: AppProps) {
                   )}
                   {loading ? (
                     <div className="space-y-1">
-                      {Array(5)
+                      {Array(sacrificeSlotCount)
                         .fill(0)
                         .map((_, index) => (
                           <Skeleton
@@ -2219,7 +2323,9 @@ function AppContent({ contributors = [] }: AppProps) {
                       )}
                     </div>
                   ) : (
-                    selectedItems.map((item, index) => (
+                    selectedItems
+                      .slice(0, sacrificeSlotCount)
+                      .map((item, index) => (
                       <div
                         key={`selector-${index}`}
                         className={`animate-fade-in transition-all duration-200 ${
@@ -2435,6 +2541,7 @@ function AppContent({ contributors = [] }: AppProps) {
               setExcludedCategories(DEFAULT_EXCLUDED_CATEGORY_IDS);
               setSortOption("az");
               setThreshold(400000);
+              setSacrificeSlotCountState(DEFAULT_SACRIFICE_SLOTS);
               setExcludedItems(new Set(DEFAULT_EXCLUDED_ITEMS));
               setOverriddenPrices({});
               setUseLevelFilter(DEFAULT_USE_LEVEL_FILTER);
@@ -2456,6 +2563,7 @@ function AppContent({ contributors = [] }: AppProps) {
                 selectedItems,
                 pinnedItems,
                 sortOption,
+                sacrificeSlotCount,
                 excludedCategories: Array.from(excludedCategories),
                 excludeIncompatible,
                 excludedItems: Array.from(excludedItems),
@@ -2490,6 +2598,8 @@ function AppContent({ contributors = [] }: AppProps) {
                   setSelectedItems(parsed.selectedItems);
                 if (parsed.pinnedItems) setPinnedItems(parsed.pinnedItems);
                 if (parsed.sortOption) setSortOption(parsed.sortOption);
+                if (parsed.sacrificeSlotCount !== undefined)
+                  handleSacrificeSlotCountChange(parsed.sacrificeSlotCount);
                 if (parsed.excludedCategories)
                   setExcludedCategories(new Set(parsed.excludedCategories));
                 if (parsed.excludeIncompatible !== undefined)

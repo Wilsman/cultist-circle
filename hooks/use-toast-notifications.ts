@@ -25,11 +25,11 @@ const CURRENT_APP_VERSION = "2.1.2";
 const AVAILABLE_NOTIFICATIONS: Notification[] = [
   {
     id: "black-division-dogtag-recipe",
-    title: "New Ritual: Black Division Dogtags",
+    title: "Update: Black Division ritual may not work",
     description:
-      "Redeem five launcher codes, sacrifice any five Black Division dogtags, and uncover the 5:55:55 reward.",
+      "Many users report these codes no longer work. Please report Worked or Didn't work on the recipes page, and use Submit a recipe if you find a new one.",
     version: CURRENT_APP_VERSION,
-    type: "feature",
+    type: "warning",
     createdAt: "2026-08-04",
     icon: "🔐",
   },

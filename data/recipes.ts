@@ -64,7 +64,7 @@ const recipeDefinitions: RecipeDefinition[] = [
       sacrificeItemUrl: "https://tarkov.dev/item/bd-dogtag-ferrum",
       rewardItemUrl: "https://tarkov.dev/item/briefcase-with-documents",
       sacrificeNote:
-        "Any Black Division dogtag works: Ferrum, Green, or Red.",
+        "Heads up: many users report these codes and this recipe might not work anymore. ONLY the Black Division dogtags from the Redeem Code ever worked - please report Worked or Didn't work below, thank you.",
     },
   },
   {

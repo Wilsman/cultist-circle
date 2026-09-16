@@ -42,21 +42,19 @@ function Slide({ title, children }: SlideProps) {
 
 export function OnboardingDialog() {
   const { t } = useLanguage();
-  const [open, setOpen] = React.useState(false);
-  const [index, setIndex] = React.useState(0);
-  const carouselApi = React.useRef<CarouselApi | null>(null);
-
-  React.useEffect(() => {
+  // Read the flag once during state initialization instead of in an effect.
+  const [open, setOpen] = React.useState<boolean>(() => {
     // Only show once per browser using localStorage flag
     try {
-      const seen =
-        typeof window !== "undefined" &&
-        window.localStorage.getItem(STORAGE_KEY);
-      if (!seen) setOpen(true);
+      if (typeof window === "undefined") return false;
+      return window.localStorage.getItem(STORAGE_KEY) == null;
     } catch {
       // ignore storage errors
+      return false;
     }
-  }, []);
+  });
+  const [index, setIndex] = React.useState(0);
+  const carouselApi = React.useRef<CarouselApi | null>(null);
 
   function handleClose() {
     try {

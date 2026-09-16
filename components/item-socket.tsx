@@ -22,7 +22,7 @@ interface Item {
   id: string;
   name: string;
   bonus: number;
-  icon: string | JSX.Element;
+  icon: string | React.JSX.Element;
 }
 
 export default React.memo(ItemSocket);

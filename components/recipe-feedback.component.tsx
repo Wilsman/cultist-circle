@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { cva } from "class-variance-authority";
 import {
   BarChart3,
@@ -21,7 +21,12 @@ import {
   useRecipeFeedbackLifecycle,
 } from "@/hooks/use-recipe-feedback";
 import { GAME_MODE_LABELS, type GameMode } from "@/lib/game-mode";
-import { getUnspecifiedModeCounts } from "@/lib/recipe-feedback";
+import {
+  formatCompactRecency,
+  formatLatestReport,
+  getLatestReport,
+  getUnspecifiedModeCounts,
+} from "@/lib/recipe-feedback";
 import { cn } from "@/lib/utils";
 import type { UserVote } from "@/types/recipe-feedback";
 
@@ -239,6 +244,7 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
     stats,
     userVote,
     userMode,
+    now,
     castVote,
     formattedRecency,
     formattedModeRecency,
@@ -253,6 +259,28 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
   } = useRecipeFeedback(recipeId);
   const controlsDisabled = !canVote || isPending;
   const unspecified = getUnspecifiedModeCounts(stats);
+  const latestReport = React.useMemo(() => getLatestReport(stats), [stats]);
+  const latestLine = React.useMemo(
+    () => formatLatestReport(stats, now),
+    [stats, now],
+  );
+  const totalReports = stats.workedCount + stats.didntWorkCount;
+  const thanksKey =
+    message === "Report saved." && userVote
+      ? `${userVote}-${stats.workedCount}-${stats.didntWorkCount}`
+      : null;
+  const [dismissedThanksKey, setDismissedThanksKey] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!thanksKey) return;
+    const timer = setTimeout(() => setDismissedThanksKey(thanksKey), 4000);
+    return () => clearTimeout(timer);
+  }, [thanksKey]);
+
+  const showThanks =
+    !!thanksKey && dismissedThanksKey !== thanksKey && !voteError;
 
   return (
     <div className="mt-3.5 border-t border-gray-700/40 pt-2.5 text-xs">
@@ -287,7 +315,11 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
                   <span
                     className={cn(
                       "h-1.5 w-1.5 shrink-0 rounded-full",
-                      isRecentlyActive ? "bg-emerald-400" : "bg-gray-500",
+                      isRecentlyActive
+                        ? "bg-emerald-400"
+                        : stats.didntWorkCount > 0
+                          ? "bg-rose-400"
+                          : "bg-gray-500",
                     )}
                   />
                   <span>{formattedRecency}</span>
@@ -297,34 +329,63 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
               <PopoverContent
                 side="top"
                 align="start"
-                className="w-52 border-gray-700/60 bg-gray-900/95 p-3 text-gray-200 shadow-xl backdrop-blur-md"
+                className="w-64 border-gray-700/60 bg-gray-900/95 p-3 text-gray-200 shadow-xl backdrop-blur-md"
               >
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                  Community reports
-                </p>
-                <div className="flex flex-col gap-1.5">
+                <div className="mb-2 flex items-baseline justify-between gap-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                    Community reports
+                  </p>
+                  <p className="text-[10px] text-gray-500">
+                    {totalReports === 0
+                      ? "No reports yet"
+                      : `${totalReports} report${totalReports === 1 ? "" : "s"}`}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
                   {FEEDBACK_MODES.map((mode) => {
                     const counts = stats.modes?.[mode.value] ?? {
                       worked: 0,
                       didntWork: 0,
                     };
+                    const isLatestMode = latestReport?.mode === mode.value;
                     return (
                       <ModeCountRow
                         key={mode.value}
                         label={mode.label}
+                        title={mode.title}
                         worked={counts.worked}
                         didntWork={counts.didntWork}
+                        workedRecency={formatCompactRecency(
+                          counts.lastWorkedAt ?? null,
+                          now,
+                        )}
+                        didntWorkRecency={formatCompactRecency(
+                          counts.lastDidntWorkAt ?? null,
+                          now,
+                        )}
+                        latestVote={
+                          isLatestMode ? (latestReport?.vote ?? null) : null
+                        }
                       />
                     );
                   })}
                   {(unspecified.worked > 0 || unspecified.didntWork > 0) && (
                     <ModeCountRow
                       label="Unspecified"
+                      title="Reports without a game mode (legacy)"
                       worked={unspecified.worked}
                       didntWork={unspecified.didntWork}
+                      workedRecency={null}
+                      didntWorkRecency={null}
+                      latestVote={null}
                     />
                   )}
                 </div>
+                {latestLine && (
+                  <p className="mt-2 border-t border-gray-700/50 pt-2 text-[10px] leading-snug text-gray-400">
+                    {latestLine}
+                  </p>
+                )}
               </PopoverContent>
             </Popover>
           )}
@@ -335,6 +396,23 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
           )}
           {voteError && (
             <p className="mt-1 text-[11px] text-rose-300">{voteError}</p>
+          )}
+          {showThanks && userVote && thanksKey && (
+            <p
+              aria-hidden="true"
+              key={thanksKey}
+              className={cn(
+                "mt-1.5 flex animate-in items-center gap-1.5 text-[11px] font-medium fade-in-0 slide-in-from-bottom-1 duration-300",
+                userVote === "worked"
+                  ? "text-emerald-300/90"
+                  : "text-rose-300/90",
+              )}
+            >
+              <Check className="h-3 w-3 shrink-0" />
+              {userVote === "worked"
+                ? "Thanks - the Circle approves."
+                : "Noted - thanks for keeping the Circle honest."}
+            </p>
           )}
           <span className="sr-only" role="status" aria-live="polite">
             {voteError ?? message ?? ""}
@@ -378,26 +456,92 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
 
 function ModeCountRow({
   label,
+  title,
   worked,
   didntWork,
+  workedRecency,
+  didntWorkRecency,
+  latestVote,
 }: {
   label: string;
+  title?: string;
   worked: number;
   didntWork: number;
+  workedRecency: string | null;
+  didntWorkRecency: string | null;
+  latestVote: "worked" | "didnt_work" | null;
 }) {
+  const hasReports = worked > 0 || didntWork > 0;
   return (
-    <div className="flex items-center justify-between gap-5 text-[11px]">
-      <span className="font-semibold text-gray-400">{label}</span>
-      <span className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 font-semibold text-emerald-300">
-          <ThumbsUp className="h-3 w-3" />
-          {worked}
+    <div
+      className={cn(
+        "rounded-md px-1.5 py-1.5",
+        latestVote === "worked" && "bg-emerald-500/10",
+        latestVote === "didnt_work" && "bg-rose-500/10",
+      )}
+    >
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span
+            className="font-semibold text-gray-300"
+            title={title ?? label}
+          >
+            {label}
+          </span>
+          {latestVote && (
+            <span
+              className={cn(
+                "rounded px-1 py-px text-[9px] font-bold uppercase tracking-wide",
+                latestVote === "worked"
+                  ? "bg-emerald-500/20 text-emerald-300"
+                  : "bg-rose-500/20 text-rose-300",
+              )}
+            >
+              Latest
+            </span>
+          )}
         </span>
-        <span className="inline-flex items-center gap-1 font-semibold text-rose-300">
-          <ThumbsDown className="h-3 w-3" />
-          {didntWork}
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="inline-flex items-center gap-1 font-semibold text-emerald-300">
+            <ThumbsUp className="h-3 w-3" />
+            {worked}
+          </span>
+          <span className="inline-flex items-center gap-1 font-semibold text-rose-300">
+            <ThumbsDown className="h-3 w-3" />
+            {didntWork}
+          </span>
         </span>
-      </span>
+      </div>
+      <div className="mt-0.5 flex flex-col gap-px text-[10px] leading-snug">
+        {hasReports ? (
+          <>
+            <span
+              className={cn(
+                latestVote === "worked"
+                  ? "font-medium text-emerald-300"
+                  : "text-gray-500",
+              )}
+            >
+              {worked > 0
+                ? `Worked ${workedRecency ?? "· no time recorded"}`
+                : "No successes yet"}
+            </span>
+            <span
+              className={cn(
+                latestVote === "didnt_work"
+                  ? "font-medium text-rose-300"
+                  : "text-gray-500",
+              )}
+            >
+              {didntWork > 0
+                ? `Failed ${didntWorkRecency ?? "· no time recorded"}`
+                : "No failures yet"}
+            </span>
+          </>
+        ) : (
+          <span className="text-gray-600">No reports yet</span>
+        )}
+      </div>
     </div>
   );
 }

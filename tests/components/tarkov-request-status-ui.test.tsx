@@ -75,7 +75,8 @@ describe("Tarkov request status UI", () => {
       await screen.findByText(/Tarkov\.dev is not responding\. Retrying in/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/attempt 2 of 3/i)).toBeInTheDocument();
-  });
+    // Full-App render with real backoff waits: allow headroom under load.
+  }, 15000);
 
   it("shows calculator cooldown and disables exhausted manual retry", async () => {
     const { App } = await import("@/components/app");
@@ -102,7 +103,8 @@ describe("Tarkov request status UI", () => {
       await screen.findByText(/Tarkov\.dev item data could not be loaded/i),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /try again/i })).toBeDisabled();
-  });
+    // Full-App render with real backoff waits: allow headroom under load.
+  }, 15000);
 
   it("switches the calculator to Season and persists the selection", async () => {
     const { App } = await import("@/components/app");
@@ -128,7 +130,8 @@ describe("Tarkov request status UI", () => {
       expect(useItemsDataMock).toHaveBeenLastCalledWith("season");
       expect(localStorage.getItem("gameMode")).toBe("season");
     });
-  });
+    // Full-App render with real backoff waits: allow headroom under load.
+  }, 15000);
 
   it("shows Base Values outage status instead of silently rendering empty data", async () => {
     const ItemsTablePage = (await import("@/app/base-values/page")).default;

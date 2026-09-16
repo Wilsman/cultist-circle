@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, Clock3, Flame, Loader2, TimerReset } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export function StartRitualDialog({
   sacredBonus,
   inputPriceSource,
 }: StartRitualDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [startedAtInput, setStartedAtInput] = useState(() =>
     toDateTimeLocal(Date.now()),
@@ -182,7 +184,7 @@ export function StartRitualDialog({
         action: {
           label: "Open tracker",
           onClick: () => {
-            window.location.href = "/tracker";
+            router.push("/tracker");
           },
         },
       });
@@ -198,7 +200,7 @@ export function StartRitualDialog({
             action: {
               label: "View",
               onClick: () => {
-                window.location.href = "/tracker";
+                router.push("/tracker");
               },
             },
           },

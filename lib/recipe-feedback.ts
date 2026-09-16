@@ -27,6 +27,7 @@ export const EMPTY_RECIPE_FEEDBACK_STATS: RecipeFeedbackStats = {
   didntWorkCount: 0,
   lastWorkedAt: null,
   lastWorkedMode: null,
+  lastDidntWorkAt: null,
   modes: { ...EMPTY_RECIPE_FEEDBACK_MODES },
 };
 
@@ -42,7 +43,13 @@ export function isRecipeFeedbackModeCounts(
     Number.isInteger(counts.worked) &&
     Number(counts.worked) >= 0 &&
     Number.isInteger(counts.didntWork) &&
-    Number(counts.didntWork) >= 0
+    Number(counts.didntWork) >= 0 &&
+    (counts.lastWorkedAt === undefined ||
+      counts.lastWorkedAt === null ||
+      typeof counts.lastWorkedAt === "string") &&
+    (counts.lastDidntWorkAt === undefined ||
+      counts.lastDidntWorkAt === null ||
+      typeof counts.lastDidntWorkAt === "string")
   );
 }
 
@@ -73,10 +80,17 @@ export function isRecipeFeedbackStats(
     Number.isInteger(stats.didntWorkCount) &&
     Number(stats.didntWorkCount) >= 0 &&
     (stats.lastWorkedAt === null || typeof stats.lastWorkedAt === "string") &&
+    (stats.lastDidntWorkAt === undefined ||
+      stats.lastDidntWorkAt === null ||
+      typeof stats.lastDidntWorkAt === "string") &&
     (stats.lastWorkedMode === undefined ||
       stats.lastWorkedMode === null ||
       (typeof stats.lastWorkedMode === "string" &&
         isGameMode(stats.lastWorkedMode))) &&
+    (stats.lastDidntWorkMode === undefined ||
+      stats.lastDidntWorkMode === null ||
+      (typeof stats.lastDidntWorkMode === "string" &&
+        isGameMode(stats.lastDidntWorkMode))) &&
     (stats.modes === undefined || isRecipeFeedbackModeBreakdown(stats.modes))
   );
 }
@@ -125,20 +139,18 @@ export function isUserModeMap(value: unknown): value is UserModeMap {
 }
 
 /**
- * Calculate human-readable relative time for when a recipe last worked
+ * Shared relative-time formatter. Returns null when there is no timestamp so
+ * callers can distinguish "no reports" from a real recency.
  */
-export function formatRecency(
+function formatRelativeTime(
+  prefix: string,
   isoDateString: string | null,
-  now: number = Date.now(),
-): string {
-  if (!isoDateString) {
-    return "No reports yet";
-  }
+  now: number,
+): string | null {
+  if (!isoDateString) return null;
 
   const timestamp = new Date(isoDateString).getTime();
-  if (isNaN(timestamp)) {
-    return "No reports yet";
-  }
+  if (isNaN(timestamp)) return null;
 
   const diffMs = Math.max(0, now - timestamp);
   const diffSecs = Math.floor(diffMs / 1000);
@@ -147,22 +159,43 @@ export function formatRecency(
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffMins < 1) {
-    return "Confirmed just now";
+    return `${prefix} just now`;
   }
   if (diffMins < 60) {
-    return `Confirmed ${diffMins}m ago`;
+    return `${prefix} ${diffMins}m ago`;
   }
   if (diffHours < 24) {
-    return `Confirmed ${diffHours}h ago`;
+    return `${prefix} ${diffHours}h ago`;
   }
   if (diffDays === 1) {
-    return "Confirmed yesterday";
+    return `${prefix} yesterday`;
   }
   if (diffDays < 30) {
-    return `Confirmed ${diffDays}d ago`;
+    return `${prefix} ${diffDays}d ago`;
   }
 
-  return `Confirmed ${Math.floor(diffDays / 30)}mo ago`;
+  return `${prefix} ${Math.floor(diffDays / 30)}mo ago`;
+}
+
+/**
+ * Calculate human-readable relative time for when a recipe last worked
+ */
+export function formatRecency(
+  isoDateString: string | null,
+  now: number = Date.now(),
+): string {
+  return formatRelativeTime("Confirmed", isoDateString, now) ?? "No reports yet";
+}
+
+/**
+ * Calculate human-readable relative time for when a recipe was last reported
+ * as not working. Returns null when there is no such report.
+ */
+export function formatDidntWorkRecency(
+  isoDateString: string | null,
+  now: number = Date.now(),
+): string | null {
+  return formatRelativeTime("Didn't work", isoDateString, now);
 }
 
 export function formatLastWorkedDetail(
@@ -173,13 +206,165 @@ export function formatLastWorkedDetail(
   if (!mode || !isoDateString) return null;
 
   const recency = formatRecency(isoDateString, now);
-  if (recency === "No reports yet") return null;
+  if (!recency.startsWith("Confirmed")) return null;
 
   const relativeTime =
     recency === "Confirmed just now"
       ? "just now"
       : recency.replace(/^Confirmed /, "");
   return `Last worked on ${GAME_MODE_LABELS[mode]} · ${relativeTime}`;
+}
+
+/**
+ * Status line for the aggregate report counts. When both kinds of reports
+ * exist, the most recent signal wins so a fresh "didn't work" isn't hidden
+ * behind an older confirmation (and vice versa).
+ */
+export function formatReportStatus(
+  stats: Pick<
+    RecipeFeedbackStats,
+    "workedCount" | "didntWorkCount" | "lastWorkedAt" | "lastDidntWorkAt"
+  >,
+  now: number = Date.now(),
+): string {
+  const worked = formatRelativeTime(
+    "Confirmed",
+    stats.lastWorkedAt ?? null,
+    now,
+  );
+  const didntWork = formatRelativeTime(
+    "Didn't work",
+    stats.lastDidntWorkAt ?? null,
+    now,
+  );
+  if (worked && didntWork) {
+    const workedTime = new Date(stats.lastWorkedAt as string).getTime();
+    const didntTime = new Date(stats.lastDidntWorkAt as string).getTime();
+    return didntTime > workedTime ? didntWork : worked;
+  }
+  if (worked) return worked;
+  if (didntWork) return didntWork;
+  if (stats.workedCount > 0) return "Confirmed";
+  if (stats.didntWorkCount > 0) return "Not confirmed yet";
+  return "No reports yet";
+}
+
+/**
+ * Compact relative time without a prefix, for per-mode rows.
+ * Returns null when there is no timestamp.
+ */
+export function formatCompactRecency(
+  isoDateString: string | null | undefined,
+  now: number = Date.now(),
+): string | null {
+  if (!isoDateString) return null;
+  const timestamp = new Date(isoDateString).getTime();
+  if (isNaN(timestamp)) return null;
+  const diffMs = Math.max(0, now - timestamp);
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 30) return `${diffDays}d ago`;
+  return `${Math.floor(diffDays / 30)}mo ago`;
+}
+
+export interface ModeLatestSignal {
+  vote: UserVote | null;
+  at: string | null;
+}
+
+function parseTime(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  return isNaN(time) ? null : time;
+}
+
+/**
+ * Most recent signal for a single mode bucket. Returns null vote when the
+ * bucket has no timestamps (legacy counts-only data).
+ */
+export function getModeLatestSignal(
+  counts: RecipeFeedbackModeCounts | undefined,
+): ModeLatestSignal {
+  if (!counts) return { vote: null, at: null };
+  const workedTime = parseTime(counts.lastWorkedAt ?? null);
+  const didntTime = parseTime(counts.lastDidntWorkAt ?? null);
+  if (workedTime === null && didntTime === null)
+    return { vote: null, at: null };
+  if (workedTime !== null && (didntTime === null || workedTime >= didntTime))
+    return { vote: "worked", at: counts.lastWorkedAt ?? null };
+  return { vote: "didnt_work", at: counts.lastDidntWorkAt ?? null };
+}
+
+export interface LatestReport {
+  vote: UserVote;
+  mode: GameMode | null;
+  at: string;
+}
+
+/**
+ * Overall latest report across all modes. Prefers per-mode timestamps when
+ * present so the badge can point at the exact mode; falls back to the
+ * aggregate lastWorkedAt / lastDidntWorkAt with their stored modes.
+ */
+export function getLatestReport(
+  stats: RecipeFeedbackStats,
+): LatestReport | null {
+  const modes = stats.modes;
+  let latest: LatestReport | null = null;
+  if (modes) {
+    for (const mode of GAME_MODES) {
+      const bucket = modes[mode];
+      if (!bucket) continue;
+      for (const [vote, at] of [
+        ["worked", bucket.lastWorkedAt],
+        ["didnt_work", bucket.lastDidntWorkAt],
+      ] as const) {
+        const time = parseTime(at ?? null);
+        if (time === null || !at) continue;
+        if (!latest || time > parseTime(latest.at)!) {
+          latest = { vote: vote as UserVote, mode, at };
+        }
+      }
+    }
+  }
+  if (latest) return latest;
+  const workedTime = parseTime(stats.lastWorkedAt);
+  const didntTime = parseTime(stats.lastDidntWorkAt ?? null);
+  if (workedTime === null && didntTime === null) return null;
+  if (workedTime !== null && (didntTime === null || workedTime >= didntTime)) {
+    return {
+      vote: "worked",
+      mode: stats.lastWorkedMode ?? null,
+      at: stats.lastWorkedAt as string,
+    };
+  }
+  return {
+    vote: "didnt_work",
+    mode: stats.lastDidntWorkMode ?? null,
+    at: stats.lastDidntWorkAt as string,
+  };
+}
+
+/**
+ * Human-readable latest line for the popover footer, e.g.
+ * "Latest: Worked on PVE · 47m ago".
+ */
+export function formatLatestReport(
+  stats: RecipeFeedbackStats,
+  now: number = Date.now(),
+): string | null {
+  const latest = getLatestReport(stats);
+  if (!latest) return null;
+  const relative = formatCompactRecency(latest.at, now);
+  if (!relative) return null;
+  const action = latest.vote === "worked" ? "Worked" : "Didn't work";
+  const modeLabel = latest.mode ? ` on ${GAME_MODE_LABELS[latest.mode]}` : "";
+  return `Latest: ${action}${modeLabel} · ${relative}`;
 }
 
 /**
@@ -217,6 +402,7 @@ export function applyUserVote(
   let workedCount = currentStats.workedCount;
   let didntWorkCount = currentStats.didntWorkCount;
   let lastWorkedAt = currentStats.lastWorkedAt;
+  let lastDidntWorkAt = currentStats.lastDidntWorkAt ?? null;
 
   if (currentVote !== undefined && currentVote !== nextVote) {
     if (currentVote === "worked") {
@@ -231,9 +417,16 @@ export function applyUserVote(
     lastWorkedAt = nowIso;
   } else if (nextVote === "didnt_work" && currentVote !== "didnt_work") {
     didntWorkCount += 1;
+    lastDidntWorkAt = nowIso;
   }
 
-  return { ...currentStats, workedCount, didntWorkCount, lastWorkedAt };
+  return {
+    ...currentStats,
+    workedCount,
+    didntWorkCount,
+    lastWorkedAt,
+    lastDidntWorkAt,
+  };
 }
 
 export function getUnspecifiedModeCounts(

@@ -25,23 +25,22 @@ export default function ThresholdSelector({
   embedded = false,
 }: ThresholdSelectorProps) {
   const { t } = useLanguage();
-  const [isCustom, setIsCustom] = useState(false);
+  // Derived from value: presets are the two fixed thresholds, anything else
+  // is a custom value. Derived during render instead of synced in an effect.
+  const isCustom = value !== 350001 && value !== 400000;
   const [open, setOpen] = useState(false);
   // Buffer live slider/input changes locally to reduce re-layout churn
   const [tempValue, setTempValue] = useState<number>(value);
 
-  useEffect(() => {
-    if (value !== 350001 && value !== 400000) {
-      setIsCustom(true);
-    } else {
-      setIsCustom(false);
-    }
-  }, [value]);
-
-  // Keep local buffer in sync when external value changes or popover opens
-  useEffect(() => {
+  // Keep local buffer in sync when external value changes or popover opens.
+  // Render-phase adjustment replaces the effect to avoid cascading renders.
+  const [prevValue, setPrevValue] = useState(value);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (value !== prevValue || open !== prevOpen) {
+    setPrevValue(value);
+    setPrevOpen(open);
     setTempValue(value);
-  }, [value, open]);
+  }
 
   // Initialize from localStorage only once to avoid re-triggering on changing onChange identity
   const didInitRef = useRef(false);
@@ -91,7 +90,6 @@ export default function ThresholdSelector({
 
   const handlePresetClick = (preset: number) => {
     onChange(preset);
-    setIsCustom(false);
     localStorage.setItem("userThreshold", preset.toString());
   };
 

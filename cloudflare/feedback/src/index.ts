@@ -1,4 +1,7 @@
+import { recipeSubmissionSchema } from "../../../lib/recipe-submission";
+
 const FEEDBACK_PATH = "/api/submit-feedback";
+const RECIPE_SUBMISSIONS_PATH = "/api/recipe-submissions";
 const RECIPE_FEEDBACK_PATH = "/api/recipe-feedback";
 const MAX_BODY_BYTES = 8 * 1024;
 const RATE_LIMIT_SECONDS = 60;
@@ -38,6 +41,8 @@ type RecipeFeedbackPayload = {
 type RecipeFeedbackModeCounts = {
   worked: number;
   didntWork: number;
+  lastWorkedAt: string | null;
+  lastDidntWorkAt: string | null;
 };
 
 type RecipeFeedbackStats = {
@@ -45,6 +50,8 @@ type RecipeFeedbackStats = {
   didntWorkCount: number;
   lastWorkedAt: string | null;
   lastWorkedMode: RecipeGameMode | null;
+  lastDidntWorkAt: string | null;
+  lastDidntWorkMode: RecipeGameMode | null;
   modes: Record<RecipeGameMode, RecipeFeedbackModeCounts>;
 };
 
@@ -54,12 +61,20 @@ type RecipeStatsRow = {
   didnt_work_count: number;
   last_worked_at: string | null;
   last_worked_mode: RecipeGameMode | null;
+  last_didnt_work_at: string | null;
+  last_didnt_work_mode: RecipeGameMode | null;
   worked_pvp: number | null;
   worked_pve: number | null;
   worked_season: number | null;
   didnt_work_pvp: number | null;
   didnt_work_pve: number | null;
   didnt_work_season: number | null;
+  last_worked_pvp_at: string | null;
+  last_worked_pve_at: string | null;
+  last_worked_season_at: string | null;
+  last_didnt_work_pvp_at: string | null;
+  last_didnt_work_pve_at: string | null;
+  last_didnt_work_season_at: string | null;
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -226,31 +241,43 @@ async function hashClientId(clientId: string): Promise<string> {
 }
 
 function mapRecipeStats(row: RecipeStatsRow | null): RecipeFeedbackStats {
+  const modes = {
+    pvp: {
+      worked: Number(row?.worked_pvp ?? 0),
+      didntWork: Number(row?.didnt_work_pvp ?? 0),
+      lastWorkedAt: row?.last_worked_pvp_at ?? null,
+      lastDidntWorkAt: row?.last_didnt_work_pvp_at ?? null,
+    },
+    pve: {
+      worked: Number(row?.worked_pve ?? 0),
+      didntWork: Number(row?.didnt_work_pve ?? 0),
+      lastWorkedAt: row?.last_worked_pve_at ?? null,
+      lastDidntWorkAt: row?.last_didnt_work_pve_at ?? null,
+    },
+    season: {
+      worked: Number(row?.worked_season ?? 0),
+      didntWork: Number(row?.didnt_work_season ?? 0),
+      lastWorkedAt: row?.last_worked_season_at ?? null,
+      lastDidntWorkAt: row?.last_didnt_work_season_at ?? null,
+    },
+  } satisfies RecipeFeedbackStats["modes"];
   return {
     workedCount: Number(row?.worked_count ?? 0),
     didntWorkCount: Number(row?.didnt_work_count ?? 0),
     lastWorkedAt: row?.last_worked_at ?? null,
     lastWorkedMode: row?.last_worked_mode ?? null,
-    modes: {
-      pvp: {
-        worked: Number(row?.worked_pvp ?? 0),
-        didntWork: Number(row?.didnt_work_pvp ?? 0),
-      },
-      pve: {
-        worked: Number(row?.worked_pve ?? 0),
-        didntWork: Number(row?.didnt_work_pve ?? 0),
-      },
-      season: {
-        worked: Number(row?.worked_season ?? 0),
-        didntWork: Number(row?.didnt_work_season ?? 0),
-      },
-    },
+    lastDidntWorkAt: row?.last_didnt_work_at ?? null,
+    lastDidntWorkMode: row?.last_didnt_work_mode ?? null,
+    modes,
   };
 }
 
 const RECIPE_STATS_COLUMNS = `recipe_id, worked_count, didnt_work_count, last_worked_at, last_worked_mode,
+   last_didnt_work_at, last_didnt_work_mode,
    worked_pvp, worked_pve, worked_season,
-   didnt_work_pvp, didnt_work_pve, didnt_work_season`;
+   didnt_work_pvp, didnt_work_pve, didnt_work_season,
+   last_worked_pvp_at, last_worked_pve_at, last_worked_season_at,
+   last_didnt_work_pvp_at, last_didnt_work_pve_at, last_didnt_work_season_at`;
 
 async function handleRecipeFeedback(
   request: Request,
@@ -281,6 +308,9 @@ async function handleRecipeFeedback(
     }
 
     try {
+      // All recency timestamps are materialized in recipe_feedback_stats by
+      // the write path, so this stays a bounded scan of one small table no
+      // matter how many raw votes accumulate.
       const result = await env.DB.prepare(
         `SELECT ${RECIPE_STATS_COLUMNS}
          FROM recipe_feedback_stats`,
@@ -411,8 +441,11 @@ async function handleRecipeFeedback(
     const rebuildAggregate = env.DB.prepare(
       `INSERT INTO recipe_feedback_stats
          (recipe_id, worked_count, didnt_work_count, last_worked_at, last_worked_mode,
+          last_didnt_work_at, last_didnt_work_mode,
           worked_pvp, worked_pve, worked_season,
-          didnt_work_pvp, didnt_work_pve, didnt_work_season)
+          didnt_work_pvp, didnt_work_pve, didnt_work_season,
+          last_worked_pvp_at, last_worked_pve_at, last_worked_season_at,
+          last_didnt_work_pvp_at, last_didnt_work_pve_at, last_didnt_work_season_at)
        SELECT ?,
          COALESCE(SUM(CASE WHEN vote = 'worked' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'didnt_work' THEN 1 ELSE 0 END), 0),
@@ -422,12 +455,24 @@ async function handleRecipeFeedback(
            WHERE latest.recipe_id = ? AND latest.vote = 'worked'
            ORDER BY latest.updated_at DESC
            LIMIT 1),
+         MAX(CASE WHEN vote = 'didnt_work' THEN updated_at END),
+         (SELECT latest.game_mode
+            FROM recipe_feedback AS latest
+           WHERE latest.recipe_id = ? AND latest.vote = 'didnt_work'
+           ORDER BY latest.updated_at DESC
+           LIMIT 1),
          COALESCE(SUM(CASE WHEN vote = 'worked' AND game_mode = 'pvp' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'worked' AND game_mode = 'pve' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'worked' AND game_mode = 'season' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'pvp' THEN 1 ELSE 0 END), 0),
          COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'pve' THEN 1 ELSE 0 END), 0),
-         COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'season' THEN 1 ELSE 0 END), 0)
+         COALESCE(SUM(CASE WHEN vote = 'didnt_work' AND game_mode = 'season' THEN 1 ELSE 0 END), 0),
+         MAX(CASE WHEN vote = 'worked' AND game_mode = 'pvp' THEN updated_at END),
+         MAX(CASE WHEN vote = 'worked' AND game_mode = 'pve' THEN updated_at END),
+         MAX(CASE WHEN vote = 'worked' AND game_mode = 'season' THEN updated_at END),
+         MAX(CASE WHEN vote = 'didnt_work' AND game_mode = 'pvp' THEN updated_at END),
+         MAX(CASE WHEN vote = 'didnt_work' AND game_mode = 'pve' THEN updated_at END),
+         MAX(CASE WHEN vote = 'didnt_work' AND game_mode = 'season' THEN updated_at END)
        FROM recipe_feedback
        WHERE recipe_id = ?
        ON CONFLICT(recipe_id) DO UPDATE SET
@@ -435,13 +480,21 @@ async function handleRecipeFeedback(
          didnt_work_count = excluded.didnt_work_count,
          last_worked_at = excluded.last_worked_at,
          last_worked_mode = excluded.last_worked_mode,
+         last_didnt_work_at = excluded.last_didnt_work_at,
+         last_didnt_work_mode = excluded.last_didnt_work_mode,
          worked_pvp = excluded.worked_pvp,
          worked_pve = excluded.worked_pve,
          worked_season = excluded.worked_season,
          didnt_work_pvp = excluded.didnt_work_pvp,
          didnt_work_pve = excluded.didnt_work_pve,
-         didnt_work_season = excluded.didnt_work_season`,
-    ).bind(payload.recipeId, payload.recipeId, payload.recipeId);
+         didnt_work_season = excluded.didnt_work_season,
+         last_worked_pvp_at = excluded.last_worked_pvp_at,
+         last_worked_pve_at = excluded.last_worked_pve_at,
+         last_worked_season_at = excluded.last_worked_season_at,
+         last_didnt_work_pvp_at = excluded.last_didnt_work_pvp_at,
+         last_didnt_work_pve_at = excluded.last_didnt_work_pve_at,
+         last_didnt_work_season_at = excluded.last_didnt_work_season_at`,
+    ).bind(payload.recipeId, payload.recipeId, payload.recipeId, payload.recipeId);
     const readAggregate = env.DB.prepare(
       `SELECT ${RECIPE_STATS_COLUMNS}
        FROM recipe_feedback_stats
@@ -497,7 +550,10 @@ export async function handleRequest(
     return handleRecipeFeedback(request, env);
   }
 
-  if (url.pathname !== FEEDBACK_PATH) {
+  if (
+    url.pathname !== FEEDBACK_PATH &&
+    url.pathname !== RECIPE_SUBMISSIONS_PATH
+  ) {
     return jsonResponse({ success: false, error: "Not found" }, 404);
   }
 
@@ -574,6 +630,64 @@ export async function handleRequest(
       undefined,
       origin,
     );
+  }
+
+  if (url.pathname === RECIPE_SUBMISSIONS_PATH) {
+    const parsed = recipeSubmissionSchema.safeParse(rawPayload);
+    if (!parsed.success) {
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            "Select valid items, quantities, game mode and a special recipe timer.",
+        },
+        400,
+        undefined,
+        origin,
+      );
+    }
+
+    const payload = parsed.data;
+    try {
+      const result = await env.DB.prepare(
+        `INSERT INTO recipe_submissions
+          (id, game_mode, timer_seconds, sacrifices_json, rewards_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO NOTHING`,
+      )
+        .bind(
+          payload.submissionId,
+          payload.gameMode,
+          payload.timerSeconds,
+          JSON.stringify(payload.sacrifices),
+          JSON.stringify(payload.rewards),
+          new Date().toISOString(),
+        )
+        .run();
+      if (!result.success) throw new Error("D1 insert was unsuccessful");
+      return jsonResponse(
+        { success: true, id: payload.submissionId, status: "pending" },
+        201,
+        undefined,
+        origin,
+      );
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          event: "recipe_submission_failed",
+          error: error instanceof Error ? error.message : "Unknown error",
+        }),
+      );
+      return jsonResponse(
+        {
+          success: false,
+          error: "Could not submit your recipe. Please try again.",
+        },
+        500,
+        undefined,
+        origin,
+      );
+    }
   }
 
   const payload = parseFeedbackPayload(rawPayload);

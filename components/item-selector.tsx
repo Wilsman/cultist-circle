@@ -154,6 +154,16 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
     const [showThresholdMatchesOnly, setShowThresholdMatchesOnly] =
       useState(false);
 
+    // Reset the threshold-only view when focus is lost. Render-phase
+    // adjustment replaces the effect to avoid cascading renders.
+    const [wasFocused, setWasFocused] = useState(false);
+    if (isFocused !== wasFocused) {
+      setWasFocused(isFocused);
+      if (!isFocused) {
+        setShowThresholdMatchesOnly(false);
+      }
+    }
+
     useImperativeHandle(ref, () => ({
       focus: () => {
         inputRef.current?.focus();
@@ -481,12 +491,6 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       if (!isFocused || highlightedIndex < 0) return;
       listRef.current?.scrollToItem(highlightedIndex);
     }, [highlightedIndex, isFocused]);
-
-    useEffect(() => {
-      if (!isFocused) {
-        setShowThresholdMatchesOnly(false);
-      }
-    }, [isFocused]);
 
     // Handle selection
     const handleSelect = useCallback(

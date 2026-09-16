@@ -36,10 +36,10 @@ describe("useToastNotifications", () => {
     });
 
     expect(toastMock).toHaveBeenCalledWith(
-      "New Ritual: Black Division Dogtags",
+      "Update: Black Division ritual may not work",
       expect.objectContaining({
         description:
-          "Redeem five launcher codes, sacrifice any five Black Division dogtags, and uncover the 5:55:55 reward.",
+          "Many users report these codes no longer work. Please report Worked or Didn't work on the recipes page, and use Submit a recipe if you find a new one.",
         icon: "🔐",
       }),
     );

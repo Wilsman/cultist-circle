@@ -7,6 +7,8 @@ import {
   ChevronDown,
   ChevronsUpDown,
   ListFilter,
+  Minus,
+  Plus,
   Settings,
   X,
 } from "lucide-react";
@@ -46,10 +48,16 @@ import {
   ALL_CATEGORIES_FILTER,
   type SelectorTraderFilter,
 } from "@/lib/item-selector-filters";
+import {
+  MAX_SACRIFICE_SLOTS,
+  MIN_SACRIFICE_SLOTS,
+} from "@/lib/sacrifice-slots";
 
 interface SelectorSettingsPopoverProps {
   sortOption: string;
   onSortChange: (sortOption: string) => void;
+  sacrificeSlotCount: number;
+  onSacrificeSlotCountChange: (count: number) => void;
   priceMode: PriceMode;
   onPriceModeChange: (mode: PriceMode) => void;
   traderLevels: TraderLevels;
@@ -129,6 +137,8 @@ const TRADERS: Array<{
 export function SelectorSettingsPopover({
   sortOption,
   onSortChange,
+  sacrificeSlotCount,
+  onSacrificeSlotCountChange,
   priceMode,
   onPriceModeChange,
   traderLevels,
@@ -213,6 +223,11 @@ export function SelectorSettingsPopover({
         >
           <Settings className="h-3.5 w-3.5" />
           <span>{t("Quick Settings")}</span>
+          {sacrificeSlotCount !== MAX_SACRIFICE_SLOTS && (
+            <span className="rounded-full border border-amber-300/40 bg-amber-200/12 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-[0.14em] text-amber-100">
+              {t("{count} slots", { count: sacrificeSlotCount })}
+            </span>
+          )}
           {filtersAreOverridden && (
             <span className="rounded-full border border-amber-300/40 bg-amber-200/12 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-[0.14em] text-amber-100">
               {t("All Items")}
@@ -432,6 +447,54 @@ export function SelectorSettingsPopover({
           )}
 
           <div className="space-y-3">
+            <section className="rounded-md border border-slate-700 bg-slate-900/70 p-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 flex-col">
+                  <span className="text-[11px] text-slate-300">
+                    {t("Number of sacrifices")}
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    {t("How many items to sacrifice (1-5)")}
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      onSacrificeSlotCountChange(sacrificeSlotCount - 1)
+                    }
+                    disabled={sacrificeSlotCount <= MIN_SACRIFICE_SLOTS}
+                    aria-label={t("Use one fewer sacrifice slot")}
+                    className="h-8 w-8 border-slate-700 bg-slate-950/70 text-slate-200 hover:border-slate-600 hover:bg-slate-900 disabled:opacity-40"
+                  >
+                    <Minus className="h-3.5 w-3.5" aria-hidden />
+                  </Button>
+                  <span
+                    aria-live="polite"
+                    aria-label={t("Active sacrifice slots")}
+                    className="min-w-10 text-center font-mono text-xs font-bold tabular-nums text-amber-300"
+                  >
+                    {sacrificeSlotCount} / {MAX_SACRIFICE_SLOTS}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      onSacrificeSlotCountChange(sacrificeSlotCount + 1)
+                    }
+                    disabled={sacrificeSlotCount >= MAX_SACRIFICE_SLOTS}
+                    aria-label={t("Use one more sacrifice slot")}
+                    className="h-8 w-8 border-slate-700 bg-slate-950/70 text-slate-200 hover:border-slate-600 hover:bg-slate-900 disabled:opacity-40"
+                  >
+                    <Plus className="h-3.5 w-3.5" aria-hidden />
+                  </Button>
+                </div>
+              </div>
+            </section>
+
             <section className="space-y-1.5">
               <label className="text-[11px] text-slate-400">{t("Sort")}</label>
               <Select value={sortOption} onValueChange={onSortChange}>
