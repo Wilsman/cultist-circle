@@ -66,6 +66,9 @@ type DemoStatus = "loading" | "missing" | "error" | "ready";
 /** Uploads at the same time; each screenshot is its own request. */
 const UPLOAD_CONCURRENCY = 2;
 
+const NO_GRID_ERROR =
+  "No inventory slots were found in this screenshot. Upload an uncropped, full-resolution screenshot of your stash or a container. If it already is one, restart your browser and try again.";
+
 interface ScanOutcome {
   image: QueuedImage;
   result?: ScanImageResult;
@@ -103,8 +106,11 @@ async function scanEach(
           continue;
         }
         const { images: [result] } = (await response.json()) as ScanResponse;
-        if (result) outcome.result = result;
-        else outcome.error = t("The scan failed. Try again.");
+        if (!result) outcome.error = t("The scan failed. Try again.");
+        // No grid at all: a crop without inventory slots, a heavily resized
+        // screenshot, or a browser that sent a broken image.
+        else if (!result.cells.length) outcome.error = t(NO_GRID_ERROR);
+        else outcome.result = result;
       } catch (error) {
         outcome.error =
           error instanceof ScreenshotTooLargeError
