@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
+import { useSacrificeBonus } from "@/hooks/use-sacrifice-bonus";
 import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
@@ -61,8 +62,8 @@ interface ItemSocketProps {
 }
 
 function ItemSocket({ onBonusChange }: ItemSocketProps) {
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [hideoutLevel, setHideoutLevel] = useState<number>(1);
+  const { itemId: selectedId, setItemId: setSelectedId, hideoutLevel, setHideoutLevel } = useSacrificeBonus();
+  const selectedItem = items.find((item) => item.id === selectedId && item.id !== "none") ?? null;
   const [open, setOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -213,7 +214,7 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
                           variant="outline"
                           className="flex h-12 w-full items-center justify-start border-slate-700 bg-slate-800 px-2 hover:bg-slate-700/80 hover:text-gray-100"
                           onClick={() => {
-                            setSelectedItem(item.id === "none" ? null : item);
+                            setSelectedId(item.id);
                             setOpen(false);
                           }}
                         >
