@@ -8,6 +8,8 @@ import { toast as sonnerToast } from "sonner";
 import ItemSocket from "@/components/item-socket";
 import { ModeThreshold } from "@/components/mode-threshold";
 import { Button } from "@/components/ui/button";
+import { isItemNameExcluded } from "@/lib/excluded-item-names";
+import { scanFetch } from "@/lib/stash-scan/client";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { useLanguage } from "@/contexts/language-context";
 import { useAppSettings } from "@/hooks/use-app-settings";
@@ -95,7 +97,7 @@ async function scanEach(
         outcome.upload = upload;
         const form = new FormData();
         form.append("images", upload, outcome.image.file.name);
-        const response = await fetch("/api/stash-scan", { method: "POST", body: form });
+        const response = await scanFetch( { method: "POST", body: form });
         if (!response.ok) {
           const body = (await response.json().catch(() => null)) as ScanErrorResponse | null;
           outcome.error =
@@ -304,7 +306,7 @@ export function StashScan({ demo = false }: StashScanProps) {
           .filter((group) =>
             group.itemId in inclusion
               ? !inclusion[group.itemId]
-              : !!group.item && excludedNames.has(group.item.name.toLowerCase()),
+              : !!group.item && isItemNameExcluded(group.item, excludedNames),
           )
           .map((group) => group.itemId),
       ),
@@ -415,7 +417,7 @@ export function StashScan({ demo = false }: StashScanProps) {
       const form = new FormData();
       form.append("images", blob, "screenshot");
       form.append("rects", JSON.stringify(rects));
-      const response = await fetch("/api/stash-scan", { method: "POST", body: form });
+      const response = await scanFetch( { method: "POST", body: form });
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as ScanErrorResponse | null;
         sonnerToast.error(t("Could not split this cell"), {
@@ -458,6 +460,10 @@ export function StashScan({ demo = false }: StashScanProps) {
               {demo
                 ? t("A real scan of a sample stash screenshot. Change the threshold or slots, click boxes to correct items, and untick items you want to keep.")
                 : t("Upload screenshots of your stash or a scav case. The items are recognised, and the cheapest set that reaches your threshold is picked for the circle.")}
+            </p>
+            <p className="mt-3 text-xs leading-relaxed text-slate-400">
+              Stash Scan contributed by <a className="text-cyan-300 underline hover:text-cyan-200" href="https://github.com/Oxylad" target="_blank" rel="noopener noreferrer">Oxylad</a>.
+              {" "}Custom item matching inspired by <a className="text-cyan-300 underline hover:text-cyan-200" href="https://github.com/RatScanner/RatEye" target="_blank" rel="noopener noreferrer">RatScanner&apos;s RatEye</a>.
             </p>
           </div>
           {demo ? (

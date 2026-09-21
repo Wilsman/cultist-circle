@@ -10,6 +10,7 @@
 // Never fails the build: without Tarkov.dev and without a cached index it
 // warns and leaves Stash Scan unavailable for this deployment.
 
+import { scanTrialEnabled } from "../lib/stash-scan/enabled";
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -112,7 +113,14 @@ async function scanDemo(index: IconIndex | null): Promise<void> {
 }
 
 try {
-  await scanDemo(await buildOrReuseIndex());
+  if (scanTrialEnabled()) {
+    await scanDemo(await buildOrReuseIndex());
+  } else {
+    // A previous beta build may have left generated assets in the cache.
+    await rm(path.join(outputDir, indexFileName()), { force: true });
+    await rm(demoJson, { force: true });
+    log("disabled; skipped index generation and demo scan");
+  }
 } catch (error) {
   log(`WARNING: stash scan index step failed: ${error instanceof Error ? error.stack : String(error)}`);
 }

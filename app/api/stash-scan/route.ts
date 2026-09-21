@@ -1,11 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { decodeRgb } from "@/lib/stash-scan/index-builder";
-import {
-  getIconIndex,
-  getIndexStatus,
-  isIndexUnavailable,
-} from "@/lib/stash-scan/index-store";
-import { scanImage, scanRects } from "@/lib/stash-scan/scan";
+import { scanAccessStatus } from "@/lib/stash-scan/access";
 import {
   SCAN_LIMITS,
   type ScanErrorResponse,
@@ -17,12 +11,12 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 /** A full 1440p container takes about a second of CPU; allow cold starts. */
-export const maxDuration = 60;
+export const maxDuration = 20;
 
 /** How long a request waits for the icon index on a cold start. */
 const INDEX_WAIT_MS = 20000;
 /** Scans run one at a time; this many more may wait in line. */
-const MAX_QUEUED_SCANS = 8;
+const MAX_QUEUED_SCANS = 2;
 /**
  * Images per client IP per window. Both this and the queue are per server
  * instance; on Vercel, pair them with a WAF rate limit rule on this path.
@@ -35,7 +29,7 @@ let queue: Promise<void> = Promise.resolve();
 let queued = 0;
 
 function errorResponse(body: ScanErrorResponse, status: number) {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { "Cache-Control": "no-store" };
   if (body.retryAfterSeconds) headers["Retry-After"] = String(body.retryAfterSeconds);
   return NextResponse.json(body, { status, headers });
 }
@@ -91,6 +85,7 @@ function parseRects(value: FormDataEntryValue | null): ScanRect[] | null | "inva
 
   const rects: ScanRect[] = [];
   for (const entry of parsed) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return "invalid";
     const rect = entry as Partial<ScanRect>;
     const numbers = [rect.x, rect.y, rect.width, rect.height, rect.slotsWide, rect.slotsHigh];
     if (numbers.some((n) => typeof n !== "number" || !Number.isFinite(n))) return "invalid";
@@ -135,12 +130,25 @@ function clampRects(rects: ScanRect[], width: number, height: number): ScanRect[
   }));
 }
 
-export async function GET() {
-  await getIconIndex(0);
-  return NextResponse.json(getIndexStatus());
+function checkAccess(request: NextRequest) {
+  const status = scanAccessStatus(request);
+  if (status === 200) return null;
+  return errorResponse({
+    error: status === 401 ? "A valid trial access code is required." : "Stash Scan is not available on this deployment or the trial has ended.",
+    code: status === 401 ? "unauthorized" : "unavailable",
+  }, status);
+}
+
+export async function GET(request: NextRequest) {
+  const denied = checkAccess(request);
+  if (denied) return denied;
+  // Access checks do not load the recognition index.
+  return NextResponse.json({ available: true }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: NextRequest) {
+  const denied = checkAccess(request);
+  if (denied) return denied;
   let form: FormData;
   try {
     form = await request.formData();
@@ -169,10 +177,10 @@ export async function POST(request: NextRequest) {
   if (files.length === 0) {
     return errorResponse({ error: "No images were uploaded.", code: "no-images" }, 400);
   }
-  if (files.length > SCAN_LIMITS.maxImages) {
+  if (files.length > 1) {
     return errorResponse(
       {
-        error: `Upload at most ${SCAN_LIMITS.maxImages} images at a time.`,
+        error: "Upload one screenshot per request.",
         code: "too-many-images",
       },
       400,
@@ -208,6 +216,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const { getIconIndex, isIndexUnavailable } = await import("@/lib/stash-scan/index-store");
   const index = await getIconIndex(INDEX_WAIT_MS);
   if (!index && isIndexUnavailable()) {
     return errorResponse(
@@ -228,17 +237,41 @@ export async function POST(request: NextRequest) {
 
   const buffers = await Promise.all(files.map(async (file) => Buffer.from(await file.arrayBuffer())));
 
+  const requestStarted = performance.now();
   const scan = enqueue(async () => {
-    const images: ScanImageResult[] = [];
-    for (const buffer of buffers) {
-      const decoded = await decodeRgb(buffer, SCAN_LIMITS.maxPixels);
-      images.push(
-        rects
-          ? await scanRects(decoded, clampRects(rects, decoded.width, decoded.height), index)
-          : await scanImage(decoded, index),
-      );
+    const started = performance.now();
+    const cpu = process.cpuUsage();
+    let status = "error";
+    let cellCount = 0;
+    try {
+      const { decodeRgb } = await import("@/lib/stash-scan/index-builder");
+      const { scanImage, scanRects } = await import("@/lib/stash-scan/scan");
+      const images: ScanImageResult[] = [];
+      for (const buffer of buffers) {
+        const decoded = await decodeRgb(buffer, SCAN_LIMITS.maxPixels);
+        images.push(
+          rects
+            ? await scanRects(decoded, clampRects(rects, decoded.width, decoded.height), index)
+            : await scanImage(decoded, index),
+        );
+      }
+      cellCount = images.reduce((count, image) => count + image.cells.length, 0);
+      status = "ok";
+      return images;
+    } finally {
+      if (process.env.STASH_SCAN_TELEMETRY === "true") {
+        const used = process.cpuUsage(cpu);
+        console.info(JSON.stringify({
+          event: "stash-scan-cost-sample", operation: rects ? "split" : "scan",
+          status, uploadBytes: buffers.reduce((sum, buffer) => sum + buffer.length, 0),
+          cells: cellCount, cpuMs: (used.user + used.system) / 1000,
+          processingMs: Math.round(performance.now() - started),
+          queueMs: Math.round(started - requestStarted),
+          revision: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+          deployment: process.env.VERCEL_URL ?? null,
+        }));
+      }
     }
-    return images;
   });
 
   if (!scan) {

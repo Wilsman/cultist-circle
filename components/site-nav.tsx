@@ -21,7 +21,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
+import { ENABLE_LANGUAGE_FEATURE, ENABLE_STASH_SCAN } from "@/config/feature-flags";
 import { useLanguage } from "@/contexts/language-context";
 
 const primaryLinks = [
@@ -93,7 +93,7 @@ export function SiteNav() {
 
           <div className="flex min-w-0 items-center">
             <div className="flex items-center gap-0.5">
-              {primaryLinks.map(({ href, label, icon: Icon }) => {
+              {primaryLinks.filter((link) => link.href !== "/scan" || ENABLE_STASH_SCAN).map(({ href, label, icon: Icon }) => {
                 const isActive =
                   href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
