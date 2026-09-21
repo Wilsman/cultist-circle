@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { StashScan } from "@/components/stash-scan/stash-scan";
+import { ScanTrial } from "@/components/stash-scan/scan-trial";
+import { ENABLE_STASH_SCAN } from "@/config/feature-flags";
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Stash Scan demo",
@@ -9,5 +11,6 @@ export const metadata: Metadata = {
 };
 
 export default function ScanDemoPage() {
-  return <StashScan demo />;
+  if (!ENABLE_STASH_SCAN) notFound();
+  return <ScanTrial demo />;
 }

@@ -48,6 +48,7 @@ export interface ScanResponse {
 export interface ScanErrorResponse {
   error: string;
   code:
+    | "unauthorized"
     | "no-images"
     | "too-many-images"
     | "image-too-large"
