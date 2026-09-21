@@ -1,5 +1,8 @@
 "use client";
 
+import { isItemNameExcluded } from "@/lib/excluded-item-names";
+
+
 import { useMemo } from "react";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { CATEGORY_ID_BY_NAME } from "@/config/item-categories";
@@ -102,13 +105,7 @@ export function useFilteredItems({
         const excludedFiltered = excludeIncompatible
             ? levelFiltered.filter((item: SimplifiedItem) => {
                 if (ignoreFilters) return true;
-                const candidates = [
-                    item.name,
-                    item.shortName,
-                    item.englishName,
-                    item.englishShortName,
-                ].filter(Boolean) as string[];
-                return !candidates.some((n) => excludedItemNames.has(n.toLowerCase()));
+                return !isItemNameExcluded(item, excludedItemNames);
             })
             : levelFiltered;
 
