@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ScanTrial } from "@/components/stash-scan/scan-trial";
+import { StashScan } from "@/components/stash-scan/stash-scan";
 import { ENABLE_STASH_SCAN } from "@/config/feature-flags";
 import { notFound } from "next/navigation";
 
@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 
 export default function ScanPage() {
   if (!ENABLE_STASH_SCAN) notFound();
-  return <ScanTrial />;
+  return <StashScan />;
 }

@@ -130,24 +130,23 @@ function clampRects(rects: ScanRect[], width: number, height: number): ScanRect[
   }));
 }
 
-function checkAccess(request: NextRequest) {
-  const status = scanAccessStatus(request);
-  if (status === 200) return null;
+function checkAccess() {
+  if (scanAccessStatus() === 200) return null;
   return errorResponse({
-    error: status === 401 ? "A valid trial access code is required." : "Stash Scan is not available on this deployment or the trial has ended.",
-    code: status === 401 ? "unauthorized" : "unavailable",
-  }, status);
+    error: "Stash Scan is not available on this deployment or the trial has ended.",
+    code: "unavailable",
+  }, 503);
 }
 
-export async function GET(request: NextRequest) {
-  const denied = checkAccess(request);
+export async function GET() {
+  const denied = checkAccess();
   if (denied) return denied;
   // Access checks do not load the recognition index.
   return NextResponse.json({ available: true }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: NextRequest) {
-  const denied = checkAccess(request);
+  const denied = checkAccess();
   if (denied) return denied;
   let form: FormData;
   try {
