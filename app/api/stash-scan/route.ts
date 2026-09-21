@@ -20,8 +20,10 @@ const MAX_QUEUED_SCANS = 2;
 /**
  * Images per client IP per window. Both this and the queue are per server
  * instance; on Vercel, pair them with a WAF rate limit rule on this path.
+ * A normal session is a few scans plus corrections, so the trial budget is
+ * deliberately small: 10 images per 10 minutes.
  */
-const RATE_LIMIT_IMAGES = 30;
+const RATE_LIMIT_IMAGES = 10;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 const imagesByClient = new Map<string, number[]>();

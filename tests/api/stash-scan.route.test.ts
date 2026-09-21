@@ -67,4 +67,28 @@ describe("stash scan trial boundary", () => {
     expect((await POST(req)).status).toBe(400);
     expect(getIconIndex).not.toHaveBeenCalled();
   });
+  it("allows a small trial budget per client, then rate-limits", async () => {
+    const headers = { "x-forwarded-for": "trial-budget-client" };
+    const upload = () => {
+      const form = new FormData();
+      form.set(
+        "images",
+        new File(["invalid image"], "sample.png", { type: "image/png" }),
+      );
+      return new NextRequest("http://localhost/api/stash-scan", {
+        method: "POST",
+        headers,
+        body: form,
+      });
+    };
+    for (let i = 0; i < 10; i++) {
+      // The index is mocked away; 503 here proves the request was admitted.
+      expect((await POST(upload())).status).toBe(503);
+    }
+    const limited = await POST(upload());
+    expect(limited.status).toBe(429);
+    expect(((await limited.json()) as { code: string }).code).toBe(
+      "rate-limited",
+    );
+  });
 });
