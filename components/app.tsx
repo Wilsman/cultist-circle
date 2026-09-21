@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import SettingsPane from "@/components/settings-pane";
 import { ModeThreshold } from "@/components/mode-threshold";
 import { AutoSelectButton } from "@/components/auto-select-button";
+import { StashStrip } from "@/components/stash/stash-strip";
 import { ShareButton } from "@/components/share-button";
 import { StartRitualDialog } from "@/components/ritual-tracker/start-ritual-dialog";
 import {
@@ -101,6 +102,23 @@ import {
   parseSacrificeSlotCount,
   SACRIFICE_SLOT_COUNT_KEY,
 } from "@/lib/sacrifice-slots";
+import { useLocalStorageString } from "@/hooks/use-local-storage-state";
+import { useStashInventory } from "@/hooks/use-stash-inventory";
+import {
+  selectedCounts,
+  stashCounts,
+} from "@/lib/stash-inventory";
+import {
+  bestReachableFromStash,
+  ownedFromInventory,
+  planFromStash,
+  suggestFromStash,
+  type StashPlanInput,
+} from "@/lib/stash-planner";
+import {
+  sacrificeBaseValue,
+  type PricingSettings,
+} from "@/lib/stash-scan/owned-items";
 import type { RitualInputPriceSource } from "@/types/ritual-tracker";
 import { clearRitualHistory, listRituals } from "@/lib/ritual-tracker-db";
 import {
@@ -137,6 +155,11 @@ import type {
 function AppContent({ contributors = [] }: AppProps) {
   // Placement preview modal state
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  // Scanned stash inventory (persisted) and the Auto Select source.
+  const [stashInventory, setStashInventory] = useStashInventory();
+  const [autoSelectSource, setAutoSelectSource] = useLocalStorageString<
+    "market" | "stash"
+  >("autoSelectSource", "market", ["market", "stash"]);
   const { t } = useLanguage();
   // Define state variables and hooks
   const [mode, setMode] = useState<GameMode>(() => {
@@ -1338,6 +1361,90 @@ function AppContent({ contributors = [] }: AppProps) {
     });
   }, [items, selectedItems, threshold, itemBonus, getEffectivePrice, sacrificeSlotCount]);
 
+  // Stash-as-source: resolved against rawItemsData so items excluded by the
+  // calculator's filters still resolve.
+  const itemsById = useMemo(
+    () =>
+      new Map<string, SimplifiedItem>(
+        (rawItemsData ?? []).map((item) => [item.id, item]),
+      ),
+    [rawItemsData],
+  );
+
+  const effectiveAutoSelectSource: "market" | "stash" = stashInventory
+    ? autoSelectSource
+    : "market";
+
+  const stashPricing = useMemo<PricingSettings>(
+    () => ({ priceMode, fleaPriceType, itemBonus }),
+    [priceMode, fleaPriceType, itemBonus],
+  );
+
+  const stashCountsMap = useMemo(
+    () => stashCounts(stashInventory),
+    [stashInventory],
+  );
+  const stashSelectedCountsMap = useMemo(
+    () => selectedCounts(selectedItems, sacrificeSlotCount),
+    [selectedItems, sacrificeSlotCount],
+  );
+
+  const stashPlanInput = useMemo<StashPlanInput | null>(
+    () =>
+      stashInventory
+        ? {
+            inventory: stashInventory,
+            itemsById,
+            selectedItems,
+            pinnedItems,
+            slotCount: sacrificeSlotCount,
+            threshold,
+            pricing: stashPricing,
+            excludedNames: excludedItems,
+            ignoreFilters,
+          }
+        : null,
+    [
+      stashInventory,
+      itemsById,
+      selectedItems,
+      pinnedItems,
+      sacrificeSlotCount,
+      threshold,
+      stashPricing,
+      excludedItems,
+      ignoreFilters,
+    ],
+  );
+
+  const stashPlan = useMemo(
+    () => (stashPlanInput ? planFromStash(stashPlanInput) : null),
+    [stashPlanInput],
+  );
+  const stashCanReach = Boolean(stashInventory && stashPlan);
+  const stashBestReachable = useMemo(() => {
+    if (!stashPlanInput) return 0;
+    const pinnedCount = pinnedItems
+      .slice(0, sacrificeSlotCount)
+      .filter((pinned, i) => pinned && selectedItems[i]).length;
+    return bestReachableFromStash(
+      ownedFromInventory(stashPlanInput),
+      sacrificeSlotCount - pinnedCount,
+    );
+  }, [stashPlanInput, pinnedItems, selectedItems, sacrificeSlotCount]);
+
+  const stashSuggestions = useMemo(
+    () =>
+      effectiveAutoSelectSource === "stash" && stashPlanInput
+        ? selectedItems.map((_, index) =>
+            suggestFromStash({ ...stashPlanInput, slotIndex: index }),
+          )
+        : null,
+    [effectiveAutoSelectSource, stashPlanInput, selectedItems],
+  );
+
+  const activeSuggestions = stashSuggestions ?? nextItemSuggestions;
+
   const shouldShowNextItemHints = (
     slotItem: SimplifiedItem | null,
     index: number,
@@ -1345,8 +1452,8 @@ function AppContent({ contributors = [] }: AppProps) {
     Boolean(
       showHintPills &&
       !slotItem &&
-      nextItemSuggestions[index] &&
-      nextItemSuggestions[index].length > 0 &&
+      activeSuggestions[index] &&
+      activeSuggestions[index].length > 0 &&
       index ===
         selectedItems.slice(0, sacrificeSlotCount).findIndex((item) => !item),
     );
@@ -1448,8 +1555,98 @@ function AppContent({ contributors = [] }: AppProps) {
     setPinnedItems(newPinnedItems);
   };
 
+  const handleStashAutoPick = useCallback(
+    async (inputOverride?: StashPlanInput): Promise<void> => {
+      const input = inputOverride ?? stashPlanInput;
+      if (!input) return;
+      setIsCalculating(true);
+      try {
+        // Small delay to prevent UI freezing
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        // On re-roll, avoid the items currently sitting in unpinned slots.
+        const avoid = hasAutoSelected
+          ? new Set(
+              input.selectedItems
+                .slice(0, input.slotCount)
+                .filter(
+                  (item, i): item is SimplifiedItem =>
+                    Boolean(item) && !input.pinnedItems[i],
+                )
+                .map((item) => item.id),
+            )
+          : undefined;
+
+        const optimal = avoid ? planFromStash(input) : null;
+        const result =
+          planFromStash(avoid ? { ...input, avoid } : input) ?? optimal;
+
+        if (!result) {
+          const pinnedTotal = input.selectedItems
+            .slice(0, input.slotCount)
+            .reduce(
+              (sum, item, i) =>
+                input.pinnedItems[i] && item
+                  ? sum + sacrificeBaseValue(item, input.pricing.itemBonus)
+                  : sum,
+              0,
+            );
+          const slotsLeft =
+            input.slotCount -
+            input.pinnedItems
+              .slice(0, input.slotCount)
+              .filter((pinned, i) => pinned && input.selectedItems[i]).length;
+          sonnerToast.error(t("Auto Select from stash"), {
+            description: t(
+              "Your stash can't reach the remaining ₽{remaining} with {slots} slots. Unpin an item, rescan, or add more screenshots.",
+              {
+                remaining: Math.max(
+                  0,
+                  input.threshold - pinnedTotal,
+                ).toLocaleString(),
+                slots: slotsLeft,
+              },
+            ),
+          });
+          setHasAutoSelected(false);
+          return;
+        }
+
+        setSelectedItems(result.slots);
+        if (avoid && optimal) {
+          const idsOf = (slots: Array<SimplifiedItem | null>) =>
+            slots
+              .filter((item): item is SimplifiedItem => Boolean(item))
+              .map((item) => item.id)
+              .sort();
+          if (
+            JSON.stringify(idsOf(result.slots)) ===
+            JSON.stringify(idsOf(optimal.slots))
+          ) {
+            sonnerToast.info(
+              t("That's already the cheapest combo from your stash."),
+            );
+          }
+        }
+        setHasAutoSelected(true);
+      } finally {
+        setIsCalculating(false);
+      }
+    },
+    [stashPlanInput, hasAutoSelected, t],
+  );
+
+  const handleClearStash = useCallback(() => {
+    setStashInventory(null);
+    setAutoSelectSource("market");
+    setHasAutoSelected(false);
+  }, [setStashInventory, setAutoSelectSource]);
+
   // Function to handle auto-select and reroll
   const handleAutoPick = useCallback(async (): Promise<void> => {
+    if (effectiveAutoSelectSource === "stash" && stashPlanInput) {
+      return handleStashAutoPick();
+    }
     // Perform Auto Select or Reroll regardless of hasAutoSelected state
     setIsCalculating(true);
 
@@ -1651,6 +1848,9 @@ function AppContent({ contributors = [] }: AppProps) {
     priceMode,
     setPriceMode,
     ignoreFilters,
+    effectiveAutoSelectSource,
+    stashPlanInput,
+    handleStashAutoPick,
     t,
   ]);
   // Function to find matching item by name - ALWAYS use rawItemsData to bypass UI filters
@@ -2115,6 +2315,19 @@ function AppContent({ contributors = [] }: AppProps) {
                     isCalculating={isCalculating}
                     hasAutoSelected={hasAutoSelected}
                     handleAutoPick={handleAutoPick}
+                    source={effectiveAutoSelectSource}
+                    onSourceChange={setAutoSelectSource}
+                    stashAvailable={!!stashInventory}
+                  />
+                  {/* Stash Scan entry */}
+                  <StashStrip
+                    inventory={stashInventory}
+                    itemsById={itemsById}
+                    gameMode={mode}
+                    threshold={threshold}
+                    bestReachable={stashBestReachable}
+                    canReach={stashCanReach}
+                    onClear={handleClearStash}
                   />
                 </div>
 
@@ -2369,6 +2582,14 @@ function AppContent({ contributors = [] }: AppProps) {
                               categoryFilter={selectorCategoryFilter}
                               categoryFilterLabel={selectorCategoryFilterLabel}
                               traderFilter={selectorTraderFilter}
+                              stashCounts={
+                                stashInventory ? stashCountsMap : undefined
+                              }
+                              stashSelectedCounts={
+                                stashInventory
+                                  ? stashSelectedCountsMap
+                                  : undefined
+                              }
                               hasAttachedSuggestions={shouldShowNextItemHints(
                                 item,
                                 index,
@@ -2378,30 +2599,43 @@ function AppContent({ contributors = [] }: AppProps) {
                           {shouldShowNextItemHints(item, index) ? (
                             <NextItemHints
                               items={
-                                selectedItems.every((it) => !it) && index === 0
-                                  ? (() => {
-                                      const divisorOptions = [5, 4, 3, 2];
-                                      let filteredSuggestions: SimplifiedItem[] =
-                                        [];
-                                      for (const divisor of divisorOptions) {
-                                        filteredSuggestions =
-                                          nextItemSuggestions[index].filter(
-                                            (it) =>
-                                              it.basePrice >=
-                                              threshold / divisor,
-                                          );
-                                        if (filteredSuggestions.length >= 3)
-                                          break;
-                                      }
-                                      return filteredSuggestions
-                                        .sort(
-                                          (a, b) =>
-                                            (getEffectivePrice(a) ?? 0) -
-                                            (getEffectivePrice(b) ?? 0),
-                                        )
-                                        .slice(0, 3);
-                                    })()
-                                  : nextItemSuggestions[index]
+                                effectiveAutoSelectSource === "stash"
+                                  ? activeSuggestions[index]
+                                  : selectedItems.every((it) => !it) &&
+                                      index === 0
+                                    ? (() => {
+                                        const divisorOptions = [5, 4, 3, 2];
+                                        let filteredSuggestions: SimplifiedItem[] =
+                                          [];
+                                        for (const divisor of divisorOptions) {
+                                          filteredSuggestions =
+                                            activeSuggestions[index].filter(
+                                              (it) =>
+                                                it.basePrice >=
+                                                threshold / divisor,
+                                            );
+                                          if (filteredSuggestions.length >= 3)
+                                            break;
+                                        }
+                                        return filteredSuggestions
+                                          .sort(
+                                            (a, b) =>
+                                              (getEffectivePrice(a) ?? 0) -
+                                              (getEffectivePrice(b) ?? 0),
+                                          )
+                                          .slice(0, 3);
+                                      })()
+                                    : activeSuggestions[index]
+                              }
+                              variant={
+                                effectiveAutoSelectSource === "stash"
+                                  ? "stash"
+                                  : "market"
+                              }
+                              stashCounts={
+                                effectiveAutoSelectSource === "stash"
+                                  ? stashCountsMap
+                                  : undefined
                               }
                               prevItem={
                                 index > 0 ? selectedItems[index - 1] : null
