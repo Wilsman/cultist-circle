@@ -112,6 +112,22 @@ export function displayCells(
  */
 export type CellAssignments = Record<CellKey, string | null>;
 
+/**
+ * A cell "needs review" when it kept the matcher's best suggestion without
+ * high confidence. Unassigned cells are unrecognised, not reviewable; cells
+ * re-assigned to another item count as reviewed.
+ */
+export function cellNeedsReview(
+  cell: Pick<ScanCell, "matches" | "confidence">,
+  assignedId: string | null | undefined,
+): boolean {
+  return (
+    !!assignedId &&
+    cell.matches[0]?.itemId === assignedId &&
+    cell.confidence !== "high"
+  );
+}
+
 export interface OwnedGroup {
   itemId: string;
   item: SimplifiedItem | undefined;
@@ -150,8 +166,7 @@ export function groupOwnedItems(
     };
     group.cells.push(key);
     // A cell the user re-assigned is reviewed; otherwise trust the matcher.
-    const matchedAsBest = cell.matches[0]?.itemId === itemId;
-    if (matchedAsBest && cell.confidence !== "high") group.needsReview = true;
+    if (cellNeedsReview(cell, itemId)) group.needsReview = true;
     groups.set(itemId, group);
   }
   return [...groups.values()].sort(

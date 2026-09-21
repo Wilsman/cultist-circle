@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { StashScan } from "@/components/stash-scan/stash-scan";
+import { ScanWithCommit } from "@/components/stash-scan/scan-with-commit";
 import { ENABLE_STASH_SCAN } from "@/config/feature-flags";
 import { notFound } from "next/navigation";
 
@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 
 export default function ScanPage() {
   if (!ENABLE_STASH_SCAN) notFound();
-  return <StashScan />;
+  return <ScanWithCommit />;
 }
