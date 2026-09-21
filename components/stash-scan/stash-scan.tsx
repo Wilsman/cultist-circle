@@ -30,6 +30,7 @@ import {
   ScreenshotTooLargeError,
 } from "@/lib/stash-scan/prepare-screenshot";
 import {
+  cellNeedsReview,
   displayCells,
   groupOwnedItems,
   initialAssignments,
@@ -50,8 +51,13 @@ import {
   type ScanResponse,
 } from "@/lib/stash-scan/types";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
+import {
+  buildInventoryFromGroups,
+  type StashInventory,
+} from "@/lib/stash-inventory";
 import { CellInspector } from "./cell-inspector";
 import { DetectedItems } from "./detected-items";
+import { ReviewPanel } from "./review-panel";
 import { SacrificePlan } from "./sacrifice-plan";
 import { OverlayLegend, ScreenshotOverlay } from "./screenshot-overlay";
 import { UploadZone, type QueuedImage } from "./upload-zone";
@@ -140,9 +146,15 @@ function readExcludedNames(): Set<string> {
 interface StashScanProps {
   /** Show the bundled sample screenshot instead of the upload flow. */
   demo?: boolean;
+  /** Files to queue for scanning on mount (e.g. from the stash strip). */
+  initialFiles?: File[];
+  /** Called with the reviewed stash to persist it for the calculator. */
+  onCommitStash?: (inventory: StashInventory) => void;
+  /** A stash is already saved; the commit button becomes "Update stash". */
+  hasSavedInventory?: boolean;
 }
 
-export function StashScan({ demo = false }: StashScanProps) {
+export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedInventory = false }: StashScanProps) {
   const { t } = useLanguage();
   const router = useRouter();
   const settings = useAppSettings();
@@ -193,17 +205,29 @@ export function StashScan({ demo = false }: StashScanProps) {
   }, [demo]);
   const [activeCell, setActiveCell] = useState<CellKey | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  // Set when a list action opens a cell, so its inspector scrolls into view.
-  const scrollToInspector = useRef(false);
+  const [reviewing, setReviewing] = useState(false);
+  const [reviewTotal, setReviewTotal] = useState(0);
+  // Cells the user has confirmed or corrected in the review flow.
+  const [reviewed, setReviewed] = useState<ReadonlySet<CellKey>>(new Set());
+  const markReviewed = useCallback((key: CellKey) => {
+    setReviewed((current) => new Set(current).add(key));
+  }, []);
+  const unmarkReviewed = useCallback((keys: CellKey[]) => {
+    setReviewed((current) => {
+      const next = new Set(current);
+      keys.forEach((key) => next.delete(key));
+      return next;
+    });
+  }, []);
+  // Opening a cell always brings its inspector into view; during review the
+  // review panel is the target instead.
   useEffect(() => {
-    if (!activeCell || !scrollToInspector.current) return;
-    scrollToInspector.current = false;
+    if (!activeCell) return;
     document
-      .getElementById("stash-scan-inspector")
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [activeCell]);
+      .getElementById(reviewing ? "stash-scan-review" : "stash-scan-inspector")
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [activeCell, reviewing]);
   const openCellFromList = (key: CellKey) => {
-    scrollToInspector.current = true;
     setActiveCell(key);
   };
 
@@ -257,7 +281,15 @@ export function StashScan({ demo = false }: StashScanProps) {
     setQueued((current) => current.filter((image) => image.id !== id));
   }, []);
 
-  const scan = async () => {
+  const initialFilesAdded = useRef(false);
+  useEffect(() => {
+    if (demo || initialFilesAdded.current || !initialFiles?.length) return;
+    initialFilesAdded.current = true;
+    addImages(initialFiles);
+  }, [demo, initialFiles, addImages]);
+
+  const scan = useCallback(async () => {
+    if (!queued.length) return;
     if (!queued.length) return;
     setScanning(true);
     setError(null);
@@ -285,17 +317,41 @@ export function StashScan({ demo = false }: StashScanProps) {
       setSplits({});
       setActiveCell(null);
       setQueued([]);
+      // New scan contents mean the review counters start over.
+      setReviewTotal(0);
     } finally {
       setScanning(false);
     }
-  };
+  }, [queued, t]);
+
+  // Files handed over from the stash strip scan themselves once queued.
+  const autoScanArmed = useRef(false);
+  useEffect(() => {
+    if (demo || !initialFilesAdded.current || session || !queued.length || scanning) return;
+    if (autoScanArmed.current) return;
+    autoScanArmed.current = true;
+    void scan();
+  }, [demo, session, queued, scanning, scan]);
 
   const results = useMemo(() => session?.results ?? [], [session]);
   const cells = useMemo(() => displayCells(results, splits), [results, splits]);
-  const groups = useMemo(
-    () => groupOwnedItems(cells, assignments, itemsById),
-    [cells, assignments, itemsById],
+  const cellsByKey = useMemo(
+    () => new Map(cells.map((cell) => [cell.key, cell] as const)),
+    [cells],
   );
+  const groups = useMemo(() => {
+    const grouped = groupOwnedItems(cells, assignments, itemsById);
+    if (!reviewed.size) return grouped;
+    // Confirming a match counts as reviewed, so the cell stops flagging.
+    return grouped.map((group) => ({
+      ...group,
+      needsReview: group.cells.some((key) => {
+        if (reviewed.has(key)) return false;
+        const cell = cellsByKey.get(key);
+        return cell ? cellNeedsReview(cell, assignments[key]) : false;
+      }),
+    }));
+  }, [cells, assignments, itemsById, reviewed, cellsByKey]);
 
   // Items the calculator excludes start unticked here too.
   const excluded = useMemo(
@@ -354,9 +410,65 @@ export function StashScan({ demo = false }: StashScanProps) {
     [groups, hoveredItem],
   );
   const unrecognisedCount = useMemo(
-    () => cells.filter((cell) => !cell.empty && !assignments[cell.key]).length,
-    [cells, assignments],
+    () =>
+      cells.filter(
+        (cell) => !cell.empty && !assignments[cell.key] && !reviewed.has(cell.key),
+      ).length,
+    [cells, assignments, reviewed],
   );
+
+  // Cells needing attention, in scan order: unrecognised or a non-high
+  // confidence best match (same rule as groupOwnedItems' needsReview).
+  const attentionCells = useMemo(
+    () =>
+      cells
+        .filter(
+          (cell) =>
+            !cell.empty &&
+            !reviewed.has(cell.key) &&
+            (!assignments[cell.key] || cellNeedsReview(cell, assignments[cell.key])),
+        )
+        .map((cell) => cell.key),
+    [cells, assignments, reviewed],
+  );
+
+  // New flags widen the review's denominator.
+  if (attentionCells.length > reviewTotal) setReviewTotal(attentionCells.length);
+
+  const startReview = () => {
+    if (!attentionCells.length) return;
+    if (attentionCells.length > reviewTotal) setReviewTotal(attentionCells.length);
+    setReviewing(true);
+    setActiveCell(attentionCells[0]);
+  };
+
+  const skipCell = () => {
+    if (!reviewing || !activeCell) return;
+    const index = attentionCells.indexOf(activeCell);
+    const rest = attentionCells.filter((key) => key !== activeCell);
+    if (!rest.length) return;
+    setActiveCell(rest[Math.max(index, 0) % rest.length]);
+  };
+
+  const handleAssign = (itemId: string | null) => {
+    if (!activeCell) return;
+    setAssignments((current) => ({ ...current, [activeCell]: itemId }));
+    markReviewed(activeCell);
+    if (!reviewing) {
+      setActiveCell(null);
+      return;
+    }
+    // Advance to the next flagged cell, wrapping once to the start.
+    const index = attentionCells.indexOf(activeCell);
+    const rest = attentionCells.filter((key) => key !== activeCell);
+    if (!rest.length) {
+      setActiveCell(null);
+      setReviewing(false);
+      sonnerToast.success(t("All matches checked"));
+      return;
+    }
+    setActiveCell(rest[Math.max(index, 0) % rest.length]);
+  };
 
   const loadIntoCalculator = () => {
     if (!plan) return;
@@ -373,6 +485,9 @@ export function StashScan({ demo = false }: StashScanProps) {
     setSplits({});
     setActiveCell(null);
     setError(null);
+    setReviewing(false);
+    setReviewTotal(0);
+    setReviewed(new Set());
   };
 
   const active = activeCell ? cells.find((cell) => cell.key === activeCell) : undefined;
@@ -398,7 +513,11 @@ export function StashScan({ demo = false }: StashScanProps) {
           : null;
       return next;
     });
-    setActiveCell(null);
+    unmarkReviewed([
+      parentKey,
+      ...Object.keys(assignments).filter((key) => key.startsWith(`${parentKey}#`)),
+    ]);
+    setActiveCell(reviewing ? parentKey : null);
   };
 
   /**
@@ -437,7 +556,16 @@ export function StashScan({ demo = false }: StashScanProps) {
         });
         return next;
       });
-      setActiveCell(null);
+      unmarkReviewed(
+        matched.cells.map((_, slot) => `${cell.key}#${slot}` as CellKey),
+      );
+      if (reviewing) {
+        // The review loop continues into the new slots.
+        const first = matched.cells.findIndex((part) => !part.empty);
+        setActiveCell(first >= 0 ? (`${cell.key}#${first}` as CellKey) : null);
+      } else {
+        setActiveCell(null);
+      }
     } catch {
       sonnerToast.error(t("Could not split this cell"), {
         description: t("Could not reach the scanner. Check your connection and try again."),
@@ -587,6 +715,8 @@ export function StashScan({ demo = false }: StashScanProps) {
                     highlightedCells={highlightedCells}
                     activeCell={activeCell}
                     onSelectCell={setActiveCell}
+                    emphasiseAttention={reviewing}
+                    reviewedCells={reviewed}
                   />
                   {active && active.imageIndex === imageIndex && (
                     <div id="stash-scan-inspector">
@@ -610,11 +740,11 @@ export function StashScan({ demo = false }: StashScanProps) {
                             ? () => undoSplit(active.key.split("#")[0])
                             : undefined
                         }
-                        onAssign={(itemId) => {
-                          setAssignments((current) => ({ ...current, [active.key]: itemId }));
+                        onAssign={handleAssign}
+                        onClose={() => {
                           setActiveCell(null);
+                          setReviewing(false);
                         }}
-                        onClose={() => setActiveCell(null)}
                       />
                     </div>
                   )}
@@ -622,6 +752,44 @@ export function StashScan({ demo = false }: StashScanProps) {
               ))}
 
               <OverlayLegend />
+
+              {onCommitStash && (
+                <ReviewPanel
+                  session={session}
+                  cells={cells}
+                  itemsById={itemsById}
+                  items={items}
+                  assignments={assignments}
+                  splitting={splitting !== null}
+                  onSplit={(cell, direction, count) => void splitCell(cell, direction, count)}
+                  onUndoSplit={undoSplit}
+                  activeCell={activeCell}
+                  reviewing={reviewing}
+                  remaining={attentionCells.length}
+                  total={reviewTotal}
+                  onStart={startReview}
+                  onAssign={handleAssign}
+                  onSkip={skipCell}
+                  onClose={() => {
+                    setActiveCell(null);
+                    setReviewing(false);
+                  }}
+                  commitLabel={
+                    hasSavedInventory ? t("Update stash") : t("Use this stash")
+                  }
+                  onCommit={() =>
+                    onCommitStash(
+                      buildInventoryFromGroups(
+                        groups,
+                        excluded,
+                        settings.gameMode,
+                        session.images.length,
+                      ),
+                    )
+                  }
+                  canCommit={groups.length > 0}
+                />
+              )}
 
               <DetectedItems
                 groups={groups}
@@ -638,7 +806,9 @@ export function StashScan({ demo = false }: StashScanProps) {
                   if (cell) openCellFromList(cell);
                 }}
                 onShowUnrecognised={() => {
-                  const cell = cells.find((c) => !c.empty && !assignments[c.key]);
+                  const cell = cells.find(
+                    (c) => !c.empty && !assignments[c.key] && !reviewed.has(c.key),
+                  );
                   if (cell) openCellFromList(cell.key);
                 }}
               />
