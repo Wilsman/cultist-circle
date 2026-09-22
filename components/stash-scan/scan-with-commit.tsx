@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/language-context";
 import { useStashInventory } from "@/hooks/use-stash-inventory";
 import { useSharedStashScanStore } from "@/hooks/use-stash-scan-store";
 import { useLocalStorageString } from "@/hooks/use-local-storage-state";
-import { totalStashItems, type StashInventory } from "@/lib/stash-inventory";
+import { totalStashItems, STASH_INVENTORY_STORAGE_KEY, type StashInventory } from "@/lib/stash-inventory";
 import { takeStagedScanFiles } from "@/lib/stash-scan/pending-files";
 
 interface ScanWithCommitProps {
@@ -35,8 +35,22 @@ export function ScanWithCommit({ demo = false }: ScanWithCommitProps) {
 
   const handleCommitStash = (next: StashInventory) => {
     const isUpdate = Boolean(inventory);
+    // Write synchronously: the handoff navigates home immediately after,
+    // which can unmount this component before the storage effect flushes.
+    try {
+      localStorage.setItem(STASH_INVENTORY_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Storage errors leave the in-memory state as the fallback.
+    }
     setStashInventory(next);
-    if (!isUpdate) setAutoSelectSource("stash");
+    if (!isUpdate) {
+      try {
+        localStorage.setItem("autoSelectSource", "stash");
+      } catch {
+        // Storage errors leave the in-memory state as the fallback.
+      }
+      setAutoSelectSource("stash");
+    }
     sonnerToast.success(
       isUpdate ? t("Stash updated") : t("Stash saved"),
       {
