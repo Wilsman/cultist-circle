@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { ENABLE_STASH_SCAN } from "@/config/feature-flags";
 
 export async function proxy(request: NextRequest) {
+  if (!ENABLE_STASH_SCAN && STASH_SCAN_PATHS.has(request.nextUrl.pathname)) {
+    return new NextResponse("404 Not Found", {
+      status: 404,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "text/plain; charset=utf-8",
+        "X-Robots-Tag": "noindex, nofollow",
+      },
+    });
+  }
+
   if (SCANNER_MATCHERS.has(request.nextUrl.pathname) || SCANNER_EXTENSION_REGEX.test(request.nextUrl.pathname)) {
     return new NextResponse("404 Not Found", {
       status: 404,
@@ -31,6 +43,8 @@ export async function proxy(request: NextRequest) {
 // Configure which paths this middleware will run on
 export const config = {
   matcher: [
+    "/scan",
+    "/scan/demo",
     "/api/:path*",
     "/wp-admin/:path*",
     "/wp-content/:path*",
@@ -47,6 +61,8 @@ export const config = {
     "/(.*\\.sql)",
   ],
 };
+
+const STASH_SCAN_PATHS = new Set(["/scan", "/scan/demo"]);
 
 const SCANNER_MATCHERS = new Set([
   "/wp-login.php",
