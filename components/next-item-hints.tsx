@@ -12,6 +12,9 @@ interface NextItemHintsProps {
   onPick: (item: SimplifiedItem) => void;
   prevItem?: SimplifiedItem | null;
   className?: string;
+  /** Owned count by item id; items in it get an "In stash" badge. */
+  stashCounts?: ReadonlyMap<string, number>;
+  variant?: "market" | "stash";
 }
 
 const containerVariants = {
@@ -43,8 +46,11 @@ export function NextItemHints({
   onPick,
   prevItem,
   className,
+  stashCounts,
+  variant = "market",
 }: NextItemHintsProps) {
   const { t } = useLanguage();
+  const isStash = variant === "stash";
   const [isExpanded, setIsExpanded] = useState(false);
   const contentId = useId();
   if (!items || items.length === 0) return null;
@@ -79,11 +85,20 @@ export function NextItemHints({
           isExpanded && "border-b border-white/[0.07] bg-white/[0.02]",
         )}
       >
-        <span className="flex min-w-0 items-center gap-2 border-l-2 border-amber-400/55 pl-2">
+        <span
+          className={cn(
+            "flex min-w-0 items-center gap-2 border-l-2 pl-2",
+            isStash ? "border-cyan-400/55" : "border-amber-400/55",
+          )}
+        >
           <span className="truncate text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-300 transition-colors group-hover:text-slate-100 sm:text-[10px]">
-            <span className="sm:hidden">{t("Recommended picks")}</span>
+            <span className="sm:hidden">
+              {isStash ? t("Stash picks") : t("Recommended picks")}
+            </span>
             <span className="hidden sm:inline">
-              {t("Recommended for this slot")}
+              {isStash
+                ? t("From your stash")
+                : t("Recommended for this slot")}
             </span>
           </span>
           <span className="hidden text-[9px] font-medium text-slate-600 md:inline">
@@ -172,7 +187,9 @@ export function NextItemHints({
                   className={cn(
                     "group relative flex min-w-0 items-center gap-2 rounded-md border px-2 py-2 text-left transition-colors",
                     i === 0
-                      ? "border-amber-400/35 bg-gradient-to-r from-amber-400/[0.11] to-amber-400/[0.035] shadow-[inset_2px_0_0_rgba(251,191,36,0.75)] hover:border-amber-300/55 hover:from-amber-400/[0.16]"
+                      ? isStash
+                        ? "border-cyan-400/35 bg-gradient-to-r from-cyan-400/[0.11] to-cyan-400/[0.035] shadow-[inset_2px_0_0_rgba(34,211,238,0.75)] hover:border-cyan-300/55 hover:from-cyan-400/[0.16]"
+                        : "border-amber-400/35 bg-gradient-to-r from-amber-400/[0.11] to-amber-400/[0.035] shadow-[inset_2px_0_0_rgba(251,191,36,0.75)] hover:border-amber-300/55 hover:from-amber-400/[0.16]"
                       : "border-white/[0.08] bg-white/[0.025] hover:border-white/15 hover:bg-white/[0.055]",
                   )}
                   title={it.name}
@@ -189,7 +206,9 @@ export function NextItemHints({
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded border",
                       i === 0
-                        ? "border-amber-400/20 bg-amber-400/10"
+                        ? isStash
+                          ? "border-cyan-400/20 bg-cyan-400/10"
+                          : "border-amber-400/20 bg-amber-400/10"
                         : "border-white/[0.08] bg-black/20",
                     )}
                   >
@@ -208,7 +227,11 @@ export function NextItemHints({
                       <Package
                         className={cn(
                           "h-3.5 w-3.5",
-                          i === 0 ? "text-amber-300" : "text-slate-500",
+                          i === 0
+                            ? isStash
+                              ? "text-cyan-300"
+                              : "text-amber-300"
+                            : "text-slate-500",
                         )}
                         aria-hidden
                       />
@@ -218,7 +241,11 @@ export function NextItemHints({
                     <span
                       className={cn(
                         "block text-[8px] font-extrabold uppercase tracking-[0.16em]",
-                        i === 0 ? "text-amber-300" : "text-slate-500",
+                        i === 0
+                          ? isStash
+                            ? "text-cyan-300"
+                            : "text-amber-300"
+                          : "text-slate-500",
                       )}
                     >
                       {i === 0
@@ -228,14 +255,25 @@ export function NextItemHints({
                     <span className="mt-0.5 block truncate text-[11px] font-bold leading-none text-slate-100">
                       {it.shortName || it.name}
                     </span>
-                    <span className="mt-1 block text-[9px] font-semibold tabular-nums text-slate-500">
+                    <span className="mt-1 flex items-center gap-1.5 text-[9px] font-semibold tabular-nums text-slate-500">
                       {t("Base value")} ₽{it.basePrice.toLocaleString()}
+                      {stashCounts?.has(it.id) && (
+                        <span className="rounded border border-cyan-300/20 bg-cyan-300/[0.07] px-1 text-[9px] font-bold uppercase tracking-wider text-cyan-300/90">
+                          {t("In stash ×{count}", {
+                            count: stashCounts.get(it.id) ?? 0,
+                          })}
+                        </span>
+                      )}
                     </span>
                   </span>
                   <span
                     className={cn(
                       "flex shrink-0 items-center gap-0.5 text-[8px] font-extrabold uppercase tracking-wider opacity-60 transition-opacity group-hover:opacity-100",
-                      i === 0 ? "text-amber-300" : "text-slate-400",
+                      i === 0
+                        ? isStash
+                          ? "text-cyan-300"
+                          : "text-amber-300"
+                        : "text-slate-400",
                     )}
                     aria-hidden
                   >

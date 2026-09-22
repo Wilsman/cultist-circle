@@ -7,6 +7,7 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context";
 import Script from "next/script";
 import { LanguageProvider } from "@/contexts/language-context";
+import { StashScanStoreProvider } from "@/hooks/use-stash-scan-store";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { NotesWidget } from "@/components/notes-widget";
 import { SupportWidget } from "@/components/support-widget";
@@ -124,6 +125,7 @@ export default function RootLayout({
         </Script>
         <CookieConsentProvider>
           <LanguageProvider>
+            <StashScanStoreProvider>
             <main className="relative min-h-screen">
               {/* Background color */}
               <div className="fixed inset-0 -z-10 bg-[#101720]" />
@@ -144,6 +146,7 @@ export default function RootLayout({
                 <RitualReminderWatcher />
               </div>
             </main>
+            </StashScanStoreProvider>
           </LanguageProvider>
         </CookieConsentProvider>
       </body>
