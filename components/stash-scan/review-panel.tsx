@@ -145,7 +145,7 @@ export function ReviewPanel({
         </div>
       )}
 
-      {open && active ? (
+      {open && active && reviewing ? (
         <>
           <CellInspector
             key={activeCell}
