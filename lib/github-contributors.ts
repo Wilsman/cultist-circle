@@ -16,6 +16,33 @@ interface GitHubContributorApiResponse {
 export const DEFAULT_CONTRIBUTORS_REPO = "Wilsman/cultist-circle";
 export const MAX_CONTRIBUTORS = 12;
 
+const ADDITIONAL_CONTRIBUTORS: GitHubContributor[] = [
+  {
+    login: "Oxylad",
+    htmlUrl: "https://github.com/Oxylad",
+    avatarUrl: "https://avatars.githubusercontent.com/u/76744208?v=4",
+    contributions: 7,
+  },
+];
+
+function includeAdditionalContributors(
+  contributors: GitHubContributor[],
+): GitHubContributor[] {
+  const merged = [...contributors];
+
+  for (const contributor of ADDITIONAL_CONTRIBUTORS) {
+    const existingIndex = merged.findIndex(
+      (existing) => existing.login.toLowerCase() === contributor.login.toLowerCase(),
+    );
+    if (existingIndex >= 0) continue;
+
+    if (merged.length >= MAX_CONTRIBUTORS) merged.pop();
+    merged.push(contributor);
+  }
+
+  return merged;
+}
+
 export function normalizeGitHubContributors(
   payload: GitHubContributorApiResponse[],
 ): GitHubContributor[] {
@@ -43,6 +70,8 @@ export function normalizeGitHubContributors(
 export async function getRepoContributors(
   repo = DEFAULT_CONTRIBUTORS_REPO,
 ): Promise<GitHubContributor[]> {
+  const additionalOnly = () => includeAdditionalContributors([]);
+
   try {
     const response = await fetch(
       `https://api.github.com/repos/${repo}/contributors?per_page=${MAX_CONTRIBUTORS}`,
@@ -58,17 +87,17 @@ export async function getRepoContributors(
     );
 
     if (!response.ok) {
-      return [];
+      return additionalOnly();
     }
 
     const payload = (await response.json()) as GitHubContributorApiResponse[];
 
     if (!Array.isArray(payload)) {
-      return [];
+      return additionalOnly();
     }
 
-    return normalizeGitHubContributors(payload);
+    return includeAdditionalContributors(normalizeGitHubContributors(payload));
   } catch {
-    return [];
+    return additionalOnly();
   }
 }
