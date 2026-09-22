@@ -55,6 +55,7 @@ import {
   buildInventoryFromGroups,
   type StashInventory,
 } from "@/lib/stash-inventory";
+import type { StashScanStore } from "@/hooks/use-stash-scan-store";
 import { CellInspector } from "./cell-inspector";
 import { DetectedItems } from "./detected-items";
 import { ReviewPanel } from "./review-panel";
@@ -152,27 +153,42 @@ interface StashScanProps {
   onCommitStash?: (inventory: StashInventory) => void;
   /** A stash is already saved; the commit button becomes "Update stash". */
   hasSavedInventory?: boolean;
+  /** Lifted scan session; survives leaving /scan and coming back. */
+  store?: StashScanStore;
 }
 
-export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedInventory = false }: StashScanProps) {
+export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedInventory = false, store }: StashScanProps) {
   const { t } = useLanguage();
   const router = useRouter();
   const settings = useAppSettings();
   const { data: items } = useItemsData(settings.gameMode);
 
-  const [queued, setQueued] = useState<QueuedImage[]>([]);
-  const [session, setSession] = useState<ScanSession | null>(null);
+  const [localQueued, setLocalQueued] = useState<QueuedImage[]>([]);
+  const [localSession, setLocalSession] = useState<ScanSession | null>(null);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [assignments, setAssignments] = useState<CellAssignments>({});
+  const [localAssignments, setLocalAssignments] = useState<CellAssignments>({});
   // The user's include/exclude choices; everything else follows the defaults.
-  const [inclusion, setInclusion] = useState<Record<string, boolean>>({});
+  const [localInclusion, setLocalInclusion] = useState<Record<string, boolean>>({});
   // Cells the user split into their separate slots, re-matched by the server.
-  const [splits, setSplits] = useState<Record<CellKey, ScanCell[]>>({});
+  const [localSplits, setLocalSplits] = useState<Record<CellKey, ScanCell[]>>({});
   const [splitting, setSplitting] = useState<CellKey | null>(null);
   const [excludedNames] = useState(readExcludedNames);
   const [demoStatus, setDemoStatus] = useState<DemoStatus>("loading");
+
+  // Lifted store when embedded in a session that outlives this component,
+  // local state otherwise. Declared up front: effects below depend on these.
+  const splits = store ? store.splits : localSplits;
+  const setSplits = store ? store.setSplits : setLocalSplits;
+  const queued = store ? store.queued : localQueued;
+  const setQueued = store ? store.setQueued : setLocalQueued;
+  const session = store ? store.session : localSession;
+  const setSession = store ? store.setSession : setLocalSession;
+  const assignments = store ? store.assignments : localAssignments;
+  const setAssignments = store ? store.setAssignments : setLocalAssignments;
+  const inclusion = store ? store.inclusion : localInclusion;
+  const setInclusion = store ? store.setInclusion : setLocalInclusion;
 
   useEffect(() => {
     if (!demo) return;
@@ -202,23 +218,33 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
     return () => {
       cancelled = true;
     };
-  }, [demo]);
+  }, [demo, setSession, setAssignments, setSplits]);
   const [activeCell, setActiveCell] = useState<CellKey | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [reviewTotal, setReviewTotal] = useState(0);
   // Cells the user has confirmed or corrected in the review flow.
-  const [reviewed, setReviewed] = useState<ReadonlySet<CellKey>>(new Set());
-  const markReviewed = useCallback((key: CellKey) => {
-    setReviewed((current) => new Set(current).add(key));
-  }, []);
-  const unmarkReviewed = useCallback((keys: CellKey[]) => {
-    setReviewed((current) => {
-      const next = new Set(current);
-      keys.forEach((key) => next.delete(key));
-      return next;
-    });
-  }, []);
+  const [localReviewed, setLocalReviewed] = useState<ReadonlySet<CellKey>>(new Set());
+  const markReviewed = useCallback(
+    (key: CellKey) => {
+      if (store) store.markReviewed(key);
+      else setLocalReviewed((current) => new Set(current).add(key));
+    },
+    [store],
+  );
+  const unmarkReviewed = useCallback(
+    (keys: CellKey[]) => {
+      if (store) store.unmarkReviewed(keys);
+      else
+        setLocalReviewed((current) => {
+          const next = new Set(current);
+          keys.forEach((key) => next.delete(key));
+          return next;
+        });
+    },
+    [store],
+  );
+  const reviewed = store ? store.reviewed : localReviewed;
   // Opening a cell always brings its inspector into view; during review the
   // review panel is the target instead.
   useEffect(() => {
@@ -246,8 +272,16 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
     [items],
   );
 
-  // Object URLs outlive their images unless revoked.
+  // Object URLs outlive their images unless revoked. With a lifted store they
+  // live (and are revoked) with the store instead of this component.
   const urls = useRef(new Set<string>());
+  const trackUrl = useCallback(
+    (url: string) => {
+      if (store) store.trackUrl(url);
+      else urls.current.add(url);
+    },
+    [store],
+  );
   useEffect(() => {
     const tracked = urls.current;
     return () => tracked.forEach((url) => URL.revokeObjectURL(url));
@@ -256,7 +290,14 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
   const addImages = useCallback((files: File[]) => {
     setError(null);
     setQueued((current) => {
-      const room = SCAN_LIMITS.maxImages - current.length;
+      const room =
+        SCAN_LIMITS.maxImages - (session?.images.length ?? 0) - current.length;
+      if (room <= 0 && files.length) {
+        sonnerToast.error(t("Screenshot limit reached"), {
+          description: t("Remove a screenshot or start a new scan."),
+        });
+        return current;
+      }
       const tooLarge = files.filter((file) => file.size > SCAN_LIMITS.maxSourceBytes);
       if (tooLarge.length) {
         sonnerToast.error(t("Some screenshots are too large"), {
@@ -270,26 +311,29 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
         .slice(0, Math.max(0, room))
         .map((file) => {
           const url = URL.createObjectURL(file);
-          urls.current.add(url);
+          trackUrl(url);
           return { id: `${file.name}-${file.size}-${url}`, file, url };
         });
       return [...current, ...added];
     });
-  }, [t]);
+  }, [t, session, trackUrl, setQueued]);
 
   const removeImage = useCallback((id: string) => {
     setQueued((current) => current.filter((image) => image.id !== id));
-  }, []);
+  }, [setQueued]);
 
   const initialFilesAdded = useRef(false);
+  // Newly handed-over files scan themselves: appended to a live session, or
+  // as a fresh scan when arriving with none.
+  const autoScanRef = useRef(false);
   useEffect(() => {
-    if (demo || initialFilesAdded.current || !initialFiles?.length) return;
+    if (initialFilesAdded.current || !initialFiles?.length) return;
     initialFilesAdded.current = true;
+    autoScanRef.current = true;
     addImages(initialFiles);
-  }, [demo, initialFiles, addImages]);
+  }, [initialFiles, addImages]);
 
   const scan = useCallback(async () => {
-    if (!queued.length) return;
     if (!queued.length) return;
     setScanning(true);
     setError(null);
@@ -308,30 +352,46 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
         );
       }
       const results = scanned.map((o) => o.result!);
-      setSession({
-        images: scanned.map((o) => ({ ...o.image, upload: o.upload })),
-        results,
-      });
-      setAssignments(initialAssignments(displayCells(results, {})));
-      setInclusion({});
-      setSplits({});
-      setActiveCell(null);
-      setQueued([]);
+      const scannedImages = scanned.map((o) => ({ ...o.image, upload: o.upload }));
+      // With an existing session the new screenshots append to it.
+      const allResults = [...(session?.results ?? []), ...results];
+      setSession((prev: ScanSession | null) =>
+        prev
+          ? { images: [...prev.images, ...scannedImages], results: [...prev.results, ...results] }
+          : { images: scannedImages, results },
+      );
+      setAssignments((current) =>
+        session
+          ? {
+              ...current,
+              ...initialAssignments(
+                displayCells(allResults, {}).filter(
+                  (cell) => cell.imageIndex >= (session?.images.length ?? 0),
+                ),
+              ),
+            }
+          : initialAssignments(displayCells(results, {})),
+      );
+      if (!session) {
+        setInclusion({});
+        setActiveCell(null);
+        setSplits({});
+      }
       // New scan contents mean the review counters start over.
       setReviewTotal(0);
+      setQueued([]);
     } finally {
       setScanning(false);
     }
-  }, [queued, t]);
+  }, [queued, session, t, setSession, setAssignments, setInclusion, setQueued, setSplits]);
 
-  // Files handed over from the stash strip scan themselves once queued.
-  const autoScanArmed = useRef(false);
+  // Handed-over files scan themselves once queued.
   useEffect(() => {
-    if (demo || !initialFilesAdded.current || session || !queued.length || scanning) return;
-    if (autoScanArmed.current) return;
-    autoScanArmed.current = true;
-    void scan();
-  }, [demo, session, queued, scanning, scan]);
+    if (autoScanRef.current && queued.length > 0 && !scanning) {
+      autoScanRef.current = false;
+      void scan();
+    }
+  }, [queued, scanning, scan]);
 
   const results = useMemo(() => session?.results ?? [], [session]);
   const cells = useMemo(() => displayCells(results, splits), [results, splits]);
@@ -479,15 +539,19 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
   };
 
   const reset = () => {
-    setSession(null);
-    setAssignments({});
-    setInclusion({});
-    setSplits({});
+    if (store) store.reset();
+    else {
+      setSession(null);
+      setAssignments({});
+      setInclusion({});
+      setQueued([]);
+      setSplits({});
+    }
+    unmarkReviewed([...reviewed]);
     setActiveCell(null);
     setError(null);
     setReviewing(false);
     setReviewTotal(0);
-    setReviewed(new Set());
   };
 
   const active = activeCell ? cells.find((cell) => cell.key === activeCell) : undefined;

@@ -1,11 +1,15 @@
 "use client";
 
 import {
+  createContext,
+  createElement,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
   type Dispatch,
+  type ReactNode,
   type SetStateAction,
 } from "react";
 import type { QueuedImage } from "@/components/stash-scan/upload-zone";
@@ -102,4 +106,26 @@ export function useStashScanStore(): StashScanStore {
     trackUrl,
     reset,
   };
+}
+
+const StashScanStoreContext = createContext<StashScanStore | null>(null);
+
+/**
+ * Holds one scan session above the page tree so leaving /scan and coming
+ * back (or reopening it from the stash strip) keeps the screenshots,
+ * recognised items and corrections instead of starting a new scan.
+ */
+export function StashScanStoreProvider({ children }: { children: ReactNode }) {
+  const store = useStashScanStore();
+  return createElement(StashScanStoreContext.Provider, { value: store }, children);
+}
+
+export function useSharedStashScanStore(): StashScanStore {
+  const store = useContext(StashScanStoreContext);
+  if (!store) {
+    throw new Error(
+      "useSharedStashScanStore must be used inside StashScanStoreProvider",
+    );
+  }
+  return store;
 }
