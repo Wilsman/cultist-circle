@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, Loader2, Minus, Plus, RotateCcw, ScanSearch } from "lucide-react";
+import { Eye, ImagePlus, Loader2, Minus, Plus, RotateCcw, ScanSearch } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import ItemSocket from "@/components/item-socket";
 import { ModeThreshold } from "@/components/mode-threshold";
@@ -538,8 +538,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
     router.push("/");
   };
 
-  const reset = () => {
-    if (store) store.reset();
+  const reset = () => {    if (store) store.reset();
     else {
       setSession(null);
       setAssignments({});
@@ -555,6 +554,9 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
   };
 
   const active = activeCell ? cells.find((cell) => cell.key === activeCell) : undefined;
+
+  // Extra screenshots for the live session, scanned and appended on select.
+  const addMoreInputRef = useRef<HTMLInputElement>(null);
 
   /** Puts a split cell back together and restores its original match. */
   const undoSplit = (parentKey: CellKey) => {
@@ -665,14 +667,47 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
               </Link>
             </Button>
           ) : session ? (
-            <Button
-              variant="outline"
-              onClick={reset}
-              className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              {t("New scan")}
-            </Button>
+            <div className="flex items-center gap-2">
+              {scanning && (
+                <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  {t("Scanning...")}
+                </span>
+              )}
+              <Button
+                onClick={() => addMoreInputRef.current?.click()}
+                disabled={scanning}
+                className="bg-cyan-400 font-semibold text-slate-950 hover:bg-cyan-300"
+              >
+                <ImagePlus className="mr-2 h-4 w-4" />
+                {t("Add screenshots")}
+              </Button>
+              <input
+                ref={addMoreInputRef}
+                type="file"
+                accept={SCAN_LIMITS.acceptedTypes.join(",")}
+                multiple
+                hidden
+                onChange={(event) => {
+                  const files = [...(event.target.files ?? [])].filter((file) =>
+                    (SCAN_LIMITS.acceptedTypes as readonly string[]).includes(file.type),
+                  );
+                  event.target.value = "";
+                  if (files.length) {
+                    autoScanRef.current = true;
+                    addImages(files);
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                onClick={reset}
+                className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                {t("New scan")}
+              </Button>
+            </div>
           ) : (
             <Button
               asChild
