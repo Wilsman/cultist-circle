@@ -1,10 +1,8 @@
-/** Fail closed: the UI flag alone cannot enable processing. */
-export function scanTrialEnabled(now = Date.now()): boolean {
+/** The server flag controls processing; preview trials also have an expiry. */
+export function scanEnabled(now = Date.now()): boolean {
+  if (process.env.STASH_SCAN_ENABLED !== "true") return false;
+  if (process.env.VERCEL_ENV === "production") return true;
+
   const expires = Date.parse(process.env.STASH_SCAN_TRIAL_EXPIRES_AT ?? "");
-  return (
-    process.env.STASH_SCAN_ENABLED === "true" &&
-    process.env.VERCEL_ENV !== "production" &&
-    Number.isFinite(expires) &&
-    now < expires
-  );
+  return Number.isFinite(expires) && now < expires;
 }

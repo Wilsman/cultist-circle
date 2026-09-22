@@ -22,17 +22,16 @@ function request(rects?: string) {
   });
 }
 
-describe("stash scan trial boundary", () => {
+describe("stash scan access boundary", () => {
   beforeEach(() => {
     vi.stubEnv("STASH_SCAN_ENABLED", "true");
     vi.stubEnv("STASH_SCAN_TRIAL_EXPIRES_AT", "2099-01-01T00:00:00Z");
     vi.stubEnv("VERCEL_ENV", "preview");
   });
   afterEach(() => vi.unstubAllEnvs());
-  it.each(["production", "disabled", "expired", "missing-expiry"])(
+  it.each(["disabled", "expired", "missing-expiry"])(
     "refuses %s before parsing or loading the index",
     async (mode) => {
-      if (mode === "production") vi.stubEnv("VERCEL_ENV", "production");
       if (mode === "disabled") vi.stubEnv("STASH_SCAN_ENABLED", "false");
       if (mode === "expired")
         vi.stubEnv("STASH_SCAN_TRIAL_EXPIRES_AT", "2000-01-01T00:00:00Z");
@@ -45,6 +44,18 @@ describe("stash scan trial boundary", () => {
       expect(getIconIndex).not.toHaveBeenCalled();
     },
   );
+  it("allows production when the server flag is enabled without a trial expiry", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("STASH_SCAN_TRIAL_EXPIRES_AT", "");
+    expect((await GET()).status).toBe(200);
+    expect(getIconIndex).not.toHaveBeenCalled();
+  });
+  it("refuses production when the server flag is disabled", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("STASH_SCAN_ENABLED", "false");
+    expect((await POST(request())).status).toBe(503);
+    expect(getIconIndex).not.toHaveBeenCalled();
+  });
   it("checks availability without loading the index", async () => {
     expect((await GET()).status).toBe(200);
     expect(getIconIndex).not.toHaveBeenCalled();
