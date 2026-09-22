@@ -63,4 +63,3 @@ describe("route stash handoff", () => {
     expect(push).toHaveBeenCalledWith("/");
   });
 });
-

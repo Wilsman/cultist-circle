@@ -8,4 +8,3 @@ export function scanTrialEnabled(now = Date.now()): boolean {
     now < expires
   );
 }
-

@@ -558,4 +558,3 @@ export function detectGrid(image: RgbImage): GridDetection {
   kept.sort((a, b) => a.y - b.y || a.x - b.x);
   return { pitch, cells: kept };
 }
-
