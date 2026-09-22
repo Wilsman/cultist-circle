@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { AlertTriangle, ArrowRight, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
 import type { SacrificePlan as Plan } from "@/lib/stash-scan/optimize";
@@ -66,7 +66,6 @@ export function SacrificePlan({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-amber-200">
-        <Sparkles className="h-4 w-4" />
         {plan.itemCount === 1
           ? t("Sacrifice this item")
           : t("Sacrifice these {count} items", { count: plan.itemCount })}
