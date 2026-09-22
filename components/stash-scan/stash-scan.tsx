@@ -777,7 +777,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                   commitLabel={
                     hasSavedInventory ? t("Update stash") : t("Use this stash")
                   }
-                  onCommit={() =>
+                  onCommit={() => {
                     onCommitStash(
                       buildInventoryFromGroups(
                         groups,
@@ -785,8 +785,10 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                         settings.gameMode,
                         session.images.length,
                       ),
-                    )
-                  }
+                    );
+                    // Handoff: fill the calculator with the cheapest picks.
+                    loadIntoCalculator();
+                  }}
                   canCommit={groups.length > 0}
                 />
               )}
