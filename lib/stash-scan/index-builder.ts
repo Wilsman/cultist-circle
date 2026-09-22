@@ -47,15 +47,9 @@ export type Logger = (message: string) => void;
 const yieldToEventLoop = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 async function fetchWithTimeout(url: string): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText} (${url})`);
-    return response;
-  } finally {
-    clearTimeout(timer);
-  }
+  const response = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText} (${url})`);
+  return response;
 }
 
 export async function fetchCatalog(): Promise<CatalogEntry[]> {
@@ -126,6 +120,7 @@ async function cachedGridImage(
 /** Decodes an image to packed RGB. */
 export async function decodeRgb(bytes: Buffer, maxPixels?: number): Promise<RgbImage> {
   const { data, info } = await sharp(bytes, maxPixels ? { limitInputPixels: maxPixels } : {})
+    .toColourspace("srgb")
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -147,16 +142,25 @@ export async function buildIndex(
   await mkdir(imageDir, { recursive: true });
   const index = createIconIndex();
   let items = 0;
+  let failed = 0;
   let next = 0;
   await Promise.all(
     Array.from({ length: DOWNLOAD_CONCURRENCY }, async () => {
       while (next < catalog.length) {
         const entry = catalog[next++];
         const bytes = await cachedGridImage(entry, imageDir, log);
-        if (!bytes) continue;
+        if (!bytes) {
+          failed++;
+          continue;
+        }
         try {
-          if (addCatalogIcon(index, { ...entry, grid: await decodeRgb(bytes) })) items++;
+          if (addCatalogIcon(index, { ...entry, grid: await decodeRgb(bytes) })) {
+            items++;
+          } else {
+            log(`grid image has the wrong size for ${entry.id}`);
+          }
         } catch (error) {
+          failed++;
           log(`could not index ${entry.id}: ${String(error)}`);
         }
         await yieldToEventLoop();
@@ -170,6 +174,7 @@ export async function buildIndex(
       catalogHash: catalogHash(catalog),
       builtAt: new Date().toISOString(),
       items,
+      complete: failed === 0,
     },
   };
 }

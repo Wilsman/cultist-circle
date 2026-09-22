@@ -19,6 +19,8 @@ export interface IndexMetadata {
   catalogHash: string;
   builtAt: string;
   items: number;
+  /** Older index files lack this marker and must be rebuilt before reuse. */
+  complete: boolean;
 }
 
 interface IndexHeader extends IndexMetadata {

@@ -95,7 +95,7 @@ async function rebuild(): Promise<void> {
   await load();
   const catalog = await fetchCatalog();
   const hash = catalogHash(catalog);
-  if (state.current?.metadata.catalogHash === hash) return;
+  if (state.current?.metadata.catalogHash === hash && state.current.metadata.complete === true) return;
   log(state.current ? "catalog changed; rebuilding the index" : "building the index");
 
   const started = Date.now();
@@ -104,6 +104,11 @@ async function rebuild(): Promise<void> {
     path.join(/* turbopackIgnore: true */ CACHE_DIR, "grid"),
     log,
   );
+  if (!built.metadata.complete) {
+    state.lastError = "The icon index build was incomplete; keeping the previous index.";
+    log(state.lastError);
+    return;
+  }
   await mkdir(CACHE_DIR, { recursive: true });
   const file = path.join(/* turbopackIgnore: true */ CACHE_DIR, indexFileName());
   const temporary = `${file}.${process.pid}.tmp`;

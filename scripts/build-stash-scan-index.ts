@@ -66,15 +66,24 @@ async function buildOrReuseIndex(): Promise<IconIndex | null> {
   }
 
   const previous = await readCachedIndexFile();
-  if (previous && previous.metadata.catalogHash === catalogHash(catalog)) {
+  if (previous?.metadata.complete === true && previous.metadata.catalogHash === catalogHash(catalog)) {
     await copyFile(cached, output);
     log(`catalog unchanged; reused the cached index (${previous.index.size} templates)`);
     return previous.index;
   }
 
   const built = await buildIndex(catalog, path.join(cacheDir, "grid"), log);
+  if (!built.metadata.complete && previous?.metadata.complete === true) {
+    await copyFile(cached, output);
+    log("icon index build incomplete; reusing the last complete index");
+    return previous.index;
+  }
   const bytes = encodeIndex(built.index, built.metadata);
   await writeFile(output, bytes);
+  if (!built.metadata.complete) {
+    log("WARNING: icon index build incomplete; the partial index will not be cached");
+    return built.index;
+  }
   await mkdir(cacheDir, { recursive: true });
   await writeFile(cached, bytes);
   log(
