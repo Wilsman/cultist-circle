@@ -8,7 +8,7 @@ export async function register() {
     process.env.NODE_ENV === "production" &&
     process.env.VERCEL !== "1" &&
     process.env.STASH_SCAN_WARM !== "0" &&
-    (await import("@/lib/stash-scan/enabled")).scanTrialEnabled()
+    (await import("@/lib/stash-scan/enabled")).scanEnabled()
   ) {
     const { warmIconIndex } = await import("@/lib/stash-scan/index-store");
     warmIconIndex();
