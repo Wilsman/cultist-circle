@@ -218,9 +218,12 @@ export function valueGivenUp(
   { priceMode, fleaPriceType }: PricingSettings,
 ): number {
   const traderPrice = Math.max(0, ...(item.sellFor ?? []).map((offer) => offer.priceRUB));
-  if (priceMode === "trader") return traderPrice;
+  if (priceMode === "trader") {
+    return traderPrice > 0 ? traderPrice : Number.POSITIVE_INFINITY;
+  }
   const flea = item[fleaPriceType];
-  return typeof flea === "number" && flea > 0 ? flea : traderPrice;
+  if (typeof flea === "number" && Number.isFinite(flea) && flea > 0) return flea;
+  return traderPrice > 0 ? traderPrice : Number.POSITIVE_INFINITY;
 }
 
 export function toOwnedItems(
@@ -235,5 +238,6 @@ export function toOwnedItems(
       count: group.cells.length,
       baseValue: sacrificeBaseValue(group.item!, pricing.itemBonus),
       cost: valueGivenUp(group.item!, pricing),
-    }));
+    }))
+    .filter((item) => Number.isFinite(item.cost));
 }

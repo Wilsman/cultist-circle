@@ -62,6 +62,7 @@ export function DetectedItems({
       <ul className="divide-y divide-white/5 overflow-hidden rounded-xl border border-white/10 bg-black/20">
         {groups.map((group) => {
           const { item } = group;
+          const sellValue = item ? valueGivenUp(item, pricing) : null;
           const included = !excluded.has(group.itemId);
           const planned = plannedCounts.get(group.itemId) ?? 0;
           return (
@@ -98,7 +99,7 @@ export function DetectedItems({
                 </div>
                 <div className="text-xs tabular-nums text-slate-500">
                   {item
-                    ? `${rub(sacrificeBaseValue(item, pricing.itemBonus))} ${t("base")} · ${rub(valueGivenUp(item, pricing))} ${t("value")}`
+                    ? `${rub(sacrificeBaseValue(item, pricing.itemBonus))} ${t("base")} · ${sellValue !== null && Number.isFinite(sellValue) ? `${rub(sellValue)} ${t("value")}` : t("Price unavailable")}`
                     : t("Not in this game mode's data")}
                 </div>
               </div>

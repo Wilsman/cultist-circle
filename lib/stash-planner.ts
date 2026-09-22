@@ -56,11 +56,13 @@ export function ownedFromInventory(input: OwnedInput): OwnedItem[] {
     if (input.avoid?.has(itemId)) continue;
     const count = entry.count - (input.reserved?.get(itemId) ?? 0);
     if (count <= 0) continue;
+    const cost = valueGivenUp(item, input.pricing);
+    if (!Number.isFinite(cost)) continue;
     owned.push({
       key: itemId,
       count,
       baseValue: sacrificeBaseValue(item, input.pricing.itemBonus),
-      cost: valueGivenUp(item, input.pricing),
+      cost,
     });
   }
   return owned;
