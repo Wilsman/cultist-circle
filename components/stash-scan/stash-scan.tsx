@@ -718,7 +718,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                     emphasiseAttention={reviewing}
                     reviewedCells={reviewed}
                   />
-                  {active && active.imageIndex === imageIndex && (
+                  {!reviewing && active && active.imageIndex === imageIndex && (
                     <div id="stash-scan-inspector">
                       <CellInspector
                         key={activeCell}
