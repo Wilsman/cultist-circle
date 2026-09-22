@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   cellNeedsReview,
+  cellsWithSameReviewSuggestion,
   displayCells,
   initialAssignments,
 } from "@/lib/stash-scan/owned-items";
@@ -79,5 +80,53 @@ describe("cellNeedsReview", () => {
 
   it("is false when re-assigned to a non-best item", () => {
     expect(cellNeedsReview(cell("medium"), "other")).toBe(false);
+  });
+});
+
+describe("cellsWithSameReviewSuggestion", () => {
+  it("returns only other unchecked cells with the same top match", () => {
+    const samples: Array<{
+      itemId: string;
+      confidence: ScanCell["confidence"];
+    }> = [
+      { itemId: "meds", confidence: "low" },
+      { itemId: "meds", confidence: "medium" },
+      { itemId: "meds", confidence: "high" },
+      { itemId: "ammo", confidence: "low" },
+    ];
+    const image: ScanImageResult = {
+      width: 100,
+      height: 100,
+      pitch: 10,
+      cells: samples.map(({ itemId, confidence }) => ({
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+        slotsWide: 1,
+        slotsHigh: 1,
+        empty: false,
+        confidence,
+        matches: [
+          {
+            itemId,
+            shortName: itemId,
+            rotated: false,
+            score: 1,
+          },
+        ],
+      })),
+    };
+    const cells = displayCells([image], {});
+    const stillNeedsReview = new Set(["0:0", "0:1", "0:3"]);
+
+    expect(cellsWithSameReviewSuggestion(cells[0], cells, stillNeedsReview)).toEqual([
+      "0:1",
+    ]);
+  });
+
+  it("returns nothing when the active cell has no top match", () => {
+    const cells = displayCells([makeImage(["empty"])], {});
+    expect(cellsWithSameReviewSuggestion(cells[0], cells, new Set())).toEqual([]);
   });
 });

@@ -45,21 +45,6 @@ type OwnedInput = Omit<
 
 export function ownedFromInventory(input: OwnedInput): OwnedItem[] {
   const owned: OwnedItem[] = [];
-  if (input.ignoreFilters) {
-    for (const [itemId, entry] of Object.entries(input.inventory.items)) {
-      const item = input.itemsById.get(itemId);
-      if (!item) continue;
-      const count = entry.count - (input.reserved?.get(itemId) ?? 0);
-      if (count <= 0) continue;
-      owned.push({
-        key: itemId,
-        count,
-        baseValue: sacrificeBaseValue(item, input.pricing.itemBonus),
-        cost: valueGivenUp(item, input.pricing),
-      });
-    }
-    return owned;
-  }
   const excludedLower = new Set(
     [...input.excludedNames].map((name) => name.toLowerCase()),
   );
@@ -67,7 +52,7 @@ export function ownedFromInventory(input: OwnedInput): OwnedItem[] {
     if (entry.keep) continue;
     const item = input.itemsById.get(itemId);
     if (!item) continue;
-    if (isItemNameExcluded(item, excludedLower)) continue;
+    if (!input.ignoreFilters && isItemNameExcluded(item, excludedLower)) continue;
     if (input.avoid?.has(itemId)) continue;
     const count = entry.count - (input.reserved?.get(itemId) ?? 0);
     if (count <= 0) continue;

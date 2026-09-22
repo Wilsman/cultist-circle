@@ -128,6 +128,26 @@ export function cellNeedsReview(
   );
 }
 
+/** Other unchecked cells that share this cell's strongest scan suggestion. */
+export function cellsWithSameReviewSuggestion(
+  activeCell: DisplayCell | undefined,
+  cells: DisplayCell[],
+  reviewCellKeys: ReadonlySet<CellKey>,
+): CellKey[] {
+  const suggestedItemId = activeCell?.matches[0]?.itemId;
+  if (!activeCell || !suggestedItemId) return [];
+
+  return cells
+    .filter(
+      (cell) =>
+        cell.key !== activeCell.key &&
+        !cell.empty &&
+        reviewCellKeys.has(cell.key) &&
+        cell.matches[0]?.itemId === suggestedItemId,
+    )
+    .map((cell) => cell.key);
+}
+
 export interface OwnedGroup {
   itemId: string;
   item: SimplifiedItem | undefined;

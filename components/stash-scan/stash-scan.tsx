@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, ImagePlus, Loader2, Minus, Plus, RotateCcw, ScanSearch } from "lucide-react";
+import { AlertTriangle, Eye, ImagePlus, Loader2, Minus, Plus, RotateCcw, ScanSearch } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import ItemSocket from "@/components/item-socket";
 import { ModeThreshold } from "@/components/mode-threshold";
@@ -31,6 +31,7 @@ import {
 } from "@/lib/stash-scan/prepare-screenshot";
 import {
   cellNeedsReview,
+  cellsWithSameReviewSuggestion,
   displayCells,
   groupOwnedItems,
   initialAssignments,
@@ -491,6 +492,13 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
         .map((cell) => cell.key),
     [cells, assignments, reviewed],
   );
+  const similarReviewCellKeys = activeCell
+    ? cellsWithSameReviewSuggestion(
+        cellsByKey.get(activeCell),
+        cells,
+        new Set(attentionCells),
+      )
+    : [];
 
   // New flags widen the review's denominator.
   if (attentionCells.length > reviewTotal) setReviewTotal(attentionCells.length);
@@ -510,31 +518,59 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
     setActiveCell(rest[Math.max(index, 0) % rest.length]);
   };
 
-  const handleAssign = (itemId: string | null) => {
+  const handleAssign = (itemId: string | null, applyToSimilar = false) => {
     if (!activeCell) return;
-    setAssignments((current) => ({ ...current, [activeCell]: itemId }));
-    markReviewed(activeCell);
+    const targets = applyToSimilar
+      ? [activeCell, ...similarReviewCellKeys]
+      : [activeCell];
+    const targetSet = new Set(targets);
+    setAssignments((current) => {
+      const next = { ...current };
+      targets.forEach((key) => {
+        next[key] = itemId;
+      });
+      return next;
+    });
+    targets.forEach(markReviewed);
     if (!reviewing) {
       setActiveCell(null);
       return;
     }
-    // Advance to the next flagged cell, wrapping once to the start.
+    // Advance to the next remaining flagged cell, wrapping once to the start.
     const index = attentionCells.indexOf(activeCell);
-    const rest = attentionCells.filter((key) => key !== activeCell);
-    if (!rest.length) {
+    const afterActive = [
+      ...attentionCells.slice(index + 1),
+      ...attentionCells.slice(0, Math.max(index, 0)),
+    ];
+    const next = afterActive.find((key) => !targetSet.has(key));
+    if (!next) {
       setActiveCell(null);
       setReviewing(false);
       sonnerToast.success(t("All matches checked"));
       return;
     }
-    setActiveCell(rest[Math.max(index, 0) % rest.length]);
+    setActiveCell(next);
   };
 
   const loadIntoCalculator = () => {
-    if (!plan) return;
-    const ids = plan.picks.flatMap((pick) => Array.from({ length: pick.count }, () => pick.key));
-    const slotsToFill = Array.from({ length: SELECTED_ITEM_SLOT_COUNT }, (_, i) => ids[i] ?? null);
-    localStorage.setItem(SELECTED_ITEM_IDS_STORAGE_KEY, JSON.stringify(slotsToFill));
+    if (onCommitStash && session) {
+      onCommitStash(
+        buildInventoryFromGroups(groups, excluded, settings.gameMode, session.images.length),
+      );
+    }
+    if (plan) {
+      const ids = plan.picks.flatMap((pick) => Array.from({ length: pick.count }, () => pick.key));
+      const slotsToFill = Array.from({ length: SELECTED_ITEM_SLOT_COUNT }, (_, i) => ids[i] ?? null);
+      localStorage.setItem(SELECTED_ITEM_IDS_STORAGE_KEY, JSON.stringify(slotsToFill));
+    } else if (onCommitStash) {
+      sonnerToast.warning(t("Stash saved, but it can't reach {threshold}", {
+        threshold: `₽${settings.threshold.toLocaleString()}`,
+      }), {
+        description: t("Untick kept items in the stash panel, lower the threshold, or add more screenshots."),
+      });
+    } else {
+      return;
+    }
     router.push("/");
   };
 
@@ -655,7 +691,23 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                 : t("Upload screenshots of your stash or a scav case. The items are recognised, and the cheapest set that reaches your threshold is picked for the circle.")}
             </p>
             <p className="mt-3 text-xs leading-relaxed text-slate-400">
-              Stash Scan contributed by <a className="text-cyan-300 underline hover:text-cyan-200" href="https://github.com/Oxylad" target="_blank" rel="noopener noreferrer">Oxylad</a>.
+              Stash Scan contributed by{" "}
+              <a
+                className="inline-flex items-center gap-1.5 align-middle text-cyan-300 underline hover:text-cyan-200"
+                href="https://github.com/Oxylad"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- Use GitHub's CDN directly instead of Vercel image optimization. */}
+                <img
+                  src="https://avatars.githubusercontent.com/u/76744208?s=64&v=4"
+                  alt=""
+                  width={16}
+                  height={16}
+                  className="h-4 w-4 shrink-0 rounded-full border border-cyan-300/30 object-cover"
+                />
+                Oxylad
+              </a>.
               {" "}Custom item matching inspired by <a className="text-cyan-300 underline hover:text-cyan-200" href="https://github.com/RatScanner/RatEye" target="_blank" rel="noopener noreferrer">RatScanner&apos;s RatEye</a>.
             </p>
           </div>
@@ -721,6 +773,21 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
             </Button>
           )}
         </header>
+
+        <section
+          aria-labelledby="stash-scan-trial-title"
+          className="flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.05] px-3 py-2.5 sm:px-4"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" aria-hidden />
+          <div className="min-w-0">
+            <p id="stash-scan-trial-title" className="text-sm font-semibold text-amber-200">
+              {t("Limited trial")}
+            </p>
+            <p className="mt-0.5 text-xs leading-relaxed text-amber-100/75 sm:text-sm">
+              {t("We’re testing Stash Scan’s accuracy, reliability and server usage during this trial. Please double-check item matches before relying on the results.")}
+            </p>
+          </div>
+        </section>
 
         <section className="flex flex-col items-center gap-3 rounded-3xl border border-white/8 bg-black/20 p-3 sm:flex-row sm:flex-wrap sm:justify-center">
           <ModeThreshold
@@ -859,6 +926,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                   itemsById={itemsById}
                   items={items}
                   assignments={assignments}
+                  similarReviewCellCount={similarReviewCellKeys.length}
                   splitting={splitting !== null}
                   onSplit={(cell, direction, count) => void splitCell(cell, direction, count)}
                   onUndoSplit={undoSplit}
@@ -876,18 +944,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                   commitLabel={
                     hasSavedInventory ? t("Update stash") : t("Use this stash")
                   }
-                  onCommit={() => {
-                    onCommitStash(
-                      buildInventoryFromGroups(
-                        groups,
-                        excluded,
-                        settings.gameMode,
-                        session.images.length,
-                      ),
-                    );
-                    // Handoff: fill the calculator with the cheapest picks.
-                    loadIntoCalculator();
-                  }}
+                  onCommit={loadIntoCalculator}
                   canCommit={groups.length > 0}
                 />
               )}

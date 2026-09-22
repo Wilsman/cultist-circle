@@ -34,6 +34,7 @@ interface StashStripProps {
   /** Whether the stash can reach the threshold with current pins/slots. */
   canReach: boolean;
   onClear: () => void;
+  onToggleKeep: (itemId: string) => void;
 }
 
 const rub = (value: number) => `₽${Math.round(value).toLocaleString()}`;
@@ -61,6 +62,7 @@ export function StashStrip({
   bestReachable,
   canReach,
   onClear,
+  onToggleKeep,
 }: StashStripProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -246,12 +248,17 @@ export function StashStrip({
                   ? item.shortName || item.name
                   : `${itemId.slice(0, 10)}…`;
                 return (
-                  <div
+                  <button
                     key={itemId}
+                    type="button"
+                    onClick={() => onToggleKeep(itemId)}
+                    aria-pressed={!!entry.keep}
                     title={
-                      entry.needsReview
-                        ? t("Match not confident")
-                        : item?.name ?? itemId
+                      entry.keep
+                        ? t("Kept — click to allow sacrificing")
+                        : entry.needsReview
+                          ? t("Match not confident")
+                          : item?.name ?? itemId
                     }
                     className={cn(
                       "flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-left transition-colors hover:border-cyan-300/30",
@@ -290,7 +297,7 @@ export function StashStrip({
                         aria-label={t("Match not confident")}
                       />
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>

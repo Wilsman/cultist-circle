@@ -114,6 +114,9 @@ describe("planFromStash", () => {
     );
     const result = planFromStash(input);
     expect(result!.plan.picks).toEqual([{ key: "filler", count: 4 }]);
+    expect(planFromStash({ ...input, ignoreFilters: true })!.plan.picks).toEqual([
+      { key: "filler", count: 4 },
+    ]);
 
     const cheap = makeItem("cheap", 200000, 1);
     const pricey = makeItem("pricey", 200000, 999);
@@ -149,6 +152,9 @@ describe("planFromStash", () => {
       { key: "a", count: 1 },
     ]);
     expect(planFromStash({ ...input, avoid: new Set(["a"]) })!.plan.picks).toEqual([
+      { key: "b", count: 1 },
+    ]);
+    expect(planFromStash({ ...input, ignoreFilters: true, avoid: new Set(["a"]) })!.plan.picks).toEqual([
       { key: "b", count: 1 },
     ]);
 

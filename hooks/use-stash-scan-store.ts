@@ -48,7 +48,7 @@ export interface StashScanStore {
 }
 
 /**
- * Holds the scan session outside the dialog so reopening the modal keeps the
+ * Holds the scan session outside the page so returning to /scan keeps the
  * screenshots, recognised items and the user's corrections.
  */
 export function useStashScanStore(): StashScanStore {

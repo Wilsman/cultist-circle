@@ -104,9 +104,11 @@ import {
 } from "@/lib/sacrifice-slots";
 import { useLocalStorageString } from "@/hooks/use-local-storage-state";
 import { useStashInventory } from "@/hooks/use-stash-inventory";
+import { useSharedStashScanStore } from "@/hooks/use-stash-scan-store";
 import {
   selectedCounts,
   stashCounts,
+  toggleKeep,
 } from "@/lib/stash-inventory";
 import {
   bestReachableFromStash,
@@ -157,6 +159,7 @@ function AppContent({ contributors = [] }: AppProps) {
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   // Scanned stash inventory (persisted) and the Auto Select source.
   const [stashInventory, setStashInventory] = useStashInventory();
+  const stashScanStore = useSharedStashScanStore();
   const [autoSelectSource, setAutoSelectSource] = useLocalStorageString<
     "market" | "stash"
   >("autoSelectSource", "market", ["market", "stash"]);
@@ -1640,7 +1643,19 @@ function AppContent({ contributors = [] }: AppProps) {
     setStashInventory(null);
     setAutoSelectSource("market");
     setHasAutoSelected(false);
-  }, [setStashInventory, setAutoSelectSource]);
+    stashScanStore.reset();
+  }, [setStashInventory, setAutoSelectSource, stashScanStore]);
+
+  const handleToggleStashKeep = useCallback((itemId: string) => {
+    if (!stashInventory) return;
+    const next = toggleKeep(stashInventory, itemId);
+    setStashInventory(next);
+    stashScanStore.setInclusion((current) => ({
+      ...current,
+      [itemId]: !next.items[itemId].keep,
+    }));
+    setHasAutoSelected(false);
+  }, [stashInventory, setStashInventory, stashScanStore]);
 
   // Function to handle auto-select and reroll
   const handleAutoPick = useCallback(async (): Promise<void> => {
@@ -2328,6 +2343,7 @@ function AppContent({ contributors = [] }: AppProps) {
                     bestReachable={stashBestReachable}
                     canReach={stashCanReach}
                     onClear={handleClearStash}
+                    onToggleKeep={handleToggleStashKeep}
                   />
                 </div>
 

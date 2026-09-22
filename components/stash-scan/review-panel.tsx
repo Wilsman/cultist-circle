@@ -20,6 +20,7 @@ interface ReviewPanelProps {
   itemsById: Map<string, SimplifiedItem>;
   items: SimplifiedItem[];
   assignments: CellAssignments;
+  similarReviewCellCount: number;
   splitting: boolean;
   onSplit?: (cell: DisplayCell, direction: SplitDirection, count: number) => void;
   onUndoSplit?: (parentKey: CellKey) => void;
@@ -31,7 +32,7 @@ interface ReviewPanelProps {
   /** Cells flagged when the review started. */
   total: number;
   onStart: () => void;
-  onAssign: (itemId: string | null) => void;
+  onAssign: (itemId: string | null, applyToSimilar?: boolean) => void;
   /** Advance without marking the cell reviewed. */
   onSkip: () => void;
   onClose: () => void;
@@ -50,6 +51,7 @@ export function ReviewPanel({
   itemsById,
   items,
   assignments,
+  similarReviewCellCount,
   splitting,
   onSplit,
   onUndoSplit,
@@ -154,6 +156,7 @@ export function ReviewPanel({
             imageHeight={active.result.height}
             cell={active.cell}
             assignedItemId={assignments[activeCell] ?? null}
+            similarReviewCellCount={similarReviewCellCount}
             itemsById={itemsById}
             items={items}
             onSplit={

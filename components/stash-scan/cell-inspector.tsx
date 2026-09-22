@@ -20,6 +20,7 @@ interface CellInspectorProps {
   imageHeight: number;
   cell: DisplayCell;
   assignedItemId: string | null;
+  similarReviewCellCount?: number;
   itemsById: Map<string, SimplifiedItem>;
   items: SimplifiedItem[];
   /** Absent when the cell is already one slot, or is itself a split slot. */
@@ -27,7 +28,7 @@ interface CellInspectorProps {
   splitting?: boolean;
   /** Present on a slot of a split cell: puts the cell back together. */
   onUndoSplit?: () => void;
-  onAssign: (itemId: string | null) => void;
+  onAssign: (itemId: string | null, applyToSimilar?: boolean) => void;
   onClose: () => void;
   /** Rendered inside the review panel: keep the preview row, drop the X. */
   hideHeader?: boolean;
@@ -41,6 +42,7 @@ export function CellInspector({
   imageHeight,
   cell,
   assignedItemId,
+  similarReviewCellCount = 0,
   itemsById,
   items,
   onSplit,
@@ -52,6 +54,7 @@ export function CellInspector({
 }: CellInspectorProps) {
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
+  const [applyToSimilar, setApplyToSimilar] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const searchResults = useMemo(() => {
@@ -135,7 +138,7 @@ export function CellInspector({
     } else if (event.key === "Enter") {
       event.preventDefault();
       const itemId = options[highlighted];
-      if (itemId !== undefined) onAssign(itemId);
+      if (itemId !== undefined) onAssign(itemId, applyToSimilar);
     } else if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -158,7 +161,7 @@ export function CellInspector({
         type="button"
         role="option"
         aria-selected={isHighlighted}
-        onClick={() => onAssign(itemId)}
+        onClick={() => onAssign(itemId, applyToSimilar)}
         onMouseEnter={() => setHighlighted(index)}
         className={`flex w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left transition-colors ${
           selected
@@ -263,6 +266,44 @@ export function CellInspector({
         </Button>
       )}
 
+      {similarReviewCellCount > 0 && (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={applyToSimilar}
+          aria-label={t("Also apply this choice to {count} similar cells", {
+            count: similarReviewCellCount,
+          })}
+          onClick={() => setApplyToSimilar((current) => !current)}
+          className={`flex w-full items-start gap-2.5 rounded-lg border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${
+            applyToSimilar
+              ? "border-cyan-300/40 bg-cyan-300/[0.08]"
+              : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
+              applyToSimilar
+                ? "border-cyan-300 bg-cyan-300 text-slate-950"
+                : "border-slate-500 bg-black/30 text-transparent"
+            }`}
+          >
+            {applyToSimilar && <Check className="h-3 w-3" />}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-xs font-medium text-slate-200">
+              {t("Also apply this choice to {count} similar cells", {
+                count: similarReviewCellCount,
+              })}
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-500">
+              {t("Only cells with the same top scan match that still need review are included.")}
+            </span>
+          </span>
+        </button>
+      )}
+
       {candidates.length > 0 && (
         <div className="space-y-1.5">
           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -304,7 +345,7 @@ export function CellInspector({
 
       <Button
         variant="outline"
-        onClick={() => onAssign(null)}
+        onClick={() => onAssign(null, applyToSimilar)}
         className="w-full border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
       >
         {t("Not an item / ignore this cell")}

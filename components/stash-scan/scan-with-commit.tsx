@@ -43,14 +43,12 @@ export function ScanWithCommit({ demo = false }: ScanWithCommitProps) {
       // Storage errors leave the in-memory state as the fallback.
     }
     setStashInventory(next);
-    if (!isUpdate) {
-      try {
-        localStorage.setItem("autoSelectSource", "stash");
-      } catch {
-        // Storage errors leave the in-memory state as the fallback.
-      }
-      setAutoSelectSource("stash");
+    try {
+      localStorage.setItem("autoSelectSource", "stash");
+    } catch {
+      // Storage errors leave the in-memory state as the fallback.
     }
+    setAutoSelectSource("stash");
     sonnerToast.success(
       isUpdate ? t("Stash updated") : t("Stash saved"),
       {
