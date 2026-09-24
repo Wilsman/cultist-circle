@@ -24,7 +24,23 @@ For deployment, apply the migrations with `--remote`, deploy the Worker using
 
 ## Review
 
-Use the existing Cloudflare D1 console for `cultist-circle-feedback`:
+Use the standalone local review page in `tools/recipe-review/` (plain HTML/JS/CSS,
+no app dependency). It fetches through your own wrangler login, so no extra
+Cloudflare auth is needed:
+
+```powershell
+bun run review:fetch
+bun run review --serve
+```
+
+Open the printed URL (default `http://127.0.0.1:3210/`). The page loads the
+fetched `submissions.json` (gitignored), or a file/pasted wrangler JSON, and each
+card offers Copy approve SQL, Copy reject SQL, Copy add-recipe names and local
+Mark approve/reject tracking. `bun run review:fetch -- --local` reads local D1
+state instead of remote; `-- --limit 20` fetches fewer rows. `sample.json` lets
+you try the UI without touching D1.
+
+Alternatively, use the Cloudflare D1 console for `cultist-circle-feedback` directly:
 
 ```sql
 SELECT id, game_mode, timer_seconds, sacrifices_json, rewards_json, created_at

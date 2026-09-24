@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Recipe submissions review (local only)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0a0a0b; color: #e5e5e5;
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 12px 48px; }
+  header.top {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start;
+    justify-content: space-between; border-bottom: 1px solid #262626;
+    padding-bottom: 12px;
+  }
+  h1 { font-size: 16px; margin: 0; display: flex; gap: 8px; align-items: center; }
+  .badge-local {
+    font-size: 10px; font-weight: 700; letter-spacing: .06em;
+    border: 1px solid rgba(56,189,248,.4); background: rgba(14,165,233,.15);
+    color: #bae6fd; border-radius: 999px; padding: 2px 8px;
+  }
+  .sub { color: #a3a3a3; font-size: 12px; margin: 4px 0 0; }
+  .btnrow { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    background: #18181b; color: #e5e5e5; border: 1px solid #3f3f46;
+    border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer;
+  }
+  button:hover { border-color: #71717a; }
+  button.primary { background: #f4f4f5; color: #09090b; font-weight: 600; border-color: #f4f4f5; }
+  button.ok { border-color: #4ade80; color: #bbf7d0; }
+  button.no { border-color: #f87171; color: #fecaca; }
+  button.approve { border-color: rgba(52,211,153,.5); background: rgba(6,78,59,.4); color: #a7f3d0; font-weight: 600; }
+  button.approve[aria-pressed="true"] { background: rgba(16,185,129,.3); color: #ecfdf5; border-color: #6ee7b7; }
+  button.reject { border-color: rgba(248,113,113,.5); background: rgba(127,29,29,.35); color: #fca5a5; font-weight: 600; }
+  button.reject[aria-pressed="true"] { background: rgba(220,38,38,.35); color: #fef2f2; border-color: #fca5a5; }
+  textarea {
+    width: 100%; min-height: 90px; margin-top: 12px; resize: vertical;
+    background: #18181b; color: #e5e5e5; border: 1px solid #27272a;
+    border-radius: 8px; padding: 10px; font: 12px/1.5 ui-monospace, monospace;
+  }
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .status { color: #737373; font-size: 12px; }
+  .error { color: #fca5a5; font-size: 12px; }
+  .hint {
+    margin-top: 12px; font-size: 12px; color: #a3a3a3; background: #131316;
+    border: 1px solid #262626; border-radius: 8px; padding: 10px 12px;
+  }
+  .hint code { color: #e5e5e5; background: #27272a; border-radius: 4px; padding: 1px 5px; font-size: 11px; }
+  main { margin-top: 16px; display: grid; gap: 12px; }
+  article.card {
+    border: 1px solid #27272a; background: #131316;
+    border-radius: 12px; padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 11px; }
+  .pill { border: 1px solid #3f3f46; background: #27272a; border-radius: 999px; padding: 2px 8px; color: #d4d4d8; }
+  .pill.mono, .mono { font-family: ui-monospace, monospace; }
+  .pill.pending { border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.12); color: #fde68a; font-weight: 700; }
+  .pill.approved { border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.12); color: #a7f3d0; font-weight: 700; }
+  .pill.rejected { border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.12); color: #fecaca; font-weight: 700; }
+  .dim { color: #737373; font-size: 10px; }
+  .cols { display: grid; gap: 8px; margin-top: 8px; }
+  @media (min-width: 560px) { .cols { grid-template-columns: 1fr 1fr; } }
+  section.box { border: 1px solid #27272a; background: rgba(0,0,0,.25); border-radius: 8px; padding: 8px; }
+  section.box h3 { margin: 0 0 6px 4px; font-size: 10px; letter-spacing: .08em; }
+  section.box.sac h3 { color: #fca5a5; }
+  section.box.rew h3 { color: #6ee7b7; }
+  ul.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  ul.items li {
+    display: flex; gap: 8px; align-items: center;
+    background: rgba(0,0,0,.3); border-radius: 6px; padding: 6px 8px;
+  }
+  .thumb {
+    width: 32px; height: 32px; flex-shrink: 0; border-radius: 6px;
+    background: #27272a; object-fit: contain;
+  }
+  .thumb-missing { width: 32px; height: 32px; flex-shrink: 0; border-radius: 6px; background: #27272a; }
+  .iname { font-size: 12px; min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .iid { display: block; color: #636363; font-size: 10px; font-family: ui-monospace, monospace; }
+  .qty { color: #a3a3a3; font-size: 10px; font-family: ui-monospace, monospace; flex-shrink: 0; }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Recipe submissions <span class="badge-local">LOCAL ONLY</span></h1>
+      <p class="sub">Served data stays in this browser. Marking approve/reject only tracks your review here; run the copied SQL in D1 to apply it.</p>
+    </div>
+    <div class="btnrow">
+      <button id="btn-sample" type="button">Load sample</button>
+      <button id="btn-clear" type="button">Clear</button>
+    </div>
+  </header>
+
+  <div class="hint" id="hint">
+    Start here: run <code>bun run review:fetch</code> (uses your wrangler login against remote D1),
+    then <code>bun run review --serve</code> and open the printed URL.
+    Or pick <code>submissions.json</code> with Load file, or paste wrangler JSON below.
+  </div>
+
+  <textarea id="paste" spellcheck="false" placeholder='Paste JSON here: wrangler d1 execute --json output or [{"id": ...}]'></textarea>
+  <div class="toolbar">
+    <button id="btn-review" type="button" class="primary">Review pasted JSON</button>
+    <label style="display:inline-block">
+      <button id="btn-file" type="button">Load file</button>
+      <input id="file" type="file" accept=".json,.txt,application/json,text/plain" hidden />
+    </label>
+    <button id="btn-refresh" type="button">Refresh submissions.json</button>
+    <span class="status" id="counts" aria-live="polite">Nothing loaded yet</span>
+  </div>
+  <p class="error" id="error" role="alert" hidden></p>
+
+  <main id="cards"></main>
+</div>
+
+<script>
+"use strict";
+var DECISIONS_KEY = "recipe-review-decisions-v1";
+
+var SAMPLE = [
+  {
+    id: "sample-0001",
+    game_mode: "season",
+    timer_seconds: 369,
+    sacrifices_json: JSON.stringify([{ id: "sample-item-a", name: "Girl poster", quantity: 5 }]),
+    rewards_json: JSON.stringify([{ id: "sample-item-b", name: "Pack of milk", quantity: 1 }]),
+    status: "pending",
+    created_at: "2026-09-08T16:28:56.731Z"
+  },
+  {
+    id: "sample-0002",
+    game_mode: "pvp",
+    timer_seconds: 360,
+    sacrifices_json: JSON.stringify([
+      { id: "sample-item-c", name: "5.56x45mm M855 ammo pack (50 pcs)", quantity: 1 },
+      { id: "sample-item-d", name: "RGD-5 hand grenade", quantity: 1 }
+    ]),
+    rewards_json: JSON.stringify([{ id: "sample-item-e", name: "Military COFDM Wireless Signal Transmitter", quantity: 1 }]),
+    status: "pending",
+    created_at: "2026-09-10T17:01:51.932Z"
+  }
+];
+
+function isRecord(v) { return typeof v === "object" && v !== null && !Array.isArray(v); }
+
+function parseItems(value) {
+  var raw = value;
+  if (typeof raw === "string") {
+    try { raw = JSON.parse(raw); } catch (e) { return null; }
+  }
+  if (!Array.isArray(raw)) return null;
+  var out = [];
+  for (var i = 0; i < raw.length; i++) {
+    var e = raw[i];
+    if (!isRecord(e) || typeof e.id !== "string" || !e.id ||
+        typeof e.name !== "string" || !e.name.trim() ||
+        !Number.isInteger(e.quantity) || e.quantity < 1) return null;
+    out.push({ id: e.id, name: e.name.trim(), quantity: e.quantity });
+  }
+  return out;
+}
+
+function toSubmission(v) {
+  if (!isRecord(v)) return null;
+  var id = typeof v.id === "string" ? v.id : (typeof v.submissionId === "string" ? v.submissionId : "");
+  var mode = typeof v.game_mode === "string" ? v.game_mode : (typeof v.gameMode === "string" ? v.gameMode : "");
+  var timer = typeof v.timer_seconds === "number" ? v.timer_seconds : (typeof v.timerSeconds === "number" ? v.timerSeconds : NaN);
+  var sac = parseItems(v.sacrifices_json !== undefined ? v.sacrifices_json : (v.sacrificesJson !== undefined ? v.sacrificesJson : v.sacrifices));
+  var rew = parseItems(v.rewards_json !== undefined ? v.rewards_json : (v.rewardsJson !== undefined ? v.rewardsJson : v.rewards));
+  var created = typeof v.created_at === "string" ? v.created_at : (typeof v.createdAt === "string" ? v.createdAt : "");
+  if (!id || !mode || !Number.isInteger(timer) || !sac || !rew || !created) return null;
+  var status = (v.status === "approved" || v.status === "rejected") ? v.status : "pending";
+  return { id: id, gameMode: mode, timerSeconds: timer, sacrifices: sac, rewards: rew, createdAt: created, status: status };
+}
+
+function collectRows(value, rows) {
+  if (Array.isArray(value)) { for (var i = 0; i < value.length; i++) collectRows(value[i], rows); return; }
+  if (!isRecord(value)) return;
+  if (Array.isArray(value.results)) { collectRows(value.results, rows); return; }
+  if (Array.isArray(value.data)) { collectRows(value.data, rows); return; }
+  rows.push(value);
+}
+
+function parseInput(text) {
+  var trimmed = String(text).trim();
+  if (!trimmed) return { submissions: [], skipped: 0 };
+  var parsed;
+  try { parsed = JSON.parse(trimmed); }
+  catch (e) { throw new Error("Paste valid JSON exported from wrangler or D1."); }
+  var rows = [];
+  collectRows(parsed, rows);
+  var submissions = [], skipped = 0;
+  for (var i = 0; i < rows.length; i++) {
+    var s = toSubmission(rows[i]);
+    if (s) submissions.push(s); else skipped++;
+  }
+  submissions.sort(function (a, b) { return a.createdAt < b.createdAt ? -1 : 1; });
+  return { submissions: submissions, skipped: skipped };
+}
+
+function formatTimer(total) {
+  if (!Number.isInteger(total) || total < 0) return total + "s";
+  var h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), s = total % 60;
+  if (h > 0) return h + "h " + m + "m " + s + "s (" + total + "s)";
+  if (m > 0) return s === 0 ? m + " mins (" + total + "s)" : m + "m " + s + "s (" + total + "s)";
+  return s + "s (" + total + "s)";
+}
+
+function sqlStatus(id, status) {
+  return "UPDATE recipe_submissions SET status = '" + status + "' WHERE id = '" +
+    String(id).replace(/'/g, "''") + "' AND status = 'pending';";
+}
+
+function addRecipeNames(s) {
+  function names(items) {
+    return items.map(function (it) { return it.quantity + "x " + it.name; }).join(", ");
+  }
+  return "Sacrifices: " + names(s.sacrifices) + "\nRewards: " + names(s.rewards);
+}
+
+function readDecisions() {
+  try {
+    var raw = localStorage.getItem(DECISIONS_KEY);
+    if (!raw) return {};
+    var parsed = JSON.parse(raw), out = {};
+    if (!isRecord(parsed)) return {};
+    Object.keys(parsed).forEach(function (k) {
+      if (parsed[k] === "approved" || parsed[k] === "rejected") out[k] = parsed[k];
+    });
+    return out;
+  } catch (e) { return {}; }
+}
+
+var state = { submissions: [], skipped: 0, decisions: readDecisions() };
+
+function persist() {
+  try { localStorage.setItem(DECISIONS_KEY, JSON.stringify(state.decisions)); } catch (e) {}
+}
+
+function copyText(text, btn, doneLabel) {
+  function done(ok) {
+    var prev = btn.textContent;
+    btn.textContent = ok ? doneLabel : "Copy failed";
+    setTimeout(function () { btn.textContent = prev; }, 1500);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+    return;
+  }
+  try {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.style.position = "fixed"; area.style.opacity = "0";
+    document.body.appendChild(area); area.select();
+    var ok = document.execCommand("copy");
+    document.body.removeChild(area); done(ok);
+  } catch (e) { done(false); }
+}
+
+function el(tag, cls, text) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
+function itemList(items) {
+  var ul = el("ul", "items");
+  items.forEach(function (it) {
+    var li = document.createElement("li");
+    // Icon URLs follow the tarkov.dev assets pattern used across the app's
+    // data/recipe-icons.ts. If an id has no icon, fall back to a placeholder.
+    var img = document.createElement("img");
+    img.className = "thumb";
+    img.alt = "";
+    img.width = 32; img.height = 32;
+    img.loading = "lazy";
+    img.src = "https://assets.tarkov.dev/" + encodeURIComponent(it.id) + "-icon.webp";
+    img.addEventListener("error", function () {
+      var blank = el("span", "thumb-missing");
+      blank.setAttribute("aria-hidden", "true");
+      img.replaceWith(blank);
+    });
+    li.appendChild(img);
+    var left = el("span", "iname", it.name);
+    left.appendChild(el("span", "iid", it.id));
+    li.appendChild(left);
+    li.appendChild(el("span", "qty", "x" + it.quantity));
+    ul.appendChild(li);
+  });
+  return ul;
+}
+
+function render() {
+  var host = document.getElementById("cards");
+  host.textContent = "";
+  var approved = 0, rejected = 0;
+  state.submissions.forEach(function (s) {
+    var decision = state.decisions[s.id] || s.status;
+    if (decision === "approved") approved++;
+    else if (decision === "rejected") rejected++;
+    var card = el("article", "card");
+
+    var pills = el("div", "pills");
+    pills.appendChild(el("span", "pill " + decision, decision));
+    pills.appendChild(el("span", "pill mono", s.gameMode));
+    pills.appendChild(el("span", "pill mono", formatTimer(s.timerSeconds)));
+    pills.appendChild(el("span", "dim mono", s.createdAt));
+    card.appendChild(pills);
+    card.appendChild(el("div", "dim mono", s.id));
+
+    var cols = el("div", "cols");
+    var sacBox = el("section", "box sac");
+    sacBox.appendChild(el("h3", null, "SACRIFICED"));
+    sacBox.appendChild(itemList(s.sacrifices));
+    var rewBox = el("section", "box rew");
+    rewBox.appendChild(el("h3", null, "REWARDS"));
+    rewBox.appendChild(itemList(s.rewards));
+    cols.appendChild(sacBox); cols.appendChild(rewBox);
+    card.appendChild(cols);
+
+    var actions = el("div", "actions");
+    function copyBtn(label, text) {
+      var b = el("button", null, label);
+      b.type = "button";
+      b.addEventListener("click", function () { copyText(text, b, "Copied"); });
+      return b;
+    }
+    actions.appendChild(copyBtn("Copy approve SQL", sqlStatus(s.id, "approved")));
+    actions.appendChild(copyBtn("Copy reject SQL", sqlStatus(s.id, "rejected")));
+    actions.appendChild(copyBtn("Copy add-recipe names", addRecipeNames(s)));
+
+    var bA = el("button", "approve", decision === "approved" ? "Approved ✓" : "Mark approve");
+    bA.type = "button"; bA.setAttribute("aria-pressed", decision === "approved" ? "true" : "false");
+    bA.addEventListener("click", function () {
+      state.decisions[s.id] = "approved"; persist(); render();
+    });
+    var bR = el("button", "reject", decision === "rejected" ? "Rejected ✓" : "Mark reject");
+    bR.type = "button"; bR.setAttribute("aria-pressed", decision === "rejected" ? "true" : "false");
+    bR.addEventListener("click", function () {
+      state.decisions[s.id] = "rejected"; persist(); render();
+    });
+    actions.appendChild(bA); actions.appendChild(bR);
+    if (decision !== "pending") {
+      var bReset = el("button", null, "Reset");
+      bReset.type = "button";
+      bReset.addEventListener("click", function () {
+        delete state.decisions[s.id]; persist(); render();
+      });
+      actions.appendChild(bReset);
+    }
+    card.appendChild(actions);
+    host.appendChild(card);
+  });
+
+  var counts = document.getElementById("counts");
+  if (state.submissions.length > 0) {
+    var pending = state.submissions.length - approved - rejected;
+    counts.textContent = state.submissions.length + " loaded (" + pending + " pending, " +
+      approved + " approved, " + rejected + " rejected)" +
+      (state.skipped > 0 ? ", " + state.skipped + " skipped" : "");
+  } else if (state.skipped > 0) {
+    counts.textContent = state.skipped + " rows skipped";
+  } else {
+    counts.textContent = "Nothing loaded yet";
+  }
+}
+
+function loadParsed(parsed, err) {
+  var errBox = document.getElementById("error");
+  if (err) {
+    state.submissions = []; state.skipped = 0;
+    errBox.textContent = err.message || String(err);
+    errBox.hidden = false;
+  } else {
+    state.submissions = parsed.submissions; state.skipped = parsed.skipped;
+    if (parsed.submissions.length === 0 && parsed.skipped > 0) {
+      errBox.textContent = "No usable rows found (" + parsed.skipped + " skipped).";
+      errBox.hidden = false;
+    } else {
+      errBox.hidden = true;
+    }
+  }
+  render();
+}
+
+function loadText(text) {
+  try { loadParsed(parseInput(text), null); }
+  catch (e) { loadParsed(null, e); }
+}
+
+function loadSubmissionsJson() {
+  fetch("submissions.json", { cache: "no-store" }).then(function (r) {
+    if (!r.ok) throw new Error("submissions.json not found (run bun run review:fetch first).");
+    return r.text();
+  }).then(loadText, function (e) { loadParsed(null, e); });
+}
+
+document.getElementById("btn-review").addEventListener("click", function () {
+  loadText(document.getElementById("paste").value);
+});
+document.getElementById("btn-refresh").addEventListener("click", loadSubmissionsJson);
+document.getElementById("btn-sample").addEventListener("click", function () {
+  loadParsed({ submissions: SAMPLE.map(toSubmission).filter(Boolean), skipped: 0 }, null);
+});
+document.getElementById("btn-clear").addEventListener("click", function () {
+  document.getElementById("paste").value = "";
+  document.getElementById("file").value = "";
+  loadParsed({ submissions: [], skipped: 0 }, null);
+});
+document.getElementById("btn-file").addEventListener("click", function (e) {
+  e.preventDefault();
+  document.getElementById("file").click();
+});
+document.getElementById("file").addEventListener("change", function (e) {
+  var f = e.target.files && e.target.files[0];
+  if (!f) return;
+  f.text().then(function (t) {
+    document.getElementById("paste").value = t;
+    loadText(t);
+  }, function (err) { loadParsed(null, err); });
+});
+
+loadSubmissionsJson();
+</script>
+</body>
+</html>

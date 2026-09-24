@@ -28,3 +28,28 @@ resulting behavior and relevant validation, including screenshots or logs when
 they help assess a UI/API change. Keep secrets in the established environment or
 secret-store workflow and out of git. Scrub or mock user identifiers in tests and
 preview data.
+
+## Hosting and release constraints
+
+Keep avoidable Vercel usage low. Do not introduce Vercel image resizing through
+`next/image`; preserve ordinary images or an explicitly unoptimized path. Prefer
+existing browser-side processing and direct browser-to-Worker transport. Before
+adding dynamic server work, explain its request frequency, input bounds and
+measured or estimated cost. The user may authorize a bounded preview experiment;
+that does not imply approval for a production rollout or a hosting migration.
+
+For cost trials, separate Vercel from Worker/D1 usage, CPU from elapsed duration,
+and metered usage from billed cost after allowances. Record the deployment and
+revision, sample count and upload sizes. Project totals and delayed billing cannot
+isolate one feature. Recheck preview-hostname rate limits after redeployment.
+
+Use the established beta/preview flow and verify the affected page and API. When
+production is in scope, preserve any agreed user beta acceptance gate and verify
+the live behavior after release. Resolve runtime versions and deploy commands from
+current configuration rather than copying an older task's command.
+
+## Recipe submissions
+
+User submissions enter the private `pending` review queue. Preserve the 6/66/666
+minute presets and custom special timer; reject standard ritual timers. Reuse
+`cloudflare/feedback/recipe-submissions.md` for the review/publication workflow.

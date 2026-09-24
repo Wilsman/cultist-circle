@@ -1,0 +1,20 @@
+[
+  {
+    "id": "sample-0001",
+    "game_mode": "season",
+    "timer_seconds": 369,
+    "sacrifices_json": "[{\"id\":\"sample-item-a\",\"name\":\"Girl poster\",\"quantity\":5}]",
+    "rewards_json": "[{\"id\":\"sample-item-b\",\"name\":\"Pack of milk\",\"quantity\":1}]",
+    "status": "pending",
+    "created_at": "2026-09-08T16:28:56.731Z"
+  },
+  {
+    "id": "sample-0002",
+    "game_mode": "pvp",
+    "timer_seconds": 360,
+    "sacrifices_json": "[{\"id\":\"sample-item-c\",\"name\":\"5.56x45mm M855 ammo pack (50 pcs)\",\"quantity\":1},{\"id\":\"sample-item-d\",\"name\":\"RGD-5 hand grenade\",\"quantity\":1}]",
+    "rewards_json": "[{\"id\":\"sample-item-e\",\"name\":\"Military COFDM Wireless Signal Transmitter\",\"quantity\":1}]",
+    "status": "pending",
+    "created_at": "2026-09-10T17:01:51.932Z"
+  }
+]
