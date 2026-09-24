@@ -11,7 +11,7 @@
     "changelog:write": "node scripts/extract-notes.mjs --write",
     "i18n:generate": "node scripts/generate-i18n.mjs",
     "predev": "bun run i18n:generate",
-    "prebuild": "bun run i18n:generate",
+    "prebuild": "bun run i18n:generate && bun run stash-scan:index",
     "prestart": "bun run i18n:generate",
     "prelint": "bun run i18n:generate",
     "pretest": "bun run i18n:generate",
@@ -30,7 +30,8 @@
     "benchmark:tarkov-api": "bun scripts/benchmark-tarkov-api.mjs",
     "add-recipe": "bun tools/add-recipe.ts",
     "review:fetch": "bun tools/recipe-review/fetch-pending.mjs",
-    "review": "bun tools/recipe-review/fetch-pending.mjs --serve"
+    "review": "bun tools/recipe-review/fetch-pending.mjs --serve",
+    "stash-scan:index": "bun scripts/build-stash-scan-index.ts"
   },
   "dependencies": {
     "@icons-pack/react-simple-icons": "^13.15.1",
@@ -86,6 +87,7 @@
     "react-syntax-highlighter": "^15.6.1",
     "react-virtualized-auto-sizer": "^1.0.24",
     "react-window": "^1.8.11",
+    "sharp": "^0.35.4",
     "sonner": "^2.0.8",
     "swr": "^2.5.1",
     "tailwind-merge": "^2.6.1",

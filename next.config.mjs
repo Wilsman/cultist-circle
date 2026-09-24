@@ -7,6 +7,15 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: __dirname,
+  // The Stash Scan icon index is built before `next build`
+  // (scripts/build-stash-scan-index.ts) and read at runtime, so tracing cannot
+  // see it. Ship it with the scan route, and keep the image caches out.
+  outputFileTracingIncludes: {
+    "/api/stash-scan": ["./.stash-scan/*.bin"],
+  },
+  outputFileTracingExcludes: {
+    "*": ["./.cache/**", "./.next/cache/**"],
+  },
   async rewrites() {
     if (process.env.NODE_ENV !== "development") {
       return [];

@@ -102,6 +102,10 @@ export interface ItemSelectorProps {
   categoryFilter: string;
   categoryFilterLabel: string;
   traderFilter: SelectorTraderFilter;
+  /** Owned count by item id; owned items sort first and get a badge. */
+  stashCounts?: ReadonlyMap<string, number>;
+  /** How many calculator slots currently hold each item id. */
+  stashSelectedCounts?: ReadonlyMap<string, number>;
 }
 
 export interface ItemSelectorHandle {
@@ -133,6 +137,8 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       categoryFilter,
       categoryFilterLabel,
       traderFilter,
+      stashCounts,
+      stashSelectedCounts,
     },
     ref
   ) => {
@@ -392,6 +398,17 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
     const filteredItems = useMemo(() => {
       if (searchableItems.length === 0) return [];
 
+      // Owned stash items first, preserving the existing order within each part.
+      const stashFirst = (list: SimplifiedItem[]): SimplifiedItem[] => {
+        if (!stashCounts?.size) return list;
+        const owned: SimplifiedItem[] = [];
+        const rest: SimplifiedItem[] = [];
+        for (const item of list) {
+          (stashCounts.has(item.id) ? owned : rest).push(item);
+        }
+        return owned.concat(rest);
+      };
+
       let results: SimplifiedItem[];
       if (isFocused && !debouncedSearchTerm) {
         results = searchableItems;
@@ -403,9 +420,11 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         results = fuse.search(debouncedSearchTerm).map((result) => result.item);
       }
       if (!showThresholdMatchesOnly) {
-        return categoryFilter === WEAPON_CATEGORY_ID
-          ? prioritizeDefaultWeapons(results)
-          : results;
+        return stashFirst(
+          categoryFilter === WEAPON_CATEGORY_ID
+            ? prioritizeDefaultWeapons(results)
+            : results,
+        );
       }
       const thresholdSorted = [...results].sort((a, b) => {
         const ratioA =
@@ -426,9 +445,11 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         return a.basePrice - b.basePrice || a.name.localeCompare(b.name);
       });
 
-      return categoryFilter === WEAPON_CATEGORY_ID
-        ? prioritizeDefaultWeapons(thresholdSorted)
-        : thresholdSorted;
+      return stashFirst(
+        categoryFilter === WEAPON_CATEGORY_ID
+          ? prioritizeDefaultWeapons(thresholdSorted)
+          : thresholdSorted,
+      );
     }, [
       bonusMultiplier,
       categoryFilter,
@@ -438,6 +459,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       isFocused,
       searchableItems,
       showThresholdMatchesOnly,
+      stashCounts,
     ]);
 
     const inlineSuggestionItem = useMemo(() => {
@@ -815,6 +837,13 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                 <span className="text-[10px] font-extrabold text-emerald-500/90 uppercase tracking-wider">
                   ₽{(item.basePrice || 0).toLocaleString()}
                 </span>
+                {stashCounts?.has(item.id) && (
+                  <span className="rounded border border-cyan-300/20 bg-cyan-300/[0.07] px-1 text-[9px] font-bold uppercase tracking-wider text-cyan-300/90">
+                    {t("In stash ×{count}", {
+                      count: stashCounts.get(item.id) ?? 0,
+                    })}
+                  </span>
+                )}
                 <span className="h-0.5 w-0.5 rounded-full bg-white/10" />
                 <span
                   className={cn(
@@ -859,6 +888,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         highlightedIndex,
         overriddenPrices,
         priceMode,
+        stashCounts,
         t,
         traderFilter,
         traderLevels,
@@ -1080,6 +1110,20 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                         <span className="text-xs font-extrabold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-wider flex items-center shadow-[0_0_15px_rgba(16,185,129,0.05)] border border-emerald-500/20">
                           {t("Base")}: {(selectedItem.basePrice || 0).toLocaleString()}
                         </span>
+                        {(() => {
+                          const owned = stashCounts?.get(selectedItem.id);
+                          if (!owned) return null;
+                          const selected = stashSelectedCounts?.get(selectedItem.id) ?? 0;
+                          return selected > owned ? (
+                            <span className="rounded border border-amber-400/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-300">
+                              {t("Only {count} in stash", { count: owned })}
+                            </span>
+                          ) : (
+                            <span className="rounded border border-cyan-300/20 bg-cyan-300/[0.07] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan-300/90">
+                              {t("In stash ×{count}", { count: owned })}
+                            </span>
+                          );
+                        })()}
                         {isPriceOverrideActive ? (
                           <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/40 rounded-md px-2 py-0.5 ring-1 ring-amber-500/20">
                               <span className="text-[10px] text-amber-400 font-bold">

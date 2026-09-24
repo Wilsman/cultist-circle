@@ -2,6 +2,8 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { StashScanStoreProvider } from "@/hooks/use-stash-scan-store";
+
 import { LanguageProvider } from "@/contexts/language-context";
 
 const useItemsDataMock = vi.fn();
@@ -30,7 +32,7 @@ vi.mock("@/components/app/header-section", () => ({
 }));
 
 function renderWithLanguage(ui: React.ReactNode) {
-  return render(<LanguageProvider>{ui}</LanguageProvider>);
+  return render(<LanguageProvider><StashScanStoreProvider>{ui}</StashScanStoreProvider></LanguageProvider>);
 }
 
 describe("App loading data churn", () => {
