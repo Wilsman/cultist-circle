@@ -1132,7 +1132,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                   }
                   onLoadIntoCalculator={demo ? () => router.push("/") : loadIntoCalculator}
                   onReviewNeeded={reviewNeededMatches}
-                  onLowerThreshold={() => settings.setThreshold(Math.max(0, Math.floor(bestReachable / 1000) * 1000))}
+                  onLowerThreshold={() => settings.setThreshold(bestReachable)}
                   onAddSlot={() => changeSlots(slots + 1)}
                 />
               </div>

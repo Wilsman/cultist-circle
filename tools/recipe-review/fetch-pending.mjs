@@ -119,7 +119,7 @@ if (hasFlag("--serve")) {
   let server;
   for (let candidate = port; candidate < port + 10; candidate++) {
     try {
-      server = Bun.serve({ port: candidate, fetch: fetchHandler });
+      server = Bun.serve({ hostname: "127.0.0.1", port: candidate, fetch: fetchHandler });
       break;
     } catch (err) {
       if (err && err.code === "EADDRINUSE") continue;
