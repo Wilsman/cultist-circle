@@ -29,6 +29,8 @@
     "feedback:deploy": "wrangler deploy --config cloudflare/feedback/wrangler.jsonc",
     "benchmark:tarkov-api": "bun scripts/benchmark-tarkov-api.mjs",
     "add-recipe": "bun tools/add-recipe.ts",
+    "review:fetch": "bun tools/recipe-review/fetch-pending.mjs",
+    "review": "bun tools/recipe-review/fetch-pending.mjs --serve",
     "stash-scan:index": "bun scripts/build-stash-scan-index.ts"
   },
   "dependencies": {

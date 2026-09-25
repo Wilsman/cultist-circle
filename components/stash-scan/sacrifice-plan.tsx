@@ -1,9 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
+import { MAX_SACRIFICE_SLOTS } from "@/lib/sacrifice-slots";
 import type { SacrificePlan as Plan } from "@/lib/stash-scan/optimize";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 
@@ -14,10 +15,16 @@ interface SacrificePlanProps {
   itemsById: Map<string, SimplifiedItem>;
   /** Items whose recognition was not confident enough to trust blindly. */
   needsReview: ReadonlySet<string>;
+  remainingReviewCount: number;
   hasItems: boolean;
   /** Best reachable total with the included items, for the failure message. */
   bestReachable: number;
+  /** Final CTA label once review is done (defaults to Load into calculator). */
+  commitLabel?: string;
   onLoadIntoCalculator: () => void;
+  onReviewNeeded: () => void;
+  onLowerThreshold?: () => void;
+  onAddSlot?: () => void;
 }
 
 const rub = (value: number) => `₽${Math.round(value).toLocaleString()}`;
@@ -28,9 +35,14 @@ export function SacrificePlan({
   slots,
   itemsById,
   needsReview,
+  remainingReviewCount,
   hasItems,
   bestReachable,
+  commitLabel,
   onLoadIntoCalculator,
+  onReviewNeeded,
+  onLowerThreshold,
+  onAddSlot,
 }: SacrificePlanProps) {
   const { t } = useLanguage();
 
@@ -56,6 +68,32 @@ export function SacrificePlan({
             total: rub(bestReachable),
           })}
         </p>
+        {(onLowerThreshold || onAddSlot) && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {onLowerThreshold && bestReachable > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onLowerThreshold}
+                className="border-white/10 bg-white/5 text-xs text-slate-200 hover:bg-white/10 hover:text-white"
+              >
+                <Minus className="mr-1.5 h-3.5 w-3.5" />
+                {t("Use {total} threshold", { total: rub(bestReachable) })}
+              </Button>
+            )}
+            {onAddSlot && slots < MAX_SACRIFICE_SLOTS && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onAddSlot}
+                className="border-white/10 bg-white/5 text-xs text-slate-200 hover:bg-white/10 hover:text-white"
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                {t("Try {count} slots", { count: slots + 1 })}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -98,9 +136,14 @@ export function SacrificePlan({
       </ul>
 
       {unverified > 0 && (
-        <p className="flex gap-2 rounded-lg border border-yellow-300/20 bg-yellow-300/[0.05] px-2.5 py-2 text-xs leading-relaxed text-yellow-100/90">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-yellow-300" />
-          {t("Check the marked items against your screenshot before sacrificing. Click their boxes to correct a wrong match.")}
+        <p className="flex gap-2 rounded-lg border border-orange-300/20 bg-orange-300/[0.05] px-2.5 py-2 text-xs leading-relaxed text-orange-100/90">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-300" />
+          {t("Review the marked items against your screenshot before loading this plan.")}
+        </p>
+      )}
+      {unverified === 0 && remainingReviewCount > 0 && (
+        <p className="text-xs leading-relaxed text-slate-400">
+          {t("Review the remaining stash matches before saving this scan to the calculator.")}
         </p>
       )}
 
@@ -124,10 +167,14 @@ export function SacrificePlan({
       </p>
 
       <Button
-        onClick={onLoadIntoCalculator}
+        onClick={remainingReviewCount > 0 ? onReviewNeeded : onLoadIntoCalculator}
         className="w-full bg-amber-400 font-semibold text-slate-950 hover:bg-amber-300"
       >
-        {t("Load into calculator")}
+        {remainingReviewCount > 0
+          ? remainingReviewCount === 1
+            ? t("Review 1 match")
+            : t("Review {count} matches", { count: remainingReviewCount })
+          : (commitLabel ?? t("Load into calculator"))}
         <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
     </div>
