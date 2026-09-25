@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, SkipForward } from "lucide-react";
+import { Check, LogOut, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
 import type {
@@ -35,8 +35,14 @@ interface ReviewPanelProps {
   onAssign: (itemId: string | null, applyToSimilar?: boolean) => void;
   /** Advance without marking the cell reviewed. */
   onSkip: () => void;
+  /** Leave guided review without finishing. */
+  onExit?: () => void;
+  /** Mark every remaining cell reviewed without changing matches. */
+  onSkipAll?: () => void;
   onClose: () => void;
   commitLabel: string;
+  /** Small explainer under the commit button (save-all vs plan). */
+  commitHint?: string;
   onCommit: () => void;
   canCommit: boolean;
 }
@@ -62,8 +68,11 @@ export function ReviewPanel({
   onStart,
   onAssign,
   onSkip,
+  onExit,
+  onSkipAll,
   onClose,
   commitLabel,
+  commitHint,
   onCommit,
   canCommit,
 }: ReviewPanelProps) {
@@ -175,14 +184,37 @@ export function ReviewPanel({
             hideHeader
           />
           {reviewing && (
-            <Button
-              variant="outline"
-              onClick={onSkip}
-              className="w-full border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
-            >
-              <SkipForward className="mr-2 h-4 w-4" />
-              {t("Skip")}
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                onClick={onSkip}
+                className="w-full border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+              >
+                <SkipForward className="mr-2 h-4 w-4" />
+                {t("Skip this cell")}
+              </Button>
+              <div className="flex gap-2">
+                {onExit && (
+                  <Button
+                    variant="ghost"
+                    onClick={onExit}
+                    className="flex-1 text-slate-400 hover:text-white"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {t("Exit review")}
+                  </Button>
+                )}
+                {onSkipAll && remaining > 1 && (
+                  <Button
+                    variant="ghost"
+                    onClick={onSkipAll}
+                    className="flex-1 text-slate-400 hover:text-white"
+                  >
+                    {t("Mark all reviewed")}
+                  </Button>
+                )}
+              </div>
+            </div>
           )}
         </>
       ) : remaining === 0 ? (
@@ -197,6 +229,9 @@ export function ReviewPanel({
           >
             {commitLabel}
           </Button>
+          {commitHint && (
+            <p className="text-xs leading-relaxed text-slate-500">{commitHint}</p>
+          )}
         </div>
       ) : (
         <div className="space-y-2">
@@ -208,7 +243,7 @@ export function ReviewPanel({
           </Button>
           <p className="text-xs text-slate-500">
             {t(
-              "Confirm each suggested match with Enter, or type to find the right item.",
+              "Compare the screenshot and match score. Press Enter to confirm the highlighted item, or search for the right one.",
             )}
           </p>
         </div>

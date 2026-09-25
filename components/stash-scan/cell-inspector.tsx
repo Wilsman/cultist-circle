@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/language-context";
 import {
+  cellNeedsReview,
   splitOptions,
   type DisplayCell,
   type SplitDirection,
@@ -20,6 +21,7 @@ interface CellInspectorProps {
   imageHeight: number;
   cell: DisplayCell;
   assignedItemId: string | null;
+  reviewed?: boolean;
   similarReviewCellCount?: number;
   itemsById: Map<string, SimplifiedItem>;
   items: SimplifiedItem[];
@@ -42,6 +44,7 @@ export function CellInspector({
   imageHeight,
   cell,
   assignedItemId,
+  reviewed = false,
   similarReviewCellCount = 0,
   itemsById,
   items,
@@ -80,13 +83,33 @@ export function CellInspector({
     [cell, itemsById],
   );
 
-  // One ordered option list: closest matches first, then search results.
+  const needle = query.trim().toLowerCase();
+  const isSearching = needle.length >= 2;
+
+  const additionalResults = useMemo(() => {
+    const candidateIds = new Set(candidates.map(({ match }) => match.itemId));
+    return searchResults.filter((item) => !candidateIds.has(item.id));
+  }, [candidates, searchResults]);
+
+  // When searching, matching scan suggestions stay on top so the user does
+  // not have to scroll past irrelevant candidates to reach the search list.
+  const visibleCandidates = useMemo(() => {
+    if (!isSearching) return candidates;
+    return candidates.filter(
+      ({ item, match }) =>
+        item?.name.toLowerCase().includes(needle) ||
+        item?.shortName.toLowerCase().includes(needle) ||
+        match.itemId.toLowerCase().includes(needle),
+    );
+  }, [candidates, isSearching, needle]);
+
+  // One ordered option list: visible suggestions first, then search results.
   const options = useMemo(
     () => [
-      ...candidates.map(({ match }) => match.itemId),
-      ...searchResults.map((item) => item.id),
+      ...visibleCandidates.map(({ match }) => match.itemId),
+      ...additionalResults.map((item) => item.id),
     ],
-    [candidates, searchResults],
+    [visibleCandidates, additionalResults],
   );
 
   const [highlighted, setHighlighted] = useState(() =>
@@ -103,9 +126,22 @@ export function CellInspector({
   const [prevQuery, setPrevQuery] = useState(query);
   if (prevQuery !== query) {
     setPrevQuery(query);
-    if (searchResults.length > 0) setHighlighted(candidates.length);
+    if (!query.trim()) {
+      setHighlighted(candidates.length > 0 ? 0 : -1);
+    } else if (visibleCandidates.length > 0) {
+      setHighlighted(0);
+    } else {
+      setHighlighted(additionalResults.length > 0 ? 0 : -1);
+    }
   }
   if (highlighted >= options.length) setHighlighted(options.length - 1);
+
+  const suggestedUnreviewed =
+    !reviewed && cellNeedsReview(cell, assignedItemId);
+  const highlightedItemId = options[highlighted];
+  const highlightedItem = highlightedItemId
+    ? itemsById.get(highlightedItemId)
+    : undefined;
 
   const splitChoices = onSplit ? splitOptions(cell) : [];
   const rowOptions = splitChoices.filter((o) => o.direction === "rows");
@@ -116,7 +152,7 @@ export function CellInspector({
     const itemId = options[index];
     if (itemId === undefined) return;
     document
-      .getElementById(`cell-option-${itemId}`)
+      .getElementById(`cell-option-${index}`)
       ?.scrollIntoView({ block: "nearest" });
   };
 
@@ -150,14 +186,15 @@ export function CellInspector({
     item: SimplifiedItem | undefined,
     itemId: string,
     index: number,
-    detail?: string,
+    score?: number,
   ) => {
     const selected = assignedItemId === itemId;
     const isHighlighted = index === highlighted;
+    const suggested = selected && suggestedUnreviewed;
     return (
       <button
         key={itemId}
-        id={`cell-option-${itemId}`}
+        id={`cell-option-${index}`}
         type="button"
         role="option"
         aria-selected={isHighlighted}
@@ -165,7 +202,9 @@ export function CellInspector({
         onMouseEnter={() => setHighlighted(index)}
         className={`flex w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left transition-colors ${
           selected
-            ? "border-emerald-400/40 bg-emerald-400/[0.08]"
+            ? suggested
+              ? "border-yellow-300/40 bg-yellow-300/[0.07]"
+              : "border-emerald-400/40 bg-emerald-400/[0.08]"
             : "border-white/5 bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.05]"
         } ${isHighlighted ? "ring-1 ring-cyan-300/60 bg-white/[0.06]" : ""}`}
       >
@@ -178,10 +217,22 @@ export function CellInspector({
           <div className="truncate text-sm text-slate-100">{item?.name ?? itemId}</div>
           <div className="text-xs text-slate-500">
             {item ? `₽${item.basePrice.toLocaleString()} ${t("base value")}` : t("Not in this game mode's data")}
-            {detail ? ` · ${detail}` : ""}
           </div>
         </div>
-        {selected && <Check className="h-4 w-4 shrink-0 text-emerald-300" />}
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {score !== undefined && (
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
+              suggested ? "bg-yellow-300/10 text-yellow-200" : "bg-white/5 text-slate-300"
+            }`}>
+              {t("Match score {score}%", { score: Math.round(score * 100) })}
+            </span>
+          )}
+          {selected && (
+            <span className={`text-[10px] font-medium ${suggested ? "text-yellow-200" : "text-emerald-300"}`}>
+              {suggested ? t("Suggested match") : t("Current match")}
+            </span>
+          )}
+        </div>
       </button>
     );
   };
@@ -194,12 +245,12 @@ export function CellInspector({
           imageWidth={imageWidth}
           imageHeight={imageHeight}
           cell={cell}
-          size={Math.min(160, 64 * cell.slotsWide)}
+          size={Math.min(160, Math.max(112, 64 * cell.slotsWide))}
         />
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium text-slate-100">{t("What is this item?")}</div>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">
-            {t("Pick the right item if the scan got it wrong, or mark the cell as not an item.")}
+            {t("Compare the screenshot with the suggestions. Choose the right item or mark this cell as not an item.")}
           </p>
         </div>
         {!hideHeader && (
@@ -207,6 +258,26 @@ export function CellInspector({
             <X className="h-4 w-4" />
           </Button>
         )}
+      </div>
+
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        <Input
+          ref={inputRef}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={onInputKeyDown}
+          role="combobox"
+          aria-expanded={options.length > 0}
+          aria-label={t("Search all items")}
+          aria-activedescendant={
+            highlighted >= 0 && options[highlighted] !== undefined
+              ? `cell-option-${highlighted}`
+              : undefined
+          }
+          placeholder={t("Search all items · ↑↓ to move · Enter to confirm")}
+          className="border-white/10 bg-black/30 pl-8 text-slate-100 placeholder:text-slate-500"
+        />
       </div>
 
       {onSplit && splitChoices.length > 0 && (
@@ -220,22 +291,22 @@ export function CellInspector({
             {t("Holds more than one item? Split it into:")}
           </div>
           {[
-            { label: t("stacked"), list: rowOptions },
+            { label: t("stacked vertically"), list: rowOptions },
             { label: t("side by side"), list: columnOptions },
           ].map(({ label, list }) =>
             list.length === 0 ? null : (
               <div key={label} className="flex flex-wrap items-center gap-1.5">
-                <span className="w-20 shrink-0 text-[11px] text-slate-500">{label}</span>
-                {list.map((option) => (
+                <span className="w-28 shrink-0 text-[11px] text-slate-500">{label}</span>
+                {list.map((choice) => (
                   <Button
-                    key={`${option.direction}-${option.count}`}
+                    key={`${choice.direction}-${choice.count}`}
                     size="sm"
                     variant="outline"
                     disabled={splitting}
-                    onClick={() => onSplit(option.direction, option.count)}
+                    onClick={() => onSplit(choice.direction, choice.count)}
                     className="h-7 border-white/10 bg-white/5 px-2.5 text-xs text-slate-200 hover:bg-white/10 hover:text-white"
                   >
-                    {t("{count} items", { count: option.count })}
+                    {t("{count} items", { count: choice.count })}
                   </Button>
                 ))}
               </div>
@@ -304,44 +375,48 @@ export function CellInspector({
         </button>
       )}
 
-      {candidates.length > 0 && (
+      {visibleCandidates.length > 0 && (
         <div className="space-y-1.5">
           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            {t("Closest matches")}
+            {isSearching ? t("Matching suggestions") : t("Closest matches")}
           </div>
-          <div role="listbox">
-            {candidates.map(({ match, item }, index) =>
-              option(item, match.itemId, index, `${Math.round(match.score * 100)}%`),
+          <div role="listbox" aria-label={t("Closest matches")}>
+            {visibleCandidates.map(({ match, item }, index) =>
+              option(item, match.itemId, index, match.score),
             )}
           </div>
         </div>
       )}
 
       <div className="space-y-1.5">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-          <Input
-            ref={inputRef}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={onInputKeyDown}
-            role="combobox"
-            aria-expanded={options.length > 0}
-            aria-activedescendant={
-              highlighted >= 0 && options[highlighted] !== undefined
-                ? `cell-option-${options[highlighted]}`
-                : undefined
-            }
-            placeholder={t("Type to search all items · ↑↓ to move · Enter to pick")}
-            className="border-white/10 bg-black/30 pl-8 text-slate-100 placeholder:text-slate-500"
-          />
-        </div>
-        <div role="listbox">
-          {searchResults.map((item, index) =>
-            option(item, item.id, candidates.length + index),
+        {(isSearching || additionalResults.length > 0) && (
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            {t("Search results")}
+          </div>
+        )}
+        <div role="listbox" aria-label={t("Search results")}>
+          {additionalResults.map((item, index) =>
+            option(item, item.id, visibleCandidates.length + index),
+          )}
+          {isSearching && visibleCandidates.length === 0 && additionalResults.length === 0 && (
+            <p className="rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-center text-xs text-slate-500">
+              {t("No items match “{query}”. Try a shorter name.", { query: query.trim() })}
+            </p>
           )}
         </div>
       </div>
+
+      {highlightedItemId && (
+        <Button
+          onClick={() => onAssign(highlightedItemId, applyToSimilar)}
+          className="w-full bg-cyan-400 font-semibold text-slate-950 hover:bg-cyan-300"
+        >
+          <Check className="mr-2 h-4 w-4 shrink-0" />
+          <span className="min-w-0 truncate">
+            {t("Confirm {item}", { item: highlightedItem?.name ?? highlightedItemId })}
+          </span>
+        </Button>
+      )}
 
       <Button
         variant="outline"

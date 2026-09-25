@@ -177,6 +177,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
   const [splitting, setSplitting] = useState<CellKey | null>(null);
   const [excludedNames] = useState(readExcludedNames);
   const [demoStatus, setDemoStatus] = useState<DemoStatus>("loading");
+  const [demoRetry, setDemoRetry] = useState(0);
 
   // Lifted store when embedded in a session that outlives this component,
   // local state otherwise. Declared up front: effects below depend on these.
@@ -191,35 +192,87 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
   const inclusion = store ? store.inclusion : localInclusion;
   const setInclusion = store ? store.setInclusion : setLocalInclusion;
 
+  // Object URLs outlive their images unless revoked. With a lifted store they
+  // live (and are revoked) with the store instead of this component.
+  const urls = useRef(new Set<string>());
+  const trackUrl = useCallback(
+    (url: string) => {
+      if (store) store.trackUrl(url);
+      else urls.current.add(url);
+    },
+    [store],
+  );
+
   useEffect(() => {
     if (!demo) return;
     let cancelled = false;
-    // Scanned at build time by scripts/build-stash-scan-index.ts.
-    fetch("/scan-demo/demo.json", { cache: "no-cache" })
-      .then(async (response) => {
-        if (response.status === 404) {
-          if (!cancelled) setDemoStatus("missing");
-          return;
+    // Scanned at build time by scripts/build-stash-scan-index.ts. In dev the
+    // JSON may not exist yet, so fall back to a live scan of the demo image.
+    // Never in production: every demo visit would become a paid scan request.
+    const loadDemo = async () => {
+      try {
+        const response = await fetch("/scan-demo/demo.json", { cache: "no-cache" });
+        if (response.ok) {
+          const body = (await response.json()) as DemoScanResponse;
+          if (cancelled) return;
+          if (body.available) {
+            setSession({ images: [{ id: "demo", url: body.imageUrl }], results: body.images });
+            setAssignments(initialAssignments(displayCells(body.images, {})));
+            setSplits({});
+            setDemoStatus("ready");
+            return;
+          }
+        } else if (response.status !== 404) {
+          throw new Error(String(response.status));
         }
-        if (!response.ok) throw new Error(String(response.status));
-        const body = (await response.json()) as DemoScanResponse;
         if (cancelled) return;
-        if (!body.available) {
+        if (process.env.NODE_ENV !== "development") {
           setDemoStatus("missing");
           return;
         }
-        setSession({ images: [{ id: "demo", url: body.imageUrl }], results: body.images });
-        setAssignments(initialAssignments(displayCells(body.images, {})));
+        // No pre-scanned JSON (common in dev): scan the bundled image live.
+        const candidates = ["/scan-demo/demo.jpg", "/scan-demo/demo.png", "/scan-demo/demo.webp"];
+        let file: File | null = null;
+        let fileName = "demo.jpg";
+        for (const src of candidates) {
+          try {
+            const imageResponse = await fetch(src, { cache: "no-cache" });
+            if (!imageResponse.ok) continue;
+            const blob = await imageResponse.blob();
+            fileName = src.split("/").pop() ?? fileName;
+            file = new File([blob], fileName, { type: blob.type || "image/jpeg" });
+            break;
+          } catch {
+            continue;
+          }
+        }
+        if (!file) {
+          if (!cancelled) setDemoStatus("missing");
+          return;
+        }
+        const url = URL.createObjectURL(file);
+        trackUrl(url);
+        const outcomes = await scanEach([{ id: "demo-live", file, url }], t);
+        if (cancelled) return;
+        const first = outcomes[0]?.result;
+        const upload = outcomes[0]?.upload;
+        if (!first) {
+          if (!cancelled) setDemoStatus("error");
+          return;
+        }
+        setSession({ images: [{ id: "demo-live", url, upload }], results: [first] });
+        setAssignments(initialAssignments(displayCells([first], {})));
         setSplits({});
         setDemoStatus("ready");
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setDemoStatus("error");
-      });
+      }
+    };
+    void loadDemo();
     return () => {
       cancelled = true;
     };
-  }, [demo, setSession, setAssignments, setSplits]);
+  }, [demo, demoRetry, t, trackUrl, setSession, setAssignments, setSplits]);
   const [activeCell, setActiveCell] = useState<CellKey | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState(false);
@@ -273,16 +326,6 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
     [items],
   );
 
-  // Object URLs outlive their images unless revoked. With a lifted store they
-  // live (and are revoked) with the store instead of this component.
-  const urls = useRef(new Set<string>());
-  const trackUrl = useCallback(
-    (url: string) => {
-      if (store) store.trackUrl(url);
-      else urls.current.add(url);
-    },
-    [store],
-  );
   useEffect(() => {
     const tracked = urls.current;
     return () => tracked.forEach((url) => URL.revokeObjectURL(url));
@@ -290,25 +333,41 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
 
   const addImages = useCallback((files: File[]) => {
     setError(null);
+    const supported = files.filter((file) =>
+      (SCAN_LIMITS.acceptedTypes as readonly string[]).includes(file.type),
+    );
+    if (supported.length !== files.length) {
+      sonnerToast.error(t("Unsupported screenshot format"), {
+        description: t("Use PNG, JPEG or WebP screenshots."),
+      });
+    }
+    const tooLarge = supported.filter((file) => file.size > SCAN_LIMITS.maxSourceBytes);
+    if (tooLarge.length) {
+      sonnerToast.error(t("Some screenshots are too large"), {
+        description: t("Each image must be under {size} MB.", {
+          size: Math.round(SCAN_LIMITS.maxSourceBytes / 1024 / 1024),
+        }),
+      });
+    }
+    const usable = supported.filter((file) => file.size <= SCAN_LIMITS.maxSourceBytes);
+    if (!usable.length) return;
     setQueued((current) => {
       const room =
         SCAN_LIMITS.maxImages - (session?.images.length ?? 0) - current.length;
-      if (room <= 0 && files.length) {
+      if (room <= 0) {
         sonnerToast.error(t("Screenshot limit reached"), {
           description: t("Remove a screenshot or start a new scan."),
         });
         return current;
       }
-      const tooLarge = files.filter((file) => file.size > SCAN_LIMITS.maxSourceBytes);
-      if (tooLarge.length) {
-        sonnerToast.error(t("Some screenshots are too large"), {
-          description: t("Each image must be under {size} MB.", {
-            size: Math.round(SCAN_LIMITS.maxSourceBytes / 1024 / 1024),
+      if (usable.length > room) {
+        sonnerToast.warning(t("Some screenshots were not added"), {
+          description: t("A scan holds up to {count} screenshots.", {
+            count: SCAN_LIMITS.maxImages,
           }),
         });
       }
-      const added = files
-        .filter((file) => file.size <= SCAN_LIMITS.maxSourceBytes)
+      const added = usable
         .slice(0, Math.max(0, room))
         .map((file) => {
           const url = URL.createObjectURL(file);
@@ -450,10 +509,6 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
     return units.slice(0, slots).reduce((sum, value) => sum + value, 0);
   }, [owned, slots]);
 
-  const needsReview = useMemo(
-    () => new Set(groups.filter((g) => g.needsReview).map((g) => g.itemId)),
-    [groups],
-  );
   const plannedCounts = useMemo(
     () => new Map((plan?.picks ?? []).map((pick) => [pick.key, pick.count] as const)),
     [plan],
@@ -492,6 +547,28 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
         .map((cell) => cell.key),
     [cells, assignments, reviewed],
   );
+  const plannedAttentionCells = useMemo(
+    () => attentionCells.filter((key) => plannedCells.has(key)),
+    [attentionCells, plannedCells],
+  );
+  const planNeedsReview = useMemo(() => {
+    const plannedAttention = new Set(plannedAttentionCells);
+    return new Set(
+      groups
+        .filter((group) => group.cells.some((key) => plannedAttention.has(key)))
+        .map((group) => group.itemId),
+    );
+  }, [groups, plannedAttentionCells]);
+  const groupReviewCounts = useMemo(() => {
+    const cellToGroup = new Map<CellKey, string>();
+    for (const group of groups) for (const key of group.cells) cellToGroup.set(key, group.itemId);
+    const counts = new Map<string, number>();
+    for (const key of attentionCells) {
+      const itemId = cellToGroup.get(key);
+      if (itemId) counts.set(itemId, (counts.get(itemId) ?? 0) + 1);
+    }
+    return counts;
+  }, [groups, attentionCells]);
   const similarReviewCellKeys = activeCell
     ? cellsWithSameReviewSuggestion(
         cellsByKey.get(activeCell),
@@ -508,6 +585,13 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
     if (attentionCells.length > reviewTotal) setReviewTotal(attentionCells.length);
     setReviewing(true);
     setActiveCell(attentionCells[0]);
+  };
+
+  const reviewNeededMatches = () => {
+    if (!attentionCells.length) return;
+    if (attentionCells.length > reviewTotal) setReviewTotal(attentionCells.length);
+    setReviewing(true);
+    setActiveCell(plannedAttentionCells[0] ?? attentionCells[0]);
   };
 
   const skipCell = () => {
@@ -687,9 +771,14 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400 sm:text-base">
               {demo
-                ? t("A real scan of a sample stash screenshot. Change the threshold or slots, click boxes to correct items, and untick items you want to keep.")
-                : t("Upload screenshots of your stash or a scav case. The items are recognised, and the cheapest set that reaches your threshold is picked for the circle.")}
+                ? t("A real scan of a sample stash screenshot. 1 Change the threshold or slots, 2 click boxes to correct items, 3 untick items you want to keep.")
+                : t("1 Upload stash screenshots, 2 review the matches, 3 save. The cheapest set that reaches your threshold is picked for the circle.")}
             </p>
+            {!demo && (
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                {t("Open a stash or container full-screen for the shot. Cropped or resized images often find no grid.")}
+              </p>
+            )}
             <p className="mt-3 text-xs leading-relaxed text-slate-400">
               Stash Scan contributed by{" "}
               <a
@@ -741,9 +830,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                 multiple
                 hidden
                 onChange={(event) => {
-                  const files = [...(event.target.files ?? [])].filter((file) =>
-                    (SCAN_LIMITS.acceptedTypes as readonly string[]).includes(file.type),
-                  );
+                  const files = [...(event.target.files ?? [])];
                   event.target.value = "";
                   if (files.length) {
                     autoScanRef.current = true;
@@ -797,7 +884,12 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
             onThresholdChange={settings.setThreshold}
           />
           <ItemSocket onBonusChange={setItemBonus} />
-          <div className="flex items-center gap-1 rounded-full border border-slate-600/30 bg-slate-800/70 p-1">
+          <div
+            className="flex items-center gap-1 rounded-full border border-slate-600/30 bg-slate-800/70 p-1"
+            role="group"
+            aria-label={t("Sacrifice slots ({min} to {max})", { min: MIN_SACRIFICE_SLOTS, max: MAX_SACRIFICE_SLOTS })}
+            title={t("Sacrifice slots you can fill ({min}-{max})", { min: MIN_SACRIFICE_SLOTS, max: MAX_SACRIFICE_SLOTS })}
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -808,7 +900,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
             >
               <Minus className="h-3.5 w-3.5" />
             </Button>
-            <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-300">
+            <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-300" aria-live="polite">
               {t("{count} slots", { count: slots })}
             </span>
             <Button
@@ -831,12 +923,32 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                 <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
                 <p className="text-sm text-slate-400">{t("Scanning the sample screenshot...")}</p>
               </>
+            ) : demoStatus === "missing" ? (
+              <>
+                <p className="max-w-md text-sm text-slate-400">
+                  {t("The demo screenshot is missing from this build. You can still scan your own screenshots.")}
+                </p>
+                <Button asChild variant="outline" className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white">
+                  <Link href="/scan">{t("Scan your own screenshots")}</Link>
+                </Button>
+              </>
             ) : (
-              <p className="max-w-md text-sm text-slate-400">
-                {demoStatus === "missing"
-                  ? t("The demo screenshot has not been added yet. You can still scan your own screenshots.")
-                  : t("The demo could not be loaded. Try again in a moment.")}
-              </p>
+              <>
+                <p className="max-w-md text-sm text-slate-400">
+                  {t("The demo could not be loaded. Try again in a moment.")}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDemoStatus("loading");
+                    setDemoRetry((current) => current + 1);
+                  }}
+                  className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  {t("Try again")}
+                </Button>
+              </>
             )}
           </section>
         )}
@@ -861,7 +973,11 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                 )}
                 {scanning
                   ? t("Scanning...")
-                  : t("Scan {count} screenshots", { count: queued.length })}
+                  : queued.length === 1
+                    ? t("Scan 1 screenshot")
+                    : queued.length > 1
+                      ? t("Scan {count} screenshots", { count: queued.length })
+                      : t("Add screenshots to scan")}
               </Button>
             </div>
           </section>
@@ -870,6 +986,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
         {session && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
             <div className="order-2 min-w-0 space-y-4 lg:order-1">
+              <OverlayLegend showIgnored />
               {session.results.map((result, imageIndex) => (
                 <div key={session.images[imageIndex]?.id ?? imageIndex} className="space-y-3">
                   <ScreenshotOverlay
@@ -883,6 +1000,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                     onSelectCell={setActiveCell}
                     emphasiseAttention={reviewing}
                     reviewedCells={reviewed}
+                    itemsById={itemsById}
                   />
                   {!reviewing && active && active.imageIndex === imageIndex && (
                     <div id="stash-scan-inspector">
@@ -893,6 +1011,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                         imageHeight={result.height}
                         cell={active}
                         assignedItemId={assignments[active.key] ?? null}
+                        reviewed={reviewed.has(active.key)}
                         itemsById={itemsById}
                         items={items}
                         onSplit={
@@ -917,9 +1036,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                 </div>
               ))}
 
-              <OverlayLegend />
-
-              {onCommitStash && (
+              {(onCommitStash || demo) && (
                 <ReviewPanel
                   session={session}
                   cells={cells}
@@ -937,14 +1054,34 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                   onStart={startReview}
                   onAssign={handleAssign}
                   onSkip={skipCell}
+                  onExit={() => {
+                    setActiveCell(null);
+                    setReviewing(false);
+                  }}
+                  onSkipAll={() => {
+                    // Mark every flagged cell reviewed without changing matches.
+                    attentionCells.forEach(markReviewed);
+                    setActiveCell(null);
+                    setReviewing(false);
+                  }}
                   onClose={() => {
                     setActiveCell(null);
                     setReviewing(false);
                   }}
                   commitLabel={
-                    hasSavedInventory ? t("Update stash") : t("Use this stash")
+                    demo
+                      ? t("Scan your own screenshots")
+                      : hasSavedInventory ? t("Update stash and load plan") : t("Save stash and load plan")
                   }
-                  onCommit={loadIntoCalculator}
+                  commitHint={
+                    demo
+                      ? undefined
+                      : t("Saves all {items} items, then loads the {planned} cheapest into the calculator.", {
+                          items: groups.reduce((sum, group) => sum + group.cells.length, 0),
+                          planned: plan?.itemCount ?? 0,
+                        })
+                  }
+                  onCommit={demo ? () => router.push("/scan") : loadIntoCalculator}
                   canCommit={groups.length > 0}
                 />
               )}
@@ -955,13 +1092,16 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                 plannedCounts={plannedCounts}
                 unrecognisedCount={unrecognisedCount}
                 pricing={pricing}
+                reviewCounts={groupReviewCounts}
                 onHover={setHoveredItem}
                 onToggle={(itemId, included) =>
                   setInclusion((current) => ({ ...current, [itemId]: included }))
                 }
                 onReview={(itemId) => {
-                  const cell = groups.find((g) => g.itemId === itemId)?.cells[0];
-                  if (cell) openCellFromList(cell);
+                  const group = groups.find((g) => g.itemId === itemId);
+                  const target =
+                    group?.cells.find((key) => attentionCells.includes(key)) ?? group?.cells[0];
+                  if (target) openCellFromList(target);
                 }}
                 onShowUnrecognised={() => {
                   const cell = cells.find(
@@ -979,10 +1119,21 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                   threshold={settings.threshold}
                   slots={slots}
                   itemsById={itemsById}
-                  needsReview={needsReview}
+                  needsReview={planNeedsReview}
+                  remainingReviewCount={attentionCells.length}
                   hasItems={owned.length > 0}
                   bestReachable={bestReachable}
-                  onLoadIntoCalculator={loadIntoCalculator}
+                  commitLabel={
+                    demo
+                      ? t("Load demo plan")
+                      : hasSavedInventory
+                        ? t("Update stash and load plan")
+                        : t("Save stash and load plan")
+                  }
+                  onLoadIntoCalculator={demo ? () => router.push("/") : loadIntoCalculator}
+                  onReviewNeeded={reviewNeededMatches}
+                  onLowerThreshold={() => settings.setThreshold(Math.max(0, Math.floor(bestReachable / 1000) * 1000))}
+                  onAddSlot={() => changeSlots(slots + 1)}
                 />
               </div>
             </aside>
