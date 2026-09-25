@@ -77,4 +77,18 @@ describe("route stash handoff", () => {
     expect(warning).toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith("/");
   });
+  it("loads the demo plan into the calculator without saving a stash", async () => {
+    localStorage.clear();
+    const cells = [0, 1].map((x) => ({ x: x * 50, y: 0, width: 50, height: 50, slotsWide: 1, slotsHigh: 1,
+      empty: false, confidence: "high", matches: [{ itemId: "test-item", shortName: "Test", rotated: false, score: 1 }] }));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      available: true, imageUrl: "/demo.png", images: [{ width: 100, height: 50, pitch: 50, cells }],
+    }))));
+    render(<StashScanStoreProvider><ScanWithCommit demo /></StashScanStoreProvider>);
+    fireEvent.click(await screen.findByRole("button", { name: "Load demo plan" }));
+    expect(JSON.parse(localStorage.getItem(SELECTED_ITEM_IDS_STORAGE_KEY)!)).toEqual(["test-item", "test-item", null, null, null]);
+    expect(JSON.parse(localStorage.getItem("stashInventory") ?? "null")).toBeNull();
+    expect(push).toHaveBeenCalledWith("/");
+    vi.unstubAllGlobals();
+  });
 });
