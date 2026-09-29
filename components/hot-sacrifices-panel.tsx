@@ -32,6 +32,8 @@ export interface SacrificeCombo {
   highlight?: boolean;
   separator?: string; // For custom separators like "➡️"
   availabilityNote?: string;
+  /** Combo no longer works in any game mode; shown greyed out and not usable. */
+  disabled?: boolean;
 }
 
 export const HOT_SACRIFICES: SacrificeCombo[] = [
@@ -213,8 +215,9 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
     ],
     resultText: "400K+ (6h & 14h)",
     separator: "➡️",
-    availabilityNote:
-      "PVP no longer works after the THOR IC base value change. PVE still works.",
+    disabled: true,
+    // availabilityNote:
+    //   "No longer works in PVP or PVE after the THOR IC base value change.",
   },
 ];
 
@@ -229,14 +232,24 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
   const isHighValue =
     combo.resultText.includes("400K") || combo.resultText.includes("6h");
   const hasAvailabilityNote = Boolean(combo.availabilityNote);
+  const isDisabled = Boolean(combo.disabled);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative z-20 flex flex-col gap-3 rounded-lg border border-slate-700/60 bg-slate-900/55 p-3 transition-colors duration-200 hover:border-slate-500/80 hover:bg-slate-900/75 md:flex-row md:items-center md:justify-between"
+      aria-disabled={isDisabled || undefined}
+      className={`group relative z-20 flex flex-col gap-3 rounded-lg border border-slate-700/60 bg-slate-900/55 p-3 transition-colors duration-200 hover:border-slate-500/80 hover:bg-slate-900/75 md:flex-row md:items-center md:justify-between ${
+        isDisabled
+          ? "pointer-events-none overflow-hidden border-slate-800/80 bg-slate-950/40 hover:border-slate-800/80 hover:bg-slate-950/40"
+          : ""
+      }`}
     >
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+      <div
+        className={`flex min-w-0 flex-1 flex-wrap items-center gap-2 ${
+          isDisabled ? "opacity-30 grayscale" : ""
+        }`}
+      >
         {combo.ingredients.map((ingredient, idx) => (
           <div key={idx} className="flex items-center gap-2">
             {idx > 0 && (
@@ -310,11 +323,17 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
         ))}
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-slate-800/80 pt-3 md:justify-start md:border-l md:border-t-0 md:pl-3 md:pt-0">
+      <div
+        className={`flex items-center justify-between gap-3 border-t border-slate-800/80 pt-3 md:justify-start md:border-l md:border-t-0 md:pl-3 md:pt-0 ${
+          isDisabled ? "opacity-30 grayscale" : ""
+        }`}
+      >
         <div className="flex flex-col items-start gap-1 md:items-end">
           <div
             className={`rounded-md border px-2.5 py-1 text-[11px] font-bold ${
-              isHighValue
+              isDisabled
+                ? "border-slate-600/40 bg-slate-800/40 text-slate-400 line-through"
+                : isHighValue
                 ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
                 : "border-amber-400/25 bg-amber-400/10 text-amber-200"
             }`}
@@ -334,13 +353,15 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
           )}
 
           {hasAvailabilityNote && (
-            <p className="max-w-[260px] text-left text-[10px] font-medium leading-snug text-amber-200/90 md:text-right">
+            <p className={`max-w-[260px] text-left text-[10px] font-medium leading-snug ${
+              isDisabled ? "text-red-200/90" : "text-amber-200/90"
+            } md:text-right`}>
               {combo.availabilityNote}
             </p>
           )}
         </div>
 
-        {onUseThis && (
+        {onUseThis && !isDisabled && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -360,6 +381,15 @@ export function ComboRow({ combo, onUseThis, estimatedCost }: ComboRowProps) {
           </TooltipProvider>
         )}
       </div>
+
+      {isDisabled && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <div className="absolute inset-x-0 top-1/2 h-px bg-red-400/70" />
+          <span className="relative rounded-full border border-red-400/40 bg-slate-950 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-300">
+            {t("No longer works")}
+          </span>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -377,7 +407,7 @@ export function HotSacrificesPanel({
 
   // Sort sacrifices by estimated cost (lowest to highest)
   const sortedSacrifices = useMemo(() => {
-    return [...HOT_SACRIFICES].sort((a, b) => {
+    return HOT_SACRIFICES.filter((combo) => !combo.disabled).sort((a, b) => {
       const costA = sacrificeCosts[a.id] ?? 0;
       const costB = sacrificeCosts[b.id] ?? 0;
       // Sort by cost ascending (lowest first)
@@ -390,6 +420,7 @@ export function HotSacrificesPanel({
 
   const featuredCombo = sortedSacrifices[0];
   const remainingCombos = sortedSacrifices.slice(1);
+  const disabledCombos = HOT_SACRIFICES.filter((combo) => combo.disabled);
 
   return (
     <div className="w-full max-w-3xl mx-auto mb-4" data-hot-sacrifices>
@@ -455,6 +486,10 @@ export function HotSacrificesPanel({
               estimatedCost={sacrificeCosts[featuredCombo.id]}
             />
           </div>
+
+          {disabledCombos.map((combo) => (
+            <ComboRow key={combo.id} combo={combo} />
+          ))}
 
           <div className="w-full">
             <button

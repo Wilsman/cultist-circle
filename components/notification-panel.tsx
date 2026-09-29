@@ -40,6 +40,21 @@ export interface NotificationAction {
 
 export const NOTIFICATIONS: Notification[] = [
   {
+    id: "sas-thor-hot-sacrifice-disabled",
+    type: "warning",
+    imageUrl: "https://assets.tarkov.dev/60a283193cb70855c43a381d-icon.webp",
+    imageAlt: "NFM THOR Integrated Carrier body armor",
+    title: "Update: SAS drive ➡️ THOR IC no longer works",
+    priority: 0,
+    description: (
+      <>
+        After the THOR IC base value change, the SAS drive ➡️ THOR IC hot
+        sacrifice no longer works in <strong>PVP or PVE</strong>. It has been
+        disabled in Hot Sacrifices.
+      </>
+    ),
+  },
+  {
     id: "black-division-dogtag-recipe",
     type: "warning",
     imageUrl: "/images/recipes/bd-dogtag-ferrum.png",

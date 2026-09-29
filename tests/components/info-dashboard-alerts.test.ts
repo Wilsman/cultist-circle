@@ -26,11 +26,10 @@ describe("Info dashboard alerts", () => {
     expect(notificationIds).not.toContain("thor-hot-sacrifice-pvp-warning");
   });
 
-  it("marks the THOR hot sacrifice as unavailable in PVP but working in PVE", () => {
+  it("disables the THOR hot sacrifice in every game mode", () => {
     const thorCombo = HOT_SACRIFICES.find((combo) => combo.id === "sas-thor");
 
     expect(thorCombo).toBeDefined();
-    expect(thorCombo?.availabilityNote).toContain("PVP");
-    expect(thorCombo?.availabilityNote).toContain("PVE still works");
+    expect(thorCombo?.disabled).toBe(true);
   });
 });

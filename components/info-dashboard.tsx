@@ -60,8 +60,12 @@ export function InfoDashboard({
   const showUpdatesExpand = remainingUpdatesCount > 0;
 
   // Recipes logic
+  const activeCombos = HOT_SACRIFICES.filter((combo) => !combo.disabled);
+  const disabledCombos = HOT_SACRIFICES.filter((combo) => combo.disabled);
+  const featuredCombo = activeCombos[0];
+  const moreCombos = activeCombos.slice(1);
   const recipesTotalCount = HOT_SACRIFICES.length;
-  const showRecipesExpand = recipesTotalCount > 1;
+  const showRecipesExpand = moreCombos.length > 0;
 
   return (
     <section className="w-full max-w-3xl mx-auto mb-4 z-10">
@@ -164,20 +168,24 @@ export function InfoDashboard({
               </span>
             </div>
 
-            {HOT_SACRIFICES.length > 0 && (
+            {featuredCombo && (
               <ComboRow
-                combo={HOT_SACRIFICES[0]}
+                combo={featuredCombo}
                 onUseThis={onUseThis}
-                estimatedCost={sacrificeCosts[HOT_SACRIFICES[0].id]}
+                estimatedCost={sacrificeCosts[featuredCombo.id]}
               />
             )}
+
+            {disabledCombos.map((combo) => (
+              <ComboRow key={combo.id} combo={combo} />
+            ))}
 
             {showRecipesExpand && (
               <>
                 <div
                   className={`space-y-2 ${recipesExpanded ? "block" : "hidden"}`}
                 >
-                  {HOT_SACRIFICES.slice(1).map((combo) => (
+                  {moreCombos.map((combo) => (
                     <ComboRow
                       key={combo.id}
                       combo={combo}
@@ -203,7 +211,7 @@ export function InfoDashboard({
                     {recipesExpanded
                       ? t("Show Less")
                       : t("Show {count} More", {
-                          count: recipesTotalCount - 1,
+                          count: moreCombos.length,
                         })}
                     <ChevronDown
                       className={`ml-2 h-3 w-3 transition-transform duration-200 ${
