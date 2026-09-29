@@ -1,4 +1,6 @@
+import { renderHook } from "@testing-library/react";
 import {
+  createSWRPersistMiddleware,
   isPlaceholderCacheData,
   isTruncatedItemArray,
 } from "@/utils/swr-persistence";
@@ -32,5 +34,42 @@ describe("swr persistence helpers", () => {
       true,
     );
     expect(isPlaceholderCacheData([{ id: "1", name: "Diary" }])).toBe(false);
+  });
+});
+
+describe("createSWRPersistMiddleware", () => {
+  const key = "tarkov-dev-api/pvp/en?v=test";
+  const storageKey = `swr-cache-${key}-test`;
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it("keeps the persisted fallback identity stable across renders", () => {
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        data: [{ id: "1", name: "Diary", shortName: "Diary", basePrice: 1 }],
+        timestamp: Date.now(),
+      }),
+    );
+    const middleware = createSWRPersistMiddleware("test", 60_000);
+    const useSWRNext = (
+      _key: string,
+      _fetcher: unknown,
+      config: {
+        fallbackData?: unknown;
+      },
+    ) => ({ data: config.fallbackData });
+    const useMiddlewareSWR = middleware(useSWRNext);
+
+    const { result, rerender } = renderHook(() =>
+      useMiddlewareSWR(key, null, {}),
+    );
+    const firstData = result.current.data;
+    rerender();
+
+    expect(firstData).toHaveLength(1);
+    expect(result.current.data).toBe(firstData);
   });
 });

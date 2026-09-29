@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { CACHE_TTL } from '@/hooks/use-tarkov-api';
 
 const STORAGE_KEY_PREFIX = 'swr-cache-';
@@ -31,6 +31,30 @@ export function isPlaceholderCacheData(data: unknown): boolean {
   );
 }
 
+function readPersistedData(storageKey: string, ttl: number): unknown {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const storedCache = localStorage.getItem(storageKey);
+    if (!storedCache) return undefined;
+
+    const { data, timestamp } = JSON.parse(storedCache);
+    // Check if the cache is still valid based on TTL
+    if (Date.now() - timestamp >= ttl) {
+      localStorage.removeItem(storageKey);
+      return undefined;
+    }
+    if (isTruncatedItemArray(data) || isPlaceholderCacheData(data)) {
+      localStorage.removeItem(storageKey);
+      return undefined;
+    }
+    return data;
+  } catch (error) {
+    console.error('Error loading SWR cache from localStorage:', error);
+    localStorage.removeItem(storageKey);
+    return undefined;
+  }
+}
+
 /**
  * Creates a middleware for SWR that persists cache data to localStorage
  * @param version Cache version to invalidate when needed
@@ -50,34 +74,14 @@ export function createSWRPersistMiddleware(version: string, ttl: number = CACHE_
     return (key: any, fetcher: any, config: any) => {
       // Create a unique storage key based on the SWR key and version
       const storageKey = `${STORAGE_KEY_PREFIX}${String(key)}-${version}`;
-      
-      // Try to load data from localStorage
-      let persistedData;
-      try {
-        const storedCache = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
-        
-        if (storedCache) {
-          const { data, timestamp } = JSON.parse(storedCache);
-          const now = Date.now();
-          
-          // Check if the cache is still valid based on TTL
-          if (now - timestamp < ttl) {
-            if (isTruncatedItemArray(data) || isPlaceholderCacheData(data)) {
-              localStorage.removeItem(storageKey);
-            } else {
-              persistedData = data;
-            }
-          } else {
-            // Cache expired, remove it
-            localStorage.removeItem(storageKey);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading SWR cache from localStorage:', error);
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(storageKey);
-        }
-      }
+
+      // Load persisted data once per storage key. Parsing on every render
+      // would hand SWR a new fallback array each time, which consumers that
+      // track data identity during render treat as fresh data (React #301).
+      const persistedData = useMemo(
+        () => readPersistedData(storageKey, ttl),
+        [storageKey],
+      );
       
       // Call the original useSWR with persisted data as fallback if available
       const swr = useSWRNext(key, fetcher, {
