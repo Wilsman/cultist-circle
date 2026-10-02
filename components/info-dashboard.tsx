@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { NOTIFICATIONS, NotificationCard } from "./notification-panel";
+import {
+  NOTIFICATIONS,
+  NotificationCard,
+  NotificationDetails,
+} from "./notification-panel";
 import { HOT_SACRIFICES, ComboRow } from "./hot-sacrifices-panel";
 import { useDynamicNotifications } from "./dynamic-notification-system";
-import { Bell, Flame, ChevronDown } from "lucide-react";
+import { Bell, Flame, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { SacrificeCombo } from "./hot-sacrifices-panel";
@@ -33,13 +37,14 @@ export function InfoDashboard({
 
   const [updatesExpanded, setUpdatesExpanded] = useState(false);
   const [recipesExpanded, setRecipesExpanded] = useState(false);
-
-  const handleUpdatesToggle = () => {
-    if (!showUpdatesExpand) {
-      return;
-    }
-    setUpdatesExpanded((prev) => !prev);
-  };
+  // One update open at a time; on desktop it shows in a full-width panel.
+  const [openUpdateId, setOpenUpdateId] = useState<string | null>(null);
+  const detailsPanelId = useId();
+  const toggleUpdate = (id: string) =>
+    setOpenUpdateId((prev) => (prev === id ? null : id));
+  const openUpdate = allNotifications.find(
+    (notification) => notification.id === openUpdateId,
+  );
 
   // Updates logic
   const updatesTotalCount = allNotifications.length;
@@ -67,10 +72,11 @@ export function InfoDashboard({
   const recipesTotalCount = HOT_SACRIFICES.length;
   const showRecipesExpand = moreCombos.length > 0;
 
-  // Mobile stacks cards; desktop lays them out side by side (and drops the
-  // intro line) to keep the dashboard short above the calculator.
+  // Updates collapse to title rows (click to expand). Mobile stacks cards;
+  // desktop lays them out side by side and drops the intro line to keep the
+  // dashboard short above the calculator.
   const updatesGrid =
-    "space-y-2 lg:grid lg:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] lg:gap-2 lg:space-y-0";
+    "space-y-2 lg:grid lg:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] lg:items-start lg:gap-2 lg:space-y-0";
   const recipesGrid =
     "space-y-2 lg:grid lg:grid-cols-[repeat(auto-fit,minmax(440px,1fr))] lg:gap-2 lg:space-y-0";
 
@@ -118,49 +124,77 @@ export function InfoDashboard({
               )}
             </div>
 
+            {/* Cards are compact, so desktop shows every update; mobile keeps
+                the rest behind "Show more". */}
             <div className={updatesGrid}>
               {primaryNotifications.map((notification) => (
                 <NotificationCard
                   key={notification.id}
                   notification={notification}
-                  onClick={handleUpdatesToggle}
+                  collapsible
+                  expanded={openUpdateId === notification.id}
+                  onToggle={() => toggleUpdate(notification.id)}
+                  detailsPanelId={detailsPanelId}
                 />
+              ))}
+              {remainingNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={updatesExpanded ? undefined : "hidden lg:block"}
+                >
+                  <NotificationCard
+                    notification={notification}
+                    collapsible
+                    expanded={openUpdateId === notification.id}
+                    onToggle={() => toggleUpdate(notification.id)}
+                    detailsPanelId={detailsPanelId}
+                  />
+                </div>
               ))}
             </div>
 
-            {showUpdatesExpand && (
-              <>
-                <div className={updatesExpanded ? undefined : "hidden"}>
-                  <div className={updatesGrid}>
-                    {remainingNotifications.map((notification) => (
-                      <NotificationCard
-                        key={notification.id}
-                        notification={notification}
-                        onClick={handleUpdatesToggle}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-center pt-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setUpdatesExpanded(!updatesExpanded)}
-                    className="h-7 rounded-full border border-slate-700/60 bg-slate-900/70 px-3 text-[10px] font-semibold text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+            {openUpdate && (
+              <div
+                id={detailsPanelId}
+                className="hidden rounded-lg border border-slate-700/60 bg-slate-900/70 px-4 py-3 lg:block"
+              >
+                <div className="mb-1.5 flex items-start justify-between gap-3">
+                  <h3 className="text-sm font-semibold leading-5 text-slate-100">
+                    {openUpdate.title}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setOpenUpdateId(null)}
+                    aria-label={t("Close")}
+                    className="-mr-1 rounded p-0.5 text-slate-500 transition-colors hover:text-slate-200"
                   >
-                    {updatesExpanded
-                      ? t("Show Less Updates")
-                      : t("Show {count} More Updates", {
-                          count: remainingUpdatesCount,
-                        })}
-                    <ChevronDown
-                      className={`ml-2 h-3 w-3 transition-transform duration-200 ${
-                        updatesExpanded ? "rotate-180" : ""
-                      }`}
-                    />
-                  </Button>
+                    <X className="h-4 w-4" aria-hidden />
+                  </button>
                 </div>
-              </>
+                <NotificationDetails notification={openUpdate} />
+              </div>
+            )}
+
+            {showUpdatesExpand && (
+              <div className="flex justify-center pt-1 lg:hidden">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUpdatesExpanded(!updatesExpanded)}
+                  className="h-7 rounded-full border border-slate-700/60 bg-slate-900/70 px-3 text-[10px] font-semibold text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+                >
+                  {updatesExpanded
+                    ? t("Show Less Updates")
+                    : t("Show {count} More Updates", {
+                        count: remainingUpdatesCount,
+                      })}
+                  <ChevronDown
+                    className={`ml-2 h-3 w-3 transition-transform duration-200 ${
+                      updatesExpanded ? "rotate-180" : ""
+                    }`}
+                  />
+                </Button>
+              </div>
             )}
           </TabsContent>
 
