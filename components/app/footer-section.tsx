@@ -17,6 +17,57 @@ interface FooterSectionProps {
   onFeedbackClick: () => void;
 }
 
+function ContributorAvatars({
+  contributors,
+  size = "h-9 w-9",
+  className = "",
+}: {
+  contributors: GitHubContributor[];
+  size?: string;
+  className?: string;
+}) {
+  return (
+    <TooltipProvider>
+      <div className={`flex items-center ${className}`}>
+        {contributors.map((contributor, index) => (
+          <Tooltip key={contributor.login}>
+            <TooltipTrigger asChild>
+              <a
+                href={contributor.htmlUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${contributor.login} on GitHub`}
+                className={`relative block transition-transform duration-150 hover:z-50 hover:-translate-y-0.5 ${
+                  index === 0 ? "" : "-ml-2.5"
+                }`}
+                style={{ zIndex: contributors.length - index }}
+              >
+                <img
+                  src={contributor.avatarUrl}
+                  alt={`${contributor.login} GitHub avatar`}
+                  className={`${size} rounded-full border border-slate-800 bg-slate-900 object-cover`}
+                />
+              </a>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-center">
+              <div className="font-semibold text-slate-100">
+                {contributor.login}
+              </div>
+              <div className="text-[11px] text-slate-400">
+                {contributor.contributions} contribution
+                {contributor.contributions === 1 ? "" : "s"}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
+  );
+}
+
+const creditLinkClass =
+  "font-semibold text-slate-200 transition-colors hover:text-white";
+
 /**
  * Footer section with disclaimer, credits, buy-me-coffee, and feedback button.
  * Extracted from app.tsx for better organization.
@@ -28,8 +79,83 @@ export function FooterSection({
   const { t } = useLanguage();
 
   return (
-    <div className="mt-12 pb-10">
-      <div className="mx-auto w-full max-w-lg text-center">
+    <div className="mt-12 pb-10 lg:mt-6">
+      {/* Desktop: one slim row under a hairline */}
+      <div className="hidden items-center justify-between gap-6 border-t border-white/8 pt-5 lg:flex">
+        <div className="flex min-w-0 items-center gap-4">
+          {contributors.length > 0 && (
+            <div
+              className="flex shrink-0 items-center gap-2.5"
+              title={t(
+                "Thanks to everyone helping with fixes, testing, and recipe updates.",
+              )}
+            >
+              <ContributorAvatars contributors={contributors} size="h-7 w-7" />
+              <span className="text-[11px] font-medium text-slate-400">
+                <span className="font-semibold text-slate-200">
+                  {contributors.length}
+                </span>{" "}
+                {t("Contributors").toLowerCase()}
+              </span>
+            </div>
+          )}
+          {contributors.length > 0 && (
+            <span className="h-8 w-px shrink-0 bg-white/10" aria-hidden />
+          )}
+          <div className="min-w-0 space-y-1">
+            <p className="whitespace-nowrap text-[11px] text-slate-400">
+              {t("Prices provided by")}{" "}
+              <a
+                href="https://tarkov.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={creditLinkClass}
+              >
+                Tarkov.dev
+              </a>
+              <span className="mx-2 select-none text-slate-700">·</span>
+              {t("Research provided by")}{" "}
+              <a
+                href="https://bio.link/verybadscav"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={creditLinkClass}
+              >
+                VeryBadSCAV
+              </a>
+            </p>
+            <p className="whitespace-nowrap text-[10px] uppercase tracking-[0.14em] text-slate-500">
+              {t("Fan-made tool - Not affiliated with Battlestate Games")}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <a
+            href="https://www.buymeacoffee.com/wilsman77"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block transition-opacity hover:opacity-90"
+          >
+            <img
+              src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+              alt={t("Buy Me a Coffee")}
+              width="140"
+              height="32"
+              className="h-8 w-auto rounded-md"
+            />
+          </a>
+          <Button
+            onClick={onFeedbackClick}
+            size="sm"
+            className="h-8 rounded-md border border-white/10 bg-white/5 px-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-200 transition-colors hover:bg-white/10"
+          >
+            {t("Feedback")}
+          </Button>
+        </div>
+      </div>
+
+      <div className="mx-auto w-full max-w-lg text-center lg:hidden">
         {contributors.length > 0 && (
           <div className="rounded-xl border border-white/8 bg-slate-950/28 px-4 py-3 backdrop-blur-sm">
             <div className="flex items-center justify-center gap-2">
@@ -41,41 +167,10 @@ export function FooterSection({
               </span>
             </div>
 
-            <TooltipProvider>
-              <div className="mt-3 flex items-center justify-center">
-                {contributors.map((contributor, index) => (
-                  <Tooltip key={contributor.login}>
-                    <TooltipTrigger asChild>
-                      <a
-                        href={contributor.htmlUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`${contributor.login} on GitHub`}
-                        className={`relative block transition-opacity duration-150 hover:opacity-100 ${
-                          index === 0 ? "" : "-ml-2.5"
-                        }`}
-                        style={{ zIndex: contributors.length - index }}
-                      >
-                        <img
-                          src={contributor.avatarUrl}
-                          alt={`${contributor.login} GitHub avatar`}
-                          className="h-9 w-9 rounded-full border border-slate-800 bg-slate-900 object-cover"
-                        />
-                      </a>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-center">
-                      <div className="font-semibold text-slate-100">
-                        {contributor.login}
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        {contributor.contributions} contribution
-                        {contributor.contributions === 1 ? "" : "s"}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
-              </div>
-            </TooltipProvider>
+            <ContributorAvatars
+              contributors={contributors}
+              className="mt-3 justify-center"
+            />
 
             <p className="mx-auto mt-3 max-w-md text-[11px] leading-relaxed text-slate-400">
               {t(
@@ -98,9 +193,13 @@ export function FooterSection({
                 Tarkov.dev
               </a>
             </div>
-            <span className="hidden select-none text-slate-700 sm:inline">•</span>
+            <span className="hidden select-none text-slate-700 sm:inline">
+              •
+            </span>
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500">{t("Research provided by")}</span>
+              <span className="text-slate-500">
+                {t("Research provided by")}
+              </span>
               <a
                 href="https://bio.link/verybadscav"
                 target="_blank"
