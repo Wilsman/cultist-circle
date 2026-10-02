@@ -126,6 +126,9 @@ export function StashStrip({
             <p className="text-sm font-semibold text-slate-200">
               {t("Scan your stash")}
             </p>
+            <p className="truncate text-xs text-slate-500 sm:hidden">
+              {t("Find the cheapest combo from your own items")}
+            </p>
             <p className="hidden truncate text-xs text-slate-500 sm:block">
               {t(
                 "Drop or paste a screenshot to find the cheapest combo from items you already own",
@@ -216,6 +219,8 @@ export function StashStrip({
           variant="outline"
           size="sm"
           onClick={() => goScan()}
+          aria-label={t("Manage stash")}
+          title={t("Manage stash")}
           className="shrink-0 border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
         >
           <SlidersHorizontal className="h-3.5 w-3.5 sm:mr-1.5" aria-hidden />

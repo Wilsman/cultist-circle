@@ -182,7 +182,9 @@ export function DetectedItems({
                   checked={included}
                   disabled={!item}
                   onCheckedChange={(checked) => onToggle(group.itemId, checked === true)}
-                  aria-label={t("Include this item in the sacrifice")}
+                  aria-label={t("Include {item} in the sacrifice", {
+                    item: item?.name ?? t("Unknown item"),
+                  })}
                 />
                 {item?.iconLink ? (
                   <img src={item.iconLink} alt="" className="h-9 w-9 shrink-0 rounded bg-black/40 object-contain" />
