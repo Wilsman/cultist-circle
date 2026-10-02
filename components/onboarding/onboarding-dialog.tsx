@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "cc_onboarding_seen_v1";
+const SHOW_DELAY_MS = 1200;
 
 const EXAMPLE_ITEMS = [
   { id: "5c0530ee86f774697952d952", name: "LEDX Skin Transilluminator" },
@@ -338,17 +339,28 @@ const slideVariants = {
 
 export function OnboardingDialog() {
   const reduce = useReducedMotion() ?? false;
-  // Read the flag once during state initialization instead of in an effect.
-  const [open, setOpen] = React.useState<boolean>(() => {
-    // Only show once per browser using localStorage flag
+  const [open, setOpen] = React.useState(false);
+
+  // Only show once per browser. Wait for the page to finish loading (plus a
+  // short settle) so the intro animations don't stutter during hydration.
+  React.useEffect(() => {
     try {
-      if (typeof window === "undefined") return false;
-      return window.localStorage.getItem(STORAGE_KEY) == null;
+      if (window.localStorage.getItem(STORAGE_KEY) != null) return;
     } catch {
       // ignore storage errors
-      return false;
+      return;
     }
-  });
+    let timer: number | undefined;
+    const show = () => {
+      timer = window.setTimeout(() => setOpen(true), SHOW_DELAY_MS);
+    };
+    if (document.readyState === "complete") show();
+    else window.addEventListener("load", show, { once: true });
+    return () => {
+      window.removeEventListener("load", show);
+      window.clearTimeout(timer);
+    };
+  }, []);
   const [[index, direction], setStep] = React.useState<[number, number]>([
     0, 1,
   ]);
