@@ -108,7 +108,7 @@ function AutoSelectButtonImpl({
               aria-checked={active}
               onClick={() => onSourceChange(option.value)}
               className={cn(
-                "flex h-full items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition-colors",
+                "flex h-full items-center gap-1.5 rounded-[8px] px-3 text-sm font-semibold transition-colors",
                 active
                   ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
                   : "border border-transparent text-slate-400 hover:text-slate-200",
