@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import {
   ChevronDown,
   Bell,
@@ -126,13 +126,66 @@ export const NOTIFICATIONS: Notification[] = [
   },
 ];
 
+/** A notification's description and action buttons. */
+export function NotificationDetails({
+  notification,
+}: {
+  notification: Notification;
+}) {
+  return (
+    <>
+      <div className="text-xs leading-relaxed text-slate-300 marker:text-slate-400 [&_a]:text-slate-100 [&_a]:underline [&_a]:decoration-slate-500 [&_a]:underline-offset-2 [&_strong]:font-semibold [&_strong]:text-slate-100">
+        {typeof notification.description === "function"
+          ? notification.description(notification)
+          : notification.description}
+      </div>
+
+      {notification.actions && notification.actions.length > 0 && (
+        <div className="flex gap-2 mt-3 pt-2 border-t border-slate-700/60">
+          {notification.actions.map((action, index) => (
+            <button
+              key={index}
+              onClick={(event) => {
+                event.stopPropagation();
+                action.action();
+              }}
+              className={`text-xs px-2 py-1 rounded-md font-medium transition-colors ${
+                notification.type === "hot-sacrifice"
+                  ? "bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25"
+                  : notification.type === "weapon-warning"
+                    ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+                    : "bg-slate-500/20 text-slate-300 hover:bg-slate-500/30"
+              }`}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function NotificationCard({
   notification,
   onClick,
+  collapsible = false,
+  expanded = false,
+  onToggle,
+  detailsPanelId,
 }: {
   notification: Notification;
   onClick?: () => void;
+  /**
+   * Show only the title row; the details expand inline below lg. On lg the
+   * parent renders them in a shared panel (detailsPanelId) instead.
+   */
+  collapsible?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
+  detailsPanelId?: string;
 }) {
+  const inlineDetailsId = useId();
   const isPriority = notification.priority === 0;
   const isInteractive = Boolean(onClick);
   const styles =
@@ -177,6 +230,91 @@ export function NotificationCard({
         ? RefreshCw
         : Info;
 
+  const iconNode = notification.imageUrl ? (
+    <img
+      src={notification.imageUrl}
+      alt={notification.imageAlt ?? notification.title}
+      width={28}
+      height={28}
+      loading="lazy"
+      aria-hidden="true"
+      className="h-full w-full rounded object-contain"
+    />
+  ) : notification.icon ? (
+    <span className="text-sm" aria-hidden="true">
+      {notification.icon}
+    </span>
+  ) : (
+    <Icon className="h-4 w-4" />
+  );
+
+  const newBadge = isPriority ? (
+    <span
+      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${styles.badge}`}
+    >
+      NEW
+    </span>
+  ) : null;
+
+  if (collapsible) {
+    return (
+      <div
+        className={`group relative overflow-hidden rounded-lg border bg-slate-900/55 backdrop-blur-sm transition-colors duration-200 hover:border-slate-500/80 hover:bg-slate-900/80 ${
+          expanded
+            ? "border-slate-600/80 bg-slate-900/80"
+            : "border-slate-700/60"
+        }`}
+      >
+        <div
+          className={`absolute bottom-0 left-0 top-0 w-1 ${styles.marker} opacity-90`}
+        />
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={
+            detailsPanelId
+              ? `${inlineDetailsId} ${detailsPanelId}`
+              : inlineDetailsId
+          }
+          onClick={onToggle}
+          className="flex min-h-14 w-full items-center gap-2.5 py-2.5 pl-4 pr-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400/60"
+        >
+          <span className="relative shrink-0">
+            <span
+              className={`flex h-6 w-6 items-center justify-center overflow-hidden rounded border border-slate-700/80 bg-slate-950/45 ${styles.icon}`}
+            >
+              {iconNode}
+            </span>
+            {isPriority && (
+              <span
+                className={`absolute -right-1 -top-1 h-2 w-2 rounded-full ring-2 ring-slate-900 ${styles.marker}`}
+              />
+            )}
+          </span>
+          <span
+            className={`line-clamp-2 min-w-0 flex-1 text-[13px] font-semibold leading-5 ${styles.title}`}
+          >
+            {notification.title}
+            {isPriority && <span className="sr-only"> (new)</span>}
+          </span>
+          <ChevronDown
+            aria-hidden="true"
+            className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 group-hover:text-slate-300 ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        <div
+          id={inlineDetailsId}
+          hidden={!expanded}
+          className={`pb-3 pl-[3.25rem] pr-4 ${detailsPanelId ? "lg:hidden" : ""}`}
+        >
+          <NotificationDetails notification={notification} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`
@@ -194,23 +332,7 @@ export function NotificationCard({
         <div
           className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-700/80 bg-slate-950/45 ${styles.icon}`}
         >
-          {notification.imageUrl ? (
-            <img
-              src={notification.imageUrl}
-              alt={notification.imageAlt ?? notification.title}
-              width={28}
-              height={28}
-              loading="lazy"
-              aria-hidden="true"
-              className="h-7 w-7 rounded object-contain"
-            />
-          ) : notification.icon ? (
-            <span className="text-sm" aria-hidden="true">
-              {notification.icon}
-            </span>
-          ) : (
-            <Icon className="h-4 w-4" />
-          )}
+          {iconNode}
         </div>
         {notification.imageUrl ? (
           <span className="sr-only mt-0.5 flex-shrink-0">
@@ -227,42 +349,9 @@ export function NotificationCard({
             <h3 className={`text-sm font-semibold leading-5 ${styles.title}`}>
               {notification.title}
             </h3>
-            {isPriority && (
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${styles.badge}`}
-              >
-                NEW
-              </span>
-            )}
+            {newBadge}
           </div>
-          <div className="text-xs leading-relaxed text-slate-300 marker:text-slate-400 [&_a]:text-slate-100 [&_a]:underline [&_a]:decoration-slate-500 [&_a]:underline-offset-2 [&_strong]:font-semibold [&_strong]:text-slate-100">
-            {typeof notification.description === "function"
-              ? notification.description(notification)
-              : notification.description}
-          </div>
-
-          {notification.actions && notification.actions.length > 0 && (
-            <div className="flex gap-2 mt-3 pt-2 border-t border-slate-700/60">
-              {notification.actions.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    action.action();
-                  }}
-                  className={`text-xs px-2 py-1 rounded-md font-medium transition-colors ${
-                    notification.type === "hot-sacrifice"
-                      ? "bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25"
-                      : notification.type === "weapon-warning"
-                        ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
-                        : "bg-slate-500/20 text-slate-300 hover:bg-slate-500/30"
-                  }`}
-                >
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <NotificationDetails notification={notification} />
         </div>
       </div>
     </div>

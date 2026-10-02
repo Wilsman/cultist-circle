@@ -30,7 +30,7 @@ function AutoSelectButtonImpl({
     <Button
       id="auto-select"
       disabled
-      className="w-full h-12 rounded-2xl bg-slate-800/60 border border-slate-700/40 text-slate-300 cursor-wait text-base"
+      className="w-full h-11 rounded-xl bg-slate-800/60 border border-slate-700/40 text-slate-300 cursor-wait text-base"
     >
       <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
       <span className="font-semibold">{t("Calculating...")}</span>
@@ -47,7 +47,7 @@ function AutoSelectButtonImpl({
         handleAutoPick();
       }}
       disabled={isCalculating}
-      className="relative w-full h-12 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-400 hover:text-emerald-300 transition-all duration-200 font-semibold text-base shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
+      className="relative w-full h-11 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-400 hover:text-emerald-300 transition-all duration-200 font-semibold text-[15px]"
     >
       {hasAutoSelected ? (
         <>
@@ -96,7 +96,7 @@ function AutoSelectButtonImpl({
       <div
         role="radiogroup"
         aria-label={t("Auto select source")}
-        className="flex h-12 shrink-0 items-center rounded-2xl border border-slate-600/40 bg-slate-800/40 p-1"
+        className="flex h-11 shrink-0 items-center rounded-xl border border-slate-600/40 bg-slate-800/40 p-1"
       >
         {options.map((option) => {
           const active = source === option.value;
@@ -108,7 +108,7 @@ function AutoSelectButtonImpl({
               aria-checked={active}
               onClick={() => onSourceChange(option.value)}
               className={cn(
-                "flex h-full items-center gap-1.5 rounded-xl px-3 text-sm font-semibold transition-colors",
+                "flex h-full items-center gap-1.5 rounded-[8px] px-3 text-sm font-semibold transition-colors",
                 active
                   ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
                   : "border border-transparent text-slate-400 hover:text-slate-200",
