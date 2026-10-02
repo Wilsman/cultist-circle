@@ -2286,7 +2286,7 @@ function AppContent({ contributors = [] }: AppProps) {
   // Update the refresh button UI
   return (
     <>
-      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto relative">
+      <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto relative lg:overflow-visible">
         <div className="flex items-start justify-center gap-4 max-w-[1600px] mx-auto">
           {/* Left Ad Rail - Desktop Only */}
           <aside className="hidden xl:block w-[160px] flex-shrink-0">
@@ -2296,22 +2296,31 @@ function AppContent({ contributors = [] }: AppProps) {
             </div>
           </aside>
 
-          {/* Main Content */}
-          <div className="w-full max-w-3xl mx-auto space-y-3 py-4">
+          {/* Main Content: single column on mobile; on desktop the calculator
+              and info dashboard stack left beside a sticky summary column.
+              (The wrapper above drops overflow-auto at lg so sticky works.) */}
+          <div className="grid w-full min-w-0 max-w-3xl grid-cols-1 items-start gap-3 py-4 mx-auto lg:max-w-none lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-5 lg:gap-y-4 xl:grid-cols-[minmax(0,1fr)_400px]">
             {/* Header Section */}
-            <HeaderSection />
+            <div className="lg:col-span-2">
+              <HeaderSection />
+            </div>
 
             {/* Info Dashboard (Alerts, Notifications, Hot Sacrifices) */}
-            <InfoDashboard
-              selectedItems={selectedItems.filter(Boolean) as SimplifiedItem[]}
-              onUseThis={handleUseHotSacrifice}
-              availableItems={items}
-              sacrificeCosts={sacrificeCosts}
-            />
+            <div className="min-w-0 lg:col-start-1 lg:row-start-3">
+              <InfoDashboard
+                selectedItems={
+                  selectedItems.filter(Boolean) as SimplifiedItem[]
+                }
+                onUseThis={handleUseHotSacrifice}
+                availableItems={items}
+                sacrificeCosts={sacrificeCosts}
+              />
+            </div>
 
-            {/* Main Calculator Card */}
-            <Card className="bg-slate-800/60 backdrop-blur-md border-slate-700/40 shadow-xl overflow-hidden">
-              <CardContent className="p-4 sm:p-6 space-y-4">
+            {/* Main Calculator Card. Below lg it joins the summary card under
+                it so mobile still reads as one panel. */}
+            <Card className="min-w-0 overflow-hidden rounded-b-none border-b-0 border-slate-700/40 bg-slate-800/60 backdrop-blur-md lg:col-start-1 lg:row-start-2 lg:rounded-b-lg lg:border-b lg:shadow-xl">
+              <CardContent className="space-y-4 p-4 pb-0 sm:p-6 sm:pb-0 lg:pb-6">
                 {/* Controls Section - Clean & Focused */}
                 <div className="space-y-2.5">
                   {/* Primary Controls Row */}
@@ -2555,113 +2564,115 @@ function AppContent({ contributors = [] }: AppProps) {
                     selectedItems
                       .slice(0, sacrificeSlotCount)
                       .map((item, index) => (
-                      <div
-                        key={`selector-${index}`}
-                        className={`animate-fade-in transition-all duration-200 ${
-                          loadingSlots[index] ? "opacity-50" : ""
-                        }`}
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                      >
-                        <React.Fragment>
-                          <Suspense fallback={<div>Loading...</div>}>
-                            <DynamicItemSelector
-                              ref={(el: ItemSelectorHandle | null) => {
-                                selectorRefs.current[index] = el;
-                              }}
-                              items={items}
-                              manualDiscoveryItems={manualDiscoveryItems}
-                              selectedItem={item}
-                              onSelect={(
-                                sel: SimplifiedItem | null,
-                                op: number | null | undefined,
-                              ) => updateSelectedItem(sel, index, op)}
-                              onCopy={() => handleCopyToClipboard(index)}
-                              onPin={() => handlePinItem(index)}
-                              isPinned={pinnedItems[index]}
-                              overriddenPrice={
-                                item ? overriddenPrices[item.id] : undefined
-                              }
-                              isAutoPickActive={hasAutoSelected}
-                              overriddenPrices={overriddenPrices}
-                              isExcluded={
-                                item ? excludedItems.has(item.name) : false
-                              }
-                              onToggleExclude={() =>
-                                item && toggleExcludedItem(item.name)
-                              }
-                              excludedItems={excludedItems}
-                              fleaPriceType={fleaPriceType}
-                              priceMode={priceMode}
-                              traderLevels={traderLevels}
-                              remainingThreshold={remainingThreshold}
-                              itemBonusPercent={itemBonus}
-                              categoryFilter={selectorCategoryFilter}
-                              categoryFilterLabel={selectorCategoryFilterLabel}
-                              traderFilter={selectorTraderFilter}
-                              stashCounts={
-                                stashInventory ? stashCountsMap : undefined
-                              }
-                              stashSelectedCounts={
-                                stashInventory
-                                  ? stashSelectedCountsMap
-                                  : undefined
-                              }
-                              hasAttachedSuggestions={shouldShowNextItemHints(
-                                item,
-                                index,
-                              )}
-                            />
-                          </Suspense>
-                          {shouldShowNextItemHints(item, index) ? (
-                            <NextItemHints
-                              items={
-                                effectiveAutoSelectSource === "stash"
-                                  ? activeSuggestions[index]
-                                  : selectedItems.every((it) => !it) &&
-                                      index === 0
-                                    ? (() => {
-                                        const divisorOptions = [5, 4, 3, 2];
-                                        let filteredSuggestions: SimplifiedItem[] =
-                                          [];
-                                        for (const divisor of divisorOptions) {
-                                          filteredSuggestions =
-                                            activeSuggestions[index].filter(
-                                              (it) =>
-                                                it.basePrice >=
-                                                threshold / divisor,
-                                            );
-                                          if (filteredSuggestions.length >= 3)
-                                            break;
-                                        }
-                                        return filteredSuggestions
-                                          .sort(
-                                            (a, b) =>
-                                              (getEffectivePrice(a) ?? 0) -
-                                              (getEffectivePrice(b) ?? 0),
-                                          )
-                                          .slice(0, 3);
-                                      })()
-                                    : activeSuggestions[index]
-                              }
-                              variant={
-                                effectiveAutoSelectSource === "stash"
-                                  ? "stash"
-                                  : "market"
-                              }
-                              stashCounts={
-                                effectiveAutoSelectSource === "stash"
-                                  ? stashCountsMap
-                                  : undefined
-                              }
-                              prevItem={
-                                index > 0 ? selectedItems[index - 1] : null
-                              }
-                              onPick={(it) => updateSelectedItem(it, index)}
-                            />
-                          ) : null}
-                        </React.Fragment>
-                      </div>
-                    ))
+                        <div
+                          key={`selector-${index}`}
+                          className={`animate-fade-in transition-all duration-200 ${
+                            loadingSlots[index] ? "opacity-50" : ""
+                          }`}
+                          style={{ animationDelay: `${index * 0.1}s` }}
+                        >
+                          <React.Fragment>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <DynamicItemSelector
+                                ref={(el: ItemSelectorHandle | null) => {
+                                  selectorRefs.current[index] = el;
+                                }}
+                                items={items}
+                                manualDiscoveryItems={manualDiscoveryItems}
+                                selectedItem={item}
+                                onSelect={(
+                                  sel: SimplifiedItem | null,
+                                  op: number | null | undefined,
+                                ) => updateSelectedItem(sel, index, op)}
+                                onCopy={() => handleCopyToClipboard(index)}
+                                onPin={() => handlePinItem(index)}
+                                isPinned={pinnedItems[index]}
+                                overriddenPrice={
+                                  item ? overriddenPrices[item.id] : undefined
+                                }
+                                isAutoPickActive={hasAutoSelected}
+                                overriddenPrices={overriddenPrices}
+                                isExcluded={
+                                  item ? excludedItems.has(item.name) : false
+                                }
+                                onToggleExclude={() =>
+                                  item && toggleExcludedItem(item.name)
+                                }
+                                excludedItems={excludedItems}
+                                fleaPriceType={fleaPriceType}
+                                priceMode={priceMode}
+                                traderLevels={traderLevels}
+                                remainingThreshold={remainingThreshold}
+                                itemBonusPercent={itemBonus}
+                                categoryFilter={selectorCategoryFilter}
+                                categoryFilterLabel={
+                                  selectorCategoryFilterLabel
+                                }
+                                traderFilter={selectorTraderFilter}
+                                stashCounts={
+                                  stashInventory ? stashCountsMap : undefined
+                                }
+                                stashSelectedCounts={
+                                  stashInventory
+                                    ? stashSelectedCountsMap
+                                    : undefined
+                                }
+                                hasAttachedSuggestions={shouldShowNextItemHints(
+                                  item,
+                                  index,
+                                )}
+                              />
+                            </Suspense>
+                            {shouldShowNextItemHints(item, index) ? (
+                              <NextItemHints
+                                items={
+                                  effectiveAutoSelectSource === "stash"
+                                    ? activeSuggestions[index]
+                                    : selectedItems.every((it) => !it) &&
+                                        index === 0
+                                      ? (() => {
+                                          const divisorOptions = [5, 4, 3, 2];
+                                          let filteredSuggestions: SimplifiedItem[] =
+                                            [];
+                                          for (const divisor of divisorOptions) {
+                                            filteredSuggestions =
+                                              activeSuggestions[index].filter(
+                                                (it) =>
+                                                  it.basePrice >=
+                                                  threshold / divisor,
+                                              );
+                                            if (filteredSuggestions.length >= 3)
+                                              break;
+                                          }
+                                          return filteredSuggestions
+                                            .sort(
+                                              (a, b) =>
+                                                (getEffectivePrice(a) ?? 0) -
+                                                (getEffectivePrice(b) ?? 0),
+                                            )
+                                            .slice(0, 3);
+                                        })()
+                                      : activeSuggestions[index]
+                                }
+                                variant={
+                                  effectiveAutoSelectSource === "stash"
+                                    ? "stash"
+                                    : "market"
+                                }
+                                stashCounts={
+                                  effectiveAutoSelectSource === "stash"
+                                    ? stashCountsMap
+                                    : undefined
+                                }
+                                prevItem={
+                                  index > 0 ? selectedItems[index - 1] : null
+                                }
+                                onPick={(it) => updateSelectedItem(it, index)}
+                              />
+                            ) : null}
+                          </React.Fragment>
+                        </div>
+                      ))
                   )}
                 </div>
 
@@ -2696,66 +2707,81 @@ function AppContent({ contributors = [] }: AppProps) {
                     {t("Reset")}
                   </Button>
                 </div>
-
-                <div className="pt-1">
-                  <StartRitualDialog
-                    mode={mode}
-                    selectedItems={selectedItems}
-                    inputPrices={trackerInputPrices}
-                    totalBaseValue={total}
-                    sacredBonus={itemBonus}
-                    inputPriceSource={trackerInputPriceSource}
-                  />
-                </div>
-
-                {/* Bottom Row: Alerts + Share */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                  {/* Left: Alert badges */}
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
-                    {Object.keys(overriddenPrices).length > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                        ⚠ {Object.keys(overriddenPrices).length} override
-                        {Object.keys(overriddenPrices).length !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                    {excludedItems.size > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                        ⚠ {excludedItems.size} exclusion
-                        {excludedItems.size !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                    <IncompatibleItemsNotice />
-                  </div>
-
-                  {/* Right: sharing */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <ShareButton
-                      selectedItems={selectedItems}
-                      mode={mode}
-                      total={Math.floor(total)}
-                      totalFlea={Math.floor(totalFleaCost || 0)}
-                      sacred={itemBonus > 0}
-                      onCodeLoaded={handleSharedCodeLoad}
-                    />
-                  </div>
-                </div>
-
-                {/* Summary Section */}
-                <SummarySection
-                  loading={loading}
-                  total={total}
-                  totalFleaCost={totalFleaCost || 0}
-                  threshold={threshold}
-                  isThresholdMet={isThresholdMet}
-                />
               </CardContent>
             </Card>
 
+            {/* Summary Card: sticky right column on desktop, summary listed first */}
+            {/* The wrapper fills both rows so the sticky card stops above the
+                footer (Chrome bounds sticky grid items by the grid, not the area). */}
+            <div className="-mt-3 min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:mt-0 lg:self-stretch">
+              <Card className="overflow-hidden rounded-t-none border-t-0 border-slate-700/40 bg-slate-800/60 shadow-xl backdrop-blur-md lg:sticky lg:top-[4.5rem] lg:rounded-t-lg lg:border-t">
+                <CardContent className="flex flex-col gap-4 p-4 pt-5 sm:p-6 sm:pt-5 lg:p-5">
+                  <div>
+                    <StartRitualDialog
+                      mode={mode}
+                      selectedItems={selectedItems}
+                      inputPrices={trackerInputPrices}
+                      totalBaseValue={total}
+                      sacredBonus={itemBonus}
+                      inputPriceSource={trackerInputPriceSource}
+                    />
+                  </div>
+
+                  {/* Bottom Row: Alerts + Share */}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    {/* Left: Alert badges */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      {Object.keys(overriddenPrices).length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                          ⚠ {Object.keys(overriddenPrices).length} override
+                          {Object.keys(overriddenPrices).length !== 1
+                            ? "s"
+                            : ""}
+                        </span>
+                      )}
+                      {excludedItems.size > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                          ⚠ {excludedItems.size} exclusion
+                          {excludedItems.size !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                      <IncompatibleItemsNotice />
+                    </div>
+
+                    {/* Right: sharing */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ShareButton
+                        selectedItems={selectedItems}
+                        mode={mode}
+                        total={Math.floor(total)}
+                        totalFlea={Math.floor(totalFleaCost || 0)}
+                        sacred={itemBonus > 0}
+                        onCodeLoaded={handleSharedCodeLoad}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Summary Section */}
+                  <div className="lg:order-first">
+                    <SummarySection
+                      loading={loading}
+                      total={total}
+                      totalFleaCost={totalFleaCost || 0}
+                      threshold={threshold}
+                      isThresholdMet={isThresholdMet}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Footer Section */}
-            <FooterSection
-              contributors={contributors}
-              onFeedbackClick={() => setIsFeedbackFormVisible(true)}
-            />
+            <div className="lg:col-span-2">
+              <FooterSection
+                contributors={contributors}
+                onFeedbackClick={() => setIsFeedbackFormVisible(true)}
+              />
+            </div>
           </div>
 
           {/* Right Ad Rail - Desktop Only */}

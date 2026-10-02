@@ -46,7 +46,7 @@ export function SummarySection({
                 <div className="grid grid-cols-2 gap-2">
                     {/* Base Value */}
                     <div className="bg-slate-800/50 rounded-lg px-4 py-3 text-center border border-slate-700/30">
-                        <div className="text-2xl sm:text-3xl font-bold text-emerald-400 tabular-nums">
+                        <div className="text-2xl font-bold sm:text-3xl lg:text-2xl text-emerald-400 tabular-nums">
                             ₽{Math.floor(total).toLocaleString()}
                         </div>
                         <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">
@@ -56,7 +56,7 @@ export function SummarySection({
 
                     {/* Buy Cost */}
                     <div className="bg-slate-800/50 rounded-lg px-4 py-3 text-center border border-slate-700/30">
-                        <div className="text-2xl sm:text-3xl font-bold text-cyan-400 tabular-nums">
+                        <div className="text-2xl font-bold sm:text-3xl lg:text-2xl text-cyan-400 tabular-nums">
                             ₽{Math.floor(totalFleaCost || 0).toLocaleString()}
                         </div>
                         <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">

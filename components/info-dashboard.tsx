@@ -68,7 +68,7 @@ export function InfoDashboard({
   const showRecipesExpand = moreCombos.length > 0;
 
   return (
-    <section className="w-full max-w-3xl mx-auto mb-4 z-10">
+    <section className="w-full max-w-3xl mx-auto mb-4 z-10 lg:max-w-none">
       <Tabs defaultValue={defaultTab} className="w-full">
         <div className="overflow-hidden rounded-lg border border-slate-700/50 bg-slate-950/45 shadow-xl shadow-black/20 backdrop-blur-md">
           <TabsList className="grid h-auto w-full grid-cols-2 rounded-none border-b border-slate-700/50 bg-slate-900/60 p-1">
