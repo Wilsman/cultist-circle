@@ -15,6 +15,8 @@ interface SacrificePlanProps {
   itemsById: Map<string, SimplifiedItem>;
   /** Items whose recognition was not confident enough to trust blindly. */
   needsReview: ReadonlySet<string>;
+  /** Items relying on suggestions accepted in bulk without checking. */
+  accepted?: ReadonlySet<string>;
   remainingReviewCount: number;
   hasItems: boolean;
   /** Best reachable total with the included items, for the failure message. */
@@ -35,6 +37,7 @@ export function SacrificePlan({
   slots,
   itemsById,
   needsReview,
+  accepted,
   remainingReviewCount,
   hasItems,
   bestReachable,
@@ -100,13 +103,25 @@ export function SacrificePlan({
 
   const overshoot = plan.totalBaseValue - threshold;
   const unverified = plan.picks.filter((pick) => needsReview.has(pick.key)).length;
+  const unchecked = plan.picks.filter(
+    (pick) => !needsReview.has(pick.key) && accepted?.has(pick.key),
+  ).length;
+  const provisional = unverified > 0 || unchecked > 0;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-amber-200">
+      <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-amber-200">
         {plan.itemCount === 1
           ? t("Sacrifice this item")
           : t("Sacrifice these {count} items", { count: plan.itemCount })}
+        {provisional && (
+          <span
+            title={t("This plan uses matches that have not been checked yet")}
+            className="rounded-full border border-orange-300/30 bg-orange-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-orange-200"
+          >
+            {t("Provisional")}
+          </span>
+        )}
       </div>
 
       <ul className="space-y-1.5">
@@ -123,12 +138,17 @@ export function SacrificePlan({
                 <div className="h-9 w-9 shrink-0 rounded bg-black/40" />
               )}
               <span className="min-w-0 flex-1 truncate text-sm text-slate-100">{item?.name ?? pick.key}</span>
-              {needsReview.has(pick.key) && (
+              {needsReview.has(pick.key) ? (
                 <AlertTriangle
                   className="h-3.5 w-3.5 shrink-0 text-yellow-300"
                   aria-label={t("Check this match")}
                 />
-              )}
+              ) : accepted?.has(pick.key) ? (
+                <AlertTriangle
+                  className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                  aria-label={t("Accepted without checking")}
+                />
+              ) : null}
               <span className="shrink-0 text-sm font-semibold tabular-nums text-amber-200">×{pick.count}</span>
             </li>
           );
@@ -138,7 +158,13 @@ export function SacrificePlan({
       {unverified > 0 && (
         <p className="flex gap-2 rounded-lg border border-orange-300/20 bg-orange-300/[0.05] px-2.5 py-2 text-xs leading-relaxed text-orange-100/90">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-300" />
-          {t("Review the marked items against your screenshot before loading this plan.")}
+          {t("Provisional: the marked items may be wrong matches. Correct them against your screenshot before loading this plan.")}
+        </p>
+      )}
+      {unverified === 0 && unchecked > 0 && (
+        <p className="flex gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-xs leading-relaxed text-slate-300">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+          {t("Provisional: the marked items use suggestions you accepted without checking. Click them on the screenshot to confirm.")}
         </p>
       )}
       {unverified === 0 && remainingReviewCount > 0 && (

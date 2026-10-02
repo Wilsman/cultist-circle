@@ -56,8 +56,12 @@ describe("route stash handoff", () => {
     fireEvent.click(screen.getByRole("button", { name: "Review {count} matches" }));
     expect(push).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem("stashInventory") ?? "null")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Mark all reviewed" }));
+    fireEvent.click(screen.getByRole("button", { name: "Accept remaining suggestions" }));
     expect(screen.getAllByRole("button", { name: "Save stash and load plan" })).toHaveLength(2);
+    // Accepting is not checking: the panel and plan say so.
+    expect(screen.queryByText("Every match has been confirmed.")).toBeNull();
+    expect(screen.getByText("{count} suggestions were accepted without checking.")).toBeTruthy();
+    expect(screen.getByText("Provisional")).toBeTruthy();
   });
   it("updates an existing stash and switches back from market to stash", () => {
     localStorage.setItem("stashInventory", JSON.stringify({ version: 1, gameMode: "pvp", scannedAt: 1, screenshots: 1, items: {} }));

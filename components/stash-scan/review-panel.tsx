@@ -31,14 +31,16 @@ interface ReviewPanelProps {
   remaining: number;
   /** Cells flagged when the review started. */
   total: number;
+  /** Cells whose suggestion was accepted in bulk instead of checked. */
+  accepted?: number;
   onStart: () => void;
   onAssign: (itemId: string | null, applyToSimilar?: boolean) => void;
   /** Advance without marking the cell reviewed. */
   onSkip: () => void;
   /** Leave guided review without finishing. */
   onExit?: () => void;
-  /** Mark every remaining cell reviewed without changing matches. */
-  onSkipAll?: () => void;
+  /** Accept every remaining suggestion as is, without checking it. */
+  onAcceptAll?: () => void;
   onClose: () => void;
   commitLabel: string;
   /** Small explainer under the commit button (save-all vs plan). */
@@ -65,11 +67,12 @@ export function ReviewPanel({
   reviewing,
   remaining,
   total,
+  accepted = 0,
   onStart,
   onAssign,
   onSkip,
   onExit,
-  onSkipAll,
+  onAcceptAll,
   onClose,
   commitLabel,
   commitHint,
@@ -110,6 +113,16 @@ export function ReviewPanel({
       </span>
     );
     subline = t("{count} items need mapping", { count: remaining });
+  } else if (remaining === 0 && accepted > 0) {
+    pill = (
+      <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-medium tabular-nums text-amber-300">
+        {t("{count} unchecked", { count: accepted })}
+      </span>
+    );
+    subline =
+      accepted === 1
+        ? t("1 suggestion was accepted without checking.")
+        : t("{count} suggestions were accepted without checking.", { count: accepted });
   } else if (remaining === 0) {
     pill = (
       <span className="flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
@@ -204,13 +217,14 @@ export function ReviewPanel({
                     {t("Exit review")}
                   </Button>
                 )}
-                {onSkipAll && remaining > 1 && (
+                {onAcceptAll && remaining > 1 && (
                   <Button
                     variant="ghost"
-                    onClick={onSkipAll}
+                    onClick={onAcceptAll}
+                    title={t("Keeps the suggested matches without checking them")}
                     className="flex-1 text-slate-400 hover:text-white"
                   >
-                    {t("Mark all reviewed")}
+                    {t("Accept remaining suggestions")}
                   </Button>
                 )}
               </div>
@@ -220,7 +234,9 @@ export function ReviewPanel({
       ) : remaining === 0 ? (
         <div className="space-y-2">
           <p className="text-xs text-slate-500">
-            {t("You can still click any cell on the screenshot to change it.")}
+            {accepted > 0
+              ? t("Click any cell on the screenshot to check or change an accepted match.")
+              : t("You can still click any cell on the screenshot to change it.")}
           </p>
           <Button
             onClick={onCommit}

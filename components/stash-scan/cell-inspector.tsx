@@ -37,6 +37,8 @@ interface CellInspectorProps {
 }
 
 const SEARCH_LIMIT = 30;
+/** Closest matches shown on phones before "Show more". */
+const MOBILE_CANDIDATE_LIMIT = 3;
 
 export function CellInspector({
   url,
@@ -58,6 +60,7 @@ export function CellInspector({
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [applyToSimilar, setApplyToSimilar] = useState(false);
+  const [showAllCandidates, setShowAllCandidates] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const searchResults = useMemo(() => {
@@ -182,11 +185,22 @@ export function CellInspector({
     }
   };
 
+  // Phones show only the closest few suggestions so the actions stay near
+  // the crop; searching or asking for more shows the rest.
+  const collapseCandidates =
+    !isSearching &&
+    !showAllCandidates &&
+    visibleCandidates.length > MOBILE_CANDIDATE_LIMIT;
+  const hiddenCandidateCount = collapseCandidates
+    ? visibleCandidates.length - MOBILE_CANDIDATE_LIMIT
+    : 0;
+
   const option = (
     item: SimplifiedItem | undefined,
     itemId: string,
     index: number,
     score?: number,
+    mobileHidden = false,
   ) => {
     const selected = assignedItemId === itemId;
     const isHighlighted = index === highlighted;
@@ -200,7 +214,7 @@ export function CellInspector({
         aria-selected={isHighlighted}
         onClick={() => onAssign(itemId, applyToSimilar)}
         onMouseEnter={() => setHighlighted(index)}
-        className={`flex w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left transition-colors ${
+        className={`${mobileHidden ? "hidden sm:flex" : "flex"} w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left transition-colors ${
           selected
             ? suggested
               ? "border-yellow-300/40 bg-yellow-300/[0.07]"
@@ -280,6 +294,102 @@ export function CellInspector({
         />
       </div>
 
+      {similarReviewCellCount > 0 && (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={applyToSimilar}
+          aria-label={t("Also apply this choice to {count} similar cells", {
+            count: similarReviewCellCount,
+          })}
+          onClick={() => setApplyToSimilar((current) => !current)}
+          className={`flex w-full items-start gap-2.5 rounded-lg border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${
+            applyToSimilar
+              ? "border-cyan-300/40 bg-cyan-300/[0.08]"
+              : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
+              applyToSimilar
+                ? "border-cyan-300 bg-cyan-300 text-slate-950"
+                : "border-slate-500 bg-black/30 text-transparent"
+            }`}
+          >
+            {applyToSimilar && <Check className="h-3 w-3" />}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-xs font-medium text-slate-200">
+              {t("Also apply this choice to {count} similar cells", {
+                count: similarReviewCellCount,
+              })}
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-500">
+              {t("Only cells with the same top scan match that still need review are included.")}
+            </span>
+          </span>
+        </button>
+      )}
+
+      {highlightedItemId && (
+        <Button
+          onClick={() => onAssign(highlightedItemId, applyToSimilar)}
+          className="w-full bg-cyan-400 font-semibold text-slate-950 hover:bg-cyan-300"
+        >
+          <Check className="mr-2 h-4 w-4 shrink-0" />
+          <span className="min-w-0 truncate">
+            {t("Confirm {item}", { item: highlightedItem?.name ?? highlightedItemId })}
+          </span>
+        </Button>
+      )}
+
+      {visibleCandidates.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            {isSearching ? t("Matching suggestions") : t("Closest matches")}
+          </div>
+          <div role="listbox" aria-label={t("Closest matches")}>
+            {visibleCandidates.map(({ match, item }, index) =>
+              option(
+                item,
+                match.itemId,
+                index,
+                match.score,
+                collapseCandidates && index >= MOBILE_CANDIDATE_LIMIT,
+              ),
+            )}
+          </div>
+          {hiddenCandidateCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAllCandidates(true)}
+              className="w-full rounded-lg py-1.5 text-xs text-slate-400 hover:text-slate-200 sm:hidden"
+            >
+              {t("Show {count} more matches", { count: hiddenCandidateCount })}
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        {(isSearching || additionalResults.length > 0) && (
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            {t("Search results")}
+          </div>
+        )}
+        <div role="listbox" aria-label={t("Search results")}>
+          {additionalResults.map((item, index) =>
+            option(item, item.id, visibleCandidates.length + index),
+          )}
+          {isSearching && visibleCandidates.length === 0 && additionalResults.length === 0 && (
+            <p className="rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-center text-xs text-slate-500">
+              {t("No items match “{query}”. Try a shorter name.", { query: query.trim() })}
+            </p>
+          )}
+        </div>
+      </div>
+
       {onSplit && splitChoices.length > 0 && (
         <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
           <div className="flex items-center gap-2 text-xs text-slate-300">
@@ -334,87 +444,6 @@ export function CellInspector({
         >
           <Undo2 className="mr-2 h-4 w-4" />
           {t("Undo the split, this is one item")}
-        </Button>
-      )}
-
-      {similarReviewCellCount > 0 && (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={applyToSimilar}
-          aria-label={t("Also apply this choice to {count} similar cells", {
-            count: similarReviewCellCount,
-          })}
-          onClick={() => setApplyToSimilar((current) => !current)}
-          className={`flex w-full items-start gap-2.5 rounded-lg border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${
-            applyToSimilar
-              ? "border-cyan-300/40 bg-cyan-300/[0.08]"
-              : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
-          }`}
-        >
-          <span
-            aria-hidden="true"
-            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
-              applyToSimilar
-                ? "border-cyan-300 bg-cyan-300 text-slate-950"
-                : "border-slate-500 bg-black/30 text-transparent"
-            }`}
-          >
-            {applyToSimilar && <Check className="h-3 w-3" />}
-          </span>
-          <span className="min-w-0">
-            <span className="block text-xs font-medium text-slate-200">
-              {t("Also apply this choice to {count} similar cells", {
-                count: similarReviewCellCount,
-              })}
-            </span>
-            <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-500">
-              {t("Only cells with the same top scan match that still need review are included.")}
-            </span>
-          </span>
-        </button>
-      )}
-
-      {visibleCandidates.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            {isSearching ? t("Matching suggestions") : t("Closest matches")}
-          </div>
-          <div role="listbox" aria-label={t("Closest matches")}>
-            {visibleCandidates.map(({ match, item }, index) =>
-              option(item, match.itemId, index, match.score),
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-1.5">
-        {(isSearching || additionalResults.length > 0) && (
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            {t("Search results")}
-          </div>
-        )}
-        <div role="listbox" aria-label={t("Search results")}>
-          {additionalResults.map((item, index) =>
-            option(item, item.id, visibleCandidates.length + index),
-          )}
-          {isSearching && visibleCandidates.length === 0 && additionalResults.length === 0 && (
-            <p className="rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-center text-xs text-slate-500">
-              {t("No items match “{query}”. Try a shorter name.", { query: query.trim() })}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {highlightedItemId && (
-        <Button
-          onClick={() => onAssign(highlightedItemId, applyToSimilar)}
-          className="w-full bg-cyan-400 font-semibold text-slate-950 hover:bg-cyan-300"
-        >
-          <Check className="mr-2 h-4 w-4 shrink-0" />
-          <span className="min-w-0 truncate">
-            {t("Confirm {item}", { item: highlightedItem?.name ?? highlightedItemId })}
-          </span>
         </Button>
       )}
 

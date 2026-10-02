@@ -8,6 +8,7 @@ import { toast as sonnerToast } from "sonner";
 import ItemSocket from "@/components/item-socket";
 import { ModeThreshold } from "@/components/mode-threshold";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { isItemNameExcluded } from "@/lib/excluded-item-names";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { useLanguage } from "@/contexts/language-context";
@@ -56,7 +57,7 @@ import {
   buildInventoryFromGroups,
   type StashInventory,
 } from "@/lib/stash-inventory";
-import type { StashScanStore } from "@/hooks/use-stash-scan-store";
+import { withKeys, withoutKeys, type StashScanStore } from "@/hooks/use-stash-scan-store";
 import { CellInspector } from "./cell-inspector";
 import { DetectedItems } from "./detected-items";
 import { ReviewPanel } from "./review-panel";
@@ -279,26 +280,40 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
   const [reviewTotal, setReviewTotal] = useState(0);
   // Cells the user has confirmed or corrected in the review flow.
   const [localReviewed, setLocalReviewed] = useState<ReadonlySet<CellKey>>(new Set());
+  // Reviewed cells whose suggestion was accepted in bulk, not checked.
+  const [localAccepted, setLocalAccepted] = useState<ReadonlySet<CellKey>>(new Set());
   const markReviewed = useCallback(
     (key: CellKey) => {
       if (store) store.markReviewed(key);
-      else setLocalReviewed((current) => new Set(current).add(key));
+      else {
+        setLocalReviewed((current) => withKeys(current, [key]));
+        setLocalAccepted((current) => withoutKeys(current, [key]));
+      }
     },
     [store],
   );
   const unmarkReviewed = useCallback(
     (keys: CellKey[]) => {
       if (store) store.unmarkReviewed(keys);
-      else
-        setLocalReviewed((current) => {
-          const next = new Set(current);
-          keys.forEach((key) => next.delete(key));
-          return next;
-        });
+      else {
+        setLocalReviewed((current) => withoutKeys(current, keys));
+        setLocalAccepted((current) => withoutKeys(current, keys));
+      }
+    },
+    [store],
+  );
+  const acceptSuggestions = useCallback(
+    (keys: CellKey[]) => {
+      if (store) store.acceptSuggestions(keys);
+      else {
+        setLocalReviewed((current) => withKeys(current, keys));
+        setLocalAccepted((current) => withKeys(current, keys));
+      }
     },
     [store],
   );
   const reviewed = store ? store.reviewed : localReviewed;
+  const accepted = store ? store.accepted : localAccepted;
   // Opening a cell always brings its inspector into view; during review the
   // review panel is the target instead.
   useEffect(() => {
@@ -559,6 +574,23 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
         .map((group) => group.itemId),
     );
   }, [groups, plannedAttentionCells]);
+  // Bulk-accepted cells no longer block saving, but the plan stays
+  // provisional while it relies on any of them.
+  const acceptedCount = useMemo(
+    () => cells.filter((cell) => !cell.empty && accepted.has(cell.key)).length,
+    [cells, accepted],
+  );
+  const planAccepted = useMemo(
+    () =>
+      new Set(
+        groups
+          .filter((group) =>
+            group.cells.some((key) => plannedCells.has(key) && accepted.has(key)),
+          )
+          .map((group) => group.itemId),
+      ),
+    [groups, plannedCells, accepted],
+  );
   const groupReviewCounts = useMemo(() => {
     const cellToGroup = new Map<CellKey, string>();
     for (const group of groups) for (const key of group.cells) cellToGroup.set(key, group.itemId);
@@ -761,44 +793,29 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
     }
   };
 
+  // Once results are on screen the intro steps aside so they start higher up
+  // on phones; larger screens keep it in full.
+  const compact = session !== null;
+
   return (
     <div className="min-h-screen bg-my_bg_image bg-cover bg-fixed bg-no-repeat px-3 pb-20 pt-4 text-white sm:px-4 sm:pt-6">
-      <div className="mx-auto w-full max-w-6xl space-y-6 rounded-xl border border-gray-800 bg-gray-900/80 px-4 py-8 shadow-2xl backdrop-blur-md sm:px-6 lg:py-10">
+      <div className={cn("mx-auto w-full max-w-6xl rounded-xl border border-gray-800 bg-gray-900/80 px-4 shadow-2xl backdrop-blur-md sm:space-y-6 sm:px-6 sm:py-8 lg:py-10", compact ? "space-y-4 py-5" : "space-y-6 py-8")}>
         <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            <h1 className={cn("font-semibold tracking-tight text-white sm:text-4xl", compact ? "text-2xl" : "text-3xl")}>
               {demo ? t("Stash Scan demo") : t("Stash Scan")}
             </h1>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400 sm:text-base">
+            <p className={cn("mt-3 max-w-xl text-sm leading-relaxed text-slate-400 sm:text-base", compact && "hidden sm:block")}>
               {demo
                 ? t("A real scan of a sample stash screenshot. 1 Change the threshold or slots, 2 click boxes to correct items, 3 untick items you want to keep.")
                 : t("1 Upload stash screenshots, 2 review the matches, 3 save. The cheapest set that reaches your threshold is picked for the circle.")}
             </p>
             {!demo && (
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+              <p className={cn("mt-2 text-xs leading-relaxed text-slate-500", compact && "hidden sm:block")}>
                 {t("Open a stash or container full-screen for the shot. Cropped or resized images often find no grid.")}
               </p>
             )}
-            <p className="mt-3 text-xs leading-relaxed text-slate-400">
-              Stash Scan contributed by{" "}
-              <a
-                className="inline-flex items-center gap-1.5 align-middle text-cyan-300 underline hover:text-cyan-200"
-                href="https://github.com/Oxylad"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- Use GitHub's CDN directly instead of Vercel image optimization. */}
-                <img
-                  src="https://avatars.githubusercontent.com/u/76744208?s=64&v=4"
-                  alt=""
-                  width={16}
-                  height={16}
-                  className="h-4 w-4 shrink-0 rounded-full border border-cyan-300/30 object-cover"
-                />
-                Oxylad
-              </a>.
-              {" "}Custom item matching inspired by <a className="text-cyan-300 underline hover:text-cyan-200" href="https://github.com/RatScanner/RatEye" target="_blank" rel="noopener noreferrer">RatScanner&apos;s RatEye</a>.
-            </p>
+            <StashScanCredits className={cn("mt-3", compact && "hidden sm:block")} />
           </div>
           {demo ? (
             <Button asChild className="bg-cyan-400 font-semibold text-slate-950 hover:bg-cyan-300">
@@ -863,20 +880,25 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
 
         <section
           aria-labelledby="stash-scan-trial-title"
-          className="flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.05] px-3 py-2.5 sm:px-4"
+          className={cn("flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.05] px-3 sm:px-4 sm:py-2.5", compact ? "py-2" : "py-2.5")}
         >
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" aria-hidden />
           <div className="min-w-0">
             <p id="stash-scan-trial-title" className="text-sm font-semibold text-amber-200">
               {t("Limited trial")}
             </p>
-            <p className="mt-0.5 text-xs leading-relaxed text-amber-100/75 sm:text-sm">
+            <p className={cn("mt-0.5 text-xs leading-relaxed text-amber-100/75 sm:text-sm", compact && "hidden sm:block")}>
               {t("We’re testing Stash Scan’s accuracy, reliability and server usage during this trial. Please double-check item matches before relying on the results.")}
             </p>
+            {compact && (
+              <p className="mt-0.5 text-xs leading-relaxed text-amber-100/75 sm:hidden">
+                {t("Double-check item matches before relying on the results.")}
+              </p>
+            )}
           </div>
         </section>
 
-        <section className="flex flex-col items-center gap-3 rounded-3xl border border-white/8 bg-black/20 p-3 sm:flex-row sm:flex-wrap sm:justify-center">
+        <section className="flex flex-wrap items-center justify-center gap-2 rounded-3xl border border-white/8 bg-black/20 p-3 sm:gap-3">
           <ModeThreshold
             mode={settings.gameMode}
             onModeChange={settings.setGameMode}
@@ -1000,6 +1022,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                     onSelectCell={setActiveCell}
                     emphasiseAttention={reviewing}
                     reviewedCells={reviewed}
+                    acceptedCells={accepted}
                     itemsById={itemsById}
                   />
                   {!reviewing && active && active.imageIndex === imageIndex && (
@@ -1058,9 +1081,11 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                     setActiveCell(null);
                     setReviewing(false);
                   }}
-                  onSkipAll={() => {
-                    // Mark every flagged cell reviewed without changing matches.
-                    attentionCells.forEach(markReviewed);
+                  accepted={acceptedCount}
+                  onAcceptAll={() => {
+                    // Accept every flagged suggestion as is; tracked apart
+                    // from cells the user checked one by one.
+                    acceptSuggestions(attentionCells);
                     setActiveCell(null);
                     setReviewing(false);
                   }}
@@ -1120,6 +1145,7 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
                   slots={slots}
                   itemsById={itemsById}
                   needsReview={planNeedsReview}
+                  accepted={planAccepted}
                   remainingReviewCount={attentionCells.length}
                   hasItems={owned.length > 0}
                   bestReachable={bestReachable}
@@ -1139,7 +1165,34 @@ export function StashScan({ demo = false, initialFiles, onCommitStash, hasSavedI
             </aside>
           </div>
         )}
+        {compact && <StashScanCredits className="sm:hidden" />}
       </div>
     </div>
+  );
+}
+
+/** Attribution for the scanner, shown in the intro or below the results. */
+function StashScanCredits({ className }: { className?: string }) {
+  return (
+    <p className={cn("text-xs leading-relaxed text-slate-400", className)}>
+      Stash Scan contributed by{" "}
+      <a
+        className="inline-flex items-center gap-1.5 align-middle text-cyan-300 underline hover:text-cyan-200"
+        href="https://github.com/Oxylad"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- Use GitHub's CDN directly instead of Vercel image optimization. */}
+        <img
+          src="https://avatars.githubusercontent.com/u/76744208?s=64&v=4"
+          alt=""
+          width={16}
+          height={16}
+          className="h-4 w-4 shrink-0 rounded-full border border-cyan-300/30 object-cover"
+        />
+        Oxylad
+      </a>.
+      {" "}Custom item matching inspired by <a className="text-cyan-300 underline hover:text-cyan-200" href="https://github.com/RatScanner/RatEye" target="_blank" rel="noopener noreferrer">RatScanner&apos;s RatEye</a>.
+    </p>
   );
 }

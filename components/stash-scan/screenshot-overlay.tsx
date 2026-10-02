@@ -30,6 +30,8 @@ interface ScreenshotOverlayProps {
   emphasiseAttention?: boolean;
   /** Confirmed/corrected cells; they render as normal recognised cells. */
   reviewedCells?: ReadonlySet<CellKey>;
+  /** Reviewed cells accepted in bulk; they keep the unchecked styling. */
+  acceptedCells?: ReadonlySet<CellKey>;
   /** Names items picked from search, which have no scan match. */
   itemsById?: Map<string, SimplifiedItem>;
 }
@@ -45,6 +47,7 @@ export function ScreenshotOverlay({
   onSelectCell,
   emphasiseAttention = false,
   reviewedCells,
+  acceptedCells,
   itemsById,
 }: ScreenshotOverlayProps) {
   const { t } = useLanguage();
@@ -126,6 +129,8 @@ export function ScreenshotOverlay({
             const unrecognised = !assigned;
             const flagged = needsAttention(key, cell);
             const reviewed = reviewedCells?.has(key) ?? false;
+            const accepted = reviewed && (acceptedCells?.has(key) ?? false);
+            const checked = reviewed && !accepted;
             // Ignored cells (reviewed + unassigned) fade to neutral.
             const ignored = reviewed && unrecognised;
             // Items picked from search have no scan match, so no score.
@@ -141,6 +146,7 @@ export function ScreenshotOverlay({
                     matchedName,
                     match && t("Match score {score}%", { score: Math.round(match.score * 100) }),
                     flagged && t("Check the match"),
+                    accepted && t("Accepted without checking"),
                     planned && t("Chosen for the circle"),
                   ]
                     .filter(Boolean)
@@ -154,7 +160,7 @@ export function ScreenshotOverlay({
                   ? "#f87171"
                   : planned
                     ? "#fbbf24"
-                    : reviewed || cell.confidence === "high"
+                    : checked || cell.confidence === "high"
                       ? "#34d399"
                       : "#fb923c";
             const fill = ignored
@@ -216,7 +222,7 @@ export function ScreenshotOverlay({
                   }
                   strokeWidth={width}
                   vectorEffect="non-scaling-stroke"
-                  strokeDasharray={!(emphasise && flagged) && !reviewed && !unrecognised && !planned && cell.confidence !== "high" ? "5 3" : undefined}
+                  strokeDasharray={!(emphasise && flagged) && !checked && !unrecognised && !planned && cell.confidence !== "high" ? "5 3" : undefined}
                   className={
                     unrecognised && !active && !reviewed
                       ? "animate-pulse"
