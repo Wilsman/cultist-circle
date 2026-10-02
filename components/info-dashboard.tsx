@@ -67,14 +67,21 @@ export function InfoDashboard({
   const recipesTotalCount = HOT_SACRIFICES.length;
   const showRecipesExpand = moreCombos.length > 0;
 
+  // Mobile stacks cards; desktop lays them out side by side (and drops the
+  // intro line) to keep the dashboard short above the calculator.
+  const updatesGrid =
+    "space-y-2 lg:grid lg:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] lg:gap-2 lg:space-y-0";
+  const recipesGrid =
+    "space-y-2 lg:grid lg:grid-cols-[repeat(auto-fit,minmax(440px,1fr))] lg:gap-2 lg:space-y-0";
+
   return (
-    <section className="w-full max-w-3xl mx-auto mb-4 z-10 lg:max-w-none">
+    <section className="w-full max-w-3xl mx-auto mb-4 z-10 lg:mb-0 lg:max-w-none">
       <Tabs defaultValue={defaultTab} className="w-full">
         <div className="overflow-hidden rounded-lg border border-slate-700/50 bg-slate-950/45 shadow-xl shadow-black/20 backdrop-blur-md">
-          <TabsList className="grid h-auto w-full grid-cols-2 rounded-none border-b border-slate-700/50 bg-slate-900/60 p-1">
+          <TabsList className="grid h-auto w-full grid-cols-2 rounded-none border-b border-slate-700/50 bg-slate-900/60 p-1 lg:mb-0 lg:flex lg:justify-start lg:gap-1">
             <TabsTrigger
               value="updates"
-              className="relative flex items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-semibold text-slate-400 transition-all duration-200 data-[state=active]:border-slate-600/60 data-[state=active]:bg-slate-800/80 data-[state=active]:text-slate-100 data-[state=active]:shadow-sm"
+              className="relative flex items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-semibold text-slate-400 transition-all duration-200 data-[state=active]:border-slate-600/60 data-[state=active]:bg-slate-800/80 data-[state=active]:text-slate-100 data-[state=active]:shadow-sm lg:px-4"
             >
               <Bell className="h-4 w-4" />
               {t("Updates & Alerts")}
@@ -86,7 +93,7 @@ export function InfoDashboard({
             </TabsTrigger>
             <TabsTrigger
               value="recipes"
-              className="flex items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-semibold text-slate-400 transition-all duration-200 data-[state=active]:border-slate-600/60 data-[state=active]:bg-slate-800/80 data-[state=active]:text-slate-100 data-[state=active]:shadow-sm"
+              className="flex items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-semibold text-slate-400 transition-all duration-200 data-[state=active]:border-slate-600/60 data-[state=active]:bg-slate-800/80 data-[state=active]:text-slate-100 data-[state=active]:shadow-sm lg:px-4"
             >
               <Flame className="h-4 w-4" />
               {t("Hot Sacrifices")}
@@ -100,7 +107,7 @@ export function InfoDashboard({
             value="updates"
             className="mt-0 space-y-2 p-3 focus-visible:ring-0 sm:p-4"
           >
-            <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="mb-2 flex items-center justify-between gap-3 lg:hidden">
               <p className="text-[11px] font-medium text-slate-400">
                 Current calculator notes and reward warnings.
               </p>
@@ -111,26 +118,28 @@ export function InfoDashboard({
               )}
             </div>
 
-            {primaryNotifications.map((notification) => (
-              <NotificationCard
-                key={notification.id}
-                notification={notification}
-                onClick={handleUpdatesToggle}
-              />
-            ))}
+            <div className={updatesGrid}>
+              {primaryNotifications.map((notification) => (
+                <NotificationCard
+                  key={notification.id}
+                  notification={notification}
+                  onClick={handleUpdatesToggle}
+                />
+              ))}
+            </div>
 
             {showUpdatesExpand && (
               <>
-                <div
-                  className={`space-y-2 ${updatesExpanded ? "block" : "hidden"}`}
-                >
-                  {remainingNotifications.map((notification) => (
-                    <NotificationCard
-                      key={notification.id}
-                      notification={notification}
-                      onClick={handleUpdatesToggle}
-                    />
-                  ))}
+                <div className={updatesExpanded ? undefined : "hidden"}>
+                  <div className={updatesGrid}>
+                    {remainingNotifications.map((notification) => (
+                      <NotificationCard
+                        key={notification.id}
+                        notification={notification}
+                        onClick={handleUpdatesToggle}
+                      />
+                    ))}
+                  </div>
                 </div>
                 <div className="flex justify-center pt-1">
                   <Button
@@ -159,7 +168,7 @@ export function InfoDashboard({
             value="recipes"
             className="mt-0 space-y-2 p-3 focus-visible:ring-0 sm:p-4"
           >
-            <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="mb-2 flex items-center justify-between gap-3 lg:hidden">
               <p className="text-[11px] font-medium text-slate-400">
                 Community-tested inputs for target reward thresholds.
               </p>
@@ -168,31 +177,33 @@ export function InfoDashboard({
               </span>
             </div>
 
-            {featuredCombo && (
-              <ComboRow
-                combo={featuredCombo}
-                onUseThis={onUseThis}
-                estimatedCost={sacrificeCosts[featuredCombo.id]}
-              />
-            )}
+            <div className={recipesGrid}>
+              {featuredCombo && (
+                <ComboRow
+                  combo={featuredCombo}
+                  onUseThis={onUseThis}
+                  estimatedCost={sacrificeCosts[featuredCombo.id]}
+                />
+              )}
 
-            {disabledCombos.map((combo) => (
-              <ComboRow key={combo.id} combo={combo} />
-            ))}
+              {disabledCombos.map((combo) => (
+                <ComboRow key={combo.id} combo={combo} />
+              ))}
+            </div>
 
             {showRecipesExpand && (
               <>
-                <div
-                  className={`space-y-2 ${recipesExpanded ? "block" : "hidden"}`}
-                >
-                  {moreCombos.map((combo) => (
-                    <ComboRow
-                      key={combo.id}
-                      combo={combo}
-                      onUseThis={onUseThis}
-                      estimatedCost={sacrificeCosts[combo.id]}
-                    />
-                  ))}
+                <div className={recipesExpanded ? "space-y-2" : "hidden"}>
+                  <div className={recipesGrid}>
+                    {moreCombos.map((combo) => (
+                      <ComboRow
+                        key={combo.id}
+                        combo={combo}
+                        onUseThis={onUseThis}
+                        estimatedCost={sacrificeCosts[combo.id]}
+                      />
+                    ))}
+                  </div>
                   <div className="pt-2 text-center">
                     <p className="text-[10px] text-slate-500">
                       {t(

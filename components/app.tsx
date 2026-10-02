@@ -2296,9 +2296,10 @@ function AppContent({ contributors = [] }: AppProps) {
             </div>
           </aside>
 
-          {/* Main Content: single column on mobile; on desktop the calculator
-              and info dashboard stack left beside a sticky summary column.
-              (The wrapper above drops overflow-auto at lg so sticky works.) */}
+          {/* Main Content: single column on mobile; on desktop a full-width
+              info dashboard sits above the calculator and a sticky summary
+              column. (The wrapper above drops overflow-auto at lg so sticky
+              works.) */}
           <div className="grid w-full min-w-0 max-w-3xl grid-cols-1 items-start gap-3 py-4 mx-auto lg:max-w-none lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-5 lg:gap-y-4 xl:grid-cols-[minmax(0,1fr)_400px]">
             {/* Header Section */}
             <div className="lg:col-span-2">
@@ -2306,7 +2307,7 @@ function AppContent({ contributors = [] }: AppProps) {
             </div>
 
             {/* Info Dashboard (Alerts, Notifications, Hot Sacrifices) */}
-            <div className="min-w-0 lg:col-start-1 lg:row-start-3">
+            <div className="min-w-0 lg:col-span-2 lg:row-start-2">
               <InfoDashboard
                 selectedItems={
                   selectedItems.filter(Boolean) as SimplifiedItem[]
@@ -2319,7 +2320,7 @@ function AppContent({ contributors = [] }: AppProps) {
 
             {/* Main Calculator Card. Below lg it joins the summary card under
                 it so mobile still reads as one panel. */}
-            <Card className="min-w-0 overflow-hidden rounded-b-none border-b-0 border-slate-700/40 bg-slate-800/60 backdrop-blur-md lg:col-start-1 lg:row-start-2 lg:rounded-b-lg lg:border-b lg:shadow-xl">
+            <Card className="min-w-0 overflow-hidden rounded-b-none border-b-0 border-slate-700/40 bg-slate-800/60 backdrop-blur-md lg:col-start-1 lg:row-start-3 lg:rounded-b-lg lg:border-b lg:shadow-xl">
               <CardContent className="space-y-4 p-4 pb-0 sm:p-6 sm:pb-0 lg:pb-6">
                 {/* Controls Section - Clean & Focused */}
                 <div className="space-y-2.5">
@@ -2711,9 +2712,10 @@ function AppContent({ contributors = [] }: AppProps) {
             </Card>
 
             {/* Summary Card: sticky right column on desktop, summary listed first */}
-            {/* The wrapper fills both rows so the sticky card stops above the
-                footer (Chrome bounds sticky grid items by the grid, not the area). */}
-            <div className="-mt-3 min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:mt-0 lg:self-stretch">
+            {/* The wrapper stretches to the row so the sticky card stops above
+                the footer (Chrome bounds sticky grid items by the grid, not
+                the area). */}
+            <div className="-mt-3 min-w-0 lg:col-start-2 lg:row-start-3 lg:mt-0 lg:self-stretch">
               <Card className="overflow-hidden rounded-t-none border-t-0 border-slate-700/40 bg-slate-800/60 shadow-xl backdrop-blur-md lg:sticky lg:top-[4.5rem] lg:rounded-t-lg lg:border-t">
                 <CardContent className="flex flex-col gap-4 p-4 pt-5 sm:p-6 sm:pt-5 lg:p-5">
                   <div>
