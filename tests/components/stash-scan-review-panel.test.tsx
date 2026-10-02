@@ -85,6 +85,22 @@ describe("ReviewPanel matching-cell mapping", () => {
     expect(onAssign).toHaveBeenCalledWith("medkit", true);
   });
 
+  it("toggles similar-cell application with Alt+A while typing a search", () => {
+    const onAssign = renderReview(4);
+    const search = screen.getByRole("combobox", { name: "Search all items" });
+    const toggle = screen.getByRole("checkbox", {
+      name: "Also apply this choice to 4 similar cells",
+    });
+
+    fireEvent.change(search, { target: { value: "med" } });
+    // macOS Option+A types "å", so the shortcut matches the physical key.
+    fireEvent.keyDown(search, { key: "å", code: "KeyA", altKey: true });
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.keyDown(search, { key: "Enter", code: "Enter" });
+    expect(onAssign).toHaveBeenCalledWith("medkit", true);
+  });
+
   it("keeps similar-cell application opt-in", () => {
     const onAssign = renderReview(0);
 
@@ -92,5 +108,46 @@ describe("ReviewPanel matching-cell mapping", () => {
     fireEvent.click(screen.getByRole("option", { name: /Medkit/ }));
 
     expect(onAssign).toHaveBeenCalledWith("medkit", false);
+  });
+});
+
+describe("ReviewPanel finished state", () => {
+  const renderDone = (accepted: number) =>
+    render(
+      <LanguageProvider>
+        <ReviewPanel
+          session={session}
+          cells={[cell]}
+          itemsById={new Map([[item.id, item]])}
+          items={[item]}
+          assignments={{ [cell.key]: item.id }}
+          similarReviewCellCount={0}
+          splitting={false}
+          activeCell={null}
+          reviewing={false}
+          remaining={0}
+          total={3}
+          accepted={accepted}
+          onStart={vi.fn()}
+          onAssign={vi.fn()}
+          onSkip={vi.fn()}
+          onClose={vi.fn()}
+          commitLabel="Use this stash"
+          onCommit={vi.fn()}
+          canCommit
+        />
+      </LanguageProvider>,
+    );
+
+  it("does not claim bulk-accepted suggestions were confirmed", () => {
+    renderDone(2);
+    expect(screen.queryByText("Every match has been confirmed.")).not.toBeInTheDocument();
+    expect(screen.getByText("2 suggestions were accepted without checking.")).toBeInTheDocument();
+    expect(screen.getByText("2 unchecked")).toBeInTheDocument();
+  });
+
+  it("confirms matches the user checked one by one", () => {
+    renderDone(0);
+    expect(screen.getByText("Every match has been confirmed.")).toBeInTheDocument();
   });
 });

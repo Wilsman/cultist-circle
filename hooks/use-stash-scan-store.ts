@@ -38,6 +38,9 @@ export interface StashScanStore {
   reviewed: ReadonlySet<CellKey>;
   markReviewed: (key: CellKey) => void;
   unmarkReviewed: (keys: CellKey[]) => void;
+  /** Reviewed cells whose suggestion was accepted in bulk, not checked. */
+  accepted: ReadonlySet<CellKey>;
+  acceptSuggestions: (keys: CellKey[]) => void;
   /** Cells split into their separate slots, re-matched by the server. */
   splits: Record<CellKey, ScanCell[]>;
   setSplits: Dispatch<SetStateAction<Record<CellKey, ScanCell[]>>>;
@@ -45,6 +48,20 @@ export interface StashScanStore {
   trackUrl: (url: string) => void;
   /** Clears the session and revokes tracked URLs. */
   reset: () => void;
+}
+
+export function withKeys<T>(set: ReadonlySet<T>, keys: T[]): ReadonlySet<T> {
+  if (!keys.length) return set;
+  const next = new Set(set);
+  keys.forEach((key) => next.add(key));
+  return next;
+}
+
+export function withoutKeys<T>(set: ReadonlySet<T>, keys: T[]): ReadonlySet<T> {
+  if (!keys.some((key) => set.has(key))) return set;
+  const next = new Set(set);
+  keys.forEach((key) => next.delete(key));
+  return next;
 }
 
 /**
@@ -57,15 +74,18 @@ export function useStashScanStore(): StashScanStore {
   const [assignments, setAssignments] = useState<CellAssignments>({});
   const [inclusion, setInclusion] = useState<Record<string, boolean>>({});
   const [reviewed, setReviewed] = useState<ReadonlySet<CellKey>>(new Set());
+  const [accepted, setAccepted] = useState<ReadonlySet<CellKey>>(new Set());
   const markReviewed = useCallback((key: CellKey) => {
     setReviewed((current) => new Set(current).add(key));
+    setAccepted((current) => withoutKeys(current, [key]));
   }, []);
   const unmarkReviewed = useCallback((keys: CellKey[]) => {
-    setReviewed((current) => {
-      const next = new Set(current);
-      keys.forEach((key) => next.delete(key));
-      return next;
-    });
+    setReviewed((current) => withoutKeys(current, keys));
+    setAccepted((current) => withoutKeys(current, keys));
+  }, []);
+  const acceptSuggestions = useCallback((keys: CellKey[]) => {
+    setReviewed((current) => withKeys(current, keys));
+    setAccepted((current) => withKeys(current, keys));
   }, []);
   const [splits, setSplits] = useState<Record<CellKey, ScanCell[]>>({});
 
@@ -86,6 +106,7 @@ export function useStashScanStore(): StashScanStore {
     setAssignments({});
     setInclusion({});
     setReviewed(new Set());
+    setAccepted(new Set());
     setSplits({});
   }, []);
 
@@ -101,6 +122,8 @@ export function useStashScanStore(): StashScanStore {
     reviewed,
     markReviewed,
     unmarkReviewed,
+    accepted,
+    acceptSuggestions,
     splits,
     setSplits,
     trackUrl,

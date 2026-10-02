@@ -26,6 +26,8 @@ interface DetectedItemsProps {
   /** Flagged cells per item, so Check can show how many need a look. */
   reviewCounts?: ReadonlyMap<string, number>;
   onToggle: (itemId: string, included: boolean) => void;
+  /** Ticks or unticks several items at once. */
+  onToggleMany?: (itemIds: string[], included: boolean) => void;
   onHover: (itemId: string | null) => void;
   onReview: (itemId: string) => void;
   onShowUnrecognised: () => void;
@@ -39,6 +41,7 @@ export function DetectedItems({
   pricing,
   reviewCounts,
   onToggle,
+  onToggleMany,
   onHover,
   onReview,
   onShowUnrecognised,
@@ -51,26 +54,50 @@ export function DetectedItems({
   const visibleGroups = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const filtered = groups.filter((group) => {
-      if (filter === "planned" && !plannedCounts.get(group.itemId)) return false;
+      if (filter === "planned" && !plannedCounts.get(group.itemId))
+        return false;
       if (filter === "review" && !group.needsReview) return false;
       if (!needle) return true;
-      return [group.item?.name, group.item?.shortName, group.itemId]
-        .some((name) => name?.toLowerCase().includes(needle));
+      return [group.item?.name, group.item?.shortName, group.itemId].some(
+        (name) => name?.toLowerCase().includes(needle),
+      );
     });
     const sorted = [...filtered];
     if (sort === "count") {
-      sorted.sort((a, b) => b.cells.length - a.cells.length || (b.item?.basePrice ?? 0) - (a.item?.basePrice ?? 0));
+      sorted.sort(
+        (a, b) =>
+          b.cells.length - a.cells.length ||
+          (b.item?.basePrice ?? 0) - (a.item?.basePrice ?? 0),
+      );
     } else if (sort === "name") {
-      sorted.sort((a, b) => (a.item?.name ?? a.itemId).localeCompare(b.item?.name ?? b.itemId));
+      sorted.sort((a, b) =>
+        (a.item?.name ?? a.itemId).localeCompare(b.item?.name ?? b.itemId),
+      );
     }
     return sorted;
   }, [groups, plannedCounts, query, filter, sort]);
 
-  const filters: Array<{ value: ItemFilter; label: string }> = [
-    { value: "all", label: t("All") },
-    { value: "planned", label: t("In plan") },
-    { value: "review", label: t("Needs review") },
+  const filters: Array<{ value: ItemFilter; label: string; count: number }> = [
+    { value: "all", label: t("All"), count: groups.length },
+    {
+      value: "planned",
+      label: t("In plan"),
+      count: groups.filter((group) => plannedCounts.get(group.itemId)).length,
+    },
+    {
+      value: "review",
+      label: t("Needs review"),
+      count: groups.filter((group) => group.needsReview).length,
+    },
   ];
+  const includedCount = groups.filter(
+    (group) => !excluded.has(group.itemId),
+  ).length;
+  // Bulk ticks apply to the rows on screen; unknown items can't be ticked.
+  const toggleable = visibleGroups
+    .filter((group) => group.item)
+    .map((group) => group.itemId);
+  const allVisibleIncluded = toggleable.every((id) => !excluded.has(id));
 
   const sorts: Array<{ value: ItemSort; label: string }> = [
     { value: "value", label: t("Value") },
@@ -102,7 +129,10 @@ export function DetectedItems({
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
+          <Search
+            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            aria-hidden
+          />
           <Input
             type="search"
             value={query}
@@ -113,8 +143,12 @@ export function DetectedItems({
           />
         </div>
         <div className="flex flex-wrap items-center gap-1">
-          <div role="group" aria-label={t("Filter detected items")} className="flex flex-wrap gap-1">
-            {filters.map(({ value, label }) => (
+          <div
+            role="group"
+            aria-label={t("Filter detected items")}
+            className="flex flex-wrap gap-1"
+          >
+            {filters.map(({ value, label, count }) => (
               <button
                 key={value}
                 type="button"
@@ -126,11 +160,20 @@ export function DetectedItems({
                     : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:text-slate-200"
                 }`}
               >
-                {label}
+                {label}{" "}
+                <span className="tabular-nums opacity-70">{count}</span>
               </button>
             ))}
           </div>
-          <div role="group" aria-label={t("Sort detected items")} className="flex flex-wrap gap-1">
+          <span aria-hidden className="mx-1 h-4 w-px bg-white/10" />
+          <div
+            role="group"
+            aria-label={t("Sort detected items")}
+            className="flex flex-wrap items-center gap-1"
+          >
+            <span className="mr-0.5 text-[11px] text-slate-500">
+              {t("Sort")}
+            </span>
             {sorts.map(({ value, label }) => (
               <button
                 key={value}
@@ -151,21 +194,41 @@ export function DetectedItems({
         </div>
       </div>
 
-      {(query.trim() || filter !== "all") && (
-        <p role="status" className="text-xs text-slate-500">
-          {t("Showing {shown} of {total} item types", {
-            shown: visibleGroups.length,
-            total: groups.length,
-          })}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+        <p role="status">
+          {query.trim() || filter !== "all"
+            ? t("Showing {shown} of {total} item types", {
+                shown: visibleGroups.length,
+                total: groups.length,
+              })
+            : t("{included} of {total} item types ticked", {
+                included: includedCount,
+                total: groups.length,
+              })}
         </p>
-      )}
+        {onToggleMany && toggleable.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onToggleMany(toggleable, !allVisibleIncluded)}
+            className="rounded px-1.5 py-0.5 text-slate-400 underline decoration-white/20 underline-offset-2 hover:text-slate-200"
+          >
+            {allVisibleIncluded
+              ? query.trim() || filter !== "all"
+                ? t("Untick shown")
+                : t("Untick all")
+              : query.trim() || filter !== "all"
+                ? t("Tick shown")
+                : t("Tick all")}
+          </button>
+        )}
+      </div>
 
       {visibleGroups.length === 0 ? (
         <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-5 text-center text-sm text-slate-400">
           {t("No items match these filters.")}
         </div>
       ) : (
-        <ul className="divide-y divide-white/5 overflow-hidden rounded-xl border border-white/10 bg-black/20">
+        <ul className="max-h-[60vh] divide-y divide-white/5 overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-black/20">
           {visibleGroups.map((group) => {
             const { item } = group;
             const sellValue = item ? valueGivenUp(item, pricing) : null;
@@ -181,11 +244,19 @@ export function DetectedItems({
                 <Checkbox
                   checked={included}
                   disabled={!item}
-                  onCheckedChange={(checked) => onToggle(group.itemId, checked === true)}
-                  aria-label={t("Include this item in the sacrifice")}
+                  onCheckedChange={(checked) =>
+                    onToggle(group.itemId, checked === true)
+                  }
+                  aria-label={t("Include {item} in the sacrifice", {
+                    item: item?.name ?? t("Unknown item"),
+                  })}
                 />
                 {item?.iconLink ? (
-                  <img src={item.iconLink} alt="" className="h-9 w-9 shrink-0 rounded bg-black/40 object-contain" />
+                  <img
+                    src={item.iconLink}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded bg-black/40 object-contain"
+                  />
                 ) : (
                   <div className="h-9 w-9 shrink-0 rounded bg-black/40" />
                 )}
@@ -213,12 +284,16 @@ export function DetectedItems({
                   <button
                     type="button"
                     onClick={() => onReview(group.itemId)}
-                    title={t("Open the first cell that needs review for this item")}
+                    title={t(
+                      "Open the first cell that needs review for this item",
+                    )}
                     className="inline-flex shrink-0 items-center gap-1 rounded-md border border-orange-300/25 bg-orange-300/[0.06] px-2 py-1 text-[11px] text-orange-200 hover:bg-orange-300/10"
                   >
                     <AlertTriangle className="h-3 w-3" />
                     {(reviewCounts?.get(group.itemId) ?? 0) > 1
-                      ? t("Check {count}", { count: reviewCounts?.get(group.itemId) ?? 0 })
+                      ? t("Check {count}", {
+                          count: reviewCounts?.get(group.itemId) ?? 0,
+                        })
                       : t("Check")}
                   </button>
                 )}
