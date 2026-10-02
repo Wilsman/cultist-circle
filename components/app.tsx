@@ -2321,11 +2321,11 @@ function AppContent({ contributors = [] }: AppProps) {
             {/* Main Calculator Card. Below lg it joins the summary card under
                 it so mobile still reads as one panel. */}
             <Card className="min-w-0 overflow-hidden rounded-b-none border-b-0 border-slate-700/40 bg-slate-800/60 backdrop-blur-md lg:col-start-1 lg:row-start-3 lg:rounded-b-lg lg:border-b lg:shadow-xl">
-              <CardContent className="space-y-4 p-4 pb-0 sm:p-6 sm:pb-0 lg:pb-6">
+              <CardContent className="space-y-4 p-4 pb-0 sm:p-6 sm:pb-0 lg:p-5">
                 {/* Controls Section - Clean & Focused */}
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {/* Primary Controls Row */}
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:justify-between">
                     <ModeThreshold
                       mode={mode}
                       onModeChange={handleModeChange}
@@ -2708,71 +2708,68 @@ function AppContent({ contributors = [] }: AppProps) {
                     {t("Reset")}
                   </Button>
                 </div>
+
+                <div className="pt-1">
+                  <StartRitualDialog
+                    mode={mode}
+                    selectedItems={selectedItems}
+                    inputPrices={trackerInputPrices}
+                    totalBaseValue={total}
+                    sacredBonus={itemBonus}
+                    inputPriceSource={trackerInputPriceSource}
+                  />
+                </div>
+
+                {/* Bottom Row: Alerts + Share */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  {/* Left: Alert badges */}
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    {Object.keys(overriddenPrices).length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                        ⚠ {Object.keys(overriddenPrices).length} override
+                        {Object.keys(overriddenPrices).length !== 1
+                          ? "s"
+                          : ""}
+                      </span>
+                    )}
+                    {excludedItems.size > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                        ⚠ {excludedItems.size} exclusion
+                        {excludedItems.size !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    <IncompatibleItemsNotice />
+                  </div>
+
+                  {/* Right: sharing */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ShareButton
+                      selectedItems={selectedItems}
+                      mode={mode}
+                      total={Math.floor(total)}
+                      totalFlea={Math.floor(totalFleaCost || 0)}
+                      sacred={itemBonus > 0}
+                      onCodeLoaded={handleSharedCodeLoad}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Summary Card: sticky right column on desktop, summary listed first */}
+            {/* Summary Card: sticky right column on desktop */}
             {/* The wrapper stretches to the row so the sticky card stops above
                 the footer (Chrome bounds sticky grid items by the grid, not
                 the area). */}
             <div className="-mt-3 min-w-0 lg:col-start-2 lg:row-start-3 lg:mt-0 lg:self-stretch">
               <Card className="overflow-hidden rounded-t-none border-t-0 border-slate-700/40 bg-slate-800/60 shadow-xl backdrop-blur-md lg:sticky lg:top-[4.5rem] lg:rounded-t-lg lg:border-t">
-                <CardContent className="flex flex-col gap-4 p-4 pt-5 sm:p-6 sm:pt-5 lg:p-5">
-                  <div>
-                    <StartRitualDialog
-                      mode={mode}
-                      selectedItems={selectedItems}
-                      inputPrices={trackerInputPrices}
-                      totalBaseValue={total}
-                      sacredBonus={itemBonus}
-                      inputPriceSource={trackerInputPriceSource}
-                    />
-                  </div>
-
-                  {/* Bottom Row: Alerts + Share */}
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    {/* Left: Alert badges */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      {Object.keys(overriddenPrices).length > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                          ⚠ {Object.keys(overriddenPrices).length} override
-                          {Object.keys(overriddenPrices).length !== 1
-                            ? "s"
-                            : ""}
-                        </span>
-                      )}
-                      {excludedItems.size > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                          ⚠ {excludedItems.size} exclusion
-                          {excludedItems.size !== 1 ? "s" : ""}
-                        </span>
-                      )}
-                      <IncompatibleItemsNotice />
-                    </div>
-
-                    {/* Right: sharing */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <ShareButton
-                        selectedItems={selectedItems}
-                        mode={mode}
-                        total={Math.floor(total)}
-                        totalFlea={Math.floor(totalFleaCost || 0)}
-                        sacred={itemBonus > 0}
-                        onCodeLoaded={handleSharedCodeLoad}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Summary Section */}
-                  <div className="lg:order-first">
-                    <SummarySection
-                      loading={loading}
-                      total={total}
-                      totalFleaCost={totalFleaCost || 0}
-                      threshold={threshold}
-                      isThresholdMet={isThresholdMet}
-                    />
-                  </div>
+                <CardContent className="p-4 pt-5 sm:p-6 sm:pt-5 lg:p-5">
+                  <SummarySection
+                    loading={loading}
+                    total={total}
+                    totalFleaCost={totalFleaCost || 0}
+                    threshold={threshold}
+                    isThresholdMet={isThresholdMet}
+                  />
                 </CardContent>
               </Card>
             </div>

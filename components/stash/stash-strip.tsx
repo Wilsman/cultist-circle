@@ -116,7 +116,7 @@ export function StashStrip({
       <div
         {...dropProps}
         className={cn(
-          "flex min-h-12 items-center justify-between gap-3 rounded-2xl border border-dashed border-white/15 bg-black/20 px-4 py-2 transition-colors hover:border-white/25",
+          "flex min-h-11 items-center justify-between gap-3 rounded-xl border border-dashed border-white/15 bg-black/20 px-4 py-2 transition-colors hover:border-white/25",
           dragOver && "border-cyan-300/50 bg-cyan-300/[0.06]",
         )}
       >
@@ -158,15 +158,16 @@ export function StashStrip({
     <div
       {...dropProps}
       className={cn(
-        "rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04]",
+        "rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04]",
         dragOver && "border-cyan-300/50 bg-cyan-300/[0.08]",
       )}
     >
-      <div className="flex items-center gap-2 px-3 py-2">
+      <div className="flex min-h-11 items-center gap-2 py-1.5 pl-3 pr-1.5">
         <Package className="h-4 w-4 shrink-0 text-cyan-300" aria-hidden />
+        {/* One line from sm up; the scan age drops to its own line below. */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-200">
+          <div className="flex items-baseline gap-2">
+            <span className="shrink-0 text-sm font-semibold text-slate-200">
               {t("My stash")}
             </span>
             <span className="truncate text-[11px] text-slate-500">
@@ -175,9 +176,13 @@ export function StashStrip({
                 screenshots: inventory.screenshots,
                 mode: GAME_MODE_LABELS[inventory.gameMode || gameMode],
               })}
+              <span className="hidden sm:inline">
+                {" · "}
+                {relativeScanAge(inventory.scannedAt, t)}
+              </span>
             </span>
           </div>
-          <p className="text-[10px] text-slate-600">
+          <p className="text-[10px] text-slate-600 sm:hidden">
             {relativeScanAge(inventory.scannedAt, t)}
           </p>
         </div>
@@ -216,12 +221,12 @@ export function StashStrip({
           />
         </button>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={() => goScan()}
           aria-label={t("Manage stash")}
           title={t("Manage stash")}
-          className="shrink-0 border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+          className="h-8 shrink-0 px-2 text-slate-300 hover:bg-white/5 hover:text-white"
         >
           <SlidersHorizontal className="h-3.5 w-3.5 sm:mr-1.5" aria-hidden />
           <span className="hidden sm:inline">{t("Manage")}</span>
