@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
@@ -69,6 +69,24 @@ export function ScreenshotOverlay({
   ).length;
   const emphasise = emphasiseAttention && attentionCount > 0;
   const [zoom, setZoom] = useState(1);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const activeData = activeCell
+    ? allCells.find((cell) => cell.key === activeCell)
+    : undefined;
+
+  // When zoomed in, keep the cell being reviewed in view.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller || zoom <= 1 || !activeData) return;
+    const scale = scroller.scrollWidth / result.width;
+    const centreX = (activeData.x + activeData.width / 2) * scale;
+    const centreY = (activeData.y + activeData.height / 2) * scale;
+    scroller.scrollTo({
+      left: centreX - scroller.clientWidth / 2,
+      top: centreY - scroller.clientHeight / 2,
+      behavior: "smooth",
+    });
+  }, [activeData, zoom, result.width]);
 
   // Draw the boxes that need attention last, so neighbours never cover them.
   const layer = (key: CellKey) =>
@@ -78,15 +96,7 @@ export function ScreenshotOverlay({
   return (
     <figure className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          {emphasise && (
-            <figcaption className="text-xs text-orange-200/90">
-              {t("{count} cells need a look — click one to fix it", {
-                count: attentionCount,
-              })}
-            </figcaption>
-          )}
-        </div>
+        <div className="min-w-0 flex-1" />
         <div className="flex shrink-0 items-center gap-1">
           <Button
             variant="ghost"
@@ -113,7 +123,10 @@ export function ScreenshotOverlay({
           </Button>
         </div>
       </div>
-      <div className={`rounded-xl border border-white/10 bg-black/40 ${zoom > 1 ? "overflow-auto" : "overflow-hidden"}`}>
+      <div
+        ref={scrollerRef}
+        className={`rounded-xl border border-white/10 bg-black/40 ${zoom > 1 ? "max-h-[75vh] overflow-auto" : "overflow-hidden"}`}
+      >
         <div className="relative" style={zoom > 1 ? { width: `${zoom * 100}%`, minWidth: "100%" } : undefined}>
           <img src={url} alt={t("Scanned screenshot")} className="block h-auto w-full" />
           <svg
@@ -232,6 +245,24 @@ export function ScreenshotOverlay({
               </g>
             );
           })}
+          {activeData && !activeData.empty && (
+            // A pulsing ring makes the cell under review easy to spot.
+            <rect
+              aria-hidden
+              x={activeData.x - 3}
+              y={activeData.y - 3}
+              width={activeData.width + 6}
+              height={activeData.height + 6}
+              rx={4}
+              fill="none"
+              stroke="#22d3ee"
+              strokeWidth={3}
+              vectorEffect="non-scaling-stroke"
+              pointerEvents="none"
+              className="animate-pulse"
+              style={{ filter: "drop-shadow(0 0 6px rgba(34, 211, 238, 0.9))" }}
+            />
+          )}
           </svg>
         </div>
       </div>
@@ -276,15 +307,16 @@ interface CellPreviewProps {
   imageHeight: number;
   cell: { x: number; y: number; width: number; height: number };
   size: number;
+  className?: string;
 }
 
 /** The cell's region of the screenshot, scaled to `size` px wide. */
-export function CellPreview({ url, imageWidth, imageHeight, cell, size }: CellPreviewProps) {
+export function CellPreview({ url, imageWidth, imageHeight, cell, size, className }: CellPreviewProps) {
   const scale = size / cell.width;
   return (
     <div
       aria-hidden
-      className="shrink-0 rounded-md border border-white/10"
+      className={`shrink-0 rounded-md border border-white/10 ${className ?? ""}`}
       style={{
         width: size,
         height: cell.height * scale,

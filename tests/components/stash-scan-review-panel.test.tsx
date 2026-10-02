@@ -85,6 +85,22 @@ describe("ReviewPanel matching-cell mapping", () => {
     expect(onAssign).toHaveBeenCalledWith("medkit", true);
   });
 
+  it("toggles similar-cell application with Alt+A while typing a search", () => {
+    const onAssign = renderReview(4);
+    const search = screen.getByRole("combobox", { name: "Search all items" });
+    const toggle = screen.getByRole("checkbox", {
+      name: "Also apply this choice to 4 similar cells",
+    });
+
+    fireEvent.change(search, { target: { value: "med" } });
+    // macOS Option+A types "å", so the shortcut matches the physical key.
+    fireEvent.keyDown(search, { key: "å", code: "KeyA", altKey: true });
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.keyDown(search, { key: "Enter", code: "Enter" });
+    expect(onAssign).toHaveBeenCalledWith("medkit", true);
+  });
+
   it("keeps similar-cell application opt-in", () => {
     const onAssign = renderReview(0);
 
