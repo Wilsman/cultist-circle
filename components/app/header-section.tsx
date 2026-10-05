@@ -50,10 +50,10 @@ export function HeaderSection() {
     <div className="text-center space-y-3">
       <h1 className="flex items-center justify-center">
         <img
-          src="https://assets.cultistcircle.com/Cultist-Calulator.webp"
+          src="/images/cultist-calculator-title.webp"
           alt={t("Cultist Circle Calculator")}
-          width={640}
-          height={204}
+          width={548}
+          height={176}
           className="w-auto h-32 sm:h-40"
           fetchPriority="low"
           loading="lazy"
