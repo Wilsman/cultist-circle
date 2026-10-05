@@ -186,7 +186,7 @@
   "{name}: ({x}, {y}) {w}w x {h}h": "{name}: ({x}, {y}) {w}w x {h}h",
   "needed": "必要",
   "or": "または",
-  "panel at the top of the page for known, community-tested combos.": "ページ上部のパネルで、コミュニティ検証済みの組み合わせを確認できます。",
+  "list for known, community-tested combos.": "リストで、コミュニティ検証済みの組み合わせを確認できます。",
   "to focus": "フォーカスする",
 
   // UI Components - price-range-filter, category-filter, virtualized-table

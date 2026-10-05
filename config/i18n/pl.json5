@@ -186,7 +186,7 @@
   "{name}: ({x}, {y}) {w}w x {h}h": "{name}: ({x}, {y}) {w}w x {h}h",
   "needed": "potrzebne",
   "or": "lub",
-  "panel at the top of the page for known, community-tested combos.": "panel na górze strony z kombinacjami sprawdzonymi przez społeczność.",
+  "list for known, community-tested combos.": "listę z kombinacjami sprawdzonymi przez społeczność.",
   "to focus": "aby skupić",
 
   // UI Components - price-range-filter, category-filter, virtualized-table

@@ -186,7 +186,7 @@
   "{name}: ({x}, {y}) {w}w x {h}h": "{name}: ({x}, {y}) {w}w x {h}h",
   "needed": "necesar",
   "or": "sau",
-  "panel at the top of the page for known, community-tested combos.": "panou in partea de sus cu combinatii testate de comunitate.",
+  "list for known, community-tested combos.": "lista cu combinatii testate de comunitate.",
   "to focus": "pentru focus",
 
   // UI Components - price-range-filter, category-filter, virtualized-table

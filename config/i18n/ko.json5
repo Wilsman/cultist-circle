@@ -186,7 +186,7 @@
   "{name}: ({x}, {y}) {w}w x {h}h": "{name}: ({x}, {y}) {w}w x {h}h",
   "needed": "필요",
   "or": "또는",
-  "panel at the top of the page for known, community-tested combos.": "페이지 상단 패널에서 커뮤니티 검증 조합을 확인할 수 있습니다.",
+  "list for known, community-tested combos.": "목록에서 커뮤니티 검증 조합을 확인할 수 있습니다.",
   "to focus": "포커스",
 
   // UI Components - price-range-filter, category-filter, virtualized-table

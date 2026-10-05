@@ -186,7 +186,7 @@
   "{name}: ({x}, {y}) {w}w x {h}h": "{name}: ({x}, {y}) {w}w x {h}h",
   "needed": "gerekli",
   "or": "veya",
-  "panel at the top of the page for known, community-tested combos.": "Sayfanin ustundeki panelde topluluk tarafindan test edilen kombinasyonlar bulunur.",
+  "list for known, community-tested combos.": "Listede topluluk tarafindan test edilen kombinasyonlar bulunur.",
   "to focus": "odaklamak icin",
 
   // UI Components - price-range-filter, category-filter, virtualized-table

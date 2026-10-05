@@ -186,7 +186,7 @@
   "{name}: ({x}, {y}) {w}w x {h}h": "{name}: ({x}, {y}) {w}w x {h}h",
   "needed": "szukseges",
   "or": "vagy",
-  "panel at the top of the page for known, community-tested combos.": "panel a lap tetejen a kozosseg altal tesztelt kombinaciokhoz.",
+  "list for known, community-tested combos.": "lista a kozosseg altal tesztelt kombinaciokhoz.",
   "to focus": "a fokuszhoz",
 
   // UI Components - price-range-filter, category-filter, virtualized-table

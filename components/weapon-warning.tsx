@@ -39,7 +39,7 @@ export function WeaponWarning({ selectedItems }: WeaponWarningProps) {
         <div className="text-xs">
           {t("You can check the")}{" "}
           <strong>{t("Hot Sacrifices")}</strong>{" "}
-          {t("panel at the top of the page for known, community-tested combos.")}
+          {t("list for known, community-tested combos.")}
         </div>
       </AlertDescription>
     </Alert>

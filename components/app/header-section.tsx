@@ -4,43 +4,12 @@
 import { VersionInfo } from "@/components/version-info";
 import { CURRENT_VERSION } from "@/config/changelog";
 import { useLanguage } from "@/contexts/language-context";
+import { UpdateAlertBar } from "@/components/app/update-alert-bar";
 import { ScavInvadersEasterEgg } from "@/components/scav-invaders/scav-invaders-easter-egg.component";
 
-const ExternalLinkIcon = () => (
-  <svg
-    className="w-3 h-3 opacity-1 group-hover:opacity-100 transition-opacity"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-    />
-  </svg>
-);
-
-interface ExternalLinkProps {
-  href: string;
-  children: React.ReactNode;
-}
-
-const ExternalLink = ({ href, children }: ExternalLinkProps) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-xs text-slate-400 hover:text-blue-400 hover:underline transition-all duration-200 inline-flex items-center gap-1 group"
-  >
-    {children}
-    <ExternalLinkIcon />
-  </a>
-);
-
 /**
- * Header section with logo, version info, and external links.
+ * Header section with logo, version info, the Discord badge and any unseen
+ * update alerts.
  * Extracted from app.tsx for better organization.
  */
 export function HeaderSection() {
@@ -59,13 +28,12 @@ export function HeaderSection() {
           loading="lazy"
         />
       </h1>
-      {/* Version and links share one row on desktop to save height */}
+      {/* Version and Discord share one row on desktop to save height */}
       <div className="space-y-3 lg:flex lg:flex-wrap lg:items-center lg:justify-center lg:gap-x-5 lg:gap-y-2 lg:space-y-0">
         <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
           <VersionInfo version={CURRENT_VERSION} />
         </div>
         <div className="flex items-center justify-center gap-3">
-          <ExternalLink href="https://eftboss.com/">EFT Boss</ExternalLink>
           <a
             href="https://discord.com/invite/3dFmr5qaJK"
             rel="nofollow"
@@ -81,9 +49,9 @@ export function HeaderSection() {
               loading="lazy"
             />
           </a>
-          <ExternalLink href="https://kappas.pages.dev/">Kappas</ExternalLink>
         </div>
       </div>
+      <UpdateAlertBar className="mx-auto max-w-3xl" />
       <ScavInvadersEasterEgg />
     </div>
   );
