@@ -49,7 +49,6 @@ import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
 import { WeaponWarning } from "./weapon-warning";
 import { RecipeWarning } from "./recipe-warning";
-import { InfoDashboard } from "./info-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
 import { FeedbackForm } from "./feedback-form";
@@ -66,6 +65,7 @@ import { useLanguage } from "@/contexts/language-context";
 import {
   SacrificeCombo,
   HOT_SACRIFICES,
+  comboSlotIngredients,
 } from "@/components/hot-sacrifices-panel";
 import { hashString, seededShuffle } from "@/lib/item-utils";
 import { RECIPE_COMPLETION_STORAGE_KEY } from "@/lib/recipe-completion";
@@ -73,6 +73,7 @@ import { HeaderSection } from "@/components/app/header-section";
 import { FooterSection } from "@/components/app/footer-section";
 import { SelectorSettingsPopover } from "@/components/app/selector-settings-popover";
 import { SummarySection } from "@/components/app/summary-section";
+import { HotSacrificesSection } from "@/components/app/hot-sacrifices-section";
 import { type FleaPriceType, type PriceMode } from "@/hooks/use-app-settings";
 import { type GitHubContributor } from "@/lib/github-contributors";
 import {
@@ -104,6 +105,8 @@ import {
 } from "@/lib/sacrifice-slots";
 import { useLocalStorageString } from "@/hooks/use-local-storage-state";
 import { useStashInventory } from "@/hooks/use-stash-inventory";
+import { SEEN_UPDATES_STORAGE_KEY } from "@/hooks/use-seen-updates";
+import { useStickyFit } from "@/hooks/use-sticky-fit";
 import { useSharedStashScanStore } from "@/hooks/use-stash-scan-store";
 import {
   selectedCounts,
@@ -1981,10 +1984,36 @@ function AppContent({ contributors = [] }: AppProps) {
     fleaPriceType,
   ]);
 
+  // Sidebar sticks below the nav (4.5rem) when it fits the window and
+  // otherwise sticks by its bottom edge, so it never needs its own scrollbar.
+  const sidebarRef = useStickyFit<HTMLDivElement>(72);
+
+  // The hot sacrifice whose items exactly fill the selected slots, if any.
+  const loadedComboId = useMemo(() => {
+    const selectedIds = selectedItems
+      .filter((item): item is SimplifiedItem => Boolean(item))
+      .map((item) => item.id)
+      .sort();
+    if (selectedIds.length === 0) return null;
+    const match = HOT_SACRIFICES.find((combo) => {
+      if (combo.disabled) return false;
+      const comboIds: string[] = [];
+      for (const ingredient of comboSlotIngredients(combo)) {
+        const item = findMatchingItem(ingredient.name);
+        if (!item) return false;
+        for (let i = 0; i < ingredient.count; i++) comboIds.push(item.id);
+      }
+      comboIds.sort();
+      return (
+        comboIds.length === selectedIds.length &&
+        comboIds.every((id, index) => id === selectedIds[index])
+      );
+    });
+    return match?.id ?? null;
+  }, [selectedItems, findMatchingItem]);
+
   const handleUseHotSacrifice = useCallback(
     async (combo: SacrificeCombo) => {
-      const { ingredients } = combo;
-
       // Clear current selections
       setSelectedItems(Array(5).fill(null));
       setPinnedItems(Array(5).fill(false));
@@ -1994,12 +2023,7 @@ function AppContent({ contributors = [] }: AppProps) {
       let slotIndex = 0;
       const successItems: string[] = [];
 
-      for (const ingredient of ingredients) {
-        // Skip Labs Card for G28 combo when using "Use" button (only add for cost estimation)
-        if (combo.id === "labs-g28" && ingredient.name === "Labs Access") {
-          continue;
-        }
-
+      for (const ingredient of comboSlotIngredients(combo)) {
         const matchingItem = findMatchingItem(ingredient.name);
 
         if (matchingItem) {
@@ -2159,6 +2183,7 @@ function AppContent({ contributors = [] }: AppProps) {
         "cookieConsent",
         GAME_MODE_STORAGE_KEY,
         RECIPE_COMPLETION_STORAGE_KEY,
+        SEEN_UPDATES_STORAGE_KEY,
       ]);
       Object.keys(localStorage).forEach((key) => {
         if (!preservedStorageKeys.has(key)) {
@@ -2296,31 +2321,18 @@ function AppContent({ contributors = [] }: AppProps) {
             </div>
           </aside>
 
-          {/* Main Content: single column on mobile; on desktop a full-width
-              info dashboard sits above the calculator and a sticky summary
-              column. (The wrapper above drops overflow-auto at lg so sticky
-              works.) */}
+          {/* Main Content: single column on mobile; on desktop the calculator
+              sits beside a sticky column with the summary and hot sacrifices.
+              (The wrapper above drops overflow-auto at lg so sticky works.) */}
           <div className="grid w-full min-w-0 max-w-3xl grid-cols-1 items-start gap-3 py-4 mx-auto lg:max-w-none lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-5 lg:gap-y-4 xl:grid-cols-[minmax(0,1fr)_400px]">
             {/* Header Section */}
             <div className="lg:col-span-2">
               <HeaderSection />
             </div>
 
-            {/* Info Dashboard (Alerts, Notifications, Hot Sacrifices) */}
-            <div className="min-w-0 lg:col-span-2 lg:row-start-2">
-              <InfoDashboard
-                selectedItems={
-                  selectedItems.filter(Boolean) as SimplifiedItem[]
-                }
-                onUseThis={handleUseHotSacrifice}
-                availableItems={items}
-                sacrificeCosts={sacrificeCosts}
-              />
-            </div>
-
             {/* Main Calculator Card. Below lg it joins the summary card under
                 it so mobile still reads as one panel. */}
-            <Card className="min-w-0 overflow-hidden rounded-b-none border-b-0 border-slate-700/40 bg-slate-800/60 backdrop-blur-md lg:col-start-1 lg:row-start-3 lg:rounded-b-lg lg:border-b lg:shadow-xl">
+            <Card className="min-w-0 overflow-hidden rounded-b-none border-b-0 border-slate-700/40 bg-slate-800/60 backdrop-blur-md lg:col-start-1 lg:row-start-2 lg:rounded-b-lg lg:border-b lg:shadow-xl">
               <CardContent className="space-y-4 p-4 pb-0 sm:p-6 sm:pb-0 lg:p-5">
                 {/* Controls Section - Clean & Focused */}
                 <div className="space-y-3">
@@ -2756,22 +2768,37 @@ function AppContent({ contributors = [] }: AppProps) {
               </CardContent>
             </Card>
 
-            {/* Summary Card: sticky right column on desktop */}
-            {/* The wrapper stretches to the row so the sticky card stops above
-                the footer (Chrome bounds sticky grid items by the grid, not
-                the area). */}
-            <div className="-mt-3 min-w-0 lg:col-start-2 lg:row-start-3 lg:mt-0 lg:self-stretch">
-              <Card className="overflow-hidden rounded-t-none border-t-0 border-slate-700/40 bg-slate-800/60 shadow-xl backdrop-blur-md lg:sticky lg:top-[4.5rem] lg:rounded-t-lg lg:border-t">
-                <CardContent className="p-4 pt-5 sm:p-6 sm:pt-5 lg:p-5">
-                  <SummarySection
-                    loading={loading}
-                    total={total}
-                    totalFleaCost={totalFleaCost || 0}
-                    threshold={threshold}
-                    isThresholdMet={isThresholdMet}
-                  />
-                </CardContent>
-              </Card>
+            {/* Summary and Hot Sacrifices: sticky right column on desktop */}
+            {/* The wrapper stretches to the row so the sticky column stops
+                above the footer (Chrome bounds sticky grid items by the grid,
+                not the area). */}
+            <div className="-mt-3 min-w-0 lg:col-start-2 lg:row-start-2 lg:mt-0 lg:self-stretch">
+              <div
+                ref={sidebarRef}
+                className="space-y-3 lg:sticky lg:top-[4.5rem] lg:space-y-4"
+              >
+                <Card className="overflow-hidden rounded-t-none border-t-0 border-slate-700/40 bg-slate-800/60 shadow-xl backdrop-blur-md lg:rounded-t-lg lg:border-t">
+                  <CardContent className="p-4 pt-5 sm:p-6 sm:pt-5 lg:p-5">
+                    <SummarySection
+                      loading={loading}
+                      total={total}
+                      totalFleaCost={totalFleaCost || 0}
+                      threshold={threshold}
+                      isThresholdMet={isThresholdMet}
+                    />
+                  </CardContent>
+                </Card>
+                <Card className="border-slate-700/40 bg-slate-800/60 shadow-xl backdrop-blur-md">
+                  <CardContent className="p-3 sm:p-4">
+                    <HotSacrificesSection
+                      threshold={threshold}
+                      sacrificeCosts={sacrificeCosts}
+                      loadedComboId={loadedComboId}
+                      onUse={handleUseHotSacrifice}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Footer Section */}

@@ -4,10 +4,12 @@
 import { VersionInfo } from "@/components/version-info";
 import { CURRENT_VERSION } from "@/config/changelog";
 import { useLanguage } from "@/contexts/language-context";
+import { UpdateAlertBar } from "@/components/app/update-alert-bar";
 import { ScavInvadersEasterEgg } from "@/components/scav-invaders/scav-invaders-easter-egg.component";
 
 /**
- * Header section with logo, version info and the Discord badge.
+ * Header section with logo, version info, the Discord badge and any unseen
+ * update alerts.
  * Extracted from app.tsx for better organization.
  */
 export function HeaderSection() {
@@ -49,6 +51,7 @@ export function HeaderSection() {
           </a>
         </div>
       </div>
+      <UpdateAlertBar className="mx-auto max-w-3xl" />
       <ScavInvadersEasterEgg />
     </div>
   );

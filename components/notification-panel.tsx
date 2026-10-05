@@ -1,14 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useId, useState } from "react";
-import {
-  ChevronDown,
-  Bell,
-  AlertTriangle,
-  Info,
-  RefreshCw,
-} from "lucide-react";
+import React from "react";
 import Link from "next/link";
 
 export interface Notification {
@@ -31,6 +23,8 @@ export interface Notification {
   actions?: NotificationAction[];
   priority?: number;
   estimatedCost?: number;
+  /** Posted date (YYYY-MM-DD), shown with the details. */
+  date?: string;
 }
 
 export interface NotificationAction {
@@ -44,8 +38,9 @@ export const NOTIFICATIONS: Notification[] = [
     type: "warning",
     imageUrl: "https://assets.tarkov.dev/60a283193cb70855c43a381d-icon.webp",
     imageAlt: "NFM THOR Integrated Carrier body armor",
-    title: "Update: SAS drive ➡️ THOR IC no longer works",
+    title: "SAS drive ➡️ THOR IC no longer works",
     priority: 0,
+    date: "2026-09-29",
     description: (
       <>
         After the THOR IC base value change, the SAS drive ➡️ THOR IC hot
@@ -59,8 +54,9 @@ export const NOTIFICATIONS: Notification[] = [
     type: "warning",
     imageUrl: "/images/recipes/bd-dogtag-ferrum.png",
     imageAlt: "Black Division dogtag",
-    title: "Update: Black Division ritual may no longer work",
+    title: "Black Division ritual may no longer work",
     priority: 0,
+    date: "2026-09-09",
     description: (
       <>
         Many users report these launcher codes and this recipe might not work
@@ -82,58 +78,40 @@ export const NOTIFICATIONS: Notification[] = [
       </>
     ),
   },
-  {
-    id: "submit-recipe",
-    type: "info",
-    icon: "📝",
-    title: "Found a new recipe? Submit it",
-    priority: 0,
-    description: (
-      <>
-        Use the <strong>Submit a recipe</strong> button on the{" "}
-        <Link
-          href="/recipes"
-          className="font-semibold underline transition-colors hover:text-slate-200"
-        >
-          recipes page
-        </Link>{" "}
-        to share what you sacrificed and received. Every submission is reviewed
-        and tested before being added - thank you.
-      </>
-    ),
-  },
-  {
-    id: "weapon-values-warning",
-    type: "warning",
-    title: "Weapon Base Values - Work in Progress",
-    description: (
-      <>
-        We are still working on finding the correct multiplier for Weapon base
-        values, please use the{" "}
-        <Link
-          href="/base-values"
-          className="underline hover:text-amber-300 transition-colors font-semibold"
-        >
-          Base Values lookup
-        </Link>{" "}
-        page. To display weapons in the calculator, go to Settings → Excluded
-        Categories and uncheck &quot;Weapon&quot;.
-        <span className="block text-xs mt-1 text-red-400">
-          Caution: Weapon base values are higher than shown in the app.
-        </span>
-      </>
-    ),
-  },
 ];
+
+export const UPDATE_IDS = NOTIFICATIONS.map((notification) => notification.id);
+
+/** Formats a YYYY-MM-DD posted date, e.g. "29 Sep 2026" ("29 Sep" if short). */
+export function formatPostedDate(date: string, short = false): string {
+  const parsed = new Date(`${date}T00:00:00`);
+  return Number.isNaN(parsed.getTime())
+    ? date
+    : parsed.toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "short",
+        ...(short ? {} : { year: "numeric" }),
+      });
+}
 
 /** A notification's description and action buttons. */
 export function NotificationDetails({
   notification,
+  showDate = true,
 }: {
   notification: Notification;
+  showDate?: boolean;
 }) {
   return (
     <>
+      {showDate && notification.date && (
+        <time
+          dateTime={notification.date}
+          className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500"
+        >
+          {formatPostedDate(notification.date)}
+        </time>
+      )}
       <div className="text-xs leading-relaxed text-slate-300 marker:text-slate-400 [&_a]:text-slate-100 [&_a]:underline [&_a]:decoration-slate-500 [&_a]:underline-offset-2 [&_strong]:font-semibold [&_strong]:text-slate-100">
         {typeof notification.description === "function"
           ? notification.description(notification)
@@ -163,275 +141,5 @@ export function NotificationDetails({
         </div>
       )}
     </>
-  );
-}
-
-export function NotificationCard({
-  notification,
-  onClick,
-  collapsible = false,
-  expanded = false,
-  onToggle,
-  detailsPanelId,
-}: {
-  notification: Notification;
-  onClick?: () => void;
-  /**
-   * Show only the title row; the details expand inline below lg. On lg the
-   * parent renders them in a shared panel (detailsPanelId) instead.
-   */
-  collapsible?: boolean;
-  expanded?: boolean;
-  onToggle?: () => void;
-  detailsPanelId?: string;
-}) {
-  const inlineDetailsId = useId();
-  const isPriority = notification.priority === 0;
-  const isInteractive = Boolean(onClick);
-  const styles =
-    notification.type === "success"
-      ? {
-          marker: "bg-emerald-300",
-          icon: "text-emerald-300",
-          title: "text-emerald-100",
-          badge: "border-emerald-300/25 bg-emerald-300/10 text-emerald-200",
-        }
-      : notification.type === "warning"
-        ? {
-            marker: "bg-red-400",
-            icon: "border-red-400/40 bg-red-950/50 text-red-200",
-            title: "text-red-50",
-            badge: "border-red-300/45 bg-red-500/25 text-red-100",
-          }
-        : notification.type === "hot-sacrifice"
-          ? {
-              marker: "bg-cyan-300",
-              icon: "text-cyan-300",
-              title: "text-cyan-100",
-              badge: "border-cyan-300/25 bg-cyan-300/10 text-cyan-100",
-            }
-          : notification.type === "weapon-warning"
-            ? {
-                marker: "bg-amber-300",
-                icon: "text-amber-300",
-                title: "text-amber-100",
-                badge: "border-amber-300/25 bg-amber-300/10 text-amber-200",
-              }
-            : {
-                marker: "bg-slate-400",
-                icon: "text-slate-300",
-                title: "text-slate-100",
-                badge: "border-slate-500/50 bg-slate-800 text-slate-300",
-              };
-  const Icon =
-    notification.type === "warning" || notification.type === "weapon-warning"
-      ? AlertTriangle
-      : notification.type === "hot-sacrifice" || notification.type === "success"
-        ? RefreshCw
-        : Info;
-
-  const iconNode = notification.imageUrl ? (
-    <img
-      src={notification.imageUrl}
-      alt={notification.imageAlt ?? notification.title}
-      width={28}
-      height={28}
-      loading="lazy"
-      aria-hidden="true"
-      className="h-full w-full rounded object-contain"
-    />
-  ) : notification.icon ? (
-    <span className="text-sm" aria-hidden="true">
-      {notification.icon}
-    </span>
-  ) : (
-    <Icon className="h-4 w-4" />
-  );
-
-  const newBadge = isPriority ? (
-    <span
-      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${styles.badge}`}
-    >
-      NEW
-    </span>
-  ) : null;
-
-  if (collapsible) {
-    return (
-      <div
-        className={`group relative overflow-hidden rounded-lg border bg-slate-900/55 backdrop-blur-sm transition-colors duration-200 hover:border-slate-500/80 hover:bg-slate-900/80 ${
-          expanded
-            ? "border-slate-600/80 bg-slate-900/80"
-            : "border-slate-700/60"
-        }`}
-      >
-        <div
-          className={`absolute bottom-0 left-0 top-0 w-1 ${styles.marker} opacity-90`}
-        />
-        <button
-          type="button"
-          aria-expanded={expanded}
-          aria-controls={
-            detailsPanelId
-              ? `${inlineDetailsId} ${detailsPanelId}`
-              : inlineDetailsId
-          }
-          onClick={onToggle}
-          className="flex min-h-14 w-full items-center gap-2.5 py-2.5 pl-4 pr-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400/60"
-        >
-          <span className="relative shrink-0">
-            <span
-              className={`flex h-6 w-6 items-center justify-center overflow-hidden rounded border border-slate-700/80 bg-slate-950/45 ${styles.icon}`}
-            >
-              {iconNode}
-            </span>
-            {isPriority && (
-              <span
-                className={`absolute -right-1 -top-1 h-2 w-2 rounded-full ring-2 ring-slate-900 ${styles.marker}`}
-              />
-            )}
-          </span>
-          <span
-            className={`line-clamp-2 min-w-0 flex-1 text-[13px] font-semibold leading-5 ${styles.title}`}
-          >
-            {notification.title}
-            {isPriority && <span className="sr-only"> (new)</span>}
-          </span>
-          <ChevronDown
-            aria-hidden="true"
-            className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 group-hover:text-slate-300 ${
-              expanded ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-        <div
-          id={inlineDetailsId}
-          hidden={!expanded}
-          className={`pb-3 pl-[3.25rem] pr-4 ${detailsPanelId ? "lg:hidden" : ""}`}
-        >
-          <NotificationDetails notification={notification} />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={`
-        group relative overflow-hidden rounded-lg border border-slate-700/60 bg-slate-900/55
-        px-3.5 py-3 backdrop-blur-sm transition-all duration-200
-        ${isPriority ? "border-slate-600/80 bg-slate-900/75" : ""}
-        ${isInteractive ? "cursor-pointer hover:border-slate-500/80 hover:bg-slate-900/80" : ""}
-      `}
-      onClick={onClick}
-    >
-      <div
-        className={`absolute bottom-0 left-0 top-0 w-1 ${styles.marker} opacity-90`}
-      />
-      <div className="flex items-start gap-3 pl-1">
-        <div
-          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-700/80 bg-slate-950/45 ${styles.icon}`}
-        >
-          {iconNode}
-        </div>
-        {notification.imageUrl ? (
-          <span className="sr-only mt-0.5 flex-shrink-0">
-            {notification.imageAlt ?? notification.title}
-          </span>
-        ) : null}
-        {notification.icon && (
-          <span className="sr-only mt-0.5 flex-shrink-0">
-            {notification.icon}
-          </span>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="mb-1 flex items-start justify-between gap-2">
-            <h3 className={`text-sm font-semibold leading-5 ${styles.title}`}>
-              {notification.title}
-            </h3>
-            {newBadge}
-          </div>
-          <NotificationDetails notification={notification} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function NotificationPanel({
-  dynamicNotifications = [],
-  totalNotifications,
-}: {
-  dynamicNotifications?: Notification[];
-  totalNotifications?: number;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  // Combine static and dynamic notifications
-  const allNotifications = [...NOTIFICATIONS, ...dynamicNotifications];
-  const notificationCount = totalNotifications ?? allNotifications.length;
-
-  return (
-    <div className="w-full max-w-3xl mx-auto mb-3 z-10">
-      {/* Collapsed state - compact pill */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full group"
-        aria-expanded={isExpanded}
-        aria-label={
-          isExpanded ? "Collapse notifications" : "Expand notifications"
-        }
-      >
-        <div
-          className={`
-          flex items-center justify-between gap-3 px-4 py-2.5
-          rounded-full border backdrop-blur-sm
-          transition-all duration-300 ease-out
-          ${
-            isExpanded
-              ? "bg-slate-800 border-slate-600/40 rounded-2xl"
-              : "bg-slate-800 border-slate-700/30 hover:bg-slate-700 hover:border-slate-600/40"
-          }
-        `}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <Bell className="h-4 w-4 text-slate-300" />
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 text-[8px] items-center justify-center text-white font-bold">
-                  {notificationCount}
-                </span>
-              </span>
-            </div>
-            <span className="text-sm font-medium text-slate-200">
-              {isExpanded ? "Notifications" : `${notificationCount} Updates`}
-            </span>
-          </div>
-          <ChevronDown
-            className={`h-4 w-4 text-slate-400 transition-transform duration-300 ${
-              isExpanded ? "rotate-180" : ""
-            }`}
-          />
-        </div>
-      </button>
-
-      {/* Expanded state - notification cards */}
-      <div
-        className={`
-        overflow-hidden transition-all duration-300 ease-out
-        ${isExpanded ? "max-h-[600px] opacity-100 mt-2" : "max-h-0 opacity-0"}
-      `}
-      >
-        <div className="space-y-2">
-          {allNotifications.map((notification) => (
-            <NotificationCard
-              key={notification.id}
-              notification={notification}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }

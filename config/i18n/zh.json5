@@ -186,7 +186,7 @@
   "{name}: ({x}, {y}) {w}w x {h}h": "{name}：({x}, {y}) {w}w x {h}h",
   "needed": "还需",
   "or": "或",
-  "panel at the top of the page for known, community-tested combos.": "页面顶部面板，包含社区测试过的已知组合。",
+  "list for known, community-tested combos.": "列表，包含社区测试过的已知组合。",
   "to focus": "以聚焦",
 
   // UI Components - price-range-filter, category-filter, virtualized-table
