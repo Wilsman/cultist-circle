@@ -13,6 +13,7 @@ import {
   Globe,
   TimerReset,
   ScanSearch,
+  Menu,
 } from "lucide-react";
 import {
   Select,
@@ -21,8 +22,18 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { ENABLE_LANGUAGE_FEATURE, ENABLE_STASH_SCAN } from "@/config/feature-flags";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  ENABLE_LANGUAGE_FEATURE,
+  ENABLE_STASH_SCAN,
+} from "@/config/feature-flags";
 import { useLanguage } from "@/contexts/language-context";
+import { UpdatesBell } from "@/components/updates-bell";
 
 const primaryLinks = [
   { href: "/", label: "Calculator", icon: Calculator },
@@ -32,10 +43,33 @@ const primaryLinks = [
   { href: "/base-values", label: "Base Values", icon: Table },
 ] as const;
 
+const isNewLink = (label: string) =>
+  label === "Tracker" || label === "Stash Scan";
+
+function NewBadge({ className = "" }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`rounded-sm border border-cyan-300/20 bg-cyan-300/[0.07] px-1.5 py-0.5 text-[8px] font-bold leading-none tracking-[0.12em] text-cyan-200/80 ${className}`}
+    >
+      NEW
+    </span>
+  );
+}
+
+const menuLinkClass =
+  "flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors";
+
 export function SiteNav() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const { t, language, setLanguage, supported } = useLanguage();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const links = primaryLinks.filter(
+    (link) => link.href !== "/scan" || ENABLE_STASH_SCAN,
+  );
+  const isActiveLink = (href: string) =>
+    href === "/" ? pathname === "/" : Boolean(pathname?.startsWith(href));
 
   // Mobile auto-hide logic
   const [hideOnMobile, setHideOnMobile] = useState(false);
@@ -75,11 +109,80 @@ export function SiteNav() {
         }`}
       >
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-1 px-2 sm:px-6 lg:px-8">
+          {/* Below md the page links live in a slide-out menu */}
+          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+            <SheetTrigger
+              aria-label={t("Open menu")}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-300 transition-colors hover:bg-white/[0.035] hover:text-slate-100 md:hidden"
+            >
+              <Menu className="h-5 w-5" strokeWidth={1.8} />
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              aria-describedby={undefined}
+              className="w-72 border-white/[0.08] bg-[#09111b] p-0 text-slate-200"
+            >
+              <div className="flex h-14 items-center gap-2.5 border-b border-white/[0.06] px-4">
+                <Image
+                  src="/favicon.ico"
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="h-6 w-6"
+                  unoptimized
+                />
+                <SheetTitle className="text-sm font-semibold text-slate-100">
+                  Cultist Circle
+                </SheetTitle>
+              </div>
+              <ul className="space-y-0.5 p-2">
+                {links.map(({ href, label, icon: Icon }) => {
+                  const isActive = isActiveLink(href);
+                  return (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        aria-current={isActive ? "page" : undefined}
+                        onClick={() => setMenuOpen(false)}
+                        className={`${menuLinkClass} ${
+                          isActive
+                            ? "bg-cyan-300/[0.08] text-slate-100"
+                            : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100"
+                        }`}
+                      >
+                        <Icon
+                          className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-cyan-300" : "text-slate-500"}`}
+                          strokeWidth={1.8}
+                        />
+                        {t(label)}
+                        {isNewLink(label) && <NewBadge className="ml-auto" />}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mx-2 border-t border-white/[0.06] pt-2">
+                <Link
+                  href="/faq"
+                  aria-current={isActiveLink("/faq") ? "page" : undefined}
+                  onClick={() => setMenuOpen(false)}
+                  className={`${menuLinkClass} text-slate-400 hover:bg-white/[0.04] hover:text-slate-100`}
+                >
+                  <HelpCircle
+                    className="h-[18px] w-[18px] shrink-0 text-slate-500"
+                    strokeWidth={1.8}
+                  />
+                  {t("Help & FAQ")}
+                </Link>
+              </div>
+            </SheetContent>
+          </Sheet>
+
           <Link
             href="/"
             aria-label={t("Cultist Circle home")}
             title={t("Cultist Circle home")}
-            className="mr-3 hidden h-10 w-10 shrink-0 items-center justify-center rounded-md opacity-90 transition-[background-color,opacity] hover:bg-white/[0.04] hover:opacity-100 md:inline-flex"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md opacity-90 transition-[background-color,opacity] hover:bg-white/[0.04] hover:opacity-100 md:mr-3"
           >
             <Image
               src="/favicon.ico"
@@ -91,11 +194,10 @@ export function SiteNav() {
             />
           </Link>
 
-          <div className="flex min-w-0 items-center">
+          <div className="hidden min-w-0 items-center md:flex">
             <div className="flex items-center gap-0.5">
-              {primaryLinks.filter((link) => link.href !== "/scan" || ENABLE_STASH_SCAN).map(({ href, label, icon: Icon }) => {
-                const isActive =
-                  href === "/" ? pathname === "/" : pathname?.startsWith(href);
+              {links.map(({ href, label, icon: Icon }) => {
+                const isActive = isActiveLink(href);
 
                 return (
                   <Link
@@ -103,24 +205,19 @@ export function SiteNav() {
                     href={href}
                     aria-label={t(label)}
                     aria-current={isActive ? "page" : undefined}
-                    className={`relative inline-flex h-10 w-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-0 text-[13px] font-medium transition-colors duration-150 md:w-auto md:px-3 ${
+                    className={`relative inline-flex h-10 w-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-0 text-[13px] font-medium transition-colors duration-150 lg:w-auto lg:px-3 ${
                       isActive
                         ? "text-slate-100"
                         : "text-slate-400 hover:bg-white/[0.035] hover:text-slate-100"
                     }`}
                   >
                     <Icon
-                      className={`h-[17px] w-[17px] shrink-0 md:hidden ${isActive ? "text-cyan-300" : "text-slate-500"}`}
+                      className={`h-[17px] w-[17px] shrink-0 lg:hidden ${isActive ? "text-cyan-300" : "text-slate-500"}`}
                       strokeWidth={1.8}
                     />
-                    <span className="hidden md:inline">{t(label)}</span>
-                    {(label === "Tracker" || label === "Stash Scan") && (
-                      <span
-                        aria-hidden
-                        className="hidden rounded-sm border border-cyan-300/20 bg-cyan-300/[0.07] px-1.5 py-0.5 text-[8px] font-bold leading-none tracking-[0.12em] text-cyan-200/80 md:inline-flex"
-                      >
-                        NEW
-                      </span>
+                    <span className="hidden lg:inline">{t(label)}</span>
+                    {isNewLink(label) && (
+                      <NewBadge className="hidden lg:inline-flex" />
                     )}
                     {isActive && (
                       <span
@@ -143,6 +240,8 @@ export function SiteNav() {
             >
               <HelpCircle className="h-4 w-4" strokeWidth={1.8} />
             </Link>
+
+            <UpdatesBell />
 
             {/* Language Selector */}
             {ENABLE_LANGUAGE_FEATURE && (
