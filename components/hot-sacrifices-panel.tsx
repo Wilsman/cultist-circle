@@ -123,7 +123,8 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
       },
     ],
     resultText: "350K+ (14h)",
-    minBaseValue: 350_000,
+    // 14h needs more than 350,000, matching the 350,001 preset.
+    minBaseValue: 350_001,
   },
   {
     id: "4x-stm-saiga",
@@ -265,6 +266,49 @@ export function comboSlotIngredients(combo: SacrificeCombo): Ingredient[] {
     (ingredient) =>
       !(combo.id === "labs-g28" && ingredient.name === "Labs Access"),
   );
+}
+
+/**
+ * The combo whose slot items exactly match the selected item ids (in any
+ * order), or null. `resolveId` maps an ingredient name to its item id.
+ */
+export function findLoadedCombo(
+  combos: SacrificeCombo[],
+  selectedIds: string[],
+  resolveId: (ingredientName: string) => string | null,
+): SacrificeCombo | null {
+  if (selectedIds.length === 0) return null;
+  const sortedSelected = [...selectedIds].sort();
+  return (
+    combos.find((combo) => {
+      if (combo.disabled) return false;
+      const comboIds: string[] = [];
+      for (const ingredient of comboSlotIngredients(combo)) {
+        const id = resolveId(ingredient.name);
+        if (!id) return false;
+        for (let i = 0; i < ingredient.count; i++) comboIds.push(id);
+      }
+      comboIds.sort();
+      return (
+        comboIds.length === sortedSelected.length &&
+        comboIds.every((id, index) => id === sortedSelected[index])
+      );
+    }) ?? null
+  );
+}
+
+/**
+ * Total base value to show for the slots. An exact community-verified combo
+ * reaches at least its tested value, even when item data (often weapon or
+ * armor base prices) adds up to less.
+ */
+export function verifiedTotal(
+  calculatedTotal: number,
+  loadedCombo: SacrificeCombo | null,
+): number {
+  return loadedCombo
+    ? Math.max(calculatedTotal, loadedCombo.minBaseValue)
+    : calculatedTotal;
 }
 
 /** Short label such as "4× MP5 + Diary" or "Labs Card → G28". */

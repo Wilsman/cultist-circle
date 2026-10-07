@@ -4,10 +4,14 @@ import {
   HOT_SACRIFICES,
   comboLabel,
   comboSlotIngredients,
+  findLoadedCombo,
+  meetsThreshold,
   orderCombosForThreshold,
   sortCombosByCost,
+  verifiedTotal,
 } from "@/components/hot-sacrifices-panel";
 import { NOTIFICATIONS } from "@/components/notification-panel";
+import { getSuggestedRitualDurations } from "@/lib/ritual-tracker";
 
 const comboById = (id: string) => {
   const combo = HOT_SACRIFICES.find((candidate) => candidate.id === id);
@@ -91,5 +95,41 @@ describe("Hot sacrifices", () => {
   it("labels combos with counts and their separator", () => {
     expect(comboLabel(comboById("4x-mp5-diary"))).toBe("4× MP5 + Diary");
     expect(comboLabel(comboById("labs-g28"))).toBe("Labs Card → G28");
+  });
+
+  it("detects a loaded combo only on an exact slot match", () => {
+    const resolveId = (name: string) => name;
+    const g28 = "HK G28 7.62x51 marksman rifle Patrol";
+    const mp5 = comboSlotIngredients(comboById("4x-mp5-diary"))[0].name;
+    const diary = comboSlotIngredients(comboById("4x-mp5-diary"))[1].name;
+
+    expect(findLoadedCombo(HOT_SACRIFICES, [g28], resolveId)?.id).toBe(
+      "labs-g28",
+    );
+    expect(
+      findLoadedCombo(HOT_SACRIFICES, [diary, mp5, mp5, mp5, mp5], resolveId)
+        ?.id,
+    ).toBe("4x-mp5-diary");
+    // An extra or missing item is no longer a tested combo.
+    expect(findLoadedCombo(HOT_SACRIFICES, [g28, diary], resolveId)).toBeNull();
+    expect(
+      findLoadedCombo(HOT_SACRIFICES, [mp5, mp5, mp5, diary], resolveId),
+    ).toBeNull();
+    expect(findLoadedCombo(HOT_SACRIFICES, [], resolveId)).toBeNull();
+  });
+
+  it("raises the total to a verified combo's tested value", () => {
+    const g28 = comboById("labs-g28");
+    expect(verifiedTotal(163_790, g28)).toBe(g28.minBaseValue);
+    expect(verifiedTotal(450_000, g28)).toBe(450_000);
+    expect(verifiedTotal(163_790, null)).toBe(163_790);
+  });
+
+  it("sets the 14h combo at the 350,001 preset that 14h needs", () => {
+    const stm = comboById("3x-stm-saiga");
+    expect(meetsThreshold(stm, 350_001)).toBe(true);
+    expect(getSuggestedRitualDurations(verifiedTotal(300_000, stm))).toEqual([
+      840,
+    ]);
   });
 });

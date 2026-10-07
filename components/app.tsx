@@ -65,7 +65,10 @@ import { useLanguage } from "@/contexts/language-context";
 import {
   SacrificeCombo,
   HOT_SACRIFICES,
+  comboLabel,
   comboSlotIngredients,
+  findLoadedCombo,
+  verifiedTotal,
 } from "@/components/hot-sacrifices-panel";
 import { hashString, seededShuffle } from "@/lib/item-utils";
 import { RECIPE_COMPLETION_STORAGE_KEY } from "@/lib/recipe-completion";
@@ -1201,8 +1204,56 @@ function AppContent({ contributors = [] }: AppProps) {
     [itemBonus, priceMode, useLastOfferCountFilter, getEffectivePrice],
   );
 
-  // Memoized total and flea costs
-  const total = useMemo(() => {
+  // Function to find matching item by name - ALWAYS use rawItemsData to bypass UI filters
+  const findMatchingItem = useCallback(
+    (ingredientName: string): SimplifiedItem | null => {
+      if (!rawItemsData) return null;
+
+      // Try exact match first
+      const exactMatch = rawItemsData.find(
+        (item) =>
+          item.name === ingredientName ||
+          item.englishName === ingredientName ||
+          item.shortName === ingredientName ||
+          item.englishShortName === ingredientName,
+      );
+
+      if (exactMatch) return exactMatch;
+
+      // Try partial match (contains)
+      const partialMatch = rawItemsData.find(
+        (item) =>
+          item.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
+          ingredientName.toLowerCase().includes(item.name.toLowerCase()) ||
+          item.englishName
+            ?.toLowerCase()
+            .includes(ingredientName.toLowerCase()) ||
+          ingredientName
+            .toLowerCase()
+            .includes(item.englishName?.toLowerCase() || ""),
+      );
+
+      return partialMatch || null;
+    },
+    [rawItemsData],
+  );
+
+  // The hot sacrifice whose items exactly fill the selected slots, if any.
+  const loadedCombo = useMemo(
+    () =>
+      findLoadedCombo(
+        HOT_SACRIFICES,
+        selectedItems
+          .filter((item): item is SimplifiedItem => Boolean(item))
+          .map((item) => item.id),
+        (name) => findMatchingItem(name)?.id ?? null,
+      ),
+    [selectedItems, findMatchingItem],
+  );
+  const loadedComboId = loadedCombo?.id ?? null;
+
+  // Base value from item data, before any verified-combo override
+  const calculatedTotal = useMemo(() => {
     // Apply the bonus from ItemSocket to increase the baseValue of each item
     return selectedItems.reduce((sum, item) => {
       if (!item) return sum;
@@ -1211,6 +1262,8 @@ function AppContent({ contributors = [] }: AppProps) {
       return sum + item.basePrice * bonusMultiplier;
     }, 0);
   }, [selectedItems, itemBonus]);
+
+  const total = verifiedTotal(calculatedTotal, loadedCombo);
 
   const fleaCosts = useMemo(() => {
     return selectedItems.map((item) =>
@@ -1871,40 +1924,6 @@ function AppContent({ contributors = [] }: AppProps) {
     handleStashAutoPick,
     t,
   ]);
-  // Function to find matching item by name - ALWAYS use rawItemsData to bypass UI filters
-  const findMatchingItem = useCallback(
-    (ingredientName: string): SimplifiedItem | null => {
-      if (!rawItemsData) return null;
-
-      // Try exact match first
-      const exactMatch = rawItemsData.find(
-        (item) =>
-          item.name === ingredientName ||
-          item.englishName === ingredientName ||
-          item.shortName === ingredientName ||
-          item.englishShortName === ingredientName,
-      );
-
-      if (exactMatch) return exactMatch;
-
-      // Try partial match (contains)
-      const partialMatch = rawItemsData.find(
-        (item) =>
-          item.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
-          ingredientName.toLowerCase().includes(item.name.toLowerCase()) ||
-          item.englishName
-            ?.toLowerCase()
-            .includes(ingredientName.toLowerCase()) ||
-          ingredientName
-            .toLowerCase()
-            .includes(item.englishName?.toLowerCase() || ""),
-      );
-
-      return partialMatch || null;
-    },
-    [rawItemsData],
-  );
-
   // Memoized calculation of sacrifice costs
   const sacrificeCosts = useMemo(() => {
     if (!rawItemsData || rawItemsData.length === 0) return {};
@@ -1988,29 +2007,6 @@ function AppContent({ contributors = [] }: AppProps) {
   // otherwise sticks by its bottom edge, so it never needs its own scrollbar.
   const sidebarRef = useStickyFit<HTMLDivElement>(72);
 
-  // The hot sacrifice whose items exactly fill the selected slots, if any.
-  const loadedComboId = useMemo(() => {
-    const selectedIds = selectedItems
-      .filter((item): item is SimplifiedItem => Boolean(item))
-      .map((item) => item.id)
-      .sort();
-    if (selectedIds.length === 0) return null;
-    const match = HOT_SACRIFICES.find((combo) => {
-      if (combo.disabled) return false;
-      const comboIds: string[] = [];
-      for (const ingredient of comboSlotIngredients(combo)) {
-        const item = findMatchingItem(ingredient.name);
-        if (!item) return false;
-        for (let i = 0; i < ingredient.count; i++) comboIds.push(item.id);
-      }
-      comboIds.sort();
-      return (
-        comboIds.length === selectedIds.length &&
-        comboIds.every((id, index) => id === selectedIds[index])
-      );
-    });
-    return match?.id ?? null;
-  }, [selectedItems, findMatchingItem]);
 
   const handleUseHotSacrifice = useCallback(
     async (combo: SacrificeCombo) => {
@@ -2783,6 +2779,15 @@ function AppContent({ contributors = [] }: AppProps) {
                       loading={loading}
                       total={total}
                       totalFleaCost={totalFleaCost || 0}
+                      verifiedCombo={
+                        loadedCombo
+                          ? {
+                              label: comboLabel(loadedCombo),
+                              resultText: loadedCombo.resultText,
+                              calculatedTotal,
+                            }
+                          : null
+                      }
                       threshold={threshold}
                       isThresholdMet={isThresholdMet}
                     />
