@@ -5,11 +5,13 @@ import {
   comboLabel,
   comboSlotIngredients,
   findLoadedCombo,
+  meetsThreshold,
   orderCombosForThreshold,
   sortCombosByCost,
   verifiedTotal,
 } from "@/components/hot-sacrifices-panel";
 import { NOTIFICATIONS } from "@/components/notification-panel";
+import { getSuggestedRitualDurations } from "@/lib/ritual-tracker";
 
 const comboById = (id: string) => {
   const combo = HOT_SACRIFICES.find((candidate) => candidate.id === id);
@@ -121,5 +123,13 @@ describe("Hot sacrifices", () => {
     expect(verifiedTotal(163_790, g28)).toBe(g28.minBaseValue);
     expect(verifiedTotal(450_000, g28)).toBe(450_000);
     expect(verifiedTotal(163_790, null)).toBe(163_790);
+  });
+
+  it("sets the 14h combo at the 350,001 preset that 14h needs", () => {
+    const stm = comboById("3x-stm-saiga");
+    expect(meetsThreshold(stm, 350_001)).toBe(true);
+    expect(getSuggestedRitualDurations(verifiedTotal(300_000, stm))).toEqual([
+      840,
+    ]);
   });
 });

@@ -123,7 +123,8 @@ export const HOT_SACRIFICES: SacrificeCombo[] = [
       },
     ],
     resultText: "350K+ (14h)",
-    minBaseValue: 350_000,
+    // 14h needs more than 350,000, matching the 350,001 preset.
+    minBaseValue: 350_001,
   },
   {
     id: "4x-stm-saiga",
