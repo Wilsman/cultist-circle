@@ -7,6 +7,8 @@ combination that clears your target.
 
 Live at [cultistcircle.com](https://www.cultistcircle.com/).
 
+![Cultist Circle Calculator with five auto-selected items reaching the 400,000 threshold](docs/images/calculator.png)
+
 ## Features
 
 - **Calculator**: search items, track the combined base value and flea cost, and
