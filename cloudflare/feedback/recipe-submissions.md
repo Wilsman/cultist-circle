@@ -40,6 +40,13 @@ Mark approve/reject tracking. `bun run review:fetch -- --local` reads local D1
 state instead of remote; `-- --limit 20` fetches fewer rows. `sample.json` lets
 you try the UI without touching D1.
 
+`bun run feedback:dashboard` serves the same review page as the Submissions tab of
+a wider local dashboard (`tools/feedback-dashboard/`), next to an Inbox for the
+`feedback` table and a Recipe votes table built from `recipe_feedback_stats`. It
+is read-only, writes its fetched rows to the gitignored `data.json`, never fetches
+raw per-client votes, and accepts the same `--local`, `--limit` and `--port` flags.
+`bun run feedback:dashboard:fetch` refreshes the data without serving.
+
 Alternatively, use the Cloudflare D1 console for `cultist-circle-feedback` directly:
 
 ```sql

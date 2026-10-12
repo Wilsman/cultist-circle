@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Feedback dashboard (local only)</title>
+<link rel="icon" href="data:," />
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0a0a0b; color: #e5e5e5;
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 16px 12px 48px; }
+  header.top {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start;
+    justify-content: space-between; border-bottom: 1px solid #262626;
+    padding-bottom: 12px;
+  }
+  h1 { font-size: 16px; margin: 0; display: flex; gap: 8px; align-items: center; }
+  .badge-local {
+    font-size: 10px; font-weight: 700; letter-spacing: .06em;
+    border: 1px solid rgba(56,189,248,.4); background: rgba(14,165,233,.15);
+    color: #bae6fd; border-radius: 999px; padding: 2px 8px;
+  }
+  .sub { color: #a3a3a3; font-size: 12px; margin: 4px 0 0; }
+  button, select, input[type="search"] {
+    background: #18181b; color: #e5e5e5; border: 1px solid #3f3f46;
+    border-radius: 6px; padding: 5px 10px; font: inherit; font-size: 12px;
+  }
+  button { cursor: pointer; }
+  button:hover { border-color: #71717a; }
+  input[type="search"] { min-width: 240px; flex: 1; }
+  .error { color: #fca5a5; font-size: 12px; }
+  .hint {
+    margin-top: 12px; font-size: 12px; color: #a3a3a3; background: #131316;
+    border: 1px solid #262626; border-radius: 8px; padding: 10px 12px;
+  }
+  .hint code { color: #e5e5e5; background: #27272a; border-radius: 4px; padding: 1px 5px; font-size: 11px; }
+
+  nav.tabs { display: flex; gap: 4px; margin-top: 12px; border-bottom: 1px solid #262626; }
+  nav.tabs button {
+    border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+    background: none; padding: 8px 12px; font-size: 13px; color: #a3a3a3;
+  }
+  nav.tabs button[aria-selected="true"] { color: #f4f4f5; border-bottom-color: #38bdf8; }
+  nav.tabs .count { color: #737373; font-size: 11px; margin-left: 4px; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .status { color: #737373; font-size: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+  .chip { border-radius: 999px; padding: 3px 10px; }
+  .chip[aria-pressed="true"] { background: #f4f4f5; color: #09090b; border-color: #f4f4f5; font-weight: 600; }
+  label.check { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: #a3a3a3; }
+
+  main { margin-top: 12px; display: grid; gap: 8px; }
+  article.card {
+    border: 1px solid #27272a; background: #131316;
+    border-radius: 10px; padding: 10px 12px;
+  }
+  article.card.handled { opacity: .5; }
+  .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 11px; }
+  .pill { border: 1px solid #3f3f46; background: #27272a; border-radius: 999px; padding: 1px 8px; color: #d4d4d8; }
+  .mono { font-family: ui-monospace, monospace; }
+  .dim { color: #737373; }
+  .pill.t-Issue { border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.12); color: #fecaca; }
+  .pill.t-Feature { border-color: rgba(56,189,248,.4); background: rgba(56,189,248,.12); color: #bae6fd; }
+  .pill.t-Suggestion { border-color: rgba(167,139,250,.4); background: rgba(167,139,250,.12); color: #ddd6fe; }
+  .pill.t-Recipe { border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.12); color: #a7f3d0; }
+  .ftitle { font-weight: 600; margin-top: 6px; }
+  .body { margin-top: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .actions { display: flex; gap: 6px; margin-left: auto; }
+  .actions button { padding: 2px 8px; font-size: 11px; }
+  .more { justify-self: center; margin-top: 4px; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid #27272a; border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { padding: 7px 10px; border-bottom: 1px solid #1f1f23; text-align: left; vertical-align: top; }
+  th { background: #131316; color: #a3a3a3; font-weight: 600; white-space: nowrap; position: sticky; top: 0; }
+  th[data-sort] { cursor: pointer; user-select: none; }
+  th[data-sort]:hover { color: #e5e5e5; }
+  th .arrow { color: #38bdf8; }
+  td.num { text-align: right; font-family: ui-monospace, monospace; white-space: nowrap; }
+  tr:hover td { background: #111114; }
+  .recipe-name { min-width: 260px; }
+  .recipe-name .to { color: #737373; }
+  .recipe-name .rid { display: block; color: #52525b; font-size: 10px; font-family: ui-monospace, monospace; }
+  .w { color: #86efac; }
+  .d { color: #fca5a5; }
+  .bar { display: flex; height: 4px; border-radius: 2px; overflow: hidden; background: #27272a; margin-top: 4px; min-width: 60px; }
+  .bar .bw { background: #22c55e; }
+  .bar .bd { background: #ef4444; }
+  .s { border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 600; white-space: nowrap; border: 1px solid; }
+  .s-broken { border-color: rgba(248,113,113,.5); background: rgba(127,29,29,.35); color: #fca5a5; }
+  .s-recent { border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.12); color: #fde68a; }
+  .s-ok { border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.12); color: #a7f3d0; }
+  .s-missing { border-color: #3f3f46; background: #27272a; color: #a1a1aa; }
+  .when { white-space: nowrap; }
+
+  iframe.review { width: 100%; height: calc(100vh - 180px); min-height: 600px; border: 1px solid #27272a; border-radius: 10px; background: #0a0a0b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Feedback dashboard <span class="badge-local">LOCAL ONLY</span></h1>
+      <p class="sub" id="source">Nothing loaded yet</p>
+    </div>
+    <button id="btn-reload" type="button">Reload data.json</button>
+  </header>
+
+  <div class="hint" id="hint" hidden>
+    No <code>data.json</code> yet. Run <code>bun run feedback:dashboard</code> (uses your wrangler
+    login against remote D1) and open the printed URL.
+  </div>
+  <p class="error" id="error" role="alert" hidden></p>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" data-tab="inbox" aria-selected="true">Inbox<span class="count" id="count-inbox"></span></button>
+    <button type="button" role="tab" data-tab="votes" aria-selected="false">Recipe votes<span class="count" id="count-votes"></span></button>
+    <button type="button" role="tab" data-tab="submissions" aria-selected="false">Submissions</button>
+  </nav>
+
+  <section id="tab-inbox" role="tabpanel">
+    <div class="chips" id="type-chips"></div>
+    <div class="toolbar">
+      <input type="search" id="inbox-search" placeholder="Search text, title, version or #id" />
+      <select id="inbox-version" aria-label="App version"></select>
+      <select id="inbox-sort" aria-label="Sort">
+        <option value="desc">Newest first</option>
+        <option value="asc">Oldest first</option>
+      </select>
+      <label class="check"><input type="checkbox" id="inbox-hide-handled" /> Hide handled</label>
+      <span class="status" id="inbox-status"></span>
+    </div>
+    <main id="inbox-list"></main>
+  </section>
+
+  <section id="tab-votes" role="tabpanel" hidden>
+    <div class="toolbar">
+      <input type="search" id="votes-search" placeholder="Search item names or recipe id" />
+      <select id="votes-status" aria-label="Status">
+        <option value="">All statuses</option>
+        <option value="broken">Looks broken</option>
+        <option value="recent">Latest vote failed</option>
+        <option value="ok">Working</option>
+        <option value="missing">Not in catalog</option>
+      </select>
+      <input type="search" id="votes-min" placeholder="Min votes" inputmode="numeric" style="min-width:0;flex:0 0 90px" />
+      <span class="status" id="votes-status-text"></span>
+    </div>
+    <p class="sub">
+      Looks broken: at least 3 votes and more "didn't work" than "worked".
+      Latest vote failed: the most recent vote was "didn't work". Counts come from
+      <code>recipe_feedback_stats</code>; raw per-client votes are not fetched.
+    </p>
+    <div class="table-wrap" style="margin-top:8px">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="name">Recipe</th>
+            <th data-sort="status">Status</th>
+            <th data-sort="total" style="text-align:right">Votes</th>
+            <th data-sort="rate" style="text-align:right">Worked</th>
+            <th style="text-align:right">PVP</th>
+            <th style="text-align:right">PVE</th>
+            <th style="text-align:right">Season</th>
+            <th data-sort="lastWorked">Last worked</th>
+            <th data-sort="lastFailed">Last failed</th>
+          </tr>
+        </thead>
+        <tbody id="votes-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="tab-submissions" role="tabpanel" hidden>
+    <p class="sub">The existing recipe review page (<code>tools/recipe-review/</code>), refreshed by the same fetch.</p>
+    <iframe class="review" id="review-frame" title="Recipe submissions review"></iframe>
+  </section>
+</div>
+
+<script>
+"use strict";
+var HANDLED_KEY = "feedback-dashboard-handled-v1";
+var PAGE_SIZE = 100;
+var TYPES = ["Issue", "Feature", "Suggestion", "Recipe"];
+var MODES = [["pvp", "PVP"], ["pve", "PVE"], ["season", "Season"]];
+var STATUS_LABEL = { broken: "Looks broken", recent: "Latest vote failed", ok: "Working", missing: "Not in catalog" };
+var STATUS_RANK = { broken: 0, recent: 1, missing: 2, ok: 3 };
+
+var state = {
+  data: null,
+  inbox: { type: "", search: "", version: "", sort: "desc", hideHandled: false, shown: PAGE_SIZE },
+  votes: { search: "", status: "", min: 0, sort: "status", dir: 1 },
+  handled: readHandled()
+};
+
+function readHandled() {
+  try {
+    var parsed = JSON.parse(localStorage.getItem(HANDLED_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed.filter(function (v) { return typeof v === "number"; }) : []);
+  } catch (e) { return new Set(); }
+}
+
+function persistHandled() {
+  try { localStorage.setItem(HANDLED_KEY, JSON.stringify(Array.from(state.handled))); } catch (e) {}
+}
+
+function el(tag, cls, text) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined && text !== null) n.textContent = text;
+  return n;
+}
+
+function relative(iso) {
+  if (!iso) return "";
+  var t = Date.parse(iso);
+  if (Number.isNaN(t)) return "";
+  var s = Math.round((Date.now() - t) / 1000);
+  if (s < 60) return "just now";
+  var m = Math.round(s / 60); if (m < 60) return m + "m ago";
+  var h = Math.round(m / 60); if (h < 48) return h + "h ago";
+  var d = Math.round(h / 24); if (d < 60) return d + "d ago";
+  var mo = Math.round(d / 30); if (mo < 24) return mo + "mo ago";
+  return Math.round(d / 365) + "y ago";
+}
+
+function shortDate(iso) {
+  if (!iso) return "";
+  var t = new Date(iso);
+  if (Number.isNaN(t.getTime())) return iso;
+  return t.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function copyText(text, btn) {
+  var prev = btn.textContent;
+  function done(ok) {
+    btn.textContent = ok ? "Copied" : "Copy failed";
+    setTimeout(function () { btn.textContent = prev; }, 1200);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+  } else { done(false); }
+}
+
+function compareVersions(a, b) {
+  var pa = String(a).split(/[^0-9]+/).map(Number), pb = String(b).split(/[^0-9]+/).map(Number);
+  for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
+    var x = pa[i] || 0, y = pb[i] || 0;
+    if (x !== y) return x - y;
+  }
+  return String(a).localeCompare(String(b));
+}
+
+/* ---------- Inbox ---------- */
+
+function typeOf(row) {
+  return TYPES.indexOf(row.feedback_type) === -1 ? "Other" : row.feedback_type;
+}
+
+function renderChips() {
+  var host = document.getElementById("type-chips");
+  host.textContent = "";
+  var rows = state.data.feedback, counts = { "": rows.length };
+  rows.forEach(function (r) { var t = typeOf(r); counts[t] = (counts[t] || 0) + 1; });
+  [""].concat(TYPES, ["Other"]).forEach(function (t) {
+    if (t && !counts[t]) return;
+    var b = el("button", "chip", (t || "All") + " " + counts[t]);
+    b.type = "button";
+    b.setAttribute("aria-pressed", state.inbox.type === t ? "true" : "false");
+    b.addEventListener("click", function () {
+      state.inbox.type = t; state.inbox.shown = PAGE_SIZE; renderChips(); renderInbox();
+    });
+    host.appendChild(b);
+  });
+}
+
+function renderVersions() {
+  var sel = document.getElementById("inbox-version");
+  var versions = {};
+  state.data.feedback.forEach(function (r) { if (r.app_version) versions[r.app_version] = (versions[r.app_version] || 0) + 1; });
+  sel.textContent = "";
+  var all = el("option", null, "All versions"); all.value = ""; sel.appendChild(all);
+  Object.keys(versions).sort(compareVersions).reverse().forEach(function (v) {
+    var o = el("option", null, "v" + v + " (" + versions[v] + ")"); o.value = v; sel.appendChild(o);
+  });
+  sel.value = state.inbox.version;
+}
+
+function filteredInbox() {
+  var f = state.inbox, q = f.search.trim().toLowerCase();
+  var idQuery = /^#?\d+$/.test(q) ? Number(q.replace("#", "")) : null;
+  var rows = state.data.feedback.filter(function (r) {
+    if (f.type && typeOf(r) !== f.type) return false;
+    if (f.version && r.app_version !== f.version) return false;
+    if (f.hideHandled && state.handled.has(r.id)) return false;
+    if (!q) return true;
+    if (idQuery !== null && r.id === idQuery) return true;
+    return [r.description, r.title, r.app_version].some(function (v) {
+      return v && String(v).toLowerCase().indexOf(q) !== -1;
+    });
+  });
+  rows.sort(function (a, b) {
+    var c = a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id - b.id;
+    return f.sort === "asc" ? c : -c;
+  });
+  return rows;
+}
+
+function renderInbox() {
+  var host = document.getElementById("inbox-list");
+  host.textContent = "";
+  var rows = filteredInbox();
+  rows.slice(0, state.inbox.shown).forEach(function (r) {
+    var handled = state.handled.has(r.id);
+    var card = el("article", "card" + (handled ? " handled" : ""));
+    var meta = el("div", "meta");
+    meta.appendChild(el("span", "pill t-" + typeOf(r), r.feedback_type || "(no type)"));
+    meta.appendChild(el("span", "mono dim", "#" + r.id));
+    if (r.app_version) meta.appendChild(el("span", "pill mono", "v" + r.app_version));
+    if (r.legacy) meta.appendChild(el("span", "pill", "legacy import"));
+    var when = el("span", "dim", relative(r.created_at) + " · " + shortDate(r.created_at));
+    when.title = r.created_at;
+    meta.appendChild(when);
+
+    var actions = el("span", "actions");
+    var copy = el("button", null, "Copy");
+    copy.type = "button";
+    copy.addEventListener("click", function () {
+      copyText("#" + r.id + " [" + (r.feedback_type || "?") + "] " + (r.app_version ? "v" + r.app_version + " " : "") +
+        r.created_at + "\n" + (r.title ? r.title + "\n" : "") + (r.description || ""), copy);
+    });
+    var mark = el("button", null, handled ? "Unmark" : "Mark handled");
+    mark.type = "button";
+    mark.addEventListener("click", function () {
+      if (handled) state.handled.delete(r.id); else state.handled.add(r.id);
+      persistHandled(); renderInbox();
+    });
+    actions.appendChild(copy); actions.appendChild(mark);
+    meta.appendChild(actions);
+    card.appendChild(meta);
+
+    if (r.title) card.appendChild(el("div", "ftitle", r.title));
+    card.appendChild(el("div", "body", r.description || "(empty)"));
+    host.appendChild(card);
+  });
+
+  if (rows.length > state.inbox.shown) {
+    var more = el("button", "more", "Show " + Math.min(PAGE_SIZE, rows.length - state.inbox.shown) + " more");
+    more.type = "button";
+    more.addEventListener("click", function () { state.inbox.shown += PAGE_SIZE; renderInbox(); });
+    host.appendChild(more);
+  }
+
+  var handledCount = state.data.feedback.filter(function (r) { return state.handled.has(r.id); }).length;
+  document.getElementById("inbox-status").textContent =
+    rows.length + " shown · " + handledCount + " marked handled (this browser)";
+}
+
+/* ---------- Recipe votes ---------- */
+
+function voteRows() {
+  var recipes = state.data.recipes || {};
+  return state.data.recipeStats.map(function (s) {
+    var r = recipes[s.recipe_id];
+    var worked = s.worked_count || 0, failed = s.didnt_work_count || 0, total = worked + failed;
+    var status;
+    if (!r) status = "missing";
+    else if (total >= 3 && failed > worked) status = "broken";
+    else if (s.last_didnt_work_at && (!s.last_worked_at || s.last_didnt_work_at > s.last_worked_at)) status = "recent";
+    else status = "ok";
+    return {
+      id: s.recipe_id,
+      recipe: r,
+      name: r ? r.requiredItems.join(", ") + " → " + r.producedItems.join(", ") : s.recipe_id,
+      worked: worked, failed: failed, total: total,
+      rate: total ? worked / total : 0,
+      status: status,
+      stats: s
+    };
+  });
+}
+
+function filteredVotes() {
+  var f = state.votes, q = f.search.trim().toLowerCase();
+  var rows = voteRows().filter(function (v) {
+    if (f.status && v.status !== f.status) return false;
+    if (v.total < f.min) return false;
+    return !q || v.name.toLowerCase().indexOf(q) !== -1 || v.id.toLowerCase().indexOf(q) !== -1;
+  });
+  var key = f.sort, dir = f.dir;
+  rows.sort(function (a, b) {
+    var c;
+    if (key === "name") c = a.name.localeCompare(b.name);
+    else if (key === "status") c = STATUS_RANK[a.status] - STATUS_RANK[b.status] ||
+      String(b.stats.last_didnt_work_at || "").localeCompare(String(a.stats.last_didnt_work_at || ""));
+    else if (key === "lastWorked") c = String(b.stats.last_worked_at || "").localeCompare(String(a.stats.last_worked_at || ""));
+    else if (key === "lastFailed") c = String(b.stats.last_didnt_work_at || "").localeCompare(String(a.stats.last_didnt_work_at || ""));
+    else if (key === "rate") c = a.rate - b.rate || b.total - a.total;
+    else c = b.total - a.total;
+    return c * dir;
+  });
+  return rows;
+}
+
+function modeCell(stats, mode) {
+  var td = el("td", "num");
+  var w = stats["worked_" + mode] || 0, d = stats["didnt_work_" + mode] || 0;
+  if (!w && !d) { td.appendChild(el("span", "dim", "-")); return td; }
+  td.appendChild(el("span", "w", String(w)));
+  td.appendChild(el("span", "dim", " / "));
+  td.appendChild(el("span", "d", String(d)));
+  return td;
+}
+
+function whenCell(iso, mode) {
+  var td = el("td", "when");
+  if (!iso) { td.appendChild(el("span", "dim", "never")); return td; }
+  var label = MODES.filter(function (m) { return m[0] === mode; })[0];
+  td.appendChild(el("span", null, relative(iso)));
+  if (label) td.appendChild(el("span", "dim", " · " + label[1]));
+  td.title = iso;
+  return td;
+}
+
+function renderVotes() {
+  var body = document.getElementById("votes-body");
+  body.textContent = "";
+  var rows = filteredVotes();
+  rows.forEach(function (v) {
+    var tr = document.createElement("tr");
+
+    var name = el("td", "recipe-name");
+    if (v.recipe) {
+      name.appendChild(el("span", null, v.recipe.requiredItems.join(", ")));
+      name.appendChild(el("span", "to", " → "));
+      name.appendChild(el("span", null, v.recipe.producedItems.join(", ")));
+      if (v.recipe.modeRestriction) name.appendChild(el("span", "dim", " (" + v.recipe.modeRestriction + ")"));
+    } else {
+      name.appendChild(el("span", "dim", "Removed or renamed recipe"));
+    }
+    name.appendChild(el("span", "rid", v.id));
+    tr.appendChild(name);
+
+    var st = el("td");
+    st.appendChild(el("span", "s s-" + v.status, STATUS_LABEL[v.status]));
+    tr.appendChild(st);
+
+    var total = el("td", "num");
+    total.appendChild(el("span", "w", String(v.worked)));
+    total.appendChild(el("span", "dim", " / "));
+    total.appendChild(el("span", "d", String(v.failed)));
+    tr.appendChild(total);
+
+    var rate = el("td", "num", v.total ? Math.round(v.rate * 100) + "%" : "-");
+    var bar = el("div", "bar");
+    var bw = el("span", "bw"); bw.style.width = (v.rate * 100) + "%";
+    var bd = el("span", "bd"); bd.style.width = ((1 - v.rate) * 100) + "%";
+    if (v.total) { bar.appendChild(bw); bar.appendChild(bd); }
+    rate.appendChild(bar);
+    tr.appendChild(rate);
+
+    MODES.forEach(function (m) { tr.appendChild(modeCell(v.stats, m[0])); });
+    tr.appendChild(whenCell(v.stats.last_worked_at, v.stats.last_worked_mode));
+    tr.appendChild(whenCell(v.stats.last_didnt_work_at, v.stats.last_didnt_work_mode));
+    body.appendChild(tr);
+  });
+
+  var all = voteRows(), broken = all.filter(function (v) { return v.status === "broken"; }).length;
+  var votes = all.reduce(function (n, v) { return n + v.total; }, 0);
+  document.getElementById("votes-status-text").textContent =
+    rows.length + " of " + all.length + " recipes · " + votes + " votes · " + broken + " look broken";
+
+  document.querySelectorAll("th[data-sort]").forEach(function (th) {
+    var old = th.querySelector(".arrow"); if (old) old.remove();
+    if (th.dataset.sort === state.votes.sort) th.appendChild(el("span", "arrow", state.votes.dir === 1 ? " ↓" : " ↑"));
+  });
+}
+
+/* ---------- Shell ---------- */
+
+function selectTab(name) {
+  document.querySelectorAll("nav.tabs button").forEach(function (b) {
+    b.setAttribute("aria-selected", b.dataset.tab === name ? "true" : "false");
+  });
+  ["inbox", "votes", "submissions"].forEach(function (t) {
+    document.getElementById("tab-" + t).hidden = t !== name;
+  });
+  if (name === "submissions") {
+    var frame = document.getElementById("review-frame");
+    if (!frame.src) frame.src = "recipe-review/";
+  }
+  history.replaceState(null, "", "#" + name);
+}
+
+function load() {
+  var errBox = document.getElementById("error");
+  fetch("data.json", { cache: "no-store" }).then(function (r) {
+    if (r.status === 404) { document.getElementById("hint").hidden = false; return null; }
+    if (!r.ok) throw new Error("Could not load data.json (" + r.status + ").");
+    return r.json();
+  }).then(function (data) {
+    if (!data) return;
+    if (!Array.isArray(data.feedback) || !Array.isArray(data.recipeStats)) {
+      throw new Error("data.json is not in the expected format. Re-run the fetch.");
+    }
+    errBox.hidden = true;
+    document.getElementById("hint").hidden = true;
+    state.data = data;
+    var partial = data.feedbackTotal > data.feedback.length
+      ? " (newest " + data.feedback.length + " of " + data.feedbackTotal + ")" : "";
+    document.getElementById("source").textContent =
+      "Fetched from " + data.source + " D1 " + relative(data.fetchedAt) + " · " + shortDate(data.fetchedAt) + partial;
+    document.getElementById("count-inbox").textContent = String(data.feedback.length);
+    document.getElementById("count-votes").textContent = String(data.recipeStats.length);
+    renderChips(); renderVersions(); renderInbox(); renderVotes();
+  }).catch(function (e) {
+    errBox.textContent = e.message || String(e);
+    errBox.hidden = false;
+  });
+}
+
+document.querySelectorAll("nav.tabs button").forEach(function (b) {
+  b.addEventListener("click", function () { selectTab(b.dataset.tab); });
+});
+document.getElementById("btn-reload").addEventListener("click", function () {
+  load();
+  var frame = document.getElementById("review-frame");
+  if (frame.src) frame.contentWindow.location.reload();
+});
+document.getElementById("inbox-search").addEventListener("input", function (e) {
+  state.inbox.search = e.target.value; state.inbox.shown = PAGE_SIZE; if (state.data) renderInbox();
+});
+document.getElementById("inbox-version").addEventListener("change", function (e) {
+  state.inbox.version = e.target.value; state.inbox.shown = PAGE_SIZE; renderInbox();
+});
+document.getElementById("inbox-sort").addEventListener("change", function (e) {
+  state.inbox.sort = e.target.value; renderInbox();
+});
+document.getElementById("inbox-hide-handled").addEventListener("change", function (e) {
+  state.inbox.hideHandled = e.target.checked; state.inbox.shown = PAGE_SIZE; renderInbox();
+});
+document.getElementById("votes-search").addEventListener("input", function (e) {
+  state.votes.search = e.target.value; if (state.data) renderVotes();
+});
+document.getElementById("votes-status").addEventListener("change", function (e) {
+  state.votes.status = e.target.value; if (state.data) renderVotes();
+});
+document.getElementById("votes-min").addEventListener("input", function (e) {
+  var n = Number.parseInt(e.target.value, 10);
+  state.votes.min = Number.isInteger(n) && n > 0 ? n : 0;
+  if (state.data) renderVotes();
+});
+document.querySelectorAll("th[data-sort]").forEach(function (th) {
+  th.addEventListener("click", function () {
+    var key = th.dataset.sort;
+    state.votes.dir = state.votes.sort === key ? -state.votes.dir : 1;
+    state.votes.sort = key;
+    if (state.data) renderVotes();
+  });
+});
+
+var initial = location.hash.slice(1);
+selectTab(["inbox", "votes", "submissions"].indexOf(initial) === -1 ? "inbox" : initial);
+load();
+</script>
+</body>
+</html>

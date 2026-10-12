@@ -31,6 +31,8 @@
     "add-recipe": "bun tools/add-recipe.ts",
     "review:fetch": "bun tools/recipe-review/fetch-pending.mjs",
     "review": "bun tools/recipe-review/fetch-pending.mjs --serve",
+    "feedback:dashboard": "bun tools/feedback-dashboard/fetch.mjs --serve",
+    "feedback:dashboard:fetch": "bun tools/feedback-dashboard/fetch.mjs",
     "stash-scan:index": "bun scripts/build-stash-scan-index.ts"
   },
   "dependencies": {

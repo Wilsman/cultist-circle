@@ -47,6 +47,7 @@ next-env.d.ts
 # local files
 /public/all_items_*
 tools/recipe-review/submissions.json
+tools/feedback-dashboard/data.json
 repomix-output.txt
 CCC.md
 /.opencode/
