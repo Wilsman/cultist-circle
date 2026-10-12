@@ -75,6 +75,7 @@ import { RECIPE_COMPLETION_STORAGE_KEY } from "@/lib/recipe-completion";
 import { HeaderSection } from "@/components/app/header-section";
 import { FooterSection } from "@/components/app/footer-section";
 import { SelectorSettingsPopover } from "@/components/app/selector-settings-popover";
+import { PlayerLevelChip } from "@/components/app/player-level-chip";
 import { isRecipeOverrideItem } from "@/lib/recipe-override-items";
 import { SummarySection } from "@/components/app/summary-section";
 import { HotSacrificesSection } from "@/components/app/hot-sacrifices-section";
@@ -2448,38 +2449,47 @@ function AppContent({ contributors = [] }: AppProps) {
                       </button>
                     </div>
                   </div>
-                  <SelectorSettingsPopover
-                    sortOption={sortOption}
-                    onSortChange={handleSortChange}
-                    sacrificeSlotCount={sacrificeSlotCount}
-                    onSacrificeSlotCountChange={handleSacrificeSlotCountChange}
-                    priceMode={priceMode}
-                    onPriceModeChange={handlePriceModeChange}
-                    traderLevels={traderLevels}
-                    onTraderLevelsChange={handleTraderLevelsChange}
-                    fleaPriceType={fleaPriceType}
-                    onFleaPriceTypeChange={handleFleaPriceTypeChange}
-                    excludeIncompatible={excludeIncompatible}
-                    onExcludeIncompatibleChange={setExcludeIncompatible}
-                    incompatibleFilteredCount={incompatibleFilteredCount}
-                    useLevelFilter={useLevelFilter}
-                    onUseLevelFilterChange={setUseLevelFilter}
-                    fleaLevelFilteredCount={fleaLevelFilteredCount}
-                    useLastOfferCountFilter={useLastOfferCountFilter}
-                    onUseLastOfferCountFilterChange={
-                      handleUseLastOfferCountFilterChange
-                    }
-                    lowOfferCountFilteredCount={lowOfferCountFilteredCount}
-                    playerLevel={playerLevel}
-                    onPlayerLevelChange={setPlayerLevel}
-                    ignoreFilters={ignoreFilters}
-                    onIgnoreFiltersChange={setIgnoreFilters}
-                    categories={allCategoriesLocalized}
-                    categoryFilter={selectorCategoryFilter}
-                    onCategoryFilterChange={setSelectorCategoryFilter}
-                    traderFilter={selectorTraderFilter}
-                    onTraderFilterChange={setSelectorTraderFilter}
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <PlayerLevelChip
+                      useLevelFilter={useLevelFilter}
+                      onUseLevelFilterChange={setUseLevelFilter}
+                      playerLevel={playerLevel}
+                      onPlayerLevelChange={setPlayerLevel}
+                      filteredCount={fleaLevelFilteredCount}
+                    />
+                    <SelectorSettingsPopover
+                      sortOption={sortOption}
+                      onSortChange={handleSortChange}
+                      sacrificeSlotCount={sacrificeSlotCount}
+                      onSacrificeSlotCountChange={handleSacrificeSlotCountChange}
+                      priceMode={priceMode}
+                      onPriceModeChange={handlePriceModeChange}
+                      traderLevels={traderLevels}
+                      onTraderLevelsChange={handleTraderLevelsChange}
+                      fleaPriceType={fleaPriceType}
+                      onFleaPriceTypeChange={handleFleaPriceTypeChange}
+                      excludeIncompatible={excludeIncompatible}
+                      onExcludeIncompatibleChange={setExcludeIncompatible}
+                      incompatibleFilteredCount={incompatibleFilteredCount}
+                      useLevelFilter={useLevelFilter}
+                      onUseLevelFilterChange={setUseLevelFilter}
+                      fleaLevelFilteredCount={fleaLevelFilteredCount}
+                      useLastOfferCountFilter={useLastOfferCountFilter}
+                      onUseLastOfferCountFilterChange={
+                        handleUseLastOfferCountFilterChange
+                      }
+                      lowOfferCountFilteredCount={lowOfferCountFilteredCount}
+                      playerLevel={playerLevel}
+                      onPlayerLevelChange={setPlayerLevel}
+                      ignoreFilters={ignoreFilters}
+                      onIgnoreFiltersChange={setIgnoreFilters}
+                      categories={allCategoriesLocalized}
+                      categoryFilter={selectorCategoryFilter}
+                      onCategoryFilterChange={setSelectorCategoryFilter}
+                      traderFilter={selectorTraderFilter}
+                      onTraderFilterChange={setSelectorTraderFilter}
+                    />
+                  </div>
                 </div>
 
                 {/* Item Selection Area */}
