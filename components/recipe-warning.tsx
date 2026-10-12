@@ -6,11 +6,16 @@ import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { useLanguage } from "@/contexts/language-context";
 import { tarkovRecipes, Recipe } from "@/data/recipes";
 import { useMemo } from "react";
+import {
+  isRecipeOverrideItem,
+  RECIPE_OVERRIDE_ITEM_NAMES,
+} from "@/lib/recipe-override-items";
 
 // Configure which recipe items should trigger warnings
 // To enable all recipes, set this to: null (or comment it out)
 // To enable specific recipes only, add item names here (case-insensitive)
-const ENABLED_RECIPE_ITEMS: string[] | null = ["Mazoni golden dumbbell"];
+const ENABLED_RECIPE_ITEMS: readonly string[] | null =
+  RECIPE_OVERRIDE_ITEM_NAMES;
 
 interface RecipeWarningProps {
   selectedItems: SimplifiedItem[];
@@ -52,6 +57,16 @@ export function RecipeWarning({ selectedItems }: RecipeWarningProps) {
       });
     });
   }, [selectedItems]);
+
+  // Override recipes fire regardless of the rest of the circle, so anything
+  // else in it is consumed for nothing.
+  const wastedItems = useMemo(
+    () =>
+      selectedItems.some((item) => item && isRecipeOverrideItem(item))
+        ? selectedItems.filter((item) => item && !isRecipeOverrideItem(item))
+        : [],
+    [selectedItems],
+  );
 
   if (triggeredRecipes.length === 0) {
     return null;
@@ -104,6 +119,17 @@ export function RecipeWarning({ selectedItems }: RecipeWarningProps) {
             </div>
           ))}
         </div>
+        {wastedItems.length > 0 && (
+          <div className="rounded-md border border-red-500/30 bg-red-950/30 p-2 text-red-200">
+            <span className="font-semibold">
+              {t("Remove the other {count} item(s) first.", {
+                count: wastedItems.length,
+              })}
+            </span>{" "}
+            {t("They will be consumed with no reward:")}{" "}
+            {wastedItems.map((item) => item.shortName || item.name).join(", ")}
+          </div>
+        )}
         <div className="text-amber-300/80 italic">
           {t(
             "You will only receive the recipe reward, not the normal threshold reward."

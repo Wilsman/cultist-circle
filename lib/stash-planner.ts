@@ -15,6 +15,7 @@ import {
   type PricingSettings,
 } from "@/lib/stash-scan/owned-items";
 import { isItemNameExcluded } from "@/lib/excluded-item-names";
+import { isRecipeOverrideItem } from "@/lib/recipe-override-items";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 
 export interface StashPlanInput {
@@ -52,6 +53,8 @@ export function ownedFromInventory(input: OwnedInput): OwnedItem[] {
     if (entry.keep) continue;
     const item = input.itemsById.get(itemId);
     if (!item) continue;
+    // Never offered, even with filters ignored: its recipe wastes the rest.
+    if (isRecipeOverrideItem(item)) continue;
     if (!input.ignoreFilters && isItemNameExcluded(item, excludedLower)) continue;
     if (input.avoid?.has(itemId)) continue;
     const count = entry.count - (input.reserved?.get(itemId) ?? 0);

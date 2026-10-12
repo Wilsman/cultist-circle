@@ -75,6 +75,7 @@ import { RECIPE_COMPLETION_STORAGE_KEY } from "@/lib/recipe-completion";
 import { HeaderSection } from "@/components/app/header-section";
 import { FooterSection } from "@/components/app/footer-section";
 import { SelectorSettingsPopover } from "@/components/app/selector-settings-popover";
+import { isRecipeOverrideItem } from "@/lib/recipe-override-items";
 import { SummarySection } from "@/components/app/summary-section";
 import { HotSacrificesSection } from "@/components/app/hot-sacrifices-section";
 import { type FleaPriceType, type PriceMode } from "@/hooks/use-app-settings";
@@ -1322,7 +1323,10 @@ function AppContent({ contributors = [] }: AppProps) {
       }))
       .filter(
         ({ item, price }) =>
-          Number.isFinite(price) && price > 0 && item.basePrice > 0,
+          Number.isFinite(price) &&
+          price > 0 &&
+          item.basePrice > 0 &&
+          !isRecipeOverrideItem(item),
       )
       .sort((a, b) => a.price - b.price);
 
@@ -1740,6 +1744,7 @@ function AppContent({ contributors = [] }: AppProps) {
             price !== undefined &&
             price > 0 &&
             item.basePrice >= threshold * 0.1 &&
+            !isRecipeOverrideItem(item) &&
             (ignoreFilters || !excludedItems.has(item.name.toLowerCase())),
         )
         .sort((a, b) => b.efficiency - a.efficiency);
