@@ -1,96 +1,82 @@
 # Cultist Circle Calculator
 
-A powerful and intuitive tool for Escape from Tarkov players to calculate the total ritual value of items for cultist rewards.
+A web tool for Escape from Tarkov players that finds item combinations for the
+Cultist Circle. Pick up to five items, see their combined base value against the
+ritual thresholds, and let auto-select fill the slots with the cheapest
+combination that clears your target.
 
-## 🌟 Features
+Live at [cultistcircle.com](https://www.cultistcircle.com/).
 
-- **Dynamic Item Selection**: Easily search and select items from the Tarkov universe.
-- **Real-time Calculation**: Instantly see the total value of your selected items.
-- **PVP/PVE Toggle**: Switch between PVP and PVE item lists and flea market prices.
-- **Customizable Threshold**: Set your own threshold for item selection.
-- **Auto-select Function**: Automatically choose the best value-to-price items based on your threshold.
-- **Price Override**: Manually adjust flea market prices for more accurate calculations.
-- **Item Pinning**: Lock in specific items for your calculations.
-- **Responsive Design**: Fully functional on both desktop and mobile devices.
-- **Dark Mode**: Easy on the eyes, perfect for those late-night Tarkov sessions.
+## Features
 
-## 🚀 Getting Started
+- **Calculator**: search items, track the combined base value and flea cost, and
+  check it against the 350,001 and 400,000 thresholds.
+- **Auto-select**: fill slots from flea market prices or from your own stash,
+  with pinned items, price overrides and excluded items or categories.
+- **PVP-S / PVP / PVE**: switch item lists and prices between PVP Season,
+  regular PVP and PVE.
+- **Hot sacrifices**: known exact combos and their verified base values.
+- **Stash Scan** (`/scan`): upload stash or scav case screenshots and find the
+  cheapest items you already own to reach a threshold.
+- **Ritual Tracker** (`/tracker`): track countdowns, rewards, costs and results,
+  stored locally in your browser.
+- **Recipes** (`/recipes`): browse known recipes and submit new ones for review.
+- **Base values** (`/base-values`), **FAQ** and **Updates** pages.
+- **Localization**: 16 languages.
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/Wilsman/cultist-circle.git
-   ```
+Item data comes from the [tarkov.dev](https://tarkov.dev/) API.
 
-2. Install dependencies:
-   ```
-   npm install
-   ```
+## Getting started
 
-3. Run the development server:
-   ```
-   npm run dev
-   ```
+Requires [Bun](https://bun.sh/) and Node.js 24.
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+```sh
+git clone https://github.com/Wilsman/cultist-circle.git
+cd cultist-circle
+bun install
+bun run dev
+```
 
-## 🛠 Tech Stack
+`bun run dev` starts the Next.js app on [localhost:3000](http://localhost:3000)
+and the feedback Worker on port 8787.
 
-- [Next.js 14](https://nextjs.org/) - React framework
-- [TypeScript](https://www.typescriptlang.org/) - Static typing
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
-- [Shadcn UI](https://ui.shadcn.com/) - UI component library
-- [Radix UI](https://www.radix-ui.com/) - Unstyled, accessible components
-- [Framer Motion](https://www.framer.com/motion/) - Animation library
+| Command                 | Purpose                               |
+| ----------------------- | ------------------------------------- |
+| `bun run dev:app`       | Next.js only                          |
+| `bun run feedback:dev`  | Feedback Worker only                  |
+| `bun run build`         | Production build                      |
+| `bun run start`         | Serve the production build            |
+| `bun run test`          | Run Vitest                            |
+| `bun run lint`          | Run ESLint                            |
 
-## 📚 Additional Features
+## Project layout
 
-- **Recipe Page**: Explore various in-game recipes and their outcomes.
-- **Feedback System**: Built-in form for user feedback and bug reports.
-- **Tour Overlay**: Interactive guide for new users.
-- **Analytics Integration**: Track usage with Google Analytics and PostHog.
+- `app/` - Next.js App Router pages and API routes
+- `components/`, `hooks/`, `contexts/`, `lib/`, `utils/` - UI and app logic
+- `config/i18n/` - translation files (JSON5)
+- `data/` - static recipe data
+- `cloudflare/feedback/` - Cloudflare Worker and D1 migrations for feedback and
+  recipe submissions
+- `tests/` - Vitest tests
 
-## 🤝 Contributing
+## Tech stack
 
-Contributions, bug reports, and feature requests are welcome! Here's how you can contribute:
+Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui with Radix UI, SWR,
+Dexie (IndexedDB), Framer Motion, Vitest, and Cloudflare Workers with D1.
 
-1. Fork the repository
-2. Create your feature branch: `git checkout -b feature/AmazingFeature`
-3. Commit your changes: `git commit -m 'Add some AmazingFeature'`
-4. Push to the branch: `git push origin feature/AmazingFeature`
-5. Open a pull request
+## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+Bug reports, feature requests and pull requests are welcome. Fork the repo,
+branch off `master`, use [Conventional Commits](https://www.conventionalcommits.org/),
+and open a pull request describing the change and how you tested it.
 
-## 🎮 Usage Tips
+## Community
 
-- Use the "Auto-select" feature to quickly fill your inventory with the most valuable items.
-- Experiment with different thresholds to optimize your loot strategy.
-- Check the "Recipe Page" for crafting opportunities that can increase your profits.
-- Share your feedback to help us improve the calculator and add new features!
+Join the [Discord server](https://discord.gg/3dFmr5qaJK) for feedback and updates.
 
-## 🔮 Future Plans
+## License
 
-- [ ] Switch to tarkov.dev API for data
-- [ ] Upgrade to Next.js 15
+MIT - see [LICENSE.md](LICENSE.md).
 
-## 🏆 Achievements
-
-- Over 10,000 active users
-- Mentioned by popular Tarkov streamers
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
-
-## 🙏 Acknowledgments
-
-- The Escape from Tarkov community for their invaluable feedback and support
-- [Battlestate Games](https://www.escapefromtarkov.com/) for creating such an immersive and challenging game
-- All the contributors who have helped make this project better
-
-## 💬 Get in Touch
-
-- Join our [Discord server](https://discord.gg/cultistcircle)
-- Visit our website: [www.cultistcircle.com](https://www.cultistcircle.com/)
-
-Happy looting, Tarkov warriors! May your stashes be full and your extracts successful. 🎒💰
+Escape from Tarkov is a trademark of [Battlestate Games](https://www.escapefromtarkov.com/).
+This project is not affiliated with Battlestate Games.
