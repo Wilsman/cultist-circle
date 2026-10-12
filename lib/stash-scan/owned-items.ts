@@ -4,6 +4,7 @@
 import type { FleaPriceType, PriceMode } from "@/hooks/use-app-settings";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { OwnedItem } from "./optimize";
+import { preferredItemId, type MatchPreferences } from "./match-preferences";
 import type { ScanCell, ScanImageResult, ScanRect } from "./types";
 
 /**
@@ -156,13 +157,23 @@ export interface OwnedGroup {
   needsReview: boolean;
 }
 
-/** Initial assignments: the best match of every recognised, non-empty cell. */
-export function initialAssignments(cells: DisplayCell[]): CellAssignments {
+/**
+ * Initial assignments: the best match of every recognised, non-empty cell,
+ * or the item the user corrected that match to before. A remembered
+ * correction differs from the suggestion, so the cell counts as reviewed.
+ */
+export function initialAssignments(
+  cells: DisplayCell[],
+  preferences: MatchPreferences = {},
+): CellAssignments {
   const assignments: CellAssignments = {};
   for (const cell of cells) {
     if (cell.empty) continue;
     const best = cell.matches[0];
-    assignments[cell.key] = best && cell.confidence !== "low" ? best.itemId : null;
+    assignments[cell.key] =
+      best && cell.confidence !== "low"
+        ? (preferredItemId(cell, preferences) ?? best.itemId)
+        : null;
   }
   return assignments;
 }

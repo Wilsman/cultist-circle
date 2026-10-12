@@ -23,7 +23,10 @@ import { isItemNameExcluded } from "@/lib/excluded-item-names";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
 import { useLanguage } from "@/contexts/language-context";
 import { useAppSettings } from "@/hooks/use-app-settings";
-import { useLocalStorageNumber } from "@/hooks/use-local-storage-state";
+import {
+  useLocalStorageNumber,
+  useLocalStorageState,
+} from "@/hooks/use-local-storage-state";
 import { useItemsData } from "@/hooks/use-items-data";
 import {
   SELECTED_ITEM_IDS_STORAGE_KEY,
@@ -36,6 +39,13 @@ import {
   SACRIFICE_SLOT_COUNT_KEY,
 } from "@/lib/sacrifice-slots";
 import { planSacrifice } from "@/lib/stash-scan/optimize";
+import {
+  isMatchPreferences,
+  MATCH_PREFERENCES_STORAGE_KEY,
+  preferTradeableMatches,
+  recordMatchCorrection,
+  type MatchPreferences,
+} from "@/lib/stash-scan/match-preferences";
 import {
   prepareScreenshot,
   ScreenshotTooLargeError,
@@ -231,6 +241,31 @@ export function StashScan({
   const inclusion = store ? store.inclusion : localInclusion;
   const setInclusion = store ? store.setInclusion : setLocalInclusion;
 
+  // Corrections the user made on earlier scans, keyed by the suggestion.
+  const [matchPreferences, setMatchPreferences] =
+    useLocalStorageState<MatchPreferences>(
+      MATCH_PREFERENCES_STORAGE_KEY,
+      {},
+      {
+        validate: isMatchPreferences,
+      },
+    );
+  // Read when scan results arrive, so the scan callbacks keep their deps.
+  const matchContext = useRef<{
+    itemsById: ReadonlyMap<string, SimplifiedItem>;
+    preferences: MatchPreferences;
+  }>({ itemsById: new Map(), preferences: {} });
+  const rankResults = useCallback(
+    (images: ScanImageResult[]) =>
+      preferTradeableMatches(images, matchContext.current.itemsById),
+    [],
+  );
+  const assignmentsFor = useCallback(
+    (cells: DisplayCell[]) =>
+      initialAssignments(cells, matchContext.current.preferences),
+    [],
+  );
+
   // Object URLs outlive their images unless revoked. With a lifted store they
   // live (and are revoked) with the store instead of this component.
   const urls = useRef(new Set<string>());
@@ -257,11 +292,12 @@ export function StashScan({
           const body = (await response.json()) as DemoScanResponse;
           if (cancelled) return;
           if (body.available) {
+            const results = rankResults(body.images);
             setSession({
               images: [{ id: "demo", url: body.imageUrl }],
-              results: body.images,
+              results,
             });
-            setAssignments(initialAssignments(displayCells(body.images, {})));
+            setAssignments(assignmentsFor(displayCells(results, {})));
             setSplits({});
             setDemoStatus("ready");
             return;
@@ -304,7 +340,8 @@ export function StashScan({
         trackUrl(url);
         const outcomes = await scanEach([{ id: "demo-live", file, url }], t);
         if (cancelled) return;
-        const first = outcomes[0]?.result;
+        const scanned = outcomes[0]?.result;
+        const first = scanned ? rankResults([scanned])[0] : undefined;
         const upload = outcomes[0]?.upload;
         if (!first) {
           if (!cancelled) setDemoStatus("error");
@@ -314,7 +351,7 @@ export function StashScan({
           images: [{ id: "demo-live", url, upload }],
           results: [first],
         });
-        setAssignments(initialAssignments(displayCells([first], {})));
+        setAssignments(assignmentsFor(displayCells([first], {})));
         setSplits({});
         setDemoStatus("ready");
       } catch {
@@ -325,7 +362,17 @@ export function StashScan({
     return () => {
       cancelled = true;
     };
-  }, [demo, demoRetry, t, trackUrl, setSession, setAssignments, setSplits]);
+  }, [
+    demo,
+    demoRetry,
+    t,
+    trackUrl,
+    setSession,
+    setAssignments,
+    setSplits,
+    rankResults,
+    assignmentsFor,
+  ]);
   const [activeCell, setActiveCell] = useState<CellKey | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [workspace, setWorkspace] = useState<
@@ -408,6 +455,9 @@ export function StashScan({
     () => new Map<string, SimplifiedItem>(items.map((item) => [item.id, item])),
     [items],
   );
+  useEffect(() => {
+    matchContext.current = { itemsById, preferences: matchPreferences };
+  }, [itemsById, matchPreferences]);
 
   useEffect(() => {
     const tracked = urls.current;
@@ -510,7 +560,7 @@ export function StashScan({
           },
         );
       }
-      const results = scanned.map((o) => o.result!);
+      const results = rankResults(scanned.map((o) => o.result!));
       const scannedImages = scanned.map((o) => ({
         ...o.image,
         upload: o.upload,
@@ -529,13 +579,13 @@ export function StashScan({
         session
           ? {
               ...current,
-              ...initialAssignments(
+              ...assignmentsFor(
                 displayCells(allResults, {}).filter(
                   (cell) => cell.imageIndex >= (session?.images.length ?? 0),
                 ),
               ),
             }
-          : initialAssignments(displayCells(results, {})),
+          : assignmentsFor(displayCells(results, {})),
       );
       if (!session) {
         setInclusion({});
@@ -564,6 +614,8 @@ export function StashScan({
     setInclusion,
     setQueued,
     setSplits,
+    rankResults,
+    assignmentsFor,
   ]);
 
   // Handed-over files scan themselves once queued.
@@ -764,6 +816,18 @@ export function StashScan({
       return next;
     });
     targets.forEach(markReviewed);
+    // Remember the choice so later scans start from it.
+    setMatchPreferences((current) =>
+      targets.reduce(
+        (prefs, key) =>
+          recordMatchCorrection(
+            prefs,
+            cellsByKey.get(key)?.matches[0]?.itemId,
+            itemId,
+          ),
+        current,
+      ),
+    );
     if (!reviewing) {
       setActiveCell(null);
       return;
