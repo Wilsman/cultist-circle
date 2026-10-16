@@ -13,6 +13,7 @@ import { NotesWidget } from "@/components/notes-widget";
 import { SupportWidget } from "@/components/support-widget";
 import { SiteNav } from "@/components/site-nav";
 import { RitualReminderWatcher } from "@/components/ritual-tracker/ritual-reminder-watcher";
+import { ItemLookupCommand } from "@/components/item-lookup-command";
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
@@ -144,6 +145,7 @@ export default function RootLayout({
                 <CookieConsent />
                 <SonnerToaster />
                 <RitualReminderWatcher />
+                <ItemLookupCommand />
               </div>
             </main>
             </StashScanStoreProvider>
