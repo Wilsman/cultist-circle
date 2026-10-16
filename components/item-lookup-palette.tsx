@@ -18,6 +18,7 @@ import {
   Loader2,
   Search,
   Star,
+  X,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -648,6 +649,7 @@ function PaletteBody({
   hasError,
   mode,
   onCycleMode,
+  onModeChange,
   initialItemId,
   onClose,
 }: {
@@ -657,6 +659,7 @@ function PaletteBody({
   hasError: boolean;
   mode: GameMode;
   onCycleMode: (direction: 1 | -1) => void;
+  onModeChange: (mode: GameMode) => void;
   initialItemId: string | null;
   onClose: () => void;
 }) {
@@ -795,11 +798,14 @@ function PaletteBody({
       }}
       className="h-full rounded-none bg-transparent text-slate-200"
     >
-      <div className="flex items-center gap-2 border-b border-white/[0.06] py-2 pl-4 pr-14">
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.06] px-4">
         {loadingCatalog ? (
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-500" />
+          <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin text-slate-500" />
         ) : (
-          <Search className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={2} />
+          <Search
+            className="h-[18px] w-[18px] shrink-0 text-slate-500"
+            strokeWidth={2}
+          />
         )}
         <CommandPrimitive.Input
           autoFocus
@@ -814,18 +820,42 @@ function PaletteBody({
               ? t("Loading item catalog...")
               : t("Search items by name or short name...")
           }
-          className="h-10 min-w-0 flex-1 bg-transparent text-[15px] text-slate-100 outline-none placeholder:text-slate-500"
+          className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-slate-100 outline-none placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
+        <div
+          role="radiogroup"
+          aria-label={t("Game mode")}
+          title={t("Switch game mode (Tab)")}
+          className="flex shrink-0 items-center rounded-lg bg-white/[0.04] p-0.5 ring-1 ring-inset ring-white/[0.06]"
+        >
+          {GAME_MODES.map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="radio"
+              aria-checked={option === mode}
+              tabIndex={-1}
+              onClick={() => onModeChange(option)}
+              className={cn(
+                "h-6 rounded-md px-2 text-[11px] font-semibold tracking-wide transition-colors focus-visible:ring-0 focus-visible:ring-offset-0",
+                option === mode
+                  ? "bg-cyan-300/[0.12] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.25)]"
+                  : "text-slate-500 hover:text-slate-300",
+              )}
+            >
+              {GAME_MODE_LABELS[option]}
+            </button>
+          ))}
+        </div>
+        <span aria-hidden className="h-5 w-px shrink-0 bg-white/[0.08]" />
         <button
           type="button"
-          onClick={() => onCycleMode(1)}
-          title={t("Switch game mode (Tab)")}
-          className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-cyan-300/20 bg-cyan-300/[0.06] px-2 text-[11px] font-semibold text-cyan-200 transition-colors hover:bg-cyan-300/[0.1]"
+          onClick={onClose}
+          aria-label={t("Close")}
+          className="inline-flex h-6 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] px-1.5 text-[10px] font-medium text-slate-400 transition-colors hover:border-white/20 hover:text-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0"
         >
-          {GAME_MODE_LABELS[mode]}
-          <span className="hidden sm:inline-flex">
-            <Kbd>Tab</Kbd>
-          </span>
+          <span className="hidden sm:inline">Esc</span>
+          <X className="h-3.5 w-3.5 sm:hidden" />
         </button>
       </div>
 
@@ -1016,7 +1046,7 @@ export default function ItemLookupPalette({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         aria-describedby={undefined}
-        className="flex h-[min(40rem,calc(100dvh-2rem))] w-[calc(100vw-1rem)] max-w-4xl flex-col gap-0 overflow-hidden rounded-xl border-white/10 bg-[#0b131d]/[0.98] p-0 shadow-[0_30px_120px_rgba(0,0,0,0.7)] sm:rounded-xl [&>button:last-child]:right-3 [&>button:last-child]:top-3 [&>button:last-child]:p-1.5 [&>button:last-child>svg]:h-4 [&>button:last-child>svg]:w-4"
+        className="flex h-[min(40rem,calc(100dvh-2rem))] w-[calc(100vw-1rem)] max-w-4xl flex-col gap-0 overflow-hidden rounded-xl border-white/10 bg-[#0b131d]/[0.98] p-0 shadow-[0_30px_120px_rgba(0,0,0,0.7)] sm:rounded-xl [&>button:last-child]:hidden"
       >
         <DialogTitle className="sr-only">{t("Item search")}</DialogTitle>
         <PaletteBody
@@ -1026,6 +1056,7 @@ export default function ItemLookupPalette({
           hasError={hasError}
           mode={mode}
           onCycleMode={cycleMode}
+          onModeChange={setMode}
           initialItemId={initialItemId}
           onClose={() => onOpenChange(false)}
         />
