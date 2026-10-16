@@ -787,7 +787,9 @@ function PaletteBody({
       value={activeValue}
       onValueChange={setHighlighted}
       onKeyDown={(event) => {
+        // Only from the search box, so Tab still moves between detail buttons
         if (event.key !== "Tab") return;
+        if (!(event.target as HTMLElement).hasAttribute("cmdk-input")) return;
         event.preventDefault();
         onCycleMode(event.shiftKey ? -1 : 1);
       }}
