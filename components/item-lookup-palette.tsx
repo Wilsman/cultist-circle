@@ -7,7 +7,10 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  Ban,
   Check,
+  ChevronRight,
+  Clock,
   Copy,
   CornerDownLeft,
   ExternalLink,
@@ -32,16 +35,17 @@ import {
   getStoredGameMode,
   type GameMode,
 } from "@/lib/game-mode";
-import { isItemNameExcluded } from "@/lib/excluded-item-names";
 import { getTraderAvatar } from "@/lib/trader-avatars";
 import {
   LOOKUP_PAGES,
   createItemLookupIndex,
   findRelatedRecipes,
+  getCircleRestriction,
   getFleaLevelRequirement,
   getItemSlots,
   getTraderBuyOffers,
   getTraderSellOffers,
+  isExcludedFrom6hRewards,
   pushRecentItemId,
   readExcludedItemNames,
   readFavoriteItemIds,
@@ -49,6 +53,7 @@ import {
   searchLookupItems,
   searchLookupPages,
   toggleFavoriteItemId,
+  type CircleRestriction,
   type ItemLookupIndex,
   type LookupPage,
 } from "@/lib/item-lookup";
@@ -126,13 +131,13 @@ function CopyButton({
 function ItemRow({
   item,
   favorite,
-  excluded,
+  restriction,
   onSelect,
   t,
 }: {
   item: SimplifiedItem;
   favorite: boolean;
-  excluded: boolean;
+  restriction: CircleRestriction;
   onSelect: (value: string) => void;
   t: Translate;
 }) {
@@ -161,8 +166,14 @@ function ItemRow({
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
           <span className="truncate">{item.shortName}</span>
-          {excluded && (
-            <span className="shrink-0 rounded-sm border border-rose-400/20 bg-rose-400/[0.07] px-1 text-[9px] font-semibold uppercase tracking-wide text-rose-300/80">
+          {restriction === "incompatible" && (
+            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-sm border border-rose-400/30 bg-rose-400/[0.1] px-1 text-[9px] font-semibold uppercase tracking-wide text-rose-300">
+              <Ban className="h-2.5 w-2.5" />
+              {t("Incompatible")}
+            </span>
+          )}
+          {restriction === "excluded" && (
+            <span className="shrink-0 rounded-sm border border-white/[0.08] bg-white/[0.03] px-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
               {t("Excluded")}
             </span>
           )}
@@ -243,20 +254,80 @@ function StatCard({
   );
 }
 
+function ItemNotice({
+  tone,
+  icon: Icon,
+  title,
+  description,
+  href,
+  onNavigate,
+  t,
+}: {
+  tone: "danger" | "info";
+  icon: typeof Ban;
+  title: string;
+  description: string;
+  href: string;
+  onNavigate: (href: string) => void;
+  t: Translate;
+}) {
+  return (
+    <div
+      role={tone === "danger" ? "alert" : "note"}
+      className={cn(
+        "flex gap-3 rounded-xl border px-3.5 py-3",
+        tone === "danger"
+          ? "border-rose-400/30 bg-rose-400/[0.08]"
+          : "border-sky-300/20 bg-sky-300/[0.05]",
+      )}
+    >
+      <Icon
+        className={cn(
+          "mt-0.5 h-4 w-4 shrink-0",
+          tone === "danger" ? "text-rose-300" : "text-sky-300",
+        )}
+      />
+      <div className="min-w-0 flex-1">
+        <p
+          className={cn(
+            "text-[13px] font-semibold",
+            tone === "danger" ? "text-rose-200" : "text-sky-200",
+          )}
+        >
+          {title}
+        </p>
+        <p className="mt-0.5 text-xs leading-relaxed text-slate-400">
+          {description}
+        </p>
+        <button
+          type="button"
+          onClick={() => onNavigate(href)}
+          className="mt-1.5 inline-flex items-center gap-0.5 text-xs font-medium text-slate-300 underline-offset-2 hover:text-slate-100 hover:underline"
+        >
+          {t("Read the FAQ")}
+          <ChevronRight className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ItemDetail({
   item,
   mode,
   favorite,
-  excluded,
+  restriction,
   onToggleFavorite,
+  onNavigate,
   onBack,
   t,
 }: {
   item: SimplifiedItem;
   mode: GameMode;
   favorite: boolean;
-  excluded: boolean;
+  restriction: CircleRestriction;
   onToggleFavorite: () => void;
+  onNavigate: (href: string) => void;
   onBack: () => void;
   t: Translate;
 }) {
@@ -267,6 +338,7 @@ function ItemDetail({
   const cheapestBuy = buyOffers[0];
   const slots = getItemSlots(item);
   const fleaLevel = getFleaLevelRequirement(item);
+  const noSixHourReward = isExcludedFrom6hRewards(item);
   const recipes = useMemo(
     () => findRelatedRecipes(item, tarkovRecipes).slice(0, 4),
     [item],
@@ -315,8 +387,8 @@ function ItemDetail({
                 {t("Flea Lv. {level}", { level: fleaLevel })}
               </span>
             )}
-            {excluded && (
-              <span className="rounded border border-rose-400/20 bg-rose-400/[0.07] px-1.5 py-0.5 text-rose-300/90">
+            {restriction === "excluded" && (
+              <span className="rounded border border-white/[0.08] bg-white/[0.03] px-1.5 py-0.5 text-slate-400">
                 {t("Not used by auto-select")}
               </span>
             )}
@@ -355,6 +427,33 @@ function ItemDetail({
           </div>
         </div>
       </div>
+
+      {restriction === "incompatible" && (
+        <ItemNotice
+          tone="danger"
+          icon={Ban}
+          title={t("Can't be placed in the Cultist Circle")}
+          description={t(
+            "The game won't accept this item in the circle, so it can't count toward a ritual's value.",
+          )}
+          href="/faq#incompatible"
+          onNavigate={onNavigate}
+          t={t}
+        />
+      )}
+      {noSixHourReward && (
+        <ItemNotice
+          tone="info"
+          icon={Clock}
+          title={t("Never a 6h ritual reward")}
+          description={t(
+            "You can still sacrifice it, and it can come from 14h rituals, but the 6h ritual never returns it.",
+          )}
+          href="/faq#6h-exclusions"
+          onNavigate={onNavigate}
+          t={t}
+        />
+      )}
 
       <div className="group relative rounded-xl border border-amber-300/20 bg-gradient-to-br from-amber-300/[0.09] to-amber-300/[0.02] px-4 py-3">
         <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-200/70">
@@ -665,10 +764,14 @@ function PaletteBody({
     [],
   );
 
+  const navigate = (href: string) => {
+    onClose();
+    router.push(href);
+  };
+
   const handleSelect = (value: string) => {
     if (value.startsWith(PAGE_PREFIX)) {
-      onClose();
-      router.push(value.slice(PAGE_PREFIX.length));
+      navigate(value.slice(PAGE_PREFIX.length));
       return;
     }
     setHighlighted(value);
@@ -774,7 +877,7 @@ function PaletteBody({
                     key={item.id}
                     item={item}
                     favorite={favoriteSet.has(item.id)}
-                    excluded={isItemNameExcluded(item, excludedNames)}
+                    restriction={getCircleRestriction(item, excludedNames)}
                     onSelect={handleSelect}
                     t={t}
                   />
@@ -811,13 +914,14 @@ function PaletteBody({
               item={activeItem}
               mode={mode}
               favorite={favoriteSet.has(activeItem.id)}
-              excluded={isItemNameExcluded(activeItem, excludedNames)}
+              restriction={getCircleRestriction(activeItem, excludedNames)}
               onToggleFavorite={() =>
                 setFavorites({
                   mode,
                   ids: toggleFavoriteItemId(mode, activeItem.id),
                 })
               }
+              onNavigate={navigate}
               onBack={() => setShowMobileDetail(false)}
               t={t}
             />

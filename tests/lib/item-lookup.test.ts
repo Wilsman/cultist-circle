@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   createItemLookupIndex,
   findRelatedRecipes,
+  getCircleRestriction,
   getFleaLevelRequirement,
   getTraderBuyOffers,
   getTraderSellOffers,
+  isExcludedFrom6hRewards,
   searchLookupItems,
   searchLookupPages,
   LOOKUP_PAGES,
@@ -115,6 +117,38 @@ describe("getFleaLevelRequirement", () => {
     });
     expect(getFleaLevelRequirement(stim)).toBe(30);
     expect(getFleaLevelRequirement(item("c2", "Bolts", "Bolts"))).toBe(0);
+  });
+});
+
+describe("circle restrictions", () => {
+  const roubles = item("d1", "Roubles", "RUB");
+
+  it("flags FAQ incompatible items ahead of user exclusions", () => {
+    expect(getCircleRestriction(roubles, new Set(["roubles"]))).toBe(
+      "incompatible",
+    );
+    expect(
+      getCircleRestriction(
+        item("d2", "Rublos", "RUB", { englishName: "Roubles" }),
+        new Set(),
+      ),
+    ).toBe("incompatible");
+  });
+
+  it("reports user exclusions and leaves other items alone", () => {
+    const bolts = item("d3", "Bolts", "Bolts");
+    expect(getCircleRestriction(bolts, new Set(["bolts"]))).toBe("excluded");
+    expect(getCircleRestriction(bolts, new Set())).toBeNull();
+  });
+
+  it("matches 6h exclusions, including prefix entries", () => {
+    expect(isExcludedFrom6hRewards(items[2])).toBe(true);
+    expect(
+      isExcludedFrom6hRewards(
+        item("d4", "Advanced current converter", "AdvCurConv"),
+      ),
+    ).toBe(true);
+    expect(isExcludedFrom6hRewards(items[3])).toBe(false);
   });
 });
 

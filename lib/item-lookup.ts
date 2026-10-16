@@ -7,6 +7,8 @@ import type {
 import type { Recipe } from "@/data/recipes";
 import { extractItemName } from "@/lib/recipe-item-matcher";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
+import { RITUAL_6H_EXCLUSIONS } from "@/config/ritual-exclusions";
+import { isItemNameExcluded } from "@/lib/excluded-item-names";
 import {
   getCategoryLevelRequirement,
   getItemLevelRequirement,
@@ -257,11 +259,40 @@ export function toggleFavoriteItemId(mode: GameMode, itemId: string): string[] {
   return next;
 }
 
+const INCOMPATIBLE_ITEM_NAMES = new Set(
+  Array.from(DEFAULT_EXCLUDED_ITEMS, (name) => name.toLowerCase()),
+);
+
+/** The game won't accept these in the circle (FAQ: Incompatible Items). */
+export function isCircleIncompatible(item: SimplifiedItem): boolean {
+  return isItemNameExcluded(item, INCOMPATIBLE_ITEM_NAMES);
+}
+
+/** A 6h ritual never returns these (FAQ: 6h Exclusions). `*` is a prefix. */
+export function isExcludedFrom6hRewards(item: SimplifiedItem): boolean {
+  const names = [...getNames(item), ...getShortNames(item)];
+  return Array.from(RITUAL_6H_EXCLUSIONS).some((entry) => {
+    const pattern = entry.trim().toLowerCase();
+    return pattern.endsWith("*")
+      ? names.some((name) => name.startsWith(pattern.slice(0, -1)))
+      : names.includes(pattern);
+  });
+}
+
+export type CircleRestriction = "incompatible" | "excluded" | null;
+
+/** Incompatible items first; otherwise the user's calculator exclusions. */
+export function getCircleRestriction(
+  item: SimplifiedItem,
+  excludedNames: ReadonlySet<string>,
+): CircleRestriction {
+  if (isCircleIncompatible(item)) return "incompatible";
+  return isItemNameExcluded(item, excludedNames) ? "excluded" : null;
+}
+
 /** Calculator exclusions: user's saved list merged with the defaults. */
 export function readExcludedItemNames(): Set<string> {
-  const names = new Set(
-    Array.from(DEFAULT_EXCLUDED_ITEMS, (name) => name.toLowerCase()),
-  );
+  const names = new Set(INCOMPATIBLE_ITEM_NAMES);
   for (const name of readStoredIds("excludedItems")) {
     names.add(name.toLowerCase());
   }
