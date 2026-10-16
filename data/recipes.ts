@@ -131,6 +131,20 @@ const recipeDefinitions: RecipeDefinition[] = [
     producedItems: ["1x Duck figurine"],
   },
   {
+    requiredItems: ["1x PMC Origins figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x PMC Origins figurine"],
+    isNew: true,
+    isRepeatable: true,
+  },
+  {
+    requiredItems: ["5x Ref figurine"],
+    craftingTime: "666 mins",
+    producedItems: ["A random item from the Arena Battlepass"],
+    isNew: true,
+    isRepeatable: true,
+  },
+  {
     requiredItems: ["1x Labrys research notes"],
     craftingTime: "66 mins",
     producedItems: ["1x Labrys access keycard"],
