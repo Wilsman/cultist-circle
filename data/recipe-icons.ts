@@ -269,6 +269,6 @@ export const recipeIconMap: Record<string, string> = {
     "https://assets.tarkov.dev/6939948dc2ceb9acd7082eb2-icon.webp",
   "1x Duck figurine": "https://assets.tarkov.dev/unknown-item-icon.jpg",
   "5x Can of duck pate": "https://assets.tarkov.dev/unknown-item-icon.jpg",
-  "1x PMC Origins figurine": "https://assets.tarkov.dev/unknown-item-icon.jpg",
+  "1x PMC Origins figurine": "https://assets.tarkov.dev/6841b6b674a3c16f5e03d653-512.webp",
   "5x Ref figurine": "https://assets.tarkov.dev/unknown-item-icon.jpg",
 };
