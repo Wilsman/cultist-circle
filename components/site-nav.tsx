@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import {
   Table,
@@ -14,6 +14,7 @@ import {
   TimerReset,
   ScanSearch,
   Menu,
+  Search,
 } from "lucide-react";
 import {
   Select,
@@ -34,6 +35,10 @@ import {
 } from "@/config/feature-flags";
 import { useLanguage } from "@/contexts/language-context";
 import { UpdatesBell } from "@/components/updates-bell";
+import {
+  openItemLookup,
+  prewarmItemLookup,
+} from "@/components/item-lookup-command";
 
 const primaryLinks = [
   { href: "/", label: "Calculator", icon: Calculator },
@@ -54,6 +59,41 @@ function NewBadge({ className = "" }: { className?: string }) {
     >
       NEW
     </span>
+  );
+}
+
+const subscribeToNothing = () => () => {};
+
+function ItemSearchButton() {
+  const { t } = useLanguage();
+  const isMac = useSyncExternalStore(
+    subscribeToNothing,
+    () => /Mac|iPhone|iPad/.test(navigator.platform),
+    () => false,
+  );
+
+  return (
+    <button
+      type="button"
+      onClick={openItemLookup}
+      onPointerEnter={prewarmItemLookup}
+      onFocus={prewarmItemLookup}
+      aria-label={t("Item Search")}
+      aria-keyshortcuts={isMac ? "Meta+K" : "Control+K"}
+      title={t("Item Search")}
+      className="mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-md text-slate-400 transition-colors hover:bg-white/[0.035] hover:text-slate-100 sm:h-9 sm:w-auto sm:border sm:border-white/[0.08] sm:bg-white/[0.02] sm:pl-2.5 sm:pr-1.5"
+    >
+      <Search
+        className="h-4 w-4 shrink-0 text-amber-300/80"
+        strokeWidth={1.8}
+      />
+      <span className="hidden text-[13px] font-medium text-slate-300 sm:inline">
+        {t("Item Search")}
+      </span>
+      <kbd className="hidden rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-sans text-[10px] font-medium text-slate-400 sm:inline">
+        {isMac ? "⌘ K" : "Ctrl K"}
+      </kbd>
+    </button>
   );
 }
 
@@ -232,6 +272,8 @@ export function SiteNav() {
           </div>
 
           <div className="ml-auto flex shrink-0 items-center justify-end gap-0.5">
+            <ItemSearchButton />
+
             <Link
               href="/faq"
               aria-label={t("Help & FAQ")}
