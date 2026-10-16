@@ -111,4 +111,5 @@ export const DEFAULT_EXCLUDED_ITEMS = new Set([
   // icebreaker items
   "SZ-1 explosive charge",
   "Scourge's smartphone",
+  "Precursor container",
 ]);
