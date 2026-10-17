@@ -67,6 +67,7 @@ import {
   RECIPE_SHARE_PARAM,
 } from "@/lib/recipe-share";
 import { getStoredGameMode, type GameMode } from "@/lib/game-mode";
+import { isMissingItemIcon, UNKNOWN_ITEM_ICON } from "@/lib/item-icon";
 import { RecipeSubmissionButton } from "@/components/recipe-submission";
 import {
   Package,
@@ -355,13 +356,13 @@ const ItemBadge = React.memo(function ItemBadge({
 }) {
   const itemData = getItemByName(itemName);
   const staticIconUrl = recipeIconMap[itemName];
-  const isUsableIcon = (url: string | undefined) =>
-    Boolean(url && !url.includes("unknown-item"));
-  const iconUrl = isUsableIcon(staticIconUrl)
+  const iconUrl = !isMissingItemIcon(staticIconUrl)
     ? staticIconUrl
-    : isUsableIcon(itemData?.iconLink)
+    : !isMissingItemIcon(itemData?.iconLink)
       ? itemData?.iconLink
-      : undefined;
+      : placeholderIcon
+        ? undefined
+        : UNKNOWN_ITEM_ICON;
   const sizeClasses =
     size === "sm" ? "w-10 h-10 p-1.5" : "w-12 h-12 lg:w-14 lg:h-14 p-2";
 

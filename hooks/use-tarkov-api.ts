@@ -1,5 +1,6 @@
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { GraphQLResponse, TarkovItem } from "@/types/GraphQLResponse";
+import { resolveItemIcon } from "@/lib/item-icon";
 import {
   fromTarkovJsonGameMode,
   type TarkovGraphqlGameMode,
@@ -520,7 +521,7 @@ function mapJsonSimplifiedItem(
     width: item.width,
     height: item.height,
     lastOfferCount: item.lastOfferCount ?? undefined,
-    iconLink: item.iconLink,
+    iconLink: resolveItemIcon(item.iconLink),
     link: item.link,
     categories: categories.map((category) => category.id),
     categories_display: categories,
@@ -770,7 +771,7 @@ export async function fetchCombinedTarkovData(
       updated: item.updated,
       lastOfferCount: item.lastOfferCount || undefined,
       avg24hPrice: item.avg24hPrice || undefined,
-      iconLink: item.iconLink,
+      iconLink: resolveItemIcon(item.iconLink),
       link: item.link,
       width: item.width,
       height: item.height,

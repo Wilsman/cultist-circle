@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { isMissingItemIcon, resolveItemIcon } from "@/lib/item-icon";
 import { useEffect, useRef, useState } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
@@ -193,7 +194,7 @@ export function useItemsData(mode: GameMode) {
                 englishShortName: en.shortName,
                 name: en.name,
                 shortName: en.shortName,
-                iconLink: en.iconLink,
+                iconLink: resolveItemIcon(en.iconLink),
               }) as SimplifiedItem,
           );
           // Store
@@ -264,7 +265,9 @@ export function useItemsData(mode: GameMode) {
             name: loc?.name ?? en.name,
             shortName: loc?.shortName ?? en.shortName,
             // icon: prefer localized when available for non-EN
-            iconLink: loc?.iconLink ?? en.iconLink,
+            iconLink: resolveItemIcon(
+              isMissingItemIcon(loc?.iconLink) ? en.iconLink : loc?.iconLink,
+            ),
           } as SimplifiedItem;
         });
 
