@@ -30,6 +30,8 @@ export function RecipeWarning({ selectedItems }: RecipeWarningProps) {
       .map((item) => item.name.toLowerCase());
 
     return tarkovRecipes.filter((recipe) => {
+      if (recipe.expiredAt) return false;
+
       // Check if any of the selected items match any of the required items in this recipe
       const hasMatch = recipe.requiredItems.some((requiredItem) => {
         // Parse required item (format: "1x Item Name" or "Item Name")

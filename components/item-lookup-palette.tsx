@@ -341,7 +341,11 @@ function ItemDetail({
   const fleaLevel = getFleaLevelRequirement(item);
   const noSixHourReward = isExcludedFrom6hRewards(item);
   const recipes = useMemo(
-    () => findRelatedRecipes(item, tarkovRecipes).slice(0, 4),
+    () =>
+      findRelatedRecipes(
+        item,
+        tarkovRecipes.filter((recipe) => !recipe.expiredAt),
+      ).slice(0, 4),
     [item],
   );
   const largeImage = getLargeImage(item.iconLink);

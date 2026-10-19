@@ -3,14 +3,15 @@ import { describe, expect, it } from "vitest";
 import { tarkovRecipes } from "@/data/recipes";
 
 describe("launcher promo recipe data", () => {
-  it("keeps the featured Ferrum recipe exact and first", () => {
+  it("keeps the Ferrum launcher recipe exact and marks it expired", () => {
     const recipe = tarkovRecipes[0];
 
     expect(recipe).toMatchObject({
       requiredItems: ["5x BD dogtag •| Ferrum"],
       craftingTime: "5:55:55",
       producedItems: ["1x Briefcase with documents"],
-      isNew: true,
+      expiredAt: "2026-10-19",
+      isNew: false,
       specialFlow: {
         type: "launcher-promo",
         codes: [
@@ -22,11 +23,17 @@ describe("launcher promo recipe data", () => {
         ],
         sacrificeItemUrl: "https://tarkov.dev/item/bd-dogtag-ferrum",
         rewardItemUrl: "https://tarkov.dev/item/briefcase-with-documents",
-        sacrificeNote:
-          "Heads up: many users report these codes and this recipe might not work anymore. ONLY the Black Division dogtags from the Redeem Code ever worked - please report Worked or Didn't work below, thank you.",
       },
     });
     expect(recipe.specialFlow?.codes).toHaveLength(5);
     expect(recipe.id).toMatch(/^recipe-/);
+  });
+
+  it("never shows NEW or UPDATED on an expired recipe", () => {
+    for (const recipe of tarkovRecipes.filter((entry) => entry.expiredAt)) {
+      expect(recipe.isNew).toBeFalsy();
+      expect(recipe.isUpdated).toBeFalsy();
+      expect(recipe.expiredAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
   });
 });

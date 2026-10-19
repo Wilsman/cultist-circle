@@ -88,6 +88,10 @@ import {
   KeyRound,
   Link2,
   Tag,
+  Archive,
+  ChevronRight,
+  ThumbsDown,
+  ThumbsUp,
 } from "lucide-react";
 
 // ============================================================================
@@ -184,6 +188,29 @@ function getReportTimeMs(isoDate: string | null | undefined): number {
   return Number.isFinite(time) ? time : 0;
 }
 
+function formatExpiredDate(isoDate: string): string {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function getRecipeItemIconUrl(
+  itemName: string,
+  itemData: { iconLink?: string | null } | null | undefined,
+): string | undefined {
+  const staticIconUrl = recipeIconMap[itemName];
+  if (!isMissingItemIcon(staticIconUrl)) return staticIconUrl;
+  if (!isMissingItemIcon(itemData?.iconLink)) {
+    return itemData?.iconLink ?? undefined;
+  }
+  return undefined;
+}
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -200,17 +227,24 @@ function useDebounce<T>(value: T, delay: number): T {
 const StatusBadge = React.memo(function StatusBadge({
   variant,
 }: {
-  variant: "new" | "updated";
+  variant: "new" | "updated" | "expired";
 }) {
-  const badgeLabel = variant === "updated" ? "UPDATED" : "NEW";
+  const badgeLabel =
+    variant === "updated"
+      ? "UPDATED"
+      : variant === "expired"
+        ? "EXPIRED"
+        : "NEW";
   const badgeClassName =
     variant === "updated"
-      ? "bg-gradient-to-r from-amber-500 to-orange-500"
-      : "bg-gradient-to-r from-red-500 to-pink-500";
+      ? "animate-pulse bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+      : variant === "expired"
+        ? "border border-gray-600 bg-gray-700/80 text-gray-300"
+        : "animate-pulse bg-gradient-to-r from-red-500 to-pink-500 text-white";
 
   return (
     <span
-      className={`absolute left-2 top-2 z-10 inline-flex items-center rounded px-2 py-0.5 text-xs font-bold text-white shadow-lg animate-pulse ${badgeClassName}`}
+      className={`absolute left-2 top-2 z-10 inline-flex items-center rounded px-2 py-0.5 text-xs font-bold shadow-lg ${badgeClassName}`}
     >
       {badgeLabel}
     </span>
@@ -355,14 +389,9 @@ const ItemBadge = React.memo(function ItemBadge({
   placeholderIcon?: "dogtag" | "briefcase";
 }) {
   const itemData = getItemByName(itemName);
-  const staticIconUrl = recipeIconMap[itemName];
-  const iconUrl = !isMissingItemIcon(staticIconUrl)
-    ? staticIconUrl
-    : !isMissingItemIcon(itemData?.iconLink)
-      ? itemData?.iconLink
-      : placeholderIcon
-        ? undefined
-        : UNKNOWN_ITEM_ICON;
+  const iconUrl =
+    getRecipeItemIconUrl(itemName, itemData) ??
+    (placeholderIcon ? undefined : UNKNOWN_ITEM_ICON);
   const sizeClasses =
     size === "sm" ? "w-10 h-10 p-1.5" : "w-12 h-12 lg:w-14 lg:h-14 p-2";
 
@@ -437,8 +466,10 @@ const ItemBadge = React.memo(function ItemBadge({
 const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
   recipe,
   getItemByName,
+  isExpired = false,
 }: {
   recipe: Recipe & { specialFlow: NonNullable<Recipe["specialFlow"]> };
+  isExpired?: boolean;
   getItemByName: (
     name: string,
   ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
@@ -484,23 +515,25 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-3.5 py-3 text-xs leading-relaxed text-amber-100/90">
-        <Info
-          className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300"
-          aria-hidden="true"
-        />
-        <p>
-          <span className="font-semibold text-amber-200">
-            Heads up: these codes and this recipe might not work anymore.
-          </span>{" "}
-          Many users report it no longer works. If you try it, please report{" "}
-          <span className="font-semibold">Worked or Didn&apos;t work</span>{" "}
-          below - thank you. Found a new recipe? Use the{" "}
-          <span className="font-semibold">Submit a recipe</span> button at the
-          top of this page. New submissions are reviewed and tested before
-          being added.
-        </p>
-      </div>
+      {!isExpired && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-3.5 py-3 text-xs leading-relaxed text-amber-100/90">
+          <Info
+            className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300"
+            aria-hidden="true"
+          />
+          <p>
+            <span className="font-semibold text-amber-200">
+              Heads up: these codes and this recipe might not work anymore.
+            </span>{" "}
+            Many users report it no longer works. If you try it, please report{" "}
+            <span className="font-semibold">Worked or Didn&apos;t work</span>{" "}
+            below - thank you. Found a new recipe? Use the{" "}
+            <span className="font-semibold">Submit a recipe</span> button at the
+            top of this page. New submissions are reviewed and tested before
+            being added.
+          </p>
+        </div>
+      )}
       <section className="relative overflow-hidden rounded-xl border border-amber-400/20 bg-[linear-gradient(135deg,rgba(120,53,15,0.18),rgba(3,7,18,0.74)_48%,rgba(120,53,15,0.08))] p-3.5 shadow-[inset_0_1px_0_rgba(253,230,138,0.06)] sm:p-4">
         <div
           aria-hidden="true"
@@ -614,13 +647,15 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
             itemHref={recipe.specialFlow.sacrificeItemUrl}
             placeholderIcon="dogtag"
           />
-          <div className="mt-2.5 flex items-start gap-2 rounded-lg border border-sky-400/15 bg-sky-400/[0.06] px-2.5 py-2 text-[11px] leading-relaxed text-sky-100/70">
-            <Info
-              className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-sky-300/70"
-              aria-hidden="true"
-            />
-            <p>{recipe.specialFlow.sacrificeNote}</p>
-          </div>
+          {recipe.specialFlow.sacrificeNote && !isExpired && (
+            <div className="mt-2.5 flex items-start gap-2 rounded-lg border border-sky-400/15 bg-sky-400/[0.06] px-2.5 py-2 text-[11px] leading-relaxed text-sky-100/70">
+              <Info
+                className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-sky-300/70"
+                aria-hidden="true"
+              />
+              <p>{recipe.specialFlow.sacrificeNote}</p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-center justify-center py-2 lg:border-x lg:border-gray-700/50 lg:px-6 lg:py-0">
@@ -791,6 +826,8 @@ interface RecipeCardProps {
   onCompletedChange: (recipeId: string, isCompleted: boolean) => void;
   isHighlighted: boolean;
   onShare: (recipeId: string) => void;
+  /** Rendered inside the expired section: no checkbox, no own anchor id. */
+  isExpired?: boolean;
 }
 
 const RecipeCard = React.memo(function RecipeCard({
@@ -801,6 +838,7 @@ const RecipeCard = React.memo(function RecipeCard({
   onCompletedChange,
   isHighlighted,
   onShare,
+  isExpired = false,
 }: RecipeCardProps) {
   const [shareState, setShareState] = useState<
     "idle" | "copied" | "failed"
@@ -901,48 +939,60 @@ const RecipeCard = React.memo(function RecipeCard({
 
   return (
     <div
-      id={recipe.id}
-      className={`grid min-w-0 scroll-mt-24 grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 [contain-intrinsic-height:auto_420px] sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-3 ${
-        // Render the deep-link target at its real size instead of the
-        // estimated height so scroll math lands on the right spot.
-        isHighlighted ? "[content-visibility:visible]" : "[content-visibility:auto]"
-      }`}
+      id={isExpired ? undefined : recipe.id}
+      className={
+        isExpired
+          ? "min-w-0"
+          : `grid min-w-0 scroll-mt-24 grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 [contain-intrinsic-height:auto_420px] sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-3 ${
+              // Render the deep-link target at its real size instead of the
+              // estimated height so scroll math lands on the right spot.
+              isHighlighted
+                ? "[content-visibility:visible]"
+                : "[content-visibility:auto]"
+            }`
+      }
     >
-      <div className="flex justify-center pt-4 sm:pt-5">
-        <TooltipProvider delayDuration={150}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <Checkbox
-                  checked={isCompleted}
-                  onCheckedChange={(checked) =>
-                    onCompletedChange(recipe.id, checked === true)
-                  }
-                  aria-label={completionLabel}
-                  className="h-5 w-5 rounded-full border-gray-500/80 bg-gray-950/50 text-emerald-950 shadow-[0_0_0_4px_rgba(17,24,39,0.7)] transition-all duration-200 hover:border-emerald-400/70 hover:bg-gray-900 focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 data-[state=checked]:border-emerald-300 data-[state=checked]:bg-emerald-300 data-[state=checked]:shadow-[0_0_0_4px_rgba(16,185,129,0.12),0_0_16px_rgba(52,211,153,0.22)]"
-                />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">
-              {isCompleted ? "Mark as not done" : "Mark as done"}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+      {!isExpired && (
+        <div className="flex justify-center pt-4 sm:pt-5">
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <Checkbox
+                    checked={isCompleted}
+                    onCheckedChange={(checked) =>
+                      onCompletedChange(recipe.id, checked === true)
+                    }
+                    aria-label={completionLabel}
+                    className="h-5 w-5 rounded-full border-gray-500/80 bg-gray-950/50 text-emerald-950 shadow-[0_0_0_4px_rgba(17,24,39,0.7)] transition-all duration-200 hover:border-emerald-400/70 hover:bg-gray-900 focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 data-[state=checked]:border-emerald-300 data-[state=checked]:bg-emerald-300 data-[state=checked]:shadow-[0_0_0_4px_rgba(16,185,129,0.12),0_0_16px_rgba(52,211,153,0.22)]"
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs">
+                {isCompleted ? "Mark as not done" : "Mark as done"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
 
       <div
         data-highlighted={isHighlighted ? "true" : "false"}
         className={`group relative rounded-xl border p-4 pt-9 backdrop-blur-sm transition-all duration-200 lg:p-5 lg:pt-9 ${
-          isCompleted
-            ? "border-emerald-500/30 bg-emerald-950/10 shadow-[inset_0_0_24px_rgba(16,185,129,0.035)] hover:border-emerald-400/40 hover:bg-emerald-950/15"
-            : "border-gray-700/50 bg-gray-800/40 hover:border-gray-600/50 hover:bg-gray-800/60 hover:shadow-lg hover:shadow-black/20"
+          isExpired
+            ? "border-gray-700/50 bg-gray-900/40 grayscale-[0.7]"
+            : isCompleted
+              ? "border-emerald-500/30 bg-emerald-950/10 shadow-[inset_0_0_24px_rgba(16,185,129,0.035)] hover:border-emerald-400/40 hover:bg-emerald-950/15"
+              : "border-gray-700/50 bg-gray-800/40 hover:border-gray-600/50 hover:bg-gray-800/60 hover:shadow-lg hover:shadow-black/20"
         } ${
           isHighlighted
             ? "ring-2 ring-emerald-400/50 shadow-[0_0_28px_rgba(52,211,153,0.18)]"
             : ""
         }`}
       >
-        {recipe.isUpdated ? (
+        {isExpired ? (
+          <StatusBadge variant="expired" />
+        ) : recipe.isUpdated ? (
           <StatusBadge variant="updated" />
         ) : recipe.isNew ? (
           <StatusBadge variant="new" />
@@ -984,7 +1034,7 @@ const RecipeCard = React.memo(function RecipeCard({
         </div>
 
         <div
-          className={`transition-opacity duration-200 ${isCompleted ? "opacity-70" : ""}`}
+          className={`transition-opacity duration-200 ${isCompleted || isExpired ? "opacity-70" : ""}`}
         >
           {recipe.specialFlow?.type === "launcher-promo" ? (
             <LauncherPromoFlow
@@ -994,6 +1044,7 @@ const RecipeCard = React.memo(function RecipeCard({
                 }
               }
               getItemByName={getItemByName}
+              isExpired={isExpired}
             />
           ) : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch lg:gap-6">
@@ -1141,6 +1192,132 @@ const RecipeCard = React.memo(function RecipeCard({
   );
 });
 
+function getRecipeRewardNames(recipe: Recipe): string[] {
+  return recipe.producedItems.flatMap((output) =>
+    typeof output === "string"
+      ? output
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : output.items,
+  );
+}
+
+const ExpiredRecipeRow = React.memo(function ExpiredRecipeRow({
+  recipe,
+  getItemByName,
+  t,
+  isExpanded,
+  onToggle,
+  isHighlighted,
+  onShare,
+  workedCount,
+  didntWorkCount,
+}: {
+  recipe: Recipe & { expiredAt: string };
+  getItemByName: RecipeCardProps["getItemByName"];
+  t: (key: string) => string;
+  isExpanded: boolean;
+  onToggle: (recipeId: string) => void;
+  isHighlighted: boolean;
+  onShare: (recipeId: string) => void;
+  workedCount: number | null;
+  didntWorkCount: number | null;
+}) {
+  const rewardNames = getRecipeRewardNames(recipe);
+  const summaryIcons = [...recipe.requiredItems.slice(0, 2), rewardNames[0]]
+    .filter(Boolean)
+    .map((name) => ({
+      name,
+      url: getRecipeItemIconUrl(name, getItemByName(name)) ?? UNKNOWN_ITEM_ICON,
+    }));
+  const detailsId = `${recipe.id}-details`;
+
+  return (
+    <div
+      id={recipe.id}
+      className={`scroll-mt-24 rounded-xl ${
+        isHighlighted && !isExpanded ? "ring-2 ring-emerald-400/50" : ""
+      }`}
+    >
+      <button
+        type="button"
+        aria-expanded={isExpanded}
+        aria-controls={detailsId}
+        onClick={() => onToggle(recipe.id)}
+        className="group flex w-full min-w-0 items-center gap-3 rounded-xl border border-gray-800 bg-gray-900/40 px-3 py-2.5 text-left transition-colors hover:border-gray-700 hover:bg-gray-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+      >
+        <ChevronRight
+          className={`h-4 w-4 flex-shrink-0 text-gray-600 transition-transform ${
+            isExpanded ? "rotate-90" : ""
+          }`}
+          aria-hidden="true"
+        />
+        <span
+          className="hidden flex-shrink-0 items-center -space-x-2 opacity-60 grayscale sm:flex"
+          aria-hidden="true"
+        >
+          {summaryIcons.map((icon) => (
+            <img
+              key={icon.name}
+              src={icon.url}
+              alt=""
+              width={28}
+              height={28}
+              loading="lazy"
+              className="h-7 w-7 rounded-md border border-gray-800 bg-gray-950 object-contain p-0.5"
+            />
+          ))}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm text-gray-500 line-through decoration-gray-600/70 group-hover:text-gray-400">
+          {recipe.requiredItems.join(" + ")}
+          <span className="mx-1.5 text-gray-600">→</span>
+          {rewardNames.join(" + ")}
+        </span>
+        <span className="flex flex-shrink-0 items-center gap-2 text-[11px] text-gray-500">
+          <span className="rounded border border-gray-600 bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-gray-300">
+            EXPIRED
+          </span>
+          <span className="hidden md:inline">
+            {formatExpiredDate(recipe.expiredAt)}
+          </span>
+          {workedCount !== null && didntWorkCount !== null && (
+            <span
+              className="hidden items-center gap-2 font-mono sm:inline-flex"
+              aria-label={`${workedCount} worked, ${didntWorkCount} didn't work`}
+            >
+              <span className="inline-flex items-center gap-1">
+                <ThumbsUp className="h-3 w-3" aria-hidden="true" />
+                {workedCount}
+              </span>
+              <span className="inline-flex items-center gap-1 text-red-400/60">
+                <ThumbsDown className="h-3 w-3" aria-hidden="true" />
+                {didntWorkCount}
+              </span>
+            </span>
+          )}
+        </span>
+      </button>
+      {isExpanded && (
+        <div id={detailsId} className="mt-2">
+          <RecipeCard
+            recipe={recipe}
+            getItemByName={getItemByName}
+            t={t}
+            isCompleted={false}
+            onCompletedChange={noopCompletedChange}
+            isHighlighted={isHighlighted}
+            onShare={onShare}
+            isExpired
+          />
+        </div>
+      )}
+    </div>
+  );
+});
+
+function noopCompletedChange() {}
+
 // ============================================================================
 // Main Page Component
 // ============================================================================
@@ -1180,7 +1357,19 @@ export default function RecipesPage() {
       ),
     [knownRecipeIds, storedCompletedRecipeIds],
   );
-  const completedRecipeCount = completedRecipeIds.size;
+  const activeRecipeCount = useMemo(
+    () => tarkovRecipes.filter((recipe) => !recipe.expiredAt).length,
+    [],
+  );
+  // Expired recipes can't be finished any more, so they leave the progress
+  // count. Saved checkmarks are kept in case a recipe is restored.
+  const completedRecipeCount = useMemo(
+    () =>
+      tarkovRecipes.filter(
+        (recipe) => !recipe.expiredAt && completedRecipeIds.has(recipe.id),
+      ).length,
+    [completedRecipeIds],
+  );
 
   // Shared recipe deep link (?recipe=<id>): validated against known ids so
   // unknown params degrade gracefully to the full list.
@@ -1191,6 +1380,32 @@ export default function RecipesPage() {
       knownRecipeIds,
     );
   });
+
+  // A shared link to an expired recipe opens its section and card.
+  const [expiredSectionOverride, setExpiredSectionOverride] = useState<
+    boolean | null
+  >(() =>
+    tarkovRecipes.some(
+      (recipe) => recipe.id === sharedRecipeId && recipe.expiredAt,
+    )
+      ? true
+      : null,
+  );
+  const [expandedExpiredIds, setExpandedExpiredIds] = useState<Set<string>>(
+    () =>
+      new Set(expiredSectionOverride && sharedRecipeId ? [sharedRecipeId] : []),
+  );
+  const toggleExpiredRecipe = useCallback((recipeId: string) => {
+    setExpandedExpiredIds((current) => {
+      const next = new Set(current);
+      if (next.has(recipeId)) {
+        next.delete(recipeId);
+      } else {
+        next.add(recipeId);
+      }
+      return next;
+    });
+  }, []);
 
   const handleCompletedChange = useCallback(
     (recipeId: string, isCompleted: boolean) => {
@@ -1320,11 +1535,15 @@ export default function RecipesPage() {
   }, []);
 
   // Filter and sort recipes
-  const filteredAndSortedItems = useMemo(() => {
+  const { activeRecipes, expiredRecipes } = useMemo(() => {
     const searchLower = debouncedSearch.toLowerCase().trim();
 
     let filtered = tarkovRecipes.filter((recipe) => {
-      if (showIncompleteOnly && completedRecipeIds.has(recipe.id)) {
+      if (
+        showIncompleteOnly &&
+        !recipe.expiredAt &&
+        completedRecipeIds.has(recipe.id)
+      ) {
         return false;
       }
 
@@ -1406,7 +1625,14 @@ export default function RecipesPage() {
         break;
     }
 
-    return filtered;
+    // Expired recipes always stay below active ones, whatever the sort.
+    return {
+      activeRecipes: filtered.filter((recipe) => !recipe.expiredAt),
+      expiredRecipes: filtered.filter(
+        (recipe): recipe is Recipe & { expiredAt: string } =>
+          Boolean(recipe.expiredAt),
+      ),
+    };
   }, [
     completedRecipeIds,
     debouncedSearch,
@@ -1418,6 +1644,10 @@ export default function RecipesPage() {
 
   const hasActiveFilters =
     sortBy !== "default" || Boolean(debouncedSearch) || showIncompleteOnly;
+  // Searching for an expired-only recipe (e.g. "Ferrum") opens the section.
+  const isExpiredSectionOpen =
+    expiredSectionOverride ??
+    (Boolean(debouncedSearch) && activeRecipes.length === 0);
 
   return (
     <RecipeFeedbackProvider>
@@ -1526,7 +1756,7 @@ export default function RecipesPage() {
                       className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-sm text-emerald-300/90"
                       aria-live="polite"
                     >
-                      {completedRecipeCount} / {tarkovRecipes.length} done
+                      {completedRecipeCount} / {activeRecipeCount} done
                     </span>
                     {completedRecipeCount > 0 && (
                       <AlertDialog>
@@ -1546,7 +1776,7 @@ export default function RecipesPage() {
                               Reset recipe progress?
                             </AlertDialogTitle>
                             <AlertDialogDescription className="text-gray-400">
-                              This will mark all {tarkovRecipes.length} recipes
+                              This will mark all {activeRecipeCount} recipes
                               as unfinished on this device.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -1565,8 +1795,8 @@ export default function RecipesPage() {
                       </AlertDialog>
                     )}
                     <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5 text-sm text-gray-400">
-                      {filteredAndSortedItems.length} recipe
-                      {filteredAndSortedItems.length === 1 ? "" : "s"}
+                      {activeRecipes.length} recipe
+                      {activeRecipes.length === 1 ? "" : "s"}
                     </span>
                     {hasActiveFilters && (
                       <Button
@@ -1589,7 +1819,7 @@ export default function RecipesPage() {
 
             {/* Recipe List */}
             <CardContent className="p-4 sm:p-6">
-              {filteredAndSortedItems.length === 0 ? (
+              {activeRecipes.length === 0 && expiredRecipes.length === 0 ? (
                 <div className="py-16 text-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800/50 mb-4">
                     <Search className="h-8 w-8 text-gray-600" />
@@ -1613,20 +1843,97 @@ export default function RecipesPage() {
                   </Button>
                 </div>
               ) : (
-                <div className="grid gap-3 sm:gap-4">
-                  {filteredAndSortedItems.map((recipe) => (
-                    <RecipeCard
-                      key={recipe.id}
-                      recipe={recipe}
-                      getItemByName={getItemByName}
-                      t={t}
-                      isCompleted={completedRecipeIds.has(recipe.id)}
-                      onCompletedChange={handleCompletedChange}
-                      isHighlighted={sharedRecipeId === recipe.id}
-                      onShare={handleShareRecipe}
-                    />
-                  ))}
-                </div>
+                <>
+                  {activeRecipes.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-gray-500">
+                      No active recipes match. Expired matches are listed below.
+                    </p>
+                  ) : (
+                    <div className="grid gap-3 sm:gap-4">
+                      {activeRecipes.map((recipe) => (
+                        <RecipeCard
+                          key={recipe.id}
+                          recipe={recipe}
+                          getItemByName={getItemByName}
+                          t={t}
+                          isCompleted={completedRecipeIds.has(recipe.id)}
+                          onCompletedChange={handleCompletedChange}
+                          isHighlighted={sharedRecipeId === recipe.id}
+                          onShare={handleShareRecipe}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {expiredRecipes.length > 0 && (
+                    <section
+                      aria-labelledby="expired-recipes-heading"
+                      className="mt-6 border-t border-gray-800/80 pt-4"
+                    >
+                      <button
+                        type="button"
+                        aria-expanded={isExpiredSectionOpen}
+                        aria-controls="expired-recipes-list"
+                        onClick={() =>
+                          setExpiredSectionOverride(!isExpiredSectionOpen)
+                        }
+                        className="flex w-full items-center gap-2 rounded-lg px-1 py-1.5 text-left text-gray-500 transition-colors hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+                      >
+                        <ChevronRight
+                          className={`h-4 w-4 flex-shrink-0 transition-transform ${
+                            isExpiredSectionOpen ? "rotate-90" : ""
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <Archive
+                          className="h-4 w-4 flex-shrink-0"
+                          aria-hidden="true"
+                        />
+                        <span
+                          id="expired-recipes-heading"
+                          className="text-xs font-bold uppercase tracking-wider"
+                        >
+                          Expired · no longer working
+                        </span>
+                        <span className="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-gray-400">
+                          {expiredRecipes.length}
+                        </span>
+                        <span className="ms-auto hidden text-[11px] text-gray-600 sm:inline">
+                          Kept for reference. Vote Worked if one works again.
+                        </span>
+                      </button>
+                      {isExpiredSectionOpen && (
+                        <div
+                          id="expired-recipes-list"
+                          className="mt-3 grid gap-2"
+                        >
+                          {expiredRecipes.map((recipe) => (
+                            <ExpiredRecipeRow
+                              key={recipe.id}
+                              recipe={recipe}
+                              getItemByName={getItemByName}
+                              t={t}
+                              isExpanded={expandedExpiredIds.has(recipe.id)}
+                              onToggle={toggleExpiredRecipe}
+                              isHighlighted={sharedRecipeId === recipe.id}
+                              onShare={handleShareRecipe}
+                              workedCount={
+                                feedbackReady
+                                  ? (feedbackStats[recipe.id]?.workedCount ?? 0)
+                                  : null
+                              }
+                              didntWorkCount={
+                                feedbackReady
+                                  ? (feedbackStats[recipe.id]?.didntWorkCount ??
+                                    0)
+                                  : null
+                              }
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  )}
+                </>
               )}
             </CardContent>
 

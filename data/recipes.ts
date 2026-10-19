@@ -12,6 +12,12 @@ export interface Recipe {
     | { type: "multiple_possible"; items: string[]; explanation: string }[];
   isNew?: boolean;
   isUpdated?: boolean;
+  /**
+   * ISO date (YYYY-MM-DD) the recipe was marked as no longer working. Set by
+   * hand once community reports confirm it; expired recipes move to the
+   * collapsed "Expired" section, drop NEW/UPDATED and leave progress totals.
+   */
+  expiredAt?: string;
   isRepeatable?: boolean;
   modeRestriction?: "pvp-only";
   roomInfo?: {
@@ -23,7 +29,7 @@ export interface Recipe {
     codes: string[];
     sacrificeItemUrl: string;
     rewardItemUrl: string;
-    sacrificeNote: string;
+    sacrificeNote?: string;
   };
 }
 
@@ -51,7 +57,7 @@ const recipeDefinitions: RecipeDefinition[] = [
     requiredItems: ["5x BD dogtag •| Ferrum"],
     craftingTime: "5:55:55",
     producedItems: ["1x Briefcase with documents"],
-    isNew: true,
+    expiredAt: "2026-10-19",
     specialFlow: {
       type: "launcher-promo",
       codes: [
@@ -63,8 +69,6 @@ const recipeDefinitions: RecipeDefinition[] = [
       ],
       sacrificeItemUrl: "https://tarkov.dev/item/bd-dogtag-ferrum",
       rewardItemUrl: "https://tarkov.dev/item/briefcase-with-documents",
-      sacrificeNote:
-        "Heads up: many users report these codes and this recipe might not work anymore. ONLY the Black Division dogtags from the Redeem Code ever worked - please report Worked or Didn't work below, thank you.",
     },
   },
   {
@@ -508,4 +512,6 @@ const recipeDefinitions: RecipeDefinition[] = [
 export const tarkovRecipes: Recipe[] = recipeDefinitions.map((recipe) => ({
   ...recipe,
   id: createRecipeId(recipe.requiredItems),
+  // An expired recipe is never "new" or "updated".
+  ...(recipe.expiredAt ? { isNew: false, isUpdated: false } : {}),
 }));

@@ -45,6 +45,13 @@ const mockRecipes = vi.hoisted(() => [
     craftingTime: "666 mins",
     producedItems: ["1x Sun reward"],
   },
+  {
+    id: "recipe-expired",
+    requiredItems: ["1x Charlie sacrifice"],
+    craftingTime: "6 mins",
+    producedItems: ["1x Star reward"],
+    expiredAt: "2026-10-19",
+  },
 ]);
 const getItemByNameMock = vi.hoisted(() =>
   vi.fn((_name: string): SimplifiedItem | null => null),
@@ -678,6 +685,89 @@ describe("RecipesPage completion tracker", () => {
       expect(scrollIntoViewMock.mock.instances[0]).toBe(
         document.getElementById("recipe-bravo"),
       );
+    } finally {
+      window.history.replaceState({}, "", "/");
+      proto.scrollIntoView = originalScrollIntoView;
+    }
+  });
+
+  it("collapses expired recipes into their own section outside progress", async () => {
+    render(<RecipesPage />);
+
+    expect(screen.getByText("0 / 3 done")).toBeInTheDocument();
+    expect(screen.getByText("3 recipes")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("checkbox", { name: /^1x Charlie sacrifice/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Charlie sacrifice/)).not.toBeInTheDocument();
+
+    const sectionToggle = screen.getByRole("button", {
+      name: /expired . no longer working/i,
+    });
+    expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(sectionToggle);
+
+    const rowToggle = screen.getByRole("button", {
+      name: /^1x Charlie sacrifice/,
+    });
+    expect(rowToggle).toHaveAttribute("aria-expanded", "false");
+    expect(within(rowToggle).getByText("EXPIRED")).toBeInTheDocument();
+    expect(within(rowToggle).getByText("Oct 19, 2026")).toBeInTheDocument();
+    expect(
+      await within(rowToggle).findByLabelText("10 worked, 2 didn't work"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(rowToggle);
+
+    const details = document.getElementById("recipe-expired-details");
+    expect(details).not.toBeNull();
+    // Voting stays open so a working recipe can be noticed again.
+    expect(
+      within(details as HTMLElement).getByRole("button", { name: /worked/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("0 / 3 done")).toBeInTheDocument();
+  });
+
+  it("keeps expired search matches below active ones", async () => {
+    render(<RecipesPage />);
+
+    fireEvent.change(
+      screen.getByPlaceholderText("Search items or recipes..."),
+      { target: { value: "Charlie" } },
+    );
+
+    expect(
+      await screen.findByText(/No active recipes match/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /expired . no longer working/i }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("button", { name: /^1x Charlie sacrifice/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens an expired recipe from a share link", async () => {
+    const scrollIntoViewMock = vi.fn();
+    const proto = window.HTMLElement.prototype as unknown as {
+      scrollIntoView?: unknown;
+    };
+    const originalScrollIntoView = proto.scrollIntoView;
+    proto.scrollIntoView = scrollIntoViewMock;
+    window.history.replaceState({}, "", "/recipes?recipe=recipe-expired");
+
+    try {
+      render(<RecipesPage />);
+
+      expect(
+        screen.getByRole("button", { name: /^1x Charlie sacrifice/ }),
+      ).toHaveAttribute("aria-expanded", "true");
+      expect(highlightedState("recipe-expired")).toBe("true");
+      await waitFor(() => {
+        expect(scrollIntoViewMock.mock.instances[0]).toBe(
+          document.getElementById("recipe-expired"),
+        );
+      });
     } finally {
       window.history.replaceState({}, "", "/");
       proto.scrollIntoView = originalScrollIntoView;
