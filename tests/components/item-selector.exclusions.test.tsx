@@ -120,7 +120,7 @@ describe("ItemSelector dropdown behavior", () => {
 
   const focusSelector = () => {
     const input = screen.getByPlaceholderText(
-      /search items|gegenstaende suchen/i
+      /search items|gegenstände suchen/i
     );
     act(() => {
       fireEvent.focus(input);

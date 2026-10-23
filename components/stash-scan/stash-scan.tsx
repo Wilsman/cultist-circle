@@ -1657,9 +1657,10 @@ export function StashScan({
 
 /** Attribution for the scanner, shown in the intro or below the results. */
 function StashScanCredits({ className }: { className?: string }) {
+  const { t } = useLanguage();
   return (
     <p className={cn("text-xs leading-relaxed text-slate-400", className)}>
-      Stash Scan contributed by{" "}
+      {t("Stash Scan contributed by")}{" "}
       <a
         className="inline-flex items-center gap-1.5 align-middle text-cyan-300 underline hover:text-cyan-200"
         href="https://github.com/Oxylad"
@@ -1676,7 +1677,7 @@ function StashScanCredits({ className }: { className?: string }) {
         />
         Oxylad
       </a>
-      . Custom item matching inspired by{" "}
+      . {t("Custom item matching inspired by")}{" "}
       <a
         className="text-cyan-300 underline hover:text-cyan-200"
         href="https://github.com/RatScanner/RatEye"

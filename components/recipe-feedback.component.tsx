@@ -19,7 +19,9 @@ import {
 import {
   useRecipeFeedback,
   useRecipeFeedbackLifecycle,
+  type TranslatableMessage,
 } from "@/hooks/use-recipe-feedback";
+import { useLanguage } from "@/contexts/language-context";
 import { GAME_MODE_LABELS, type GameMode } from "@/lib/game-mode";
 import {
   formatCompactRecency,
@@ -95,8 +97,9 @@ const VoteButton = React.forwardRef<
   { vote, count, selected, disabled, loading, ...triggerProps },
   ref,
 ) {
+  const { t } = useLanguage();
   const worked = vote === "worked";
-  const label = worked ? "Worked" : "Didn't work";
+  const label = worked ? t("Worked") : t("Didn't work");
   const Icon = worked ? ThumbsUp : ThumbsDown;
   return (
     <Button
@@ -106,7 +109,10 @@ const VoteButton = React.forwardRef<
       variant="outline"
       size="sm"
       aria-pressed={selected}
-      aria-label={`Mark as ${label.toLowerCase()} (currently ${count})`}
+      aria-label={t("Mark as {vote} (currently {count})", {
+        vote: label.toLowerCase(),
+        count,
+      })}
       disabled={disabled}
       className={voteButtonVariants({ tone: vote, selected })}
     >
@@ -148,9 +154,10 @@ function VoteModePicker({
   onSelect,
   onRemove,
 }: VoteModePickerProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const worked = vote === "worked";
-  const label = worked ? "Worked" : "Didn't work";
+  const label = worked ? t("Worked") : t("Didn't work");
   const isCurrentVote = userVote === vote;
 
   return (
@@ -170,13 +177,17 @@ function VoteModePicker({
         className="w-56 border-gray-700/60 bg-gray-900/95 p-3 text-gray-200 shadow-xl backdrop-blur-md"
       >
         <p className="text-xs font-semibold text-gray-100">
-          Report as {label.toLowerCase()}
+          {t("Report as {vote}", { vote: label.toLowerCase() })}
         </p>
-        <p className="mt-0.5 text-[10px] text-gray-500">Choose game mode</p>
+        <p className="mt-0.5 text-[10px] text-gray-500">
+          {t("Choose game mode")}
+        </p>
         <div
           className="mt-2 grid grid-cols-3 gap-1.5"
           role="radiogroup"
-          aria-label={`Game mode for ${label.toLowerCase()} report`}
+          aria-label={t("Game mode for {vote} report", {
+            vote: label.toLowerCase(),
+          })}
         >
           {FEEDBACK_MODES.map((mode) => {
             const restricted =
@@ -189,7 +200,7 @@ function VoteModePicker({
                 role="radio"
                 title={
                   restricted
-                    ? "This recipe is available in PVP only"
+                    ? t("This recipe is available in PVP only")
                     : mode.title
                 }
                 aria-checked={current}
@@ -215,7 +226,7 @@ function VoteModePicker({
         </div>
         {modeRestriction === "pvp-only" && (
           <p className="mt-2 text-[10px] text-amber-300/90">
-            This recipe can only be reported for PVP.
+            {t("This recipe can only be reported for PVP.")}
           </p>
         )}
         {isCurrentVote && userMode && (
@@ -228,7 +239,9 @@ function VoteModePicker({
             className="mt-2 flex h-9 w-full items-center justify-center gap-1.5 rounded-md text-[10px] font-semibold text-rose-300 transition-colors hover:bg-rose-950/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/70"
           >
             <Trash2 className="h-3 w-3" />
-            Remove my {GAME_MODE_LABELS[userMode]} report
+            {t("Remove my {mode} report", {
+              mode: t(GAME_MODE_LABELS[userMode]),
+            })}
           </button>
         )}
       </PopoverContent>
@@ -240,6 +253,9 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
   recipeId,
   modeRestriction,
 }: RecipeFeedbackProps) {
+  const { t } = useLanguage();
+  const tm = (message?: TranslatableMessage | null) =>
+    message ? t(message.key, message.vars) : "";
   const {
     stats,
     userVote,
@@ -256,17 +272,17 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
     loadError,
     voteError,
     message,
-  } = useRecipeFeedback(recipeId);
+  } = useRecipeFeedback(recipeId, t);
   const controlsDisabled = !canVote || isPending;
   const unspecified = getUnspecifiedModeCounts(stats);
   const latestReport = React.useMemo(() => getLatestReport(stats), [stats]);
   const latestLine = React.useMemo(
-    () => formatLatestReport(stats, now),
-    [stats, now],
+    () => formatLatestReport(stats, now, t),
+    [stats, now, t],
   );
   const totalReports = stats.workedCount + stats.didntWorkCount;
   const thanksKey =
-    message === "Report saved." && userVote
+    message?.key === "Report saved." && userVote
       ? `${userVote}-${stats.workedCount}-${stats.didntWorkCount}`
       : null;
   const [dismissedThanksKey, setDismissedThanksKey] = useState<string | null>(
@@ -288,7 +304,7 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
         <div className="min-w-0">
           {loadError ? (
             <div className="flex flex-wrap items-center gap-2 text-rose-300">
-              <span>{loadError}</span>
+              <span>{tm(loadError)}</span>
               <Button
                 type="button"
                 variant="ghost"
@@ -296,20 +312,20 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
                 onClick={() => void retry()}
                 className="h-9 px-2 text-[11px] text-rose-200 hover:bg-rose-950/40 sm:h-7"
               >
-                <RefreshCw className="mr-1 h-3 w-3" /> Retry
+                <RefreshCw className="mr-1 h-3 w-3" /> {t("Retry")}
               </Button>
             </div>
           ) : isLoading ? (
             <span className="inline-flex items-center text-gray-400">
               <span className="mr-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-gray-500" />
-              Loading community reports…
+              {t("Loading community reports…")}
             </span>
           ) : (
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  aria-label="View community report details"
+                  aria-label={t("View community report details")}
                   className="inline-flex h-9 items-center gap-1.5 rounded-md px-1 text-left text-gray-300 transition-colors hover:bg-gray-800/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 sm:h-7"
                 >
                   <span
@@ -333,12 +349,14 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
               >
                 <div className="mb-2 flex items-baseline justify-between gap-2">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                    Community reports
+                    {t("Community reports")}
                   </p>
                   <p className="text-[10px] text-gray-500">
                     {totalReports === 0
-                      ? "No reports yet"
-                      : `${totalReports} report${totalReports === 1 ? "" : "s"}`}
+                      ? t("No reports yet")
+                      : totalReports === 1
+                        ? t("{count} report", { count: totalReports })
+                        : t("{count} reports", { count: totalReports })}
                   </p>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -358,10 +376,12 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
                         workedRecency={formatCompactRecency(
                           counts.lastWorkedAt ?? null,
                           now,
+                          t,
                         )}
                         didntWorkRecency={formatCompactRecency(
                           counts.lastDidntWorkAt ?? null,
                           now,
+                          t,
                         )}
                         latestVote={
                           isLatestMode ? (latestReport?.vote ?? null) : null
@@ -371,8 +391,8 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
                   })}
                   {(unspecified.worked > 0 || unspecified.didntWork > 0) && (
                     <ModeCountRow
-                      label="Unspecified"
-                      title="Reports without a game mode (legacy)"
+                      label={t("Unspecified")}
+                      title={t("Reports without a game mode (legacy)")}
                       worked={unspecified.worked}
                       didntWork={unspecified.didntWork}
                       workedRecency={null}
@@ -395,7 +415,7 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
             </p>
           )}
           {voteError && (
-            <p className="mt-1 text-[11px] text-rose-300">{voteError}</p>
+            <p className="mt-1 text-[11px] text-rose-300">{tm(voteError)}</p>
           )}
           {showThanks && userVote && thanksKey && (
             <p
@@ -410,12 +430,12 @@ export const RecipeFeedback = React.memo(function RecipeFeedback({
             >
               <Check className="h-3 w-3 shrink-0" />
               {userVote === "worked"
-                ? "Thanks - the Circle approves."
-                : "Noted - thanks for keeping the Circle honest."}
+                ? t("Thanks - the Circle approves.")
+                : t("Noted - thanks for keeping the Circle honest.")}
             </p>
           )}
           <span className="sr-only" role="status" aria-live="polite">
-            {voteError ?? message ?? ""}
+            {tm(voteError ?? message)}
           </span>
         </div>
 
@@ -471,6 +491,7 @@ function ModeCountRow({
   didntWorkRecency: string | null;
   latestVote: "worked" | "didnt_work" | null;
 }) {
+  const { t } = useLanguage();
   const hasReports = worked > 0 || didntWork > 0;
   return (
     <div
@@ -497,7 +518,7 @@ function ModeCountRow({
                   : "bg-rose-500/20 text-rose-300",
               )}
             >
-              Latest
+              {t("Latest")}
             </span>
           )}
         </span>
@@ -523,8 +544,8 @@ function ModeCountRow({
               )}
             >
               {worked > 0
-                ? `Worked ${workedRecency ?? "· no time recorded"}`
-                : "No successes yet"}
+                ? `${t("Worked")} ${workedRecency ?? t("· no time recorded")}`
+                : t("No successes yet")}
             </span>
             <span
               className={cn(
@@ -534,12 +555,12 @@ function ModeCountRow({
               )}
             >
               {didntWork > 0
-                ? `Failed ${didntWorkRecency ?? "· no time recorded"}`
-                : "No failures yet"}
+                ? `${t("Failed")} ${didntWorkRecency ?? t("· no time recorded")}`
+                : t("No failures yet")}
             </span>
           </>
         ) : (
-          <span className="text-gray-600">No reports yet</span>
+          <span className="text-gray-600">{t("No reports yet")}</span>
         )}
       </div>
     </div>

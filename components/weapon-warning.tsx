@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { useLanguage } from "@/contexts/language-context";
+import { formatMessageSlots } from "@/lib/format-message-slots";
 
 interface WeaponWarningProps {
   selectedItems: SimplifiedItem[];
@@ -37,9 +38,10 @@ export function WeaponWarning({ selectedItems }: WeaponWarningProps) {
           {weapons.map((w) => w.shortName || w.name).join(", ")}
         </div>
         <div className="text-xs">
-          {t("You can check the")}{" "}
-          <strong>{t("Hot Sacrifices")}</strong>{" "}
-          {t("list for known, community-tested combos.")}
+          {formatMessageSlots(
+            t("You can check the {list} list for known, community-tested combos."),
+            { list: <strong>{t("Hot Sacrifices")}</strong> },
+          )}
         </div>
       </AlertDescription>
     </Alert>

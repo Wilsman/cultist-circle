@@ -86,7 +86,7 @@ export function UpdatesBell() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <h3 className="mb-0.5 flex items-start gap-2 text-[13px] font-semibold leading-5 text-slate-100">
-                    <span className="min-w-0 flex-1">{notification.title}</span>
+                    <span className="min-w-0 flex-1">{t(notification.title)}</span>
                     {newWhenOpened.has(notification.id) && (
                       <span className="mt-0.5 shrink-0 rounded-full border border-amber-300/30 bg-amber-300/10 px-1.5 text-[9px] font-bold uppercase leading-4 tracking-wide text-amber-200">
                         {t("New")}

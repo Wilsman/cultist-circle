@@ -29,6 +29,7 @@ import {
 } from "@/lib/ritual-tracker";
 import { updateRitual } from "@/lib/ritual-tracker-db";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
+import { useLanguage } from "@/contexts/language-context";
 import type { RitualRecord, TrackedItemSnapshot } from "@/types/ritual-tracker";
 
 interface CompleteRitualDialogProps {
@@ -74,6 +75,7 @@ export function CompleteRitualDialog({
   ritual,
   editing = false,
 }: CompleteRitualDialogProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [rewards, setRewards] = useState<TrackedItemSnapshot[]>([]);
@@ -127,11 +129,11 @@ export function CompleteRitualDialog({
 
   const save = async () => {
     if (rewards.length === 0) {
-      sonnerToast.error("Add at least one returned reward");
+      sonnerToast.error(t("Add at least one returned reward"));
       return;
     }
     if (rewards.some((reward) => !reward.name.trim() || reward.quantity < 1)) {
-      sonnerToast.error("Every reward needs a name and quantity");
+      sonnerToast.error(t("Every reward needs a name and quantity"));
       return;
     }
 
@@ -163,16 +165,16 @@ export function CompleteRitualDialog({
         },
         notes: notes.trim(),
       });
-      sonnerToast.success(editing ? "Ritual updated" : "Rewards recorded", {
+      sonnerToast.success(editing ? t("Ritual updated") : t("Rewards recorded"), {
         description:
           fleaValue === null || traderValue === null
-            ? "Some values are missing; ROI will be marked incomplete."
-            : "Your personal insights have been refreshed.",
+            ? t("Some values are missing; ROI will be marked incomplete.")
+            : t("Your personal insights have been refreshed."),
       });
       setOpen(false);
     } catch (error) {
       console.error(error);
-      sonnerToast.error("Could not save rewards");
+      sonnerToast.error(t("Could not save rewards"));
     } finally {
       setSaving(false);
     }
@@ -194,17 +196,19 @@ export function CompleteRitualDialog({
           ) : (
             <Check className="mr-2 h-4 w-4" />
           )}
-          {editing ? "Edit rewards" : "Add rewards"}
+          {editing ? t("Edit rewards") : t("Add rewards")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[92vh] overflow-y-auto border-white/10 bg-[#15181d] text-white sm:max-w-2xl sm:rounded-3xl">
         <DialogHeader>
           <DialogTitle>
-            {editing ? "Edit returned rewards" : "What came back?"}
+            {editing ? t("Edit returned rewards") : t("What came back?")}
           </DialogTitle>
           <DialogDescription className="text-slate-400">
-            Search the {ritual.mode.toUpperCase()} catalogue or add a custom
-            reward. Prices are captured now and will not drift later.
+            {t(
+              "Search the {mode} catalogue or add a custom reward. Prices are captured now and will not drift later.",
+              { mode: ritual.mode.toUpperCase() },
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -215,7 +219,7 @@ export function CompleteRitualDialog({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder={
-                isLoading ? "Loading item catalogue…" : "Search returned items"
+                isLoading ? t("Loading item catalogue…") : t("Search returned items")
               }
               className="border-white/10 bg-black/25 pl-9 text-white"
             />
@@ -263,13 +267,13 @@ export function CompleteRitualDialog({
             className="border-dashed border-white/15 bg-transparent text-slate-300 hover:bg-white/5 hover:text-white"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add custom reward
+            {t("Add custom reward")}
           </Button>
 
           <div className="space-y-3">
             {rewards.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-slate-500">
-                Add every item returned by the ritual.
+                {t("Add every item returned by the ritual.")}
               </div>
             ) : (
               rewards.map((reward) => (
@@ -293,7 +297,7 @@ export function CompleteRitualDialog({
                     <div className="min-w-0 flex-1 space-y-3">
                       {reward.isManual ? (
                         <Input
-                          aria-label="Custom reward name"
+                          aria-label={t("Custom reward name")}
                           value={reward.name}
                           onChange={(event) =>
                             patchReward(reward.key, {
@@ -309,15 +313,15 @@ export function CompleteRitualDialog({
                             {reward.name}
                           </p>
                           <p className="text-xs text-slate-500">
-                            Prices captured from Tarkov.dev
+                            {t("Prices captured from Tarkov.dev")}
                           </p>
                         </div>
                       )}
                       <div className="grid gap-3 sm:grid-cols-3">
                         <label className="space-y-1 text-[10px] uppercase tracking-wider text-slate-500">
-                          Quantity
+                          {t("Quantity")}
                           <Input
-                            aria-label={`${reward.name} quantity`}
+                            aria-label={t("{name} quantity", { name: reward.name })}
                             type="number"
                             min={1}
                             max={99}
@@ -334,13 +338,13 @@ export function CompleteRitualDialog({
                           />
                         </label>
                         <label className="space-y-1 text-[10px] uppercase tracking-wider text-slate-500">
-                          Flea value / item
+                          {t("Flea value / item")}
                           <Input
-                            aria-label={`${reward.name} flea value`}
+                            aria-label={t("{name} flea value", { name: reward.name })}
                             type="number"
                             min={0}
                             value={reward.lastLowPrice ?? ""}
-                            placeholder="Missing"
+                            placeholder={t("Missing")}
                             onChange={(event) =>
                               patchReward(reward.key, {
                                 lastLowPrice:
@@ -353,13 +357,13 @@ export function CompleteRitualDialog({
                           />
                         </label>
                         <label className="space-y-1 text-[10px] uppercase tracking-wider text-slate-500">
-                          Trader value / item
+                          {t("Trader value / item")}
                           <Input
-                            aria-label={`${reward.name} trader value`}
+                            aria-label={t("{name} trader value", { name: reward.name })}
                             type="number"
                             min={0}
                             value={reward.traderSellPrice ?? ""}
-                            placeholder="Missing"
+                            placeholder={t("Missing")}
                             onChange={(event) =>
                               patchReward(reward.key, {
                                 traderSellPrice:
@@ -377,7 +381,7 @@ export function CompleteRitualDialog({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      aria-label={`Remove ${reward.name}`}
+                      aria-label={t("Remove {name}", { name: reward.name })}
                       onClick={() =>
                         setRewards((current) =>
                           current.filter((item) => item.key !== reward.key),
@@ -398,7 +402,7 @@ export function CompleteRitualDialog({
               htmlFor={`ritual-notes-${ritual.id}`}
               className="text-slate-300"
             >
-              Notes
+              {t("Notes")}
             </Label>
             <Input
               id={`ritual-notes-${ritual.id}`}
@@ -421,7 +425,7 @@ export function CompleteRitualDialog({
             ) : (
               <Check className="mr-2 h-4 w-4" />
             )}
-            {editing ? "Save changes" : "Complete ritual"}
+            {editing ? t("Save changes") : t("Complete ritual")}
           </Button>
         </DialogFooter>
       </DialogContent>

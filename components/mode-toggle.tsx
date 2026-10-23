@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { LayoutGroup, motion } from "framer-motion";
+import { useLanguage } from "@/contexts/language-context";
 import { GAME_MODE_LABELS, GAME_MODES, type GameMode } from "@/lib/game-mode";
 
 interface ModeToggleProps {
@@ -16,6 +17,7 @@ export function ModeToggle({
   embedded = false,
 }: ModeToggleProps) {
   const layoutId = useId();
+  const { t } = useLanguage();
 
   return (
     <div
@@ -33,7 +35,7 @@ export function ModeToggle({
           <div
             className="grid w-[216px] grid-cols-3 gap-0.5 sm:w-[228px]"
             role="radiogroup"
-            aria-label="Game mode"
+            aria-label={t("Game mode")}
           >
             {GAME_MODES.map((gameMode) => {
               const isActive = mode === gameMode;

@@ -52,6 +52,7 @@ import {
 import { recipeIconMap } from "@/data/recipe-icons";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
 import { useLanguage } from "@/contexts/language-context";
+import { formatMessageSlots } from "@/lib/format-message-slots";
 import { tarkovRecipes, type Recipe } from "@/data/recipes";
 import { useRecipeFeedbackStore } from "@/hooks/use-recipe-feedback";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
@@ -229,12 +230,13 @@ const StatusBadge = React.memo(function StatusBadge({
 }: {
   variant: "new" | "updated" | "expired";
 }) {
+  const { t } = useLanguage();
   const badgeLabel =
     variant === "updated"
-      ? "UPDATED"
+      ? t("UPDATED")
       : variant === "expired"
-        ? "EXPIRED"
-        : "NEW";
+        ? t("EXPIRED")
+        : t("NEW");
   const badgeClassName =
     variant === "updated"
       ? "animate-pulse bg-gradient-to-r from-amber-500 to-orange-500 text-white"
@@ -304,14 +306,15 @@ const FoundInRaidBadge = React.memo(function FoundInRaidBadge({
 });
 
 const RepeatableBadge = React.memo(function RepeatableBadge() {
+  const { t } = useLanguage();
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
           <span
             className="inline-flex cursor-help items-center justify-center rounded border border-sky-400/35 bg-sky-500/15 p-1 text-sky-200 shadow-lg"
-            aria-label="Repeatable"
-            title="Repeatable"
+            aria-label={t("Repeatable")}
+            title={t("Repeatable")}
           >
             <Repeat2 className="h-3.5 w-3.5" />
           </span>
@@ -324,11 +327,11 @@ const RepeatableBadge = React.memo(function RepeatableBadge() {
           <div className="space-y-2 p-3">
             <div className="border-b border-gray-700/60 pb-2">
               <p className="text-sm font-semibold text-sky-300">
-                Repeatable recipe
+                {t("Repeatable recipe")}
               </p>
             </div>
             <p className="whitespace-normal leading-relaxed text-gray-300">
-              The sacrifices listed below can be repeated indefinitely.
+              {t("The sacrifices listed below can be repeated indefinitely.")}
             </p>
           </div>
         </TooltipContent>
@@ -338,14 +341,15 @@ const RepeatableBadge = React.memo(function RepeatableBadge() {
 });
 
 const NonRepeatableBadge = React.memo(function NonRepeatableBadge() {
+  const { t } = useLanguage();
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
           <span
             className="inline-flex cursor-help items-center justify-center rounded border border-gray-700/60 bg-gray-800/50 p-1 text-gray-500 shadow-lg"
-            aria-label="Non-repeatable"
-            title="Non-repeatable"
+            aria-label={t("Non-repeatable")}
+            title={t("Non-repeatable")}
           >
             <RepeatOff className="h-3.5 w-3.5" />
           </span>
@@ -358,11 +362,11 @@ const NonRepeatableBadge = React.memo(function NonRepeatableBadge() {
           <div className="space-y-2 p-3">
             <div className="border-b border-gray-700/60 pb-2">
               <p className="text-sm font-semibold text-gray-300">
-                One-time recipe
+                {t("One-time recipe")}
               </p>
             </div>
             <p className="whitespace-normal leading-relaxed text-gray-300">
-              This sacrifice can only be completed once per wipe/prestige.
+              {t("This sacrifice can only be completed once per wipe/prestige.")}
             </p>
           </div>
         </TooltipContent>
@@ -388,6 +392,7 @@ const ItemBadge = React.memo(function ItemBadge({
   itemHref?: string;
   placeholderIcon?: "dogtag" | "briefcase";
 }) {
+  const { t } = useLanguage();
   const itemData = getItemByName(itemName);
   const iconUrl =
     getRecipeItemIconUrl(itemName, itemData) ??
@@ -409,7 +414,11 @@ const ItemBadge = React.memo(function ItemBadge({
       ) : (
         <div
           role={placeholderIcon ? "img" : undefined}
-          aria-label={placeholderIcon ? `${itemName} placeholder` : undefined}
+          aria-label={
+            placeholderIcon
+              ? t("{name} placeholder", { name: itemName })
+              : undefined
+          }
           className={`${sizeClasses} rounded-lg bg-gray-800/50 flex flex-shrink-0 items-center justify-center border border-gray-700/50`}
         >
           {placeholderIcon === "dogtag" ? (
@@ -441,7 +450,7 @@ const ItemBadge = React.memo(function ItemBadge({
       href={itemHref}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={`View ${itemName} on Tarkov.dev`}
+      aria-label={t("View {name} on Tarkov.dev", { name: itemName })}
       className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
     >
       {badgeContent}
@@ -474,6 +483,7 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
     name: string,
   ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
 }) {
+  const { t } = useLanguage();
   const [copyStatus, setCopyStatus] = useState<{
     code: string;
     state: "copied" | "failed";
@@ -523,14 +533,23 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
           />
           <p>
             <span className="font-semibold text-amber-200">
-              Heads up: these codes and this recipe might not work anymore.
+              {t("Heads up: these codes and this recipe might not work anymore.")}
             </span>{" "}
-            Many users report it no longer works. If you try it, please report{" "}
-            <span className="font-semibold">Worked or Didn&apos;t work</span>{" "}
-            below - thank you. Found a new recipe? Use the{" "}
-            <span className="font-semibold">Submit a recipe</span> button at the
-            top of this page. New submissions are reviewed and tested before
-            being added.
+            {formatMessageSlots(
+              t(
+                "Many users report it no longer works. If you try it, please report {worked} below - thank you. Found a new recipe? Use the {submit} button at the top of this page. New submissions are reviewed and tested before being added.",
+              ),
+              {
+                worked: (
+                  <span className="font-semibold">
+                    {t("Worked or Didn't work")}
+                  </span>
+                ),
+                submit: (
+                  <span className="font-semibold">{t("Submit a recipe")}</span>
+                ),
+              },
+            )}
           </p>
         </div>
       )}
@@ -547,18 +566,19 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300/75">
-                  Step 1 · Launcher unlock
+                  {t("Step 1 · Launcher unlock")}
                 </span>
                 <span className="rounded-full border border-amber-300/15 bg-black/20 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-100/50">
-                  5 codes
+                  {t("5 codes")}
                 </span>
               </div>
               <p className="mt-1 text-sm font-medium text-amber-50/90">
-                Redeem every code in the BSG Launcher
+                {t("Redeem every code in the BSG Launcher")}
               </p>
               <p className="mt-0.5 text-xs leading-relaxed text-gray-400">
-                Open Settings → Activate code. Each code delivers one Ferrum
-                dogtag.
+                {t(
+                  "Open Settings → Activate code. Each code delivers one Ferrum dogtag.",
+                )}
               </p>
             </div>
           </div>
@@ -569,10 +589,12 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
             const status = copyStatus?.code === code ? copyStatus.state : null;
             const buttonLabel =
               status === "copied"
-                ? `Copied promo code ${index + 1}`
+                ? t("Copied promo code {number}", { number: index + 1 })
                 : status === "failed"
-                  ? `Copy failed for promo code ${index + 1}`
-                  : `Copy promo code ${index + 1}`;
+                  ? t("Copy failed for promo code {number}", {
+                      number: index + 1,
+                    })
+                  : t("Copy promo code {number}", { number: index + 1 });
 
             return (
               <div
@@ -602,14 +624,14 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
                   {status === "copied" ? (
                     <>
                       <Check className="mr-1 h-3 w-3" aria-hidden="true" />
-                      Copied
+                      {t("Copied")}
                     </>
                   ) : status === "failed" ? (
-                    "Copy failed"
+                    t("Copy failed")
                   ) : (
                     <>
                       <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span className="sr-only">Copy</span>
+                      <span className="sr-only">{t("Copy")}</span>
                     </>
                   )}
                 </Button>
@@ -619,9 +641,12 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
         </div>
         <p className="sr-only" aria-live="polite">
           {copyStatus?.state === "copied"
-            ? `${copyStatus.code} copied to clipboard`
+            ? t("{code} copied to clipboard", { code: copyStatus.code })
             : copyStatus?.state === "failed"
-              ? `Could not copy ${copyStatus.code}. Select the code and copy it manually.`
+              ? t(
+                  "Could not copy {code}. Select the code and copy it manually.",
+                  { code: copyStatus.code },
+                )
               : ""}
         </p>
       </section>
@@ -634,10 +659,10 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-red-300">
-                Sacrifice
+                {t("Sacrifice")}
               </span>
               <span className="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-gray-400">
-                5 tags
+                {t("5 tags")}
               </span>
             </div>
           </div>
@@ -684,7 +709,7 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
-                Cultist Circle timer
+                {t("Cultist Circle timer")}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -697,10 +722,10 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
-                Reward
+                {t("Reward")}
               </span>
               <span className="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-gray-400">
-                1 item
+                {t("1 item")}
               </span>
             </div>
           </div>
@@ -724,6 +749,7 @@ const RoomInfoBadge = React.memo(function RoomInfoBadge({
 }: {
   roomInfo: { itemName: string; spawnInfo: string };
 }) {
+  const { t } = useLanguage();
   const batteryIconUrl = recipeIconMap["1x 6-STEN-140-M military battery"];
 
   return (
@@ -733,7 +759,7 @@ const RoomInfoBadge = React.memo(function RoomInfoBadge({
           <div className="flex items-center gap-2 mt-3 p-2.5 rounded-lg bg-blue-900/20 border border-blue-800/40 hover:bg-blue-900/30 transition-colors cursor-help group">
             <Info className="h-4 w-4 text-blue-400 flex-shrink-0 group-hover:text-blue-300 transition-colors" />
             <span className="text-xs text-blue-300 font-medium">
-              Guaranteed battery spawn
+              {t("Guaranteed battery spawn")}
             </span>
           </div>
         </TooltipTrigger>
@@ -745,7 +771,7 @@ const RoomInfoBadge = React.memo(function RoomInfoBadge({
             {batteryIconUrl && (
               <img
                 src={batteryIconUrl}
-                alt="Battery"
+                alt={t("Battery")}
                 width={48}
                 height={48}
                 className="rounded-lg bg-gray-800/50 p-1.5 border border-gray-700/50 flex-shrink-0"
@@ -821,7 +847,7 @@ interface RecipeCardProps {
   getItemByName: (
     name: string,
   ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
-  t: (key: string) => string;
+  t: (key: string, vars?: Record<string, string | number>) => string;
   isCompleted: boolean;
   onCompletedChange: (recipeId: string, isCompleted: boolean) => void;
   isHighlighted: boolean;
@@ -876,12 +902,17 @@ const RecipeCard = React.memo(function RecipeCard({
     scheduleShareReset();
   }, [onShare, recipe.id, scheduleShareReset]);
 
+  const requiredItemList = recipe.requiredItems.join(", ");
   const shareLabel =
     shareState === "copied"
-      ? `Copied link to recipe requiring ${recipe.requiredItems.join(", ")}`
+      ? t("Copied link to recipe requiring {items}", { items: requiredItemList })
       : shareState === "failed"
-        ? `Copy failed for recipe requiring ${recipe.requiredItems.join(", ")}`
-        : `Copy link to recipe requiring ${recipe.requiredItems.join(", ")}`;
+        ? t("Copy failed for recipe requiring {items}", {
+            items: requiredItemList,
+          })
+        : t("Copy link to recipe requiring {items}", {
+            items: requiredItemList,
+          });
   const processOutputs = useCallback((): ProcessedOutput[] => {
     const outputs: ProcessedOutput[] = [];
 
@@ -934,8 +965,12 @@ const RecipeCard = React.memo(function RecipeCard({
   }, [processedOutputs]);
 
   const completionLabel = isCompleted
-    ? `Mark recipe requiring ${recipe.requiredItems.join(", ")} as not completed`
-    : `Mark recipe requiring ${recipe.requiredItems.join(", ")} as completed`;
+    ? t("Mark recipe requiring {items} as not completed", {
+        items: requiredItemList,
+      })
+    : t("Mark recipe requiring {items} as completed", {
+        items: requiredItemList,
+      });
 
   return (
     <div
@@ -969,7 +1004,7 @@ const RecipeCard = React.memo(function RecipeCard({
                 </span>
               </TooltipTrigger>
               <TooltipContent side="right" className="text-xs">
-                {isCompleted ? "Mark as not done" : "Mark as done"}
+                {isCompleted ? t("Mark as not done") : t("Mark as done")}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -1004,10 +1039,10 @@ const RecipeCard = React.memo(function RecipeCard({
             aria-label={shareLabel}
             title={
               shareState === "copied"
-                ? "Copied!"
+                ? t("Copied!")
                 : shareState === "failed"
-                  ? "Copy failed, try again"
-                  : "Copy link to this recipe"
+                  ? t("Copy failed, try again")
+                  : t("Copy link to this recipe")
             }
             className={`inline-flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
               shareState === "copied"
@@ -1056,7 +1091,7 @@ const RecipeCard = React.memo(function RecipeCard({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-red-300">
-                      Sacrifice
+                      {t("Sacrifice")}
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
                       {recipe.requiredItems.length}
@@ -1121,7 +1156,7 @@ const RecipeCard = React.memo(function RecipeCard({
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="text-xs">
-                      Crafting time
+                      {t("Crafting time")}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1135,7 +1170,7 @@ const RecipeCard = React.memo(function RecipeCard({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-green-300">
-                      Rewards
+                      {t("Rewards")}
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
                       {outputCount}
@@ -1216,7 +1251,7 @@ const ExpiredRecipeRow = React.memo(function ExpiredRecipeRow({
 }: {
   recipe: Recipe & { expiredAt: string };
   getItemByName: RecipeCardProps["getItemByName"];
-  t: (key: string) => string;
+  t: RecipeCardProps["t"];
   isExpanded: boolean;
   onToggle: (recipeId: string) => void;
   isHighlighted: boolean;
@@ -1276,7 +1311,7 @@ const ExpiredRecipeRow = React.memo(function ExpiredRecipeRow({
         </span>
         <span className="flex flex-shrink-0 items-center gap-2 text-[11px] text-gray-500">
           <span className="rounded border border-gray-600 bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-gray-300">
-            EXPIRED
+            {t("EXPIRED")}
           </span>
           <span className="hidden md:inline">
             {formatExpiredDate(recipe.expiredAt)}
@@ -1284,7 +1319,10 @@ const ExpiredRecipeRow = React.memo(function ExpiredRecipeRow({
           {workedCount !== null && didntWorkCount !== null && (
             <span
               className="hidden items-center gap-2 font-mono sm:inline-flex"
-              aria-label={`${workedCount} worked, ${didntWorkCount} didn't work`}
+              aria-label={t("{worked} worked, {failed} didn't work", {
+                worked: workedCount,
+                failed: didntWorkCount,
+              })}
             >
               <span className="inline-flex items-center gap-1">
                 <ThumbsUp className="h-3 w-3" aria-hidden="true" />
@@ -1658,10 +1696,10 @@ export default function RecipesPage() {
             <div className="bg-gray-900/95 border-b border-gray-800 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-md">
               <CardHeader className="p-0 mb-4 sm:mb-5 text-center">
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-red-400">
-                  Cultist Circle Recipes
+                  {t("Cultist Circle Recipes")}
                 </h1>
                 <p className="text-center text-sm text-gray-400 mt-2">
-                  Discover what you can sacrifice and receive
+                  {t("Discover what you can sacrifice and receive")}
                 </p>
                 <div className="flex justify-center pt-3">
                   <RecipeSubmissionButton mode={mode} />
@@ -1673,7 +1711,7 @@ export default function RecipesPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
                 <Input
                   type="text"
-                  placeholder="Search items or recipes..."
+                  placeholder={t("Search items or recipes...")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   ref={searchRef}
@@ -1710,7 +1748,7 @@ export default function RecipesPage() {
                     }
                   >
                     <SelectTrigger
-                      aria-label="Sort recipes"
+                      aria-label={t("Sort recipes")}
                       className="h-7 w-auto gap-2 rounded-full border-gray-700/80 bg-transparent px-3 text-[11px] text-gray-200 hover:border-gray-600"
                     >
                       <SelectValue />
@@ -1726,12 +1764,12 @@ export default function RecipesPage() {
                             disabled={unavailable}
                             title={
                               unavailable
-                                ? "Loading community reports..."
+                                ? t("Loading community reports...")
                                 : undefined
                             }
                             className="text-[12px]"
                           >
-                            {option.label}
+                            {t(option.label)}
                           </SelectItem>
                         );
                       })}
@@ -1749,14 +1787,17 @@ export default function RecipesPage() {
                     }`}
                   >
                     <Filter className="mr-1.5 h-3 w-3" />
-                    Unfinished only
+                    {t("Unfinished only")}
                   </Button>
                   <div className="ms-auto flex flex-wrap items-center gap-2">
                     <span
                       className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-sm text-emerald-300/90"
                       aria-live="polite"
                     >
-                      {completedRecipeCount} / {activeRecipeCount} done
+                      {t("{completed} / {total} done", {
+                        completed: completedRecipeCount,
+                        total: activeRecipeCount,
+                      })}
                     </span>
                     {completedRecipeCount > 0 && (
                       <AlertDialog>
@@ -1767,36 +1808,42 @@ export default function RecipesPage() {
                             className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-red-950/30 hover:text-red-300"
                           >
                             <RotateCcw className="mr-1 h-3 w-3" />
-                            Reset progress
+                            {t("Reset progress")}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="border-gray-700 bg-gray-900 text-gray-100 shadow-2xl sm:max-w-md">
                           <AlertDialogHeader>
                             <AlertDialogTitle>
-                              Reset recipe progress?
+                              {t("Reset recipe progress?")}
                             </AlertDialogTitle>
                             <AlertDialogDescription className="text-gray-400">
-                              This will mark all {activeRecipeCount} recipes
-                              as unfinished on this device.
+                              {t(
+                                "This will mark all {count} recipes as unfinished on this device.",
+                                { count: activeRecipeCount },
+                              )}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel className="border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white">
-                              Cancel
+                              {t("Cancel")}
                             </AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => setStoredCompletedRecipeIds([])}
                               className="bg-red-600 text-white hover:bg-red-500"
                             >
-                              Reset progress
+                              {t("Reset progress")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
                     <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5 text-sm text-gray-400">
-                      {activeRecipes.length} recipe
-                      {activeRecipes.length === 1 ? "" : "s"}
+                      {t(
+                        activeRecipes.length === 1
+                          ? "{count} recipe"
+                          : "{count} recipes",
+                        { count: activeRecipes.length },
+                      )}
                     </span>
                     {hasActiveFilters && (
                       <Button
@@ -1809,7 +1856,7 @@ export default function RecipesPage() {
                         }}
                         className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-gray-800 hover:text-gray-300"
                       >
-                        Clear filters
+                        {t("Clear filters")}
                       </Button>
                     )}
                   </div>
@@ -1825,10 +1872,10 @@ export default function RecipesPage() {
                     <Search className="h-8 w-8 text-gray-600" />
                   </div>
                   <p className="text-lg font-medium text-gray-300 mb-2">
-                    No recipes found
+                    {t("No recipes found")}
                   </p>
                   <p className="text-sm text-gray-500 mb-4">
-                    Try adjusting your search or filters
+                    {t("Try adjusting your search or filters")}
                   </p>
                   <Button
                     variant="outline"
@@ -1839,14 +1886,16 @@ export default function RecipesPage() {
                     }}
                     className="border-gray-700 hover:bg-gray-800"
                   >
-                    Clear all filters
+                    {t("Clear all filters")}
                   </Button>
                 </div>
               ) : (
                 <>
                   {activeRecipes.length === 0 ? (
                     <p className="py-6 text-center text-sm text-gray-500">
-                      No active recipes match. Expired matches are listed below.
+                      {t(
+                        "No active recipes match. Expired matches are listed below.",
+                      )}
                     </p>
                   ) : (
                     <div className="grid gap-3 sm:gap-4">
@@ -1892,13 +1941,13 @@ export default function RecipesPage() {
                           id="expired-recipes-heading"
                           className="text-xs font-bold uppercase tracking-wider"
                         >
-                          Expired · no longer working
+                          {t("Expired · no longer working")}
                         </span>
                         <span className="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-gray-400">
                           {expiredRecipes.length}
                         </span>
                         <span className="ms-auto hidden text-[11px] text-gray-600 sm:inline">
-                          Kept for reference. Vote Worked if one works again.
+                          {t("Kept for reference. Vote Worked if one works again.")}
                         </span>
                       </button>
                       {isExpiredSectionOpen && (
@@ -1940,25 +1989,33 @@ export default function RecipesPage() {
             {/* Footer */}
             <CardFooter className="border-t border-gray-800 px-4 sm:px-6 py-4 bg-gray-900/50">
               <p className="text-center text-xs text-gray-500 w-full">
-                Data sourced from{" "}
-                <a
-                  href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                >
-                  Escape from Tarkov Wiki
-                </a>{" "}
-                and our{" "}
-                <a
-                  href="https://discord.com/invite/3dFmr5qaJK"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                >
-                  Cultist Circle Discord
-                </a>
-                . Thank you to all contributors!
+                {formatMessageSlots(
+                  t(
+                    "Data sourced from {wiki} and our {discord}. Thank you to all contributors!",
+                  ),
+                  {
+                    wiki: (
+                      <a
+                        href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                      >
+                        {t("Escape from Tarkov Wiki")}
+                      </a>
+                    ),
+                    discord: (
+                      <a
+                        href="https://discord.com/invite/3dFmr5qaJK"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                      >
+                        {t("Cultist Circle Discord")}
+                      </a>
+                    ),
+                  },
+                )}
               </p>
             </CardFooter>
           </Card>

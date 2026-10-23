@@ -56,6 +56,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CompleteRitualDialog } from "@/components/ritual-tracker/complete-ritual-dialog";
+import { useLanguage } from "@/contexts/language-context";
 import { GAME_MODE_LABELS, GAME_MODES, type GameMode } from "@/lib/game-mode";
 import {
   deleteRitual,
@@ -91,6 +92,13 @@ type ModeFilter = "all" | GameMode;
 type StatusFilter = "all" | RitualStatus | "ready";
 type DateFilter = "all" | "7" | "30" | "90";
 
+const STATUS_LABELS: Record<RitualStatus | "ready", string> = {
+  active: "Active",
+  ready: "Ready",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
 function formatRubles(value: number | null): string {
   if (value === null) return "Incomplete";
   const rounded = Math.round(value);
@@ -106,23 +114,25 @@ function modeClasses(mode: GameMode): string {
 }
 
 function ModeBadge({ mode }: { mode: GameMode }) {
+  const { t } = useLanguage();
   return (
     <span
       className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${modeClasses(mode)}`}
     >
-      {GAME_MODE_LABELS[mode]}
+      {t(GAME_MODE_LABELS[mode])}
     </span>
   );
 }
 
 function DeleteRitualButton({ ritual }: { ritual: RitualRecord }) {
+  const { t } = useLanguage();
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Delete ritual"
+          aria-label={t("Delete ritual")}
           className="text-slate-500 hover:bg-red-400/10 hover:text-red-300"
         >
           <Trash2 className="h-4 w-4" />
@@ -130,21 +140,22 @@ function DeleteRitualButton({ ritual }: { ritual: RitualRecord }) {
       </AlertDialogTrigger>
       <AlertDialogContent className="border-white/10 bg-[#171a1f] text-white">
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this ritual?</AlertDialogTitle>
+          <AlertDialogTitle>{t("Delete this ritual?")}</AlertDialogTitle>
           <AlertDialogDescription className="text-slate-400">
-            This removes its sacrifices, rewards, and contribution to your
-            insights. This cannot be undone.
+            {t(
+              "This removes its sacrifices, rewards, and contribution to your insights. This cannot be undone.",
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel className="border-white/10 bg-white/5 text-white hover:bg-white/10">
-            Keep ritual
+            {t("Keep ritual")}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => void deleteRitual(ritual.id)}
             className="bg-red-500 text-white hover:bg-red-400"
           >
-            Delete ritual
+            {t("Delete ritual")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -153,6 +164,7 @@ function DeleteRitualButton({ ritual }: { ritual: RitualRecord }) {
 }
 
 function AdjustTimerDialog({ ritual }: { ritual: RitualRecord }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [duration, setDuration] = useState(ritual.durationMinutes);
 
@@ -174,18 +186,18 @@ function AdjustTimerDialog({ ritual }: { ritual: RitualRecord }) {
           className="text-slate-400 hover:text-white"
         >
           <Clock3 className="mr-2 h-4 w-4" />
-          Adjust
+          {t("Adjust")}
         </Button>
       </DialogTrigger>
       <DialogContent className="border-white/10 bg-[#171a1f] text-white sm:rounded-3xl">
         <DialogHeader>
-          <DialogTitle>Adjust ritual timer</DialogTitle>
+          <DialogTitle>{t("Adjust ritual timer")}</DialogTitle>
           <DialogDescription className="text-slate-400">
-            Change this only to match the timer shown in-game.
+            {t("Change this only to match the timer shown in-game.")}
           </DialogDescription>
         </DialogHeader>
         <label className="space-y-2 text-sm text-slate-300">
-          Duration in minutes
+          {t("Duration in minutes")}
           <Input
             type="number"
             min={1}
@@ -202,7 +214,7 @@ function AdjustTimerDialog({ ritual }: { ritual: RitualRecord }) {
             onClick={save}
             className="bg-amber-500 text-black hover:bg-amber-400"
           >
-            Save timer
+            {t("Save timer")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -217,6 +229,7 @@ function ActiveRitualCard({
   ritual: RitualRecord;
   now: number;
 }) {
+  const { t } = useLanguage();
   const ready = isRitualReady(ritual, now);
   const elapsed = Math.max(0, now - ritual.startedAt);
   const duration = Math.max(1, ritual.endsAt - ritual.startedAt);
@@ -232,8 +245,10 @@ function ActiveRitualCard({
           <div className="flex flex-wrap items-center gap-2">
             <ModeBadge mode={ritual.mode} />
             <span
-              aria-label={`Ritual duration ${formatDuration(ritual.durationMinutes)}`}
-              title="Ritual duration"
+              aria-label={t("Ritual duration {duration}", {
+                duration: formatDuration(ritual.durationMinutes),
+              })}
+              title={t("Ritual duration")}
               className="inline-flex h-6 items-center gap-1.5 rounded-full border border-amber-300/15 bg-amber-300/[0.06] px-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-200/80"
             >
               <Clock3 className="h-3 w-3" />
@@ -248,14 +263,16 @@ function ActiveRitualCard({
             </p>
             <p className="mt-1 text-xs text-slate-500">
               {ready
-                ? "Ready for collection"
-                : `Finishes ${new Date(ritual.endsAt).toLocaleString()}`}
+                ? t("Ready for collection")
+                : t("Finishes {time}", {
+                    time: new Date(ritual.endsAt).toLocaleString(),
+                  })}
             </p>
           </div>
         </div>
         <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-2 text-right">
           <p className="text-[9px] uppercase tracking-[0.18em] text-slate-600">
-            Input cost
+            {t("Input cost")}
           </p>
           <p className="mt-1 text-sm font-semibold tabular-nums text-cyan-300">
             {formatRubles(ritual.totals.inputCost)}
@@ -299,7 +316,7 @@ function ActiveRitualCard({
           className="text-slate-400 hover:text-white"
         >
           <CalendarPlus className="mr-2 h-4 w-4" />
-          Calendar
+          {t("Calendar")}
         </Button>
         <AdjustTimerDialog ritual={ritual} />
         <AlertDialog>
@@ -309,20 +326,21 @@ function ActiveRitualCard({
               variant="ghost"
               className="ml-auto text-slate-500 hover:bg-red-400/10 hover:text-red-300"
             >
-              Cancel ritual
+              {t("Cancel ritual")}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent className="border-white/10 bg-[#171a1f] text-white">
             <AlertDialogHeader>
-              <AlertDialogTitle>Cancel tracking?</AlertDialogTitle>
+              <AlertDialogTitle>{t("Cancel tracking?")}</AlertDialogTitle>
               <AlertDialogDescription className="text-slate-400">
-                The ritual remains in history as cancelled and will not affect
-                insights.
+                {t(
+                  "The ritual remains in history as cancelled and will not affect insights.",
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel className="border-white/10 bg-white/5 text-white hover:bg-white/10">
-                Keep tracking
+                {t("Keep tracking")}
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() =>
@@ -333,7 +351,7 @@ function ActiveRitualCard({
                 }
                 className="bg-red-500 text-white hover:bg-red-400"
               >
-                Cancel tracking
+                {t("Cancel tracking")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -379,6 +397,7 @@ function MetricCard({
 }
 
 export function TrackerDashboard() {
+  const { t } = useLanguage();
   const router = useRouter();
   const records = useLiveQuery(() => listRituals(), [], []);
   const [now, setNow] = useState(() => Date.now());
@@ -436,8 +455,10 @@ export function TrackerDashboard() {
 
   const loadCombination = (ritual: RitualRecord) => {
     loadRitualCombinationIntoStorage(ritual, localStorage);
-    sonnerToast.success("Combination loaded", {
-      description: `Opening the calculator in ${GAME_MODE_LABELS[ritual.mode]} mode.`,
+    sonnerToast.success(t("Combination loaded"), {
+      description: t("Opening the calculator in {mode} mode.", {
+        mode: t(GAME_MODE_LABELS[ritual.mode]),
+      }),
     });
     router.push("/");
   };
@@ -451,11 +472,12 @@ export function TrackerDashboard() {
     const permission = await enableRitualNotifications();
     if (permission === "granted") {
       setNotificationOn(true);
-      sonnerToast.success("Ritual reminders enabled");
+      sonnerToast.success(t("Ritual reminders enabled"));
     } else {
-      sonnerToast.error("Notification permission was not granted", {
-        description:
+      sonnerToast.error(t("Notification permission was not granted"), {
+        description: t(
           "Calendar reminders remain available on every active ritual.",
+        ),
       });
     }
   };
@@ -475,11 +497,12 @@ export function TrackerDashboard() {
         <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Ritual Tracker
+              {t("Ritual Tracker")}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400 sm:text-base">
-              Countdown, record what returned, and learn which sacrifices are
-              actually worth repeating. Everything stays in this browser.
+              {t(
+                "Countdown, record what returned, and learn which sacrifices are actually worth repeating. Everything stays in this browser.",
+              )}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -494,7 +517,7 @@ export function TrackerDashboard() {
               ) : (
                 <BellOff className="mr-2 h-4 w-4" />
               )}
-              {notificationOn ? "Reminders on" : "Enable reminders"}
+              {notificationOn ? t("Reminders on") : t("Enable reminders")}
             </Button>
             <Button
               variant="outline"
@@ -521,7 +544,7 @@ export function TrackerDashboard() {
           <div
             className="flex flex-wrap gap-1.5"
             role="group"
-            aria-label="Filter by game mode"
+            aria-label={t("Filter by game mode")}
           >
             {(["all", ...GAME_MODES] as ModeFilter[]).map((mode) => (
               <button
@@ -530,7 +553,7 @@ export function TrackerDashboard() {
                 onClick={() => setModeFilter(mode)}
                 className={`rounded-full px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 ${modeFilter === mode ? "bg-amber-400 text-black" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
               >
-                {mode === "all" ? "All modes" : GAME_MODE_LABELS[mode]}
+                {mode === "all" ? t("All modes") : t(GAME_MODE_LABELS[mode])}
               </button>
             ))}
           </div>
@@ -543,10 +566,10 @@ export function TrackerDashboard() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#1b1e24] text-white">
-                <SelectItem value="all">All time</SelectItem>
-                <SelectItem value="7">Last 7 days</SelectItem>
-                <SelectItem value="30">Last 30 days</SelectItem>
-                <SelectItem value="90">Last 90 days</SelectItem>
+                <SelectItem value="all">{t("All time")}</SelectItem>
+                <SelectItem value="7">{t("Last 7 days")}</SelectItem>
+                <SelectItem value="30">{t("Last 30 days")}</SelectItem>
+                <SelectItem value="90">{t("Last 90 days")}</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex rounded-xl border border-white/10 bg-white/5 p-1">
@@ -557,7 +580,7 @@ export function TrackerDashboard() {
                   onClick={() => setValuation(value)}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${valuation === value ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"}`}
                 >
-                  {value}
+                  {t(value === "flea" ? "Flea" : "Trader")}
                 </button>
               ))}
             </div>
@@ -568,10 +591,10 @@ export function TrackerDashboard() {
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-white">
-                Active rituals
+                {t("Active rituals")}
               </h2>
               <p className="text-xs text-slate-500">
-                One countdown per game mode.
+                {t("One countdown per game mode.")}
               </p>
             </div>
             <Button
@@ -581,7 +604,7 @@ export function TrackerDashboard() {
             >
               <Link href="/">
                 <Play className="mr-2 h-4 w-4" />
-                Start from calculator
+                {t("Start from calculator")}
               </Link>
             </Button>
           </div>
@@ -595,10 +618,10 @@ export function TrackerDashboard() {
             <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-12 text-center">
               <Clock3 className="mx-auto h-8 w-8 text-slate-600" />
               <p className="mt-3 font-medium text-slate-300">
-                No active countdowns
+                {t("No active countdowns")}
               </p>
               <p className="mt-1 text-sm text-slate-600">
-                Build a sacrifice in the calculator and choose Track ritual.
+                {t("Build a sacrifice in the calculator and choose Track ritual.")}
               </p>
             </div>
           )}
@@ -607,60 +630,67 @@ export function TrackerDashboard() {
         <section className="mt-10">
           <div className="mb-4 flex items-end justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-white">Your return</h2>
+              <h2 className="text-lg font-semibold text-white">
+                {t("Your return")}
+              </h2>
               <p className="text-xs text-slate-500">
-                Using captured {valuation} reward values.
+                {t("Using captured {valuation} reward values.", {
+                  valuation: t(valuation === "flea" ? "Flea" : "Trader"),
+                })}
               </p>
             </div>
             {insights.pricedCount !== insights.completedCount &&
               insights.completedCount > 0 && (
                 <span className="rounded-full border border-amber-400/15 bg-amber-400/[0.06] px-3 py-1 text-[10px] text-amber-200/80">
-                  {insights.pricedCount}/{insights.completedCount} fully priced
+                  {t("{priced}/{total} fully priced", {
+                    priced: insights.pricedCount,
+                    total: insights.completedCount,
+                  })}
                 </span>
               )}
           </div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-7">
             <MetricCard
-              label="Completed"
+              label={t("Completed")}
               value={String(insights.completedCount)}
               icon={CheckCircle2}
             />
             <MetricCard
-              label="Total cost"
+              label={t("Total cost")}
               value={formatRubles(insights.totalInputCost)}
               icon={Coins}
             />
             <MetricCard
-              label="Avg cost"
+              label={t("Avg cost")}
               value={formatRubles(insights.averageInputCost)}
               icon={LineChart}
             />
             <MetricCard
-              label="Rewards"
+              label={t("Rewards")}
               value={formatRubles(insights.totalRewardValue)}
               icon={PackageOpen}
             />
             <MetricCard
-              label="Net return"
+              label={t("Net return")}
               value={formatRubles(insights.netReturn)}
               tone={insights.netReturn >= 0 ? "positive" : "negative"}
               icon={insights.netReturn >= 0 ? TrendingUp : TrendingDown}
             />
             <MetricCard
-              label="Avg ROI"
+              label={t("Avg ROI")}
               value={
                 insights.averageRoi === null
-                  ? "Incomplete"
+                  ? t("Incomplete")
                   : `${insights.averageRoi.toFixed(1)}%`
               }
               tone={(insights.averageRoi ?? 0) >= 0 ? "positive" : "negative"}
               icon={TrendingUp}
             />
             <MetricCard
-              label="Profitable"
+              label={t("Profitable")}
               value={
                 insights.profitableRate === null
-                  ? "Incomplete"
+                  ? t("Incomplete")
                   : `${insights.profitableRate.toFixed(0)}%`
               }
               icon={ShieldCheck}
@@ -672,9 +702,9 @@ export function TrackerDashboard() {
           <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <h2 className="font-semibold text-white">Most returned</h2>
+                <h2 className="font-semibold text-white">{t("Most returned")}</h2>
                 <p className="text-xs text-slate-500">
-                  Ranked by item quantity.
+                  {t("Ranked by item quantity.")}
                 </p>
               </div>
               <PackageOpen className="h-5 w-5 text-amber-300/70" />
@@ -704,7 +734,9 @@ export function TrackerDashboard() {
                         {reward.name}
                       </p>
                       <p className="text-[11px] text-slate-600">
-                        {formatRubles(reward.totalValue)} captured value
+                        {t("{value} captured value", {
+                          value: formatRubles(reward.totalValue),
+                        })}
                       </p>
                     </div>
                     <span className="rounded-full bg-white/5 px-2.5 py-1 text-xs font-semibold tabular-nums text-slate-300">
@@ -714,7 +746,7 @@ export function TrackerDashboard() {
                 ))
               ) : (
                 <p className="py-10 text-center text-sm text-slate-600">
-                  Complete a ritual to reveal your most common returns.
+                  {t("Complete a ritual to reveal your most common returns.")}
                 </p>
               )}
             </div>
@@ -723,16 +755,18 @@ export function TrackerDashboard() {
           <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
             <div className="mb-5">
               <h2 className="font-semibold text-white">
-                Combination performance
+                {t("Combination performance")}
               </h2>
               <p className="text-xs text-slate-500">
-                Exact item sets, mode, and sacred bonus are compared together.
+                {t(
+                  "Exact item sets, mode, and sacred bonus are compared together.",
+                )}
               </p>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               {[
-                { title: "Best return", data: bestCombos, positive: true },
-                { title: "Worst return", data: worstCombos, positive: false },
+                { title: t("Best return"), data: bestCombos, positive: true },
+                { title: t("Worst return"), data: worstCombos, positive: false },
               ].map((section) => (
                 <div key={section.title}>
                   <p
@@ -770,7 +804,7 @@ export function TrackerDashboard() {
                               {formatRubles(combo.averageNet)}
                             </span>
                             <span className="text-[10px] text-amber-200/70 opacity-0 transition-opacity group-hover:opacity-100">
-                              Load combo
+                              {t("Load combo")}
                             </span>
                           </div>
                         </button>
@@ -778,8 +812,8 @@ export function TrackerDashboard() {
                     ) : (
                       <p className="rounded-2xl border border-dashed border-white/8 px-3 py-8 text-center text-xs text-slate-600">
                         {section.positive
-                          ? "No profitable combinations yet."
-                          : "No losing combinations yet."}
+                          ? t("No profitable combinations yet.")
+                          : t("No losing combinations yet.")}
                       </p>
                     )}
                   </div>
@@ -794,10 +828,10 @@ export function TrackerDashboard() {
             <div>
               <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
                 <History className="h-5 w-5 text-amber-300/70" />
-                Ritual history
+                {t("Ritual history")}
               </h2>
               <p className="text-xs text-slate-500">
-                Review, edit, or reload any previous combination.
+                {t("Review, edit, or reload any previous combination.")}
               </p>
             </div>
             <div className="flex gap-2">
@@ -806,7 +840,7 @@ export function TrackerDashboard() {
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search items or notes"
+                  placeholder={t("Search items or notes")}
                   className="h-9 border-white/10 bg-white/5 pl-9 text-sm"
                 />
               </div>
@@ -820,11 +854,11 @@ export function TrackerDashboard() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="border-white/10 bg-[#1b1e24] text-white">
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="ready">Ready</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="all">{t("All statuses")}</SelectItem>
+                  <SelectItem value="active">{t("Active")}</SelectItem>
+                  <SelectItem value="ready">{t("Ready")}</SelectItem>
+                  <SelectItem value="completed">{t("Completed")}</SelectItem>
+                  <SelectItem value="cancelled">{t("Cancelled")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -865,13 +899,13 @@ export function TrackerDashboard() {
                       <span
                         className={`hidden rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize sm:inline-flex ${displayStatus === "completed" ? "bg-emerald-400/10 text-emerald-300" : displayStatus === "cancelled" ? "bg-red-400/10 text-red-300" : displayStatus === "ready" ? "bg-amber-400/10 text-amber-200" : "bg-sky-400/10 text-sky-300"}`}
                       >
-                        {displayStatus}
+                        {t(STATUS_LABELS[displayStatus])}
                       </span>
                       <span
                         className={`w-24 text-right text-sm font-semibold tabular-nums ${net === null ? "text-slate-600" : net >= 0 ? "text-emerald-300" : "text-red-300"}`}
                       >
                         {net === null
-                          ? "Incomplete"
+                          ? t("Incomplete")
                           : `${net >= 0 ? "+" : ""}${formatRubles(net)}`}
                       </span>
                     </summary>
@@ -879,7 +913,7 @@ export function TrackerDashboard() {
                       <div className="grid gap-5 md:grid-cols-2">
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                            Sacrificed
+                            {t("Sacrificed")}
                           </p>
                           <div className="mt-2 space-y-1 text-sm text-slate-300">
                             {ritual.sacrifices.map((item) => (
@@ -891,7 +925,7 @@ export function TrackerDashboard() {
                         </div>
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                            Returned
+                            {t("Returned")}
                           </p>
                           <div className="mt-2 space-y-1 text-sm text-slate-300">
                             {ritual.rewards.length ? (
@@ -901,7 +935,7 @@ export function TrackerDashboard() {
                                 </p>
                               ))
                             ) : (
-                              <p className="text-slate-600">Not recorded</p>
+                              <p className="text-slate-600">{t("Not recorded")}</p>
                             )}
                           </div>
                         </div>
@@ -919,7 +953,7 @@ export function TrackerDashboard() {
                           className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
                         >
                           <RotateCcw className="mr-2 h-4 w-4" />
-                          Load in calculator
+                          {t("Load in calculator")}
                         </Button>
                         {ritual.status === "completed" && (
                           <CompleteRitualDialog ritual={ritual} editing />
@@ -932,7 +966,7 @@ export function TrackerDashboard() {
               })
             ) : (
               <div className="rounded-3xl border border-dashed border-white/10 px-6 py-12 text-center text-sm text-slate-600">
-                No rituals match these filters.
+                {t("No rituals match these filters.")}
               </div>
             )}
           </div>
@@ -940,9 +974,9 @@ export function TrackerDashboard() {
 
         <footer className="mt-10 flex items-start gap-3 rounded-2xl border border-white/7 bg-black/20 p-4 text-xs leading-relaxed text-slate-500">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300/70" />
-          Ritual history is stored only in this browser. Export JSON for backup
-          or moving devices. Browser reminders are best-effort when this site is
-          open; use Calendar for a dependable closed-site reminder.
+          {t(
+            "Ritual history is stored only in this browser. Export JSON for backup or moving devices. Browser reminders are best-effort when this site is open; use Calendar for a dependable closed-site reminder.",
+          )}
         </footer>
       </div>
     </div>

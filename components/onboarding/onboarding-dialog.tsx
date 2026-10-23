@@ -27,6 +27,8 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLanguage } from "@/contexts/language-context";
+import { formatMessageSlots } from "@/lib/format-message-slots";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "cc_onboarding_seen_v1";
@@ -62,6 +64,7 @@ const formatRoubles = (value: number) =>
 /* ------------------------------------------------------------------ */
 
 function SacrificeVisual({ reduce }: { reduce: boolean }) {
+  const { t } = useLanguage();
   const total = useMotionValue(
     reduce ? EXAMPLE_TOTALS[EXAMPLE_TOTALS.length - 1] : 0,
   );
@@ -113,7 +116,7 @@ function SacrificeVisual({ reduce }: { reduce: boolean }) {
       <div className="space-y-2">
         <div className="flex items-baseline justify-between">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            Total base value
+            {t("Total base value")}
           </span>
           <motion.span
             className={cn(
@@ -152,6 +155,7 @@ function SacrificeVisual({ reduce }: { reduce: boolean }) {
 }
 
 function TiersVisual({ reduce }: { reduce: boolean }) {
+  const { t } = useLanguage();
   return (
     <div className="w-full max-w-[420px] space-y-1 pl-4 pr-12 sm:px-6">
       {TIERS.map((tier, i) => (
@@ -190,7 +194,7 @@ function TiersVisual({ reduce }: { reduce: boolean }) {
                 {tier.note ? (
                   <span className="hidden font-medium opacity-80 sm:inline">
                     {" "}
-                    · {tier.note}
+                    · {t(tier.note)}
                   </span>
                 ) : null}
               </span>
@@ -209,6 +213,7 @@ const WORKFLOW = [
 ];
 
 function WorkflowVisual({ reduce }: { reduce: boolean }) {
+  const { t } = useLanguage();
   return (
     <div className="relative flex w-full max-w-[440px] items-start justify-between px-6">
       <div className="absolute left-[16%] right-[16%] top-8 h-px bg-slate-700/60">
@@ -248,7 +253,7 @@ function WorkflowVisual({ reduce }: { reduce: boolean }) {
             ) : null}
           </div>
           <span className="text-xs font-semibold leading-tight text-slate-200">
-            {label}
+            {t(label)}
           </span>
         </motion.div>
       ))}
@@ -268,46 +273,55 @@ interface Step {
   visual: (reduce: boolean) => React.ReactNode;
 }
 
-const STEPS: Step[] = [
-  {
-    eyebrow: "Welcome to Cultist Circle",
-    title: "Five items, one total",
-    body: "Put up to 5 items in the circle. Their base values add up, and that total decides your reward. We find the cheapest combo from live flea and trader prices.",
-    extra: "Base value = trader sell price ÷ that trader's multiplier.",
-    visual: (reduce) => <SacrificeVisual reduce={reduce} />,
-  },
-  {
-    eyebrow: "Reward tiers",
-    title: "Aim for 350k or 400k",
-    body: (
-      <>
-        Above <strong className="text-white">₽350,000</strong> you get
-        high‑value loot after 14h. At{" "}
-        <strong className="text-white">₽400,000</strong> there&apos;s also a 25%
-        chance of quest or hideout items in just 6h.
-      </>
-    ),
-    extra: (
-      <span className="inline-flex items-center gap-1.5">
-        <Gem className="h-3.5 w-3.5 text-sky-300" />A Sacred Amulet adds 15% to
-        the total.
-      </span>
-    ),
-    visual: (reduce) => <TiersVisual reduce={reduce} />,
-  },
-  {
-    eyebrow: "Your workflow",
-    title: "Three steps to a ritual",
-    body: "Pick your mode and target, hit Auto Select for the cheapest combo, then start the ritual timer and share your build.",
-    extra: (
-      <span className="inline-flex items-center gap-1.5">
-        <ScanLine className="h-3.5 w-3.5 text-emerald-300" />
-        Scan your stash to only use items you already own.
-      </span>
-    ),
-    visual: (reduce) => <WorkflowVisual reduce={reduce} />,
-  },
-];
+function buildSteps(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): Step[] {
+  return [
+    {
+      eyebrow: t("Welcome to Cultist Circle"),
+      title: t("Five items, one total"),
+      body: t(
+        "Put up to 5 items in the circle. Their base values add up, and that total decides your reward. We find the cheapest combo from live flea and trader prices.",
+      ),
+      extra: t("Base value = trader sell price ÷ that trader's multiplier."),
+      visual: (reduce) => <SacrificeVisual reduce={reduce} />,
+    },
+    {
+      eyebrow: t("Reward tiers"),
+      title: t("Aim for 350k or 400k"),
+      body: formatMessageSlots(
+        t(
+          "Above {threshold1} you get high‑value loot after 14h. At {threshold2} there's also a 25% chance of quest or hideout items in just 6h.",
+        ),
+        {
+          threshold1: <strong className="text-white">₽350,000</strong>,
+          threshold2: <strong className="text-white">₽400,000</strong>,
+        },
+      ),
+      extra: (
+        <span className="inline-flex items-center gap-1.5">
+          <Gem className="h-3.5 w-3.5 text-sky-300" />
+          {t("A Sacred Amulet adds 15% to the total.")}
+        </span>
+      ),
+      visual: (reduce) => <TiersVisual reduce={reduce} />,
+    },
+    {
+      eyebrow: t("Your workflow"),
+      title: t("Three steps to a ritual"),
+      body: t(
+        "Pick your mode and target, hit Auto Select for the cheapest combo, then start the ritual timer and share your build.",
+      ),
+      extra: (
+        <span className="inline-flex items-center gap-1.5">
+          <ScanLine className="h-3.5 w-3.5 text-emerald-300" />
+          {t("Scan your stash to only use items you already own.")}
+        </span>
+      ),
+      visual: (reduce) => <WorkflowVisual reduce={reduce} />,
+    },
+  ];
+}
 
 function StepCopy({ step, live = false }: { step: Step; live?: boolean }) {
   const Title = live ? DialogTitle : "h2";
@@ -337,7 +351,9 @@ const slideVariants = {
 };
 
 export function OnboardingDialog() {
+  const { t } = useLanguage();
   const reduce = useReducedMotion() ?? false;
+  const STEPS = React.useMemo(() => buildSteps(t), [t]);
   // Read the flag once during state initialization instead of in an effect.
   const [open, setOpen] = React.useState<boolean>(() => {
     // Only show once per browser using localStorage flag
@@ -451,7 +467,10 @@ export function OnboardingDialog() {
               <button
                 key={s.eyebrow}
                 type="button"
-                aria-label={`Go to step ${i + 1}: ${s.eyebrow}`}
+                aria-label={t("Go to step {n}: {eyebrow}", {
+                  n: i + 1,
+                  eyebrow: s.eyebrow,
+                })}
                 aria-current={i === index ? "step" : undefined}
                 onClick={() => goTo(i)}
                 className="group flex h-6 items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
@@ -477,13 +496,13 @@ export function OnboardingDialog() {
                 onClick={handleClose}
                 className="h-10 rounded-xl px-4 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-200"
               >
-                Skip
+                {t("Skip")}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => goTo(index - 1)}
-                aria-label="Previous step"
+                aria-label={t("Previous step")}
                 className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-600/40 bg-slate-800/40 text-slate-300 transition-colors hover:bg-slate-700/50 hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -496,7 +515,7 @@ export function OnboardingDialog() {
               onClick={() => (isLast ? handleClose() : goTo(index + 1))}
               className="group flex h-10 items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 pl-4 pr-3.5 text-sm font-semibold text-emerald-400 outline-none transition-all duration-200 hover:border-emerald-400/60 hover:bg-emerald-500/20 hover:text-emerald-300 focus-visible:ring-2 focus-visible:ring-emerald-400/60"
             >
-              {isLast ? "Get started" : index === 0 ? "Show me how" : "Next"}
+              {isLast ? t("Get started") : index === 0 ? t("Show me how") : t("Next")}
               {isLast ? (
                 <Sparkles className="h-4 w-4" />
               ) : (

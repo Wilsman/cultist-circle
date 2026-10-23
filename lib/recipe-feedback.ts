@@ -138,6 +138,46 @@ export function isUserModeMap(value: unknown): value is UserModeMap {
   return true;
 }
 
+export type MessageTranslator = (
+  key: string,
+  vars?: Record<string, string | number>,
+) => string;
+
+const identityTranslator: MessageTranslator = (key, vars) =>
+  vars
+    ? key.replace(/\{(\w+)\}/g, (match, name) =>
+        Object.prototype.hasOwnProperty.call(vars, name)
+          ? String(vars[name])
+          : match,
+      )
+    : key;
+
+/**
+ * Picks the compact relative-time message for a timestamp ("just now",
+ * "{n}m ago", ...). Returns null when there is no valid timestamp.
+ */
+function relativeTimeParts(
+  isoDateString: string | null,
+  now: number,
+): { key: string; vars?: Record<string, number> } | null {
+  if (!isoDateString) return null;
+
+  const timestamp = new Date(isoDateString).getTime();
+  if (isNaN(timestamp)) return null;
+
+  const diffMs = Math.max(0, now - timestamp);
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return { key: "just now" };
+  if (diffMins < 60) return { key: "{n}m ago", vars: { n: diffMins } };
+  if (diffHours < 24) return { key: "{n}h ago", vars: { n: diffHours } };
+  if (diffDays === 1) return { key: "yesterday" };
+  if (diffDays < 30) return { key: "{n}d ago", vars: { n: diffDays } };
+  return { key: "{n}mo ago", vars: { n: Math.floor(diffDays / 30) } };
+}
+
 /**
  * Shared relative-time formatter. Returns null when there is no timestamp so
  * callers can distinguish "no reports" from a real recency.
@@ -146,35 +186,14 @@ function formatRelativeTime(
   prefix: string,
   isoDateString: string | null,
   now: number,
+  t: MessageTranslator = identityTranslator,
 ): string | null {
-  if (!isoDateString) return null;
-
-  const timestamp = new Date(isoDateString).getTime();
-  if (isNaN(timestamp)) return null;
-
-  const diffMs = Math.max(0, now - timestamp);
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) {
-    return `${prefix} just now`;
-  }
-  if (diffMins < 60) {
-    return `${prefix} ${diffMins}m ago`;
-  }
-  if (diffHours < 24) {
-    return `${prefix} ${diffHours}h ago`;
-  }
-  if (diffDays === 1) {
-    return `${prefix} yesterday`;
-  }
-  if (diffDays < 30) {
-    return `${prefix} ${diffDays}d ago`;
-  }
-
-  return `${prefix} ${Math.floor(diffDays / 30)}mo ago`;
+  const relative = relativeTimeParts(isoDateString, now);
+  if (!relative) return null;
+  return t("{prefix} {time}", {
+    prefix: t(prefix),
+    time: t(relative.key, relative.vars),
+  });
 }
 
 /**
@@ -183,8 +202,12 @@ function formatRelativeTime(
 export function formatRecency(
   isoDateString: string | null,
   now: number = Date.now(),
+  t: MessageTranslator = identityTranslator,
 ): string {
-  return formatRelativeTime("Confirmed", isoDateString, now) ?? "No reports yet";
+  return (
+    formatRelativeTime("Confirmed", isoDateString, now, t) ??
+    t("No reports yet")
+  );
 }
 
 /**
@@ -194,25 +217,26 @@ export function formatRecency(
 export function formatDidntWorkRecency(
   isoDateString: string | null,
   now: number = Date.now(),
+  t: MessageTranslator = identityTranslator,
 ): string | null {
-  return formatRelativeTime("Didn't work", isoDateString, now);
+  return formatRelativeTime("Didn't work", isoDateString, now, t);
 }
 
 export function formatLastWorkedDetail(
   mode: GameMode | null,
   isoDateString: string | null,
   now: number = Date.now(),
+  t: MessageTranslator = identityTranslator,
 ): string | null {
   if (!mode || !isoDateString) return null;
 
-  const recency = formatRecency(isoDateString, now);
-  if (!recency.startsWith("Confirmed")) return null;
+  const relative = relativeTimeParts(isoDateString, now);
+  if (!relative) return null;
 
-  const relativeTime =
-    recency === "Confirmed just now"
-      ? "just now"
-      : recency.replace(/^Confirmed /, "");
-  return `Last worked on ${GAME_MODE_LABELS[mode]} · ${relativeTime}`;
+  return t("Last worked on {mode} · {time}", {
+    mode: t(GAME_MODE_LABELS[mode]),
+    time: t(relative.key, relative.vars),
+  });
 }
 
 /**
@@ -226,16 +250,19 @@ export function formatReportStatus(
     "workedCount" | "didntWorkCount" | "lastWorkedAt" | "lastDidntWorkAt"
   >,
   now: number = Date.now(),
+  t: MessageTranslator = identityTranslator,
 ): string {
   const worked = formatRelativeTime(
     "Confirmed",
     stats.lastWorkedAt ?? null,
     now,
+    t,
   );
   const didntWork = formatRelativeTime(
     "Didn't work",
     stats.lastDidntWorkAt ?? null,
     now,
+    t,
   );
   if (worked && didntWork) {
     const workedTime = new Date(stats.lastWorkedAt as string).getTime();
@@ -244,9 +271,9 @@ export function formatReportStatus(
   }
   if (worked) return worked;
   if (didntWork) return didntWork;
-  if (stats.workedCount > 0) return "Confirmed";
-  if (stats.didntWorkCount > 0) return "Not confirmed yet";
-  return "No reports yet";
+  if (stats.workedCount > 0) return t("Confirmed");
+  if (stats.didntWorkCount > 0) return t("Not confirmed yet");
+  return t("No reports yet");
 }
 
 /**
@@ -256,20 +283,11 @@ export function formatReportStatus(
 export function formatCompactRecency(
   isoDateString: string | null | undefined,
   now: number = Date.now(),
+  t: MessageTranslator = identityTranslator,
 ): string | null {
-  if (!isoDateString) return null;
-  const timestamp = new Date(isoDateString).getTime();
-  if (isNaN(timestamp)) return null;
-  const diffMs = Math.max(0, now - timestamp);
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return "yesterday";
-  if (diffDays < 30) return `${diffDays}d ago`;
-  return `${Math.floor(diffDays / 30)}mo ago`;
+  const relative = relativeTimeParts(isoDateString ?? null, now);
+  if (!relative) return null;
+  return t(relative.key, relative.vars);
 }
 
 export interface ModeLatestSignal {
@@ -357,14 +375,21 @@ export function getLatestReport(
 export function formatLatestReport(
   stats: RecipeFeedbackStats,
   now: number = Date.now(),
+  t: MessageTranslator = identityTranslator,
 ): string | null {
   const latest = getLatestReport(stats);
   if (!latest) return null;
-  const relative = formatCompactRecency(latest.at, now);
+  const relative = formatCompactRecency(latest.at, now, t);
   if (!relative) return null;
-  const action = latest.vote === "worked" ? "Worked" : "Didn't work";
-  const modeLabel = latest.mode ? ` on ${GAME_MODE_LABELS[latest.mode]}` : "";
-  return `Latest: ${action}${modeLabel} · ${relative}`;
+  const action = latest.vote === "worked" ? t("Worked") : t("Didn't work");
+  const time = relative;
+  return latest.mode
+    ? t("Latest: {action} on {mode} · {time}", {
+        action,
+        mode: t(GAME_MODE_LABELS[latest.mode]),
+        time,
+      })
+    : t("Latest: {action} · {time}", { action, time });
 }
 
 /**

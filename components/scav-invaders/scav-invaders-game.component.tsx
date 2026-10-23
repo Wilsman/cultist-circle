@@ -19,6 +19,7 @@ import {
   startGame,
   stepGame,
 } from "@/lib/scav-invaders-engine";
+import { useLanguage } from "@/contexts/language-context";
 
 interface ScavInvadersGameProps {
   open: boolean;
@@ -278,6 +279,7 @@ export default function ScavInvadersGame({
   open,
   onOpenChange,
 }: ScavInvadersGameProps) {
+  const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<GameState>(createAttractState(0));
   const inputRef = useRef<{ left: boolean; right: boolean; fire: boolean }>({
@@ -476,8 +478,9 @@ export default function ScavInvadersGame({
       <DialogContent className="scav-invaders-cabinet w-[96vw] max-w-[1100px] gap-2 overflow-y-auto border-[#247d47] bg-[#020604] p-2 text-white shadow-[0_0_80px_rgba(39,217,255,0.16)] sm:p-4">
         <DialogTitle className="sr-only">Scav Invaders</DialogTitle>
         <DialogDescription className="sr-only">
-          A retro arcade game. Move the PMC with left and right, and fire at
-          Scavs with Space.
+          {t(
+            "A retro arcade game. Move the PMC with left and right, and fire at Scavs with Space.",
+          )}
         </DialogDescription>
 
         <div className="font-arcade flex items-center justify-between gap-3 border-b border-[#164429] px-1 pb-2 pr-10 text-[7px] tracking-[0.12em] text-[#86ad94] sm:text-[9px]">
@@ -492,7 +495,7 @@ export default function ScavInvadersGame({
               disabled={view.phase === "attract" || view.phase === "game-over"}
               className="border border-[#247d47] p-1.5 text-[#9dff2e] hover:bg-[#15301d] disabled:opacity-30"
               aria-label={
-                view.phase === "paused" ? "Resume game" : "Pause game"
+                view.phase === "paused" ? t("Resume game") : t("Pause game")
               }
             >
               {view.phase === "paused" ? (
@@ -505,7 +508,7 @@ export default function ScavInvadersGame({
               type="button"
               onClick={() => setMuted((current) => !current)}
               className="border border-[#247d47] p-1.5 text-[#ffd928] hover:bg-[#302b15]"
-              aria-label={muted ? "Unmute game" : "Mute game"}
+              aria-label={muted ? t("Unmute game") : t("Mute game")}
             >
               {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
             </button>
@@ -518,7 +521,11 @@ export default function ScavInvadersGame({
             width={GAME_WIDTH}
             height={GAME_HEIGHT}
             className="h-full w-full touch-none [image-rendering:pixelated]"
-            aria-label={`Scav Invaders game. Score ${view.score}. Wave ${view.wave}. Lives ${view.lives}.`}
+            aria-label={t("Scav Invaders game. Score {score}. Wave {wave}. Lives {lives}.", {
+              score: view.score,
+              wave: view.wave,
+              lives: view.lives,
+            })}
           />
           <div className="scav-invaders-scanlines pointer-events-none absolute inset-0" />
 
@@ -593,10 +600,10 @@ export default function ScavInvadersGame({
               }`}
               aria-label={
                 control === "left"
-                  ? "Move left"
+                  ? t("Move left")
                   : control === "right"
-                    ? "Move right"
-                    : "Fire"
+                    ? t("Move right")
+                    : t("Fire")
               }
             >
               {control === "left" ? "◀" : control === "right" ? "▶" : "FIRE"}

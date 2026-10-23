@@ -155,14 +155,14 @@ __Output__:
     navigator.clipboard
       .writeText(discordText)
       .then(() => {
-        sonnerToast(`Copied for #results (${actualTimer})`, {
-          description: "Paste into Discord!",
+        sonnerToast(t("Copied for #results ({timer})", { timer: actualTimer }), {
+          description: t("Paste into Discord!"),
         });
       })
       .catch((err) => {
         console.error("Failed to copy:", err);
-        sonnerToast("Failed to Copy", {
-          description: "Please try again.",
+        sonnerToast(t("Failed to copy"), {
+          description: t("Please try again."),
         });
       })
       .finally(() => {
@@ -177,8 +177,8 @@ __Output__:
       const trimmedCode = clipboardText.trim();
 
       if (!trimmedCode) {
-        sonnerToast("Empty Clipboard", {
-          description: "Your clipboard is empty. Copy a code first.",
+        sonnerToast(t("Empty Clipboard"), {
+          description: t("Your clipboard is empty. Copy a code first."),
         });
         setIsLoading(false);
         return;
@@ -188,16 +188,17 @@ __Output__:
       setIsLoading(false);
 
       if (result.error || !result.gameMode) {
-        sonnerToast("Invalid Code", {
-          description:
+        sonnerToast(t("Invalid Code"), {
+          description: t(
             "The code format is invalid. Please check and try again.",
+          ),
         });
         return;
       }
 
       if (result.itemIds.length === 0) {
-        sonnerToast("Invalid Code", {
-          description: "The provided code doesn't contain any items.",
+        sonnerToast(t("Invalid Code"), {
+          description: t("The provided code doesn't contain any items."),
         });
         return;
       }
@@ -205,9 +206,10 @@ __Output__:
       onCodeLoaded(result.itemIds, result.gameMode);
     } catch {
       setIsLoading(false);
-      sonnerToast("Clipboard Access Failed", {
-        description:
+      sonnerToast(t("Clipboard Access Failed"), {
+        description: t(
           "Unable to access clipboard. Please paste the code manually.",
+        ),
       });
     }
   };
@@ -411,7 +413,7 @@ __Output__:
               className="cursor-pointer"
             >
               <MessageCircle className="h-4 w-4 mr-2" />
-              {option.label}
+              {t(option.label)}
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator className="bg-slate-700/50" />
@@ -440,7 +442,7 @@ __Output__:
           value={currentCode}
           readOnly
           className="w-36 h-8 bg-slate-800/60 border-slate-700/40 text-slate-400 font-mono text-[10px] rounded-full px-3"
-          placeholder="No items"
+          placeholder={t("No items")}
         />
       )}
     </div>

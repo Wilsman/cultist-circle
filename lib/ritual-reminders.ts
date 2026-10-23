@@ -1,4 +1,5 @@
 import { updateRitual } from "@/lib/ritual-tracker-db";
+import { DEFAULT_LANGUAGE, formatMessage, getMessage } from "@/config/i18n";
 import type { RitualRecord } from "@/types/ritual-tracker";
 
 export const RITUAL_NOTIFICATION_PREFERENCE_KEY =
@@ -34,7 +35,11 @@ export async function showRitualNotification(
 ): Promise<boolean> {
   if (!notificationsEnabled() || ritual.notificationSentAt) return false;
 
-  const title = `${ritual.mode.toUpperCase()} ritual ready`;
+  const language = localStorage.getItem("language") ?? DEFAULT_LANGUAGE;
+  const title = formatMessage(
+    getMessage(language, "{mode} ritual ready"),
+    { mode: ritual.mode.toUpperCase() },
+  );
   const body = ritual.sacrifices
     .map((item) => `${item.quantity}x ${item.shortName}`)
     .join(", ");

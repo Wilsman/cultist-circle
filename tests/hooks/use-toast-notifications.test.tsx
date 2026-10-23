@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { act, render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LanguageProvider } from "@/contexts/language-context";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 
 const toastMock = vi.fn();
@@ -29,7 +30,11 @@ describe("useToastNotifications", () => {
   });
 
   it("announces the new Black Division recipe once", async () => {
-    render(<ToastHarness />);
+    render(
+      <LanguageProvider>
+        <ToastHarness />
+      </LanguageProvider>,
+    );
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(4000);
@@ -46,7 +51,11 @@ describe("useToastNotifications", () => {
   });
 
   it("does not show the retired Tarkov.dev API warning toast", async () => {
-    render(<ToastHarness />);
+    render(
+      <LanguageProvider>
+        <ToastHarness />
+      </LanguageProvider>,
+    );
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(6000);

@@ -6,7 +6,16 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LanguageProvider } from "@/contexts/language-context";
 import { RecipeSubmissionButton } from "@/components/recipe-submission";
+
+function renderButton(mode: "pvp" | "pve" | "season") {
+  return render(
+    <LanguageProvider>
+      <RecipeSubmissionButton mode={mode} />
+    </LanguageProvider>,
+  );
+}
 
 vi.mock("@/hooks/use-items-data", () => ({
   useItemsData: () => ({
@@ -72,7 +81,7 @@ describe("Recipe submission modal", () => {
       ),
     );
     vi.stubGlobal("fetch", fetchMock);
-    render(<RecipeSubmissionButton mode="pve" />);
+    renderButton("pve");
     await fillItems();
     fireEvent.click(screen.getByLabelText("Other special timer"));
     fireEvent.change(screen.getByLabelText("minutes"), {
@@ -101,7 +110,7 @@ describe("Recipe submission modal", () => {
   it("retains selections on failure and reuses the submission ID when retrying", async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error("offline"));
     vi.stubGlobal("fetch", fetchMock);
-    render(<RecipeSubmissionButton mode="pvp" />);
+    renderButton("pvp");
     await fillItems();
     fireEvent.click(screen.getByLabelText("66 minutes"));
     fireEvent.click(
@@ -125,7 +134,7 @@ describe("Recipe submission modal", () => {
   it("rejects a regular timer entered as Other", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    render(<RecipeSubmissionButton mode="season" />);
+    renderButton("season");
     await fillItems();
     fireEvent.click(screen.getByLabelText("Other special timer"));
     fireEvent.change(screen.getByLabelText("hours"), {

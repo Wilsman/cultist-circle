@@ -55,6 +55,7 @@ import { PriceRangeFilter } from "@/components/ui/price-range-filter";
 import { Button } from "@/components/ui/button";
 import { CategoryFilter } from "@/components/ui/category-filter";
 import { useLanguage } from "@/contexts/language-context";
+import { formatMessageSlots } from "@/lib/format-message-slots";
 
 interface FilterState {
   name: string;
@@ -910,7 +911,7 @@ export default function ItemsTablePage() {
               <div
                 className="flex items-center rounded-full border bg-muted/40 p-1"
                 role="radiogroup"
-                aria-label="Game mode"
+                aria-label={t("Game mode")}
               >
                 {GAME_MODES.map((gameMode) => (
                   <Button
@@ -941,21 +942,43 @@ export default function ItemsTablePage() {
               <div className="text-xs text-muted-foreground">
                 {isLoading
                   ? isRetryingTarkovRequest
-                    ? `Retrying Tarkov.dev in ${retrySeconds}s... attempt ${requestStatus.attempt} of ${requestStatus.maxAttempts}`
-                    : "Loading items..."
-                  : `${filtered.length.toLocaleString()} items`}
-                {debouncedSearchTerm ? ` for "${debouncedSearchTerm}"` : ""}
+                    ? t(
+                        "Retrying Tarkov.dev in {seconds}s... attempt {attempt} of {max}",
+                        {
+                          seconds: retrySeconds,
+                          attempt: requestStatus.attempt,
+                          max: requestStatus.maxAttempts,
+                        },
+                      )
+                    : t("Loading items...")
+                  : debouncedSearchTerm
+                    ? t("{count} items for \"{query}\"", {
+                        count: filtered.length.toLocaleString(),
+                        query: debouncedSearchTerm,
+                      })
+                    : t("{count} items", {
+                        count: filtered.length.toLocaleString(),
+                      })}
               </div>
             </div>
 
             <div className="text-[11px] text-muted-foreground">
-              Pro tips: use <span className="font-mono">bp&gt;50000</span>,{" "}
-              <span className="font-mono">avg&lt;200000</span>,{" "}
-              <span className="font-mono">cat:weapon</span>,{" "}
-              <span className="font-mono">trader</span>,{" "}
-              <span className="font-mono">fav</span>. Press{" "}
-              <span className="font-mono">/</span> to focus,{" "}
-              <span className="font-mono">Shift+Enter</span> to toggle filters.
+              {formatMessageSlots(
+                t(
+                  "Pro tips: use {examples}. Press {focusKey} to focus, {toggleKey} to toggle filters.",
+                ),
+                {
+                  examples: (
+                    <>
+                      <span className="font-mono">bp&gt;50000</span>, <span className="font-mono">avg&lt;200000</span>,{" "}
+                      <span className="font-mono">cat:weapon</span>, <span className="font-mono">trader</span>,{" "}
+                      <span className="font-mono">fav</span>
+                    </>
+                  ),
+                  focusKey: <span className="font-mono">/</span>,
+                  toggleKey: <span className="font-mono">Shift+Enter</span>,
+                },
+              )}
             </div>
           </div>
         </div>
@@ -972,17 +995,27 @@ export default function ItemsTablePage() {
             <div className="min-w-0">
               <p className="font-medium">
                 {isRetryingTarkovRequest
-                  ? `Tarkov.dev is not responding. Retrying in ${retrySeconds}s... attempt ${requestStatus.attempt} of ${requestStatus.maxAttempts}.`
+                  ? t(
+                      "Tarkov.dev is not responding. Retrying in {seconds}s... attempt {attempt} of {max}.",
+                      {
+                        seconds: retrySeconds,
+                        attempt: requestStatus.attempt,
+                        max: requestStatus.maxAttempts,
+                      },
+                    )
                   : isCoolingDownTarkovRequest
-                    ? `Tarkov.dev is unavailable. Using cached data where possible. Try again in ${cooldownSeconds}s.`
-                    : "Tarkov.dev item data could not be loaded."}
+                    ? t(
+                        "Tarkov.dev is unavailable. Using cached data where possible. Try again in {seconds}s.",
+                        { seconds: cooldownSeconds },
+                      )
+                    : t("Tarkov.dev item data could not be loaded.")}
               </p>
               {(requestStatus.usingStaleData ||
                 Object.values(itemsByMode).some(
                   (items) => items.length > 0,
                 )) && (
                 <p className="mt-1 text-xs opacity-80">
-                  Base Values is showing the last loaded item data.
+                  {t("Base Values is showing the last loaded item data.")}
                 </p>
               )}
               {loadError &&
@@ -1002,9 +1035,9 @@ export default function ItemsTablePage() {
         onToggle={(event) => setIsAdvancedOpen(event.currentTarget.open)}
       >
         <summary className="list-none cursor-pointer px-4 py-3 text-sm font-medium flex items-center justify-between">
-          Filters and sorting
+          {t("Filters and sorting")}
           <span className="text-xs text-muted-foreground">
-            Expand for advanced controls
+            {t("Expand for advanced controls")}
           </span>
         </summary>
         <div className="border-t px-4 py-4 space-y-4">
@@ -1024,13 +1057,15 @@ export default function ItemsTablePage() {
                   setFilter((f) => ({ ...f, basePrice: [min, max] }));
                 });
               }}
-              label="Filter by Base Price"
+              label={t("Filter by Base Price")}
               className="w-full"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Presets:</span>
+            <span className="text-xs text-muted-foreground">
+              {t("Presets:")}
+            </span>
             <Button
               type="button"
               size="sm"
@@ -1048,7 +1083,7 @@ export default function ItemsTablePage() {
                 });
               }}
             >
-              High base
+              {t("High base")}
             </Button>
             <Button
               type="button"
@@ -1057,7 +1092,7 @@ export default function ItemsTablePage() {
               className="h-8"
               onClick={() => setShowTraderOnly(true)}
             >
-              Trader only
+              {t("Trader only")}
             </Button>
             <Button
               type="button"
@@ -1066,7 +1101,7 @@ export default function ItemsTablePage() {
               className="h-8"
               onClick={() => setShowCompatibleOnly(true)}
             >
-              Compatible
+              {t("Compatible")}
             </Button>
             <Button
               type="button"
@@ -1083,14 +1118,14 @@ export default function ItemsTablePage() {
                 });
               }}
             >
-              Best value
+              {t("Best value")}
             </Button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Toggle
               variant="outline"
-              aria-label="Show only favorites"
+              aria-label={t("Show only favorites")}
               pressed={showOnlyFavorites}
               onPressedChange={(pressed) => {
                 startTransition(() => {
@@ -1107,7 +1142,7 @@ export default function ItemsTablePage() {
                     : "text-muted-foreground"
                 }`}
               />
-              <span className="text-xs font-medium">Favorites</span>
+              <span className="text-xs font-medium">{t("Favorites")}</span>
             </Toggle>
 
             <Toggle
@@ -1117,7 +1152,7 @@ export default function ItemsTablePage() {
               size="sm"
               className="h-8"
             >
-              <span className="text-xs">Compatible Only</span>
+              <span className="text-xs">{t("Compatible Only")}</span>
             </Toggle>
 
             <Toggle
@@ -1127,7 +1162,7 @@ export default function ItemsTablePage() {
               size="sm"
               className="h-8"
             >
-              <span className="text-xs">Trader Only</span>
+              <span className="text-xs">{t("Trader Only")}</span>
             </Toggle>
           </div>
 
@@ -1140,7 +1175,7 @@ export default function ItemsTablePage() {
 
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground whitespace-nowrap">
-                Sort by:
+                {t("Sort by:")}
               </span>
               <Select
                 value={filter.sort}
@@ -1167,22 +1202,26 @@ export default function ItemsTablePage() {
                 }}
               >
                 <SelectTrigger className="h-8 w-[180px]">
-                  <SelectValue placeholder="Sort by..." />
+                  <SelectValue placeholder={t("Sort by...")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="basePrice">Base Price</SelectItem>
-                  <SelectItem value="lastLowPrice">Last Low Price</SelectItem>
-                  <SelectItem value="avg24hPrice">24h Avg Price</SelectItem>
+                  <SelectItem value="basePrice">{t("Base Price")}</SelectItem>
+                  <SelectItem value="lastLowPrice">
+                    {t("Last Low Price")}
+                  </SelectItem>
+                  <SelectItem value="avg24hPrice">
+                    {t("24h Avg Price")}
+                  </SelectItem>
                   <SelectItem value="traderSellPrice">
-                    Sell to Trader
+                    {t("Sell to Trader")}
                   </SelectItem>
                   <SelectItem value="traderBuyPrice">
-                    Buy from Trader
+                    {t("Buy from Trader")}
                   </SelectItem>
-                  <SelectItem value="buyLimit">Buy Limit</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="shortName">Short Name</SelectItem>
-                  <SelectItem value="bestValue">Best Value</SelectItem>
+                  <SelectItem value="buyLimit">{t("Buy Limit")}</SelectItem>
+                  <SelectItem value="name">{t("Name")}</SelectItem>
+                  <SelectItem value="shortName">{t("Short Name")}</SelectItem>
+                  <SelectItem value="bestValue">{t("Best Value")}</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -1213,7 +1252,7 @@ export default function ItemsTablePage() {
               className="h-8 gap-2"
             >
               <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export</span>
+              <span className="hidden sm:inline">{t("Export")}</span>
             </Button>
           </div>
         </div>
@@ -1222,7 +1261,9 @@ export default function ItemsTablePage() {
       {/* Multiplier Tester (Dev Tool) */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold">Multiplier Tester (Weapons)</h2>
+          <h2 className="text-sm font-semibold">
+            {t("Multiplier Tester (Weapons)")}
+          </h2>
           <Button
             type="button"
             size="sm"
@@ -1232,13 +1273,14 @@ export default function ItemsTablePage() {
             aria-expanded={showTester}
             aria-controls="multiplier-tester"
           >
-            {showTester ? "Hide tester" : "Show tester"}
+            {showTester ? t("Hide tester") : t("Show tester")}
           </Button>
         </div>
         {!showTester ? (
           <div className="text-xs text-muted-foreground border rounded-md p-3">
-            Experimental tool for weapon value discrepancies. Click &quot;Show
-            tester&quot; to open.
+            {t(
+              'Experimental tool for weapon value discrepancies. Click "Show tester" to open.',
+            )}
           </div>
         ) : null}
         {showTester && (
@@ -1249,19 +1291,20 @@ export default function ItemsTablePage() {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-muted-foreground">
-                  Quickly infer k from outcomes
+                  {t("Quickly infer k from outcomes")}
                 </span>
               </div>
               <div className="text-xs text-muted-foreground mb-3">
-                Use the main table&apos;s search box to find your weapon and
-                read its base price. Enter totals below.
+                {t(
+                  "Use the main table's search box to find your weapon and read its base price. Enter totals below.",
+                )}
               </div>
             </div>
             {/* Quick calc: base price × quantity */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">
-                  Single weapon base price (RUB)
+                  {t("Single weapon base price (RUB)")}
                 </label>
                 <Input
                   type="number"
@@ -1272,12 +1315,12 @@ export default function ItemsTablePage() {
                     setSingleBasePrice(next);
                     updateTesterComputedSum(next, selectedQty);
                   }}
-                  placeholder="e.g. 40,000"
+                  placeholder={t("e.g. {example}", { example: "40,000" })}
                 />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">
-                  Quantity (1–5)
+                  {t("Quantity (1–5)")}
                 </label>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map((q) => (
@@ -1299,7 +1342,7 @@ export default function ItemsTablePage() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">
-                  Computed weapon sum
+                  {t("Computed weapon sum")}
                 </label>
                 <div className="h-9 flex items-center px-3 rounded-md border bg-background/60 text-sm">
                   {testerWeaponSum.toLocaleString()} RUB
@@ -1309,7 +1352,7 @@ export default function ItemsTablePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">
-                  Sum of weapon base values (RUB)
+                  {t("Sum of weapon base values (RUB)")}
                 </label>
                 <Input
                   type="number"
@@ -1318,13 +1361,15 @@ export default function ItemsTablePage() {
                   onChange={(e) =>
                     setTesterWeaponSum(Number(e.target.value) || 0)
                   }
-                  placeholder="e.g. 207740 for 5x MP5 Navy"
+                  placeholder={t("e.g. {example}", {
+                    example: "207740 (5x MP5 Navy)",
+                  })}
                 />
               </div>
               {/* Non-weapon sum hidden for weapon-only testing, still editable if needed */}
               <div className="space-y-1 hidden">
                 <label className="text-xs text-muted-foreground">
-                  Sum of other items (non-weapons) (RUB)
+                  {t("Sum of other items (non-weapons) (RUB)")}
                 </label>
                 <Input
                   type="number"
@@ -1333,12 +1378,12 @@ export default function ItemsTablePage() {
                   onChange={(e) =>
                     setTesterOtherSum(Number(e.target.value) || 0)
                   }
-                  placeholder="0 if only weapons"
+                  placeholder={t("0 if only weapons")}
                 />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">
-                  Observed outcome
+                  {t("Observed outcome")}
                 </label>
                 <div className="flex gap-2">
                   <Button
@@ -1412,7 +1457,7 @@ export default function ItemsTablePage() {
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="rounded-md border p-3 bg-background/60">
                     <div className="text-xs text-muted-foreground mb-1">
-                      Implied multiplier
+                      {t("Implied multiplier")}
                     </div>
                     {testerOutcome === "6h" ? (
                       <div className="text-sm">
@@ -1423,7 +1468,7 @@ export default function ItemsTablePage() {
                           </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Based on effective ≥ 400,000
+                          {t("Based on effective ≥ 400,000")}
                         </div>
                         <div className="mt-2">
                           <Button
@@ -1435,7 +1480,7 @@ export default function ItemsTablePage() {
                               setTesterK(Number(kFor6h.toFixed(3)))
                             }
                           >
-                            Use suggested k
+                            {t("Use suggested k")}
                           </Button>
                         </div>
                       </div>
@@ -1453,7 +1498,7 @@ export default function ItemsTablePage() {
                           )
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          14h implies total in [350k, 400k)
+                          {t("14h implies total in [350k, 400k)")}
                         </div>
                         <div className="mt-2">
                           <Button
@@ -1466,7 +1511,7 @@ export default function ItemsTablePage() {
                                 setTesterK(Number(mid.toFixed(3)));
                             }}
                           >
-                            Use suggested k (midpoint)
+                            {t("Use suggested k (midpoint)")}
                           </Button>
                         </div>
                       </div>
@@ -1484,7 +1529,7 @@ export default function ItemsTablePage() {
                           )
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          12h implies total in [200k, 350k)
+                          {t("12h implies total in [200k, 350k)")}
                         </div>
                         <div className="mt-2">
                           <Button
@@ -1497,7 +1542,7 @@ export default function ItemsTablePage() {
                                 setTesterK(Number(mid.toFixed(3)));
                             }}
                           >
-                            Use suggested k (midpoint)
+                            {t("Use suggested k (midpoint)")}
                           </Button>
                         </div>
                       </div>
@@ -1506,7 +1551,7 @@ export default function ItemsTablePage() {
 
                   <div className="rounded-md border p-3 bg-background/60">
                     <div className="text-xs text-muted-foreground mb-1">
-                      Try a candidate k
+                      {t("Try a candidate k")}
                     </div>
                     <div className="flex items-center gap-2">
                       <Input
@@ -1517,36 +1562,40 @@ export default function ItemsTablePage() {
                         className="w-28 h-9"
                       />
                       <div className="text-xs text-muted-foreground">
-                        Predicted total:
+                        {t("Predicted total:")}
                       </div>
                       <div className="text-sm font-medium">
                         {predictedTotal.toLocaleString()}
                       </div>
                       <div className="ml-auto text-xs text-right">
                         <div>
-                          Outcome:{" "}
+                          {t("Outcome:")}{" "}
                           <span className="font-semibold">
                             {predictedOutcome}
                           </span>
                         </div>
                         <div className="text-muted-foreground">
-                          Band: {predictedBand}
+                          {t("Band:")} {predictedBand}
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="rounded-md border p-3 bg-background/60 text-xs text-muted-foreground">
-                    <div>Tips:</div>
+                    <div>{t("Tips:")}</div>
                     <ul className="list-disc list-inside space-y-1">
                       <li>
-                        Set non-weapon sum to 0 when testing only weapons.
+                        {t("Set non-weapon sum to 0 when testing only weapons.")}
                       </li>
                       <li>
-                        Use 6h to get a single implied k. Use 14h to get bounds.
+                        {t(
+                          "Use 6h to get a single implied k. Use 14h to get bounds.",
+                        )}
                       </li>
                       <li>
-                        Repeat across trials; compare medians to stabilize k.
+                        {t(
+                          "Repeat across trials; compare medians to stabilize k.",
+                        )}
                       </li>
                     </ul>
                   </div>
@@ -1561,7 +1610,9 @@ export default function ItemsTablePage() {
       {isPending && (
         <div className="flex items-center justify-center h-12 mt-2">
           <Loader2 className="animate-spin h-5 w-5 text-blue-500 mr-2" />
-          <span className="text-sm text-muted-foreground">Updating...</span>
+          <span className="text-sm text-muted-foreground">
+            {t("Updating...")}
+          </span>
         </div>
       )}
 
@@ -1569,11 +1620,17 @@ export default function ItemsTablePage() {
       {showOnlyFavorites && filtered.length === 0 && !isLoading && (
         <div className="flex flex-col items-center justify-center p-8 text-center border rounded-md">
           <Star className="h-12 w-12 text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-medium mb-2">No favorite items</h3>
+          <h3 className="text-lg font-medium mb-2">
+            {t("No favorite items")}
+          </h3>
           <p className="text-sm text-muted-foreground max-w-md">
             {hasFavorites
-              ? "No favorites match the current filters. Try adjusting your search or filters."
-              : "You haven't added any items to your favorites yet. Click the star icon next to an item to add it to your favorites."}
+              ? t(
+                  "No favorites match the current filters. Try adjusting your search or filters.",
+                )
+              : t(
+                  "You haven't added any items to your favorites yet. Click the star icon next to an item to add it to your favorites.",
+                )}
           </p>
         </div>
       )}
@@ -1581,9 +1638,13 @@ export default function ItemsTablePage() {
       {showCompatibleOnly && filtered.length === 0 && !isLoading && (
         <div className="flex flex-col items-center justify-center p-8 text-center border rounded-md">
           <CircleAlert className="h-12 w-12 text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-medium mb-2">No compatible items</h3>
+          <h3 className="text-lg font-medium mb-2">
+            {t("No compatible items")}
+          </h3>
           <p className="text-sm text-muted-foreground max-w-md">
-            No items match the compatibility criteria with your current filters.
+            {t(
+              "No items match the compatibility criteria with your current filters.",
+            )}
           </p>
         </div>
       )}
@@ -1591,9 +1652,11 @@ export default function ItemsTablePage() {
       {showTraderOnly && filtered.length === 0 && !isLoading && (
         <div className="flex flex-col items-center justify-center p-8 text-center border rounded-md">
           <CircleAlert className="h-12 w-12 text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-medium mb-2">No trader items</h3>
+          <h3 className="text-lg font-medium mb-2">
+            {t("No trader items")}
+          </h3>
           <p className="text-sm text-muted-foreground max-w-md">
-            No items with trader buy prices match your current filters.
+            {t("No items with trader buy prices match your current filters.")}
           </p>
         </div>
       )}

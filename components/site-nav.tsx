@@ -52,12 +52,13 @@ const isNewLink = (label: string) =>
   label === "Tracker" || label === "Stash Scan";
 
 function NewBadge({ className = "" }: { className?: string }) {
+  const { t } = useLanguage();
   return (
     <span
       aria-hidden
       className={`rounded-sm border border-cyan-300/20 bg-cyan-300/[0.07] px-1.5 py-0.5 text-[8px] font-bold leading-none tracking-[0.12em] text-cyan-200/80 ${className}`}
     >
-      NEW
+      {t("NEW")}
     </span>
   );
 }

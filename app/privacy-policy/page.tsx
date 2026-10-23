@@ -1,10 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 
 export default function PrivacyPolicy() {
+  const { t } = useLanguage();
   const router = useRouter();
 
   function handleBack() {
@@ -26,60 +28,59 @@ export default function PrivacyPolicy() {
             <ArrowLeft className="h-6 w-6" />
           </button>
           <CardTitle className="text-3xl sm:text-4xl lg:text-5xl text-center text-red-500">
-            Privacy Policy
+            {t("Privacy Policy")}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto space-y-6">
           <div className="space-y-4">
             <div className="p-3 bg-gray-800/90 rounded-lg shadow-md">
               <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">
-                Local Storage
+                {t("Local Storage")}
               </h2>
               <p className="text-gray-100 text-sm leading-relaxed">
-                We store your calculator preferences locally, including excluded
-                item categories, threshold settings, sort options, and custom
-                price overrides. If you use the Ritual Tracker, its countdowns,
-                sacrifices, returned rewards, notes, and price snapshots are
-                stored in IndexedDB in this browser. This data stays on your
-                device and is not uploaded to Cultist Circle.
+                {t(
+                  "We store your calculator preferences locally, including excluded item categories, threshold settings, sort options, and custom price overrides. If you use the Ritual Tracker, its countdowns, sacrifices, returned rewards, notes, and price snapshots are stored in IndexedDB in this browser. This data stays on your device and is not uploaded to Cultist Circle.",
+                )}
               </p>
             </div>
 
             <div className="p-3 bg-gray-800/90 rounded-lg shadow-md">
               <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">
-                Analytics
+                {t("Analytics")}
               </h2>
               <p className="text-gray-100 text-sm leading-relaxed">
-                We use Google Analytics and PostHog to understand how players
-                use our calculator. This helps us improve features like item
-                filtering, price thresholds, and category management. Analytics
-                only run when you allow them through the cookie preferences
-                panel.
+                {t(
+                  "We use Google Analytics and PostHog to understand how players use our calculator. This helps us improve features like item filtering, price thresholds, and category management. Analytics only run when you allow them through the cookie preferences panel.",
+                )}
               </p>
             </div>
 
             <div className="p-3 bg-gray-800/90 rounded-lg shadow-md">
               <h2 className="text-orange-400 text-sm font-medium uppercase tracking-wider mb-2">
-                Your Control
+                {t("Your Control")}
               </h2>
               <ul className="text-gray-100 text-sm leading-relaxed list-disc pl-4 space-y-1">
                 <li>
-                  Clear browser data to reset calculator preferences and custom
-                  settings
+                  {t(
+                    "Clear browser data to reset calculator preferences and custom settings",
+                  )}
                 </li>
                 <li>
-                  Export Ritual Tracker history as JSON or CSV, or delete it
-                  separately from calculator settings
+                  {t(
+                    "Export Ritual Tracker history as JSON or CSV, or delete it separately from calculator settings",
+                  )}
                 </li>
                 <li>
-                  Use browser settings or extensions to opt-out of analytics
+                  {t(
+                    "Use browser settings or extensions to opt-out of analytics",
+                  )}
                 </li>
               </ul>
             </div>
           </div>
 
           <p className="text-xs text-gray-400 text-center">
-            Last updated: August 11, 2026
+            {t("Last updated: August 11, 2026")}
           </p>
         </CardContent>
       </Card>

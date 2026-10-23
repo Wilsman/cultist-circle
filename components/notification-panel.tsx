@@ -2,6 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/language-context";
+import { formatMessageSlots } from "@/lib/format-message-slots";
 
 export interface Notification {
   id: string;
@@ -19,7 +21,10 @@ export interface Notification {
   description:
     | string
     | React.ReactNode
-    | ((notification: Notification) => React.ReactNode);
+    | ((
+        notification: Notification,
+        t: (key: string, vars?: Record<string, string | number>) => string,
+      ) => React.ReactNode);
   actions?: NotificationAction[];
   priority?: number;
   estimatedCost?: number;
@@ -41,13 +46,13 @@ export const NOTIFICATIONS: Notification[] = [
     title: "SAS drive ➡️ THOR IC no longer works",
     priority: 0,
     date: "2026-09-29",
-    description: (
-      <>
-        After the THOR IC base value change, the SAS drive ➡️ THOR IC hot
-        sacrifice no longer works in <strong>PVP or PVE</strong>. It has been
-        disabled in Hot Sacrifices.
-      </>
-    ),
+    description: (_notification, t) =>
+      formatMessageSlots(
+        t(
+          "After the THOR IC base value change, the SAS drive ➡️ THOR IC hot sacrifice no longer works in {modes}. It has been disabled in Hot Sacrifices.",
+        ),
+        { modes: <strong>{t("PVP or PVE")}</strong> },
+      ),
   },
   {
     id: "black-division-dogtag-recipe",
@@ -57,26 +62,31 @@ export const NOTIFICATIONS: Notification[] = [
     title: "Black Division ritual may no longer work",
     priority: 0,
     date: "2026-09-09",
-    description: (
-      <>
-        Many users report these launcher codes and this recipe might not work
-        anymore. If you try it, please report{" "}
-        <strong>Worked or Didn&apos;t work</strong> on the{" "}
-        <Link
-          href="/recipes"
-          className="font-semibold underline transition-colors hover:text-amber-200"
-        >
-          recipes page
-        </Link>{" "}
-        - thank you.{" "}
-        <Link
-          href="/recipes"
-          className="font-semibold underline transition-colors hover:text-amber-200"
-        >
-          View the special recipe →
-        </Link>
-      </>
-    ),
+    description: (_notification, t) =>
+      formatMessageSlots(
+        t(
+          "Many users report these launcher codes and this recipe might not work anymore. If you try it, please report {vote} on the {recipes} - thank you. {view}",
+        ),
+        {
+          vote: <strong>{t("Worked or Didn't work")}</strong>,
+          recipes: (
+            <Link
+              href="/recipes"
+              className="font-semibold underline transition-colors hover:text-amber-200"
+            >
+              {t("recipes page")}
+            </Link>
+          ),
+          view: (
+            <Link
+              href="/recipes"
+              className="font-semibold underline transition-colors hover:text-amber-200"
+            >
+              {t("View the special recipe →")}
+            </Link>
+          ),
+        },
+      ),
   },
 ];
 
@@ -102,6 +112,7 @@ export function NotificationDetails({
   notification: Notification;
   showDate?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <>
       {showDate && notification.date && (
@@ -114,7 +125,7 @@ export function NotificationDetails({
       )}
       <div className="text-xs leading-relaxed text-slate-300 marker:text-slate-400 [&_a]:text-slate-100 [&_a]:underline [&_a]:decoration-slate-500 [&_a]:underline-offset-2 [&_strong]:font-semibold [&_strong]:text-slate-100">
         {typeof notification.description === "function"
-          ? notification.description(notification)
+          ? notification.description(notification, t)
           : notification.description}
       </div>
 

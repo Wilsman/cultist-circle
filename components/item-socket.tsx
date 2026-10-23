@@ -18,6 +18,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { Check, CircleOff, DiamondPlus } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 interface Item {
   id: string;
@@ -62,6 +63,7 @@ interface ItemSocketProps {
 }
 
 function ItemSocket({ onBonusChange }: ItemSocketProps) {
+  const { t } = useLanguage();
   const { itemId: selectedId, setItemId: setSelectedId, hideoutLevel, setHideoutLevel } = useSacrificeBonus();
   const selectedItem = items.find((item) => item.id === selectedId && item.id !== "none") ?? null;
   const [open, setOpen] = useState(false);
@@ -97,7 +99,7 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
               aria-expanded={isExpanded}
-              aria-label={`Bonus item socket, current bonus ${totalBonus}%`}
+              aria-label={t("Bonus item socket, current bonus {bonus}%", { bonus: totalBonus })}
               className={`relative h-9 rounded-full border px-2.5 text-gray-200 backdrop-blur-sm transition-colors ${
                 totalBonus > 0
                   ? "border-emerald-400/40 bg-emerald-950/35 hover:bg-emerald-900/35"
@@ -144,10 +146,11 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
             collisionPadding={16}
             className="max-w-[280px] p-2 text-left bg-slate-800 text-gray-100 border border-slate-700 rounded-md shadow-lg z-[100]"
           >
-            <p className="text-xs font-semibold mb-1">Bonus Settings</p>
+            <p className="text-xs font-semibold mb-1">{t("Bonus Settings")}</p>
             <p className="text-xs text-slate-300">
-              Add a bonus item and Hideout skill level without moving the
-              calculator controls.
+              {t(
+                "Add a bonus item and Hideout skill level without moving the calculator controls.",
+              )}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -164,7 +167,7 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
           <div className="flex w-full flex-col items-stretch rounded-lg border border-slate-600/50 bg-slate-900/95 p-3 text-left shadow-xl shadow-black/30 backdrop-blur-md">
             <div className="mb-3 flex items-center justify-between gap-3">
               <span className="text-xs font-mono text-slate-300">
-                Gift value bonus
+                {t("Gift value bonus")}
               </span>
               <span className="rounded-md bg-slate-950/70 px-2 py-1 font-mono text-sm text-gray-100">
                 <span
@@ -192,12 +195,12 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
                       )}
                     </span>
                     <span className="min-w-0 truncate text-xs font-mono">
-                      {selectedItem?.name ?? "Choose bonus item"}
+                      {selectedItem ? t(selectedItem.name) : t("Choose bonus item")}
                     </span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-slate-900/95 border-slate-700 text-gray-200 max-w-xs">
-                  <DialogTitle>Item Socket</DialogTitle>
+                  <DialogTitle>{t("Item Socket")}</DialogTitle>
                   <div className="grid gap-2">
                     {items.map((item) => {
                       const isSelected =
@@ -223,10 +226,10 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
                           </div>
                           <span className="flex min-w-0 flex-1 flex-col items-start">
                             <span className="truncate font-mono text-sm">
-                              {item.name}
+                              {t(item.name)}
                             </span>
                             <span className="text-xs text-slate-400">
-                              {itemBonus > 0 ? `+${itemBonus}%` : "No bonus"}
+                              {itemBonus > 0 ? `+${itemBonus}%` : t("No bonus")}
                             </span>
                           </span>
                           {isSelected && (
@@ -242,7 +245,7 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
               {selectedItem && selectedItem.id !== "none" && (
                 <label className="flex shrink-0 items-center gap-2 animate-fade-in">
                   <span className="font-mono text-xs text-slate-300">
-                    Hideout
+                    {t("Hideout")}
                   </span>
                   <div className="relative">
                     <select
@@ -262,7 +265,7 @@ function ItemSocket({ onBonusChange }: ItemSocketProps) {
                         value={51}
                         className="text-yellow-400 font-bold"
                       >
-                        Elite
+                        {t("Elite")}
                       </option>
                     </select>
                     {hideoutLevel === 51 && (

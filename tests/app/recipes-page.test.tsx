@@ -69,11 +69,15 @@ vi.mock("@/hooks/use-recipe-item-data", () => ({
   useRecipeItemData: (mode: string) => useRecipeItemDataMock(mode),
 }));
 
-vi.mock("@/contexts/language-context", () => ({
-  useLanguage: () => ({
-    t: (key: string) => key,
-  }),
-}));
+vi.mock("@/contexts/language-context", async () => {
+  const { formatMessage } = await import("@/config/i18n");
+  return {
+    useLanguage: () => ({
+      t: (key: string, vars?: Record<string, string | number>) =>
+        formatMessage(key, vars),
+    }),
+  };
+});
 
 describe("RecipesPage completion tracker", () => {
   const highlightedState = (id: string) =>

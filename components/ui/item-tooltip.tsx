@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import { useLanguage } from "@/contexts/language-context";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ interface ItemTooltipProps {
 }
 
 export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
+  const { t } = useLanguage();
   const formatPrice = (price: number | undefined) => {
     if (!price) return "-";
     return `₽ ${price.toLocaleString()}`;
@@ -91,7 +93,7 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
             <div className="space-y-1.5 text-xs">
               {/* Base Value */}
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Base Value:</span>
+                <span className="text-gray-400">{t("Base Value")}:</span>
                 <span className="font-semibold text-purple-400">
                   {formatPrice(item.basePrice)}
                 </span>
@@ -99,7 +101,7 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
 
               {/* Market Price */}
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Market Price:</span>
+                <span className="text-gray-400">{t("Market Price")}:</span>
                 <span className="font-semibold text-emerald-400">
                   {formatPrice(item.lastLowPrice)}
                 </span>
@@ -108,7 +110,7 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
               {/* 24h Average */}
               {item.avg24hPrice && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">24h Average:</span>
+                  <span className="text-gray-400">{t("24h Average")}:</span>
                   <span className="font-semibold text-blue-400">
                     {formatPrice(item.avg24hPrice)}
                   </span>
@@ -118,7 +120,7 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
               {/* Best Trader Price - hide if flea-market since it's same as 24h average */}
               {shouldShowTrader && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Best Trader:</span>
+                  <span className="text-gray-400">{t("Best Trader")}:</span>
                   <span className="font-semibold text-orange-400">
                     {formatPrice(bestTrader.priceRUB)}
                   </span>
@@ -128,7 +130,7 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
               {/* Trader Name - hide if flea-market */}
               {shouldShowTrader && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Trader:</span>
+                  <span className="text-gray-400">{t("Trader")}:</span>
                   <span className="font-semibold text-gray-200 capitalize">
                     {bestTrader.vendor.normalizedName}
                     {bestTrader.vendor.minTraderLevel
@@ -140,7 +142,7 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
 
               {/* Size */}
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Size:</span>
+                <span className="text-gray-400">{t("Size")}:</span>
                 <span className="font-semibold text-gray-200">
                   {formatSize()}
                 </span>
@@ -149,7 +151,7 @@ export function ItemTooltip({ item, children, iconUrl }: ItemTooltipProps) {
               {/* Offer Count */}
               {item.lastOfferCount !== undefined && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Offers:</span>
+                  <span className="text-gray-400">{t("Offers")}:</span>
                   <span
                     className={cn(
                       "font-semibold",

@@ -8,6 +8,7 @@ import {
   isEditableTarget,
   KONAMI_SESSION_KEY,
 } from "@/lib/konami-code";
+import { useLanguage } from "@/contexts/language-context";
 
 const ScavInvadersGame = dynamic(
   () => import("./scav-invaders-game.component"),
@@ -31,6 +32,7 @@ function readUnlockedSession(): boolean {
 }
 
 export function ScavInvadersEasterEgg() {
+  const { t } = useLanguage();
   const [unlocked, setUnlocked] = useState(readUnlockedSession);
   const [open, setOpen] = useState(false);
   const inputBuffer = useRef<string[]>([]);
@@ -65,7 +67,7 @@ export function ScavInvadersEasterEgg() {
         type="button"
         onClick={() => setOpen(true)}
         className="scav-invaders-unlock font-arcade inline-flex items-center gap-2 border border-[#9dff2e]/70 bg-black/80 px-3 py-2 text-[9px] leading-none tracking-[0.16em] text-[#9dff2e] shadow-[0_0_16px_rgba(157,255,46,0.18)] transition-colors hover:bg-[#9dff2e] hover:text-black focus-visible:ring-[#9dff2e] sm:text-[10px]"
-        aria-label="Play Scav Invaders"
+        aria-label={t("Play Scav Invaders")}
       >
         <span aria-hidden="true" className="text-[#ffd928]">
           ▶

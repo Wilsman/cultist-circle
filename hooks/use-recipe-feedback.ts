@@ -10,6 +10,7 @@ import {
   EMPTY_RECIPE_FEEDBACK_STATS,
   formatLastWorkedDetail,
   formatReportStatus,
+  type MessageTranslator,
   isRecipeFeedbackMap,
   isRecipeFeedbackStats,
   isRecipeRecentlyActive,
@@ -37,6 +38,11 @@ let inMemoryClientId: string | null = null;
 
 type LoadStatus = "idle" | "loading" | "ready" | "error";
 
+export interface TranslatableMessage {
+  key: string;
+  vars?: Record<string, string | number>;
+}
+
 interface RecipeFeedbackStoreState {
   stats: RecipeFeedbackMap;
   userVotes: UserVoteMap;
@@ -45,9 +51,9 @@ interface RecipeFeedbackStoreState {
   loadStatus: LoadStatus;
   lastLoadedAt: number | null;
   pendingRecipeIds: Record<string, boolean>;
-  loadError: string | null;
-  voteErrors: Record<string, string | undefined>;
-  voteMessages: Record<string, string | undefined>;
+  loadError: TranslatableMessage | null;
+  voteErrors: Record<string, TranslatableMessage | undefined>;
+  voteMessages: Record<string, TranslatableMessage | undefined>;
   hydrateClientState: () => void;
   loadStats: (force?: boolean) => Promise<void>;
   castVote: (
@@ -127,24 +133,48 @@ async function readResponsePayload(response: Response): Promise<unknown> {
   }
 }
 
+interface TranslatableError extends Error {
+  i18n?: TranslatableMessage;
+}
+
+function toTranslatableMessage(
+  error: unknown,
+  fallbackKey: string,
+): TranslatableMessage {
+  if (error instanceof Error) {
+    return (
+      (error as TranslatableError).i18n ?? {
+        key: error.message || fallbackKey,
+      }
+    );
+  }
+  return { key: fallbackKey };
+}
+
 function responseError(
   response: Response,
   payload: unknown,
   fallback: string,
 ): Error {
+  const error = (message: TranslatableMessage): TranslatableError => {
+    const failure: TranslatableError = new Error(message.key);
+    failure.i18n = message;
+    return failure;
+  };
   if (response.status === 429) {
     const retryAfter = Number(response.headers.get("retry-after"));
-    return new Error(
-      Number.isFinite(retryAfter) && retryAfter > 0
-        ? `Too many reports. Try again in ${retryAfter}s.`
-        : "Too many reports. Please try again shortly.",
-    );
+    return Number.isFinite(retryAfter) && retryAfter > 0
+      ? error({
+          key: "Too many reports. Try again in {seconds}s.",
+          vars: { seconds: retryAfter },
+        })
+      : error({ key: "Too many reports. Please try again shortly." });
   }
   const message =
     payload && typeof payload === "object" && "error" in payload
       ? (payload as { error?: unknown }).error
       : null;
-  return new Error(typeof message === "string" ? message : fallback);
+  return error({ key: typeof message === "string" ? message : fallback });
 }
 
 export const useRecipeFeedbackStore = create<RecipeFeedbackStoreState>(
@@ -219,7 +249,9 @@ export const useRecipeFeedbackStore = create<RecipeFeedbackStoreState>(
         console.error("Failed to load recipe feedback:", error);
         set({
           loadStatus: isInitialLoad ? "error" : "ready",
-          loadError: "Community reports are temporarily unavailable",
+          loadError: {
+            key: "Community reports are temporarily unavailable",
+          },
         });
       }
     },
@@ -331,7 +363,9 @@ export const useRecipeFeedbackStore = create<RecipeFeedbackStoreState>(
           voteErrors: { ...current.voteErrors, [recipeId]: undefined },
           voteMessages: {
             ...current.voteMessages,
-            [recipeId]: data.userVote ? "Report saved." : "Report removed.",
+            [recipeId]: {
+              key: data.userVote ? "Report saved." : "Report removed.",
+            },
           },
         }));
         saveStoredMap(RECIPE_USER_VOTES_STORAGE_KEY, confirmedVotes);
@@ -351,10 +385,10 @@ export const useRecipeFeedbackStore = create<RecipeFeedbackStoreState>(
           pendingRecipeIds: { ...current.pendingRecipeIds, [recipeId]: false },
           voteErrors: {
             ...current.voteErrors,
-            [recipeId]:
-              error instanceof Error
-                ? error.message
-                : "Your report was not saved. Please try again.",
+            [recipeId]: toTranslatableMessage(
+              error,
+              "Your report was not saved. Please try again.",
+            ),
           },
         }));
         saveStoredMap(RECIPE_USER_VOTES_STORAGE_KEY, restoredVotes);
@@ -430,7 +464,19 @@ function getClockSnapshot() {
   return clockNow;
 }
 
-export function useRecipeFeedback(recipeId: string) {
+const passThrough: MessageTranslator = (key, vars) =>
+  vars
+    ? key.replace(/\{(\w+)\}/g, (match, name) =>
+        Object.prototype.hasOwnProperty.call(vars, name)
+          ? String(vars[name])
+          : match,
+      )
+    : key;
+
+export function useRecipeFeedback(
+  recipeId: string,
+  t: MessageTranslator = passThrough,
+) {
   const stats = useRecipeFeedbackStore(
     (state) => state.stats[recipeId] ?? EMPTY_RECIPE_FEEDBACK_STATS,
   );
@@ -463,8 +509,8 @@ export function useRecipeFeedback(recipeId: string) {
     castVote: (vote: UserVote, gameMode: GameMode) =>
       castVote(recipeId, vote, gameMode),
     formattedRecency: useMemo(
-      () => formatReportStatus(stats, now),
-      [now, stats],
+      () => formatReportStatus(stats, now, t),
+      [now, stats, t],
     ),
     formattedModeRecency: useMemo(
       () =>
@@ -472,8 +518,9 @@ export function useRecipeFeedback(recipeId: string) {
           stats.lastWorkedMode ?? null,
           stats.lastWorkedAt,
           now,
+          t,
         ),
-      [now, stats.lastWorkedAt, stats.lastWorkedMode],
+      [now, stats.lastWorkedAt, stats.lastWorkedMode, t],
     ),
     isRecentlyActive: useMemo(
       () => isRecipeRecentlyActive(stats.lastWorkedAt, 72, now),

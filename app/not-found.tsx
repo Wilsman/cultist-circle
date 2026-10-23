@@ -1,19 +1,8 @@
-import Link from "next/link";
+import { NotFoundContent } from "@/components/not-found-content";
 
 export const dynamic = "force-static";
 export const revalidate = 86400; // Cache for 24 hours
 
 export default function NotFound() {
-  return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 text-center">
-      <h1 className="text-6xl font-bold text-red-500 mb-4">404</h1>
-      <h2 className="text-2xl text-gray-100 mb-8">Page Not Found</h2>
-      <Link
-        href="/"
-        className="px-6 py-3 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-      >
-        Return Home
-      </Link>
-    </div>
-  );
+  return <NotFoundContent />;
 }

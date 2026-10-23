@@ -2,6 +2,7 @@
 
 import { type ReactNode, useState, useEffect, useCallback } from "react";
 import { toast as sonnerToast } from "sonner";
+import { useLanguage } from "@/contexts/language-context";
 
 interface Notification {
   id: string;
@@ -36,6 +37,7 @@ const AVAILABLE_NOTIFICATIONS: Notification[] = [
 ];
 
 export function useToastNotifications() {
+  const { t } = useLanguage();
   const [state, setState] = useState<ToastNotificationsState>({
     shownNotifications: new Set(),
     dismissedNotifications: new Set(),
@@ -137,12 +139,12 @@ export function useToastNotifications() {
         return;
       }
 
-      sonnerToast(notification.title, {
-        description: notification.description,
+      sonnerToast(t(notification.title), {
+        description: t(notification.description),
         icon: notification.icon,
         duration: 10000, // 10 seconds for feature explanations
         action: {
-          label: "Got it!",
+          label: t("Got it!"),
           onClick: () => dismissNotification(notification.id),
         },
         onDismiss: () => {
@@ -163,6 +165,7 @@ export function useToastNotifications() {
       state.dismissedNotifications,
       state.shownNotifications,
       dismissNotification,
+      t,
     ],
   );
 

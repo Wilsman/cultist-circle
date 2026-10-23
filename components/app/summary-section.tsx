@@ -40,6 +40,9 @@ export function SummarySection({
     verifiedCombo,
 }: SummarySectionProps) {
     const { t } = useLanguage();
+    const valueRatio =
+        total > 0 && totalFleaCost > 0 ? total / totalFleaCost : null;
+    const overshoot = Math.max(0, Math.floor(total) - threshold);
 
     if (loading) {
         return (
@@ -113,6 +116,31 @@ export function SummarySection({
                         </div>
                     </div>
                 </div>
+
+                {/* Bang for buck: base value gained per rouble spent */}
+                {valueRatio !== null && (
+                    <div
+                        data-value-ratio
+                        className="flex items-center justify-between rounded-md bg-slate-800/40 px-3 py-1.5 text-xs border border-slate-700/30"
+                    >
+                        <span className="text-slate-400">{t("Base value per ₽ spent")}</span>
+                        <span className="font-semibold tabular-nums text-slate-200">
+                            {valueRatio.toFixed(2)}×
+                        </span>
+                    </div>
+                )}
+
+                {/* Going over the threshold costs nothing extra */}
+                {isThresholdMet && overshoot >= 10_000 && (
+                    <div
+                        data-overshoot-note
+                        className="rounded-md bg-emerald-900/20 px-3 py-1.5 text-xs leading-5 text-emerald-200/90 border border-emerald-600/30"
+                    >
+                        {t("₽{value} over the threshold. That's fine: the ritual only checks that you reached it, so the cheapest combo wins.", {
+                            value: overshoot.toLocaleString(),
+                        })}
+                    </div>
+                )}
 
                 {/* Needed bar - only show if threshold not met */}
                 {!isThresholdMet && (

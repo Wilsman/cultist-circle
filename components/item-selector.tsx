@@ -1221,7 +1221,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                         onClick={onPin}
                         active={isPinned}
                         activeClass="text-amber-400 bg-amber-500/10"
-                        tooltip={isPinned ? "Unpin item" : "Pin item"}
+                        tooltip={isPinned ? t("Unpin item") : t("Pin item")}
                         className="h-8 w-8 sm:h-7 sm:w-7"
                       />
 

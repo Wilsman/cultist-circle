@@ -77,6 +77,11 @@ import { FooterSection } from "@/components/app/footer-section";
 import { SelectorSettingsPopover } from "@/components/app/selector-settings-popover";
 import { PlayerLevelChip } from "@/components/app/player-level-chip";
 import { isRecipeOverrideItem } from "@/lib/recipe-override-items";
+import {
+  isItemNameExcluded,
+  toExcludedNameLookup,
+  toggleItemExclusion,
+} from "@/lib/excluded-item-names";
 import { SummarySection } from "@/components/app/summary-section";
 import { HotSacrificesSection } from "@/components/app/hot-sacrifices-section";
 import { type FleaPriceType, type PriceMode } from "@/hooks/use-app-settings";
@@ -131,6 +136,12 @@ import {
 } from "@/lib/stash-scan/owned-items";
 import type { RitualInputPriceSource } from "@/types/ritual-tracker";
 import { clearRitualHistory, listRituals } from "@/lib/ritual-tracker-db";
+import {
+  cheapestTraderPrice,
+  planFromMarket,
+  singleSlotCandidates,
+  type MarketCandidate,
+} from "@/lib/market-planner";
 import {
   createTrackerBackup,
   importTrackerBackup,
@@ -296,6 +307,10 @@ function AppContent({ contributors = [] }: AppProps) {
   });
   const [excludeIncompatible, setExcludeIncompatible] = useState<boolean>(true);
   const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set());
+  const excludedNameLookup = useMemo(
+    () => toExcludedNameLookup(excludedItems),
+    [excludedItems],
+  );
   const [overriddenPrices, setOverriddenPrices] = useState<
     Record<string, number>
   >({});
@@ -1046,164 +1061,10 @@ function AppContent({ contributors = [] }: AppProps) {
         return typeof val === "number" ? (val as number) : undefined;
       }
 
-      // Trader mode: pick the best eligible trader offer based on levels
-      if (!item.buyFor || item.buyFor.length === 0) return undefined;
-      let best: number | undefined = undefined;
-      for (const offer of item.buyFor) {
-        const vendor = offer.vendor?.normalizedName as
-          keyof TraderLevels | undefined;
-        if (!vendor) continue;
-        const minLvl = offer.vendor?.minTraderLevel ?? 1;
-        const userLvl = traderLevels[vendor];
-        if (userLvl && userLvl >= minLvl) {
-          if (typeof offer.priceRUB === "number") {
-            if (best === undefined || offer.priceRUB > best)
-              best = offer.priceRUB;
-          }
-        }
-      }
-      return best;
+      // Trader mode: cheapest offer unlocked by the player's trader levels
+      return cheapestTraderPrice(item, traderLevels);
     },
     [fleaPriceType, overriddenPrices, priceMode, traderLevels],
-  );
-
-  // Function to find the best combination of items
-  const findBestCombination = useCallback(
-    (
-      validItems: SimplifiedItem[],
-      threshold: number,
-      maxItems: number,
-    ): { selected: SimplifiedItem[]; totalFleaCost: number } => {
-      // Apply the bonus to the baseValue of each item for calculation
-      const bonusMultiplier = 1 + itemBonus / 100;
-
-      // Pre-calculate adjusted base prices to avoid repeated calculations
-      const adjustedItems = validItems.map((item) => ({
-        ...item,
-        adjustedBasePrice: Math.floor(item.basePrice * bonusMultiplier),
-        effectivePrice: getEffectivePrice(item),
-      }));
-
-      // Use adjusted threshold for DP calculation
-      const maxThreshold = threshold + 5000;
-
-      // Optimize array creation
-      const dp: number[][] = [];
-      const itemTracking: number[][][] = [];
-
-      // Initialize first row
-      dp[0] = Array(maxThreshold + 1).fill(Infinity);
-      dp[0][0] = 0;
-      itemTracking[0] = Array(maxThreshold + 1)
-        .fill(null)
-        .map(() => []);
-
-      // Build DP table with optimized loops
-      for (let c = 1; c <= maxItems; c++) {
-        dp[c] = Array(maxThreshold + 1).fill(Infinity);
-        itemTracking[c] = Array(maxThreshold + 1)
-          .fill(null)
-          .map(() => []);
-
-        // Copy values from previous row where no item is added
-        for (let v = 0; v <= maxThreshold; v++) {
-          dp[c][v] = dp[c - 1][v];
-          if (dp[c - 1][v] !== Infinity) {
-            itemTracking[c][v] = [...itemTracking[c - 1][v]];
-          }
-        }
-
-        for (let i = 0; i < adjustedItems.length; i++) {
-          const item = adjustedItems[i];
-          const basePrice = item.adjustedBasePrice;
-          const fleaPrice = item.effectivePrice;
-
-          // Skip items with zero or negative base price, undefined/invalid flea price, or insufficient market offers
-          if (
-            basePrice <= 0 ||
-            typeof fleaPrice !== "number" ||
-            fleaPrice < 0 ||
-            (priceMode === "flea" &&
-              useLastOfferCountFilter &&
-              typeof item.lastOfferCount === "number" &&
-              item.lastOfferCount < LOW_OFFER_COUNT_THRESHOLD)
-          ) {
-            continue;
-          }
-
-          // Optimize inner loop - start from basePrice
-          for (let v = basePrice; v <= maxThreshold; v++) {
-            if (
-              dp[c - 1][v - basePrice] !== Infinity &&
-              dp[c - 1][v - basePrice] + fleaPrice < dp[c][v]
-            ) {
-              dp[c][v] = dp[c - 1][v - basePrice] + fleaPrice;
-              itemTracking[c][v] = [...itemTracking[c - 1][v - basePrice], i];
-            }
-          }
-        }
-      }
-
-      // Optimize valid combinations collection
-      const validCombinations: { c: number; v: number; cost: number }[] = [];
-
-      // Start from the highest number of items for better combinations
-      for (let c = maxItems; c >= 1; c--) {
-        let foundForThisC = false;
-
-        // Check values from threshold to maxThreshold
-        for (let v = threshold; v <= maxThreshold; v++) {
-          if (dp[c][v] !== Infinity) {
-            validCombinations.push({ c, v, cost: dp[c][v] });
-            foundForThisC = true;
-
-            // Optimization: Once we've found some valid combinations for this c,
-            // we can limit how many we collect to avoid excessive processing
-            if (validCombinations.length >= 20 && foundForThisC) {
-              break;
-            }
-          }
-        }
-
-        // If we already have enough combinations, stop searching
-        if (validCombinations.length >= 50) {
-          break;
-        }
-      }
-
-      // Optimize sorting - only sort if we have combinations
-      if (validCombinations.length > 0) {
-        // Sort by cost (most efficient first)
-        validCombinations.sort((a, b) => a.cost - b.cost);
-
-        // Take only top 5 for random selection
-        const topCombinations = validCombinations.slice(
-          0,
-          Math.min(5, validCombinations.length),
-        );
-
-        // Select one randomly from top combinations
-        const selectedCombination =
-          topCombinations[Math.floor(Math.random() * topCombinations.length)];
-
-        if (!selectedCombination) {
-          return { selected: [], totalFleaCost: 0 };
-        }
-
-        const selectedIndices =
-          itemTracking[selectedCombination.c][selectedCombination.v];
-        const selectedItems = selectedIndices.map((index) => validItems[index]);
-
-        return {
-          selected: selectedItems,
-          totalFleaCost: selectedCombination.cost,
-        };
-      } else {
-        // No valid combinations found
-        return { selected: [], totalFleaCost: 0 };
-      }
-    },
-    [itemBonus, priceMode, useLastOfferCountFilter, getEffectivePrice],
   );
 
   // Function to find matching item by name - ALWAYS use rawItemsData to bypass UI filters
@@ -1728,42 +1589,18 @@ function AppContent({ contributors = [] }: AppProps) {
 
     try {
       // Determine remaining slots before heavy work (active slots only)
-      const activePinnedCount = pinnedItems
-        .slice(0, sacrificeSlotCount)
-        .filter(Boolean).length;
-      const slotsLeft = sacrificeSlotCount - activePinnedCount;
-
-      // Single-pass filter with all conditions, then sort; only cap to top-100 when more than one slot left
-      let ranked = items
-        .map((item) => ({
-          item,
-          price: getEffectivePrice(item),
-          efficiency: item.basePrice / (getEffectivePrice(item) || 1), // Avoid division by zero
-        }))
-        .filter(
-          ({ item, price }) =>
-            price !== undefined &&
-            price > 0 &&
-            item.basePrice >= threshold * 0.1 &&
-            !isRecipeOverrideItem(item) &&
-            (ignoreFilters || !excludedItems.has(item.name.toLowerCase())),
-        )
-        .sort((a, b) => b.efficiency - a.efficiency);
-
-      if (slotsLeft > 1) ranked = ranked.slice(0, 100);
-
-      const validItems = ranked.map(({ item }) => item); // Map back to just the items
+      const activeSlots = selectedItems.slice(0, sacrificeSlotCount);
+      const isPinned = (i: number) => Boolean(pinnedItems[i] && activeSlots[i]);
+      const slotsLeft =
+        sacrificeSlotCount - activeSlots.filter((_, i) => isPinned(i)).length;
 
       // Small delay to prevent UI freezing
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      const pinnedTotal = selectedItems
-        .slice(0, sacrificeSlotCount)
-        .reduce(
-          (sum, item, index) =>
-            sum + (pinnedItems[index] && item ? item.basePrice : 0),
-          0,
-        );
+      const pinnedTotal = activeSlots.reduce(
+        (sum, item, index) => sum + (isPinned(index) && item ? item.basePrice : 0),
+        0,
+      );
 
       const remainingThreshold = Math.max(0, threshold - pinnedTotal);
 
@@ -1773,48 +1610,55 @@ function AppContent({ contributors = [] }: AppProps) {
         return;
       }
 
-      const filteredItems = validItems.filter(
-        (item) =>
-          !selectedItems
-            .slice(0, sacrificeSlotCount)
-            .some(
-              (selected, index) =>
-                pinnedItems[index] && selected?.id === item.id,
-            ),
+      const pinnedIds = new Set(
+        activeSlots
+          .filter((item, i): item is SimplifiedItem => Boolean(item) && isPinned(i))
+          .map((item) => item.id),
       );
+      const bonusMultiplier = 1 + itemBonus / 100;
+      const itemsById = new Map<string, SimplifiedItem>();
+      const candidates: MarketCandidate[] = [];
+      for (const item of items) {
+        const price = getEffectivePrice(item);
+        if (
+          price === undefined ||
+          price <= 0 ||
+          item.basePrice < threshold * 0.1 ||
+          pinnedIds.has(item.id) ||
+          isRecipeOverrideItem(item) ||
+          (!ignoreFilters && isItemNameExcluded(item, excludedNameLookup))
+        )
+          continue;
+        itemsById.set(item.id, item);
+        candidates.push({
+          id: item.id,
+          baseValue: Math.floor(item.basePrice * bonusMultiplier),
+          cost: price,
+        });
+      }
 
-      // Adjust prices in filteredItems to use overridden prices where applicable
-      const adjustedItems = filteredItems;
+      // Preserve overridden prices for items that remain selected
+      const applySelection = (next: Array<SimplifiedItem | null>) => {
+        const newOverriddenPrices = { ...overriddenPrices };
+        for (let i = 0; i < 5; i++) {
+          const item = next[i];
+          if (item && overriddenPrices[item.id]) {
+            newOverriddenPrices[item.id] = overriddenPrices[item.id];
+          }
+        }
+        setSelectedItems(next);
+        setOverriddenPrices(newOverriddenPrices);
+        setHasAutoSelected(true);
+      };
 
-      // Shuffle the adjusted items to increase randomness
-      const shuffledAdjustedItems = [...adjustedItems].sort(
-        () => Math.random() - 0.5,
-      );
-
-      // If only one slot is left, run a deterministic single-slot resolver
+      // One slot left: cheapest single item that clears the rest; re-roll
+      // steps to the next-cheapest.
       if (slotsLeft === 1) {
-        // Build a deterministic candidate list sorted by lowest effective price first.
-        const buildCandidates = (window: number) =>
-          [...adjustedItems]
-            .filter(
-              (it) =>
-                it.basePrice >= remainingThreshold &&
-                it.basePrice <= remainingThreshold + window,
-            )
-            .map((it) => ({ it, price: getEffectivePrice(it) }))
-            .filter(
-              ({ price }) => typeof price === "number" && (price as number) > 0,
-            )
-            .sort((a, b) => (a.price as number) - (b.price as number))
-            .map(({ it }) => it);
-
-        let candidates: SimplifiedItem[] = buildCandidates(5000);
-        if (candidates.length === 0) candidates = buildCandidates(15000);
-
-        if (candidates.length === 0) {
+        const singles = singleSlotCandidates(candidates, remainingThreshold);
+        if (singles.length === 0) {
           sonnerToast.error(t("Auto Select"), {
             description: t(
-              "No single item meets remaining base value of {remaining} within +5k (+15k after relax). Unpin one item or lower threshold.",
+              "No single item meets remaining base value of {remaining}. Unpin one item or lower threshold.",
               { remaining: remainingThreshold.toLocaleString() },
             ),
           });
@@ -1824,43 +1668,42 @@ function AppContent({ contributors = [] }: AppProps) {
         const newSelectedItems: Array<SimplifiedItem | null> = [
           ...selectedItems,
         ];
-        const targetIndex = pinnedItems
-          .slice(0, sacrificeSlotCount)
-          .findIndex((p) => !p);
+        const targetIndex = activeSlots.findIndex((_, i) => !isPinned(i));
         const currentId =
           targetIndex !== -1 ? newSelectedItems[targetIndex]?.id : undefined;
-        const currentIdxInList = currentId
-          ? candidates.findIndex((c) => c.id === currentId)
+        const currentIdx = currentId
+          ? singles.findIndex((c) => c.id === currentId)
           : -1;
-        const nextIdx =
-          currentIdxInList >= 0
-            ? (currentIdxInList + 1) % candidates.length
-            : 0;
+        const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % singles.length : 0;
         if (targetIndex !== -1)
-          newSelectedItems[targetIndex] = candidates[nextIdx] || candidates[0];
-
-        // Preserve overridden prices for items that remain selected
-        const newOverriddenPrices = { ...overriddenPrices };
-        for (let i = 0; i < 5; i++) {
-          const item = newSelectedItems[i];
-          if (item && overriddenPrices[item.id]) {
-            newOverriddenPrices[item.id] = overriddenPrices[item.id];
-          }
-        }
-
-        setSelectedItems(newSelectedItems);
-        setOverriddenPrices(newOverriddenPrices);
-        setHasAutoSelected(true);
+          newSelectedItems[targetIndex] =
+            itemsById.get(singles[nextIdx].id) ?? null;
+        applySelection(newSelectedItems);
         return;
       }
 
-      const bestCombination = findBestCombination(
-        shuffledAdjustedItems,
-        remainingThreshold,
-        slotsLeft,
-      );
+      // On re-roll, avoid the items currently sitting in unpinned slots.
+      const avoid = hasAutoSelected
+        ? new Set(
+            activeSlots
+              .filter(
+                (item, i): item is SimplifiedItem =>
+                  Boolean(item) && !isPinned(i),
+              )
+              .map((item) => item.id),
+          )
+        : undefined;
+      const planInput = {
+        candidates,
+        remaining: remainingThreshold,
+        slots: slotsLeft,
+      };
+      const optimal = planFromMarket(planInput);
+      const plan =
+        (avoid?.size ? planFromMarket({ ...planInput, avoid }) : null) ??
+        optimal;
 
-      if (bestCombination.selected.length === 0 && remainingThreshold > 0) {
+      if (!plan) {
         if (mode !== "pve" && priceMode === "flea") {
           sonnerToast.error(t("Auto Select"), {
             description: t(
@@ -1882,29 +1725,19 @@ function AppContent({ contributors = [] }: AppProps) {
         return;
       }
 
+      if (avoid?.size && plan === optimal) {
+        sonnerToast.info(t("That's already the cheapest combo."));
+      }
+
       const newSelectedItems: Array<SimplifiedItem | null> = [...selectedItems];
       let combinationIndex = 0;
       for (let i = 0; i < sacrificeSlotCount; i++) {
-        if (!pinnedItems[i]) {
-          newSelectedItems[i] =
-            bestCombination.selected[combinationIndex] || null;
-          combinationIndex++;
+        if (!isPinned(i)) {
+          const id = plan.ids[combinationIndex++];
+          newSelectedItems[i] = id ? (itemsById.get(id) ?? null) : null;
         }
       }
-
-      // Preserve overridden prices for items that remain selected
-      const newOverriddenPrices = { ...overriddenPrices };
-      for (let i = 0; i < 5; i++) {
-        const item = newSelectedItems[i];
-        if (item && overriddenPrices[item.id]) {
-          newOverriddenPrices[item.id] = overriddenPrices[item.id];
-        }
-        // Do not delete overridden prices for other items
-      }
-
-      setSelectedItems(newSelectedItems);
-      setOverriddenPrices(newOverriddenPrices);
-      setHasAutoSelected(true); // Set to true after successful auto-select
+      applySelection(newSelectedItems);
     } catch (error) {
       console.error("Auto Select Error:", error);
       setHasAutoSelected(false); // Reset if any error occurs
@@ -1914,12 +1747,13 @@ function AppContent({ contributors = [] }: AppProps) {
   }, [
     items,
     threshold,
-    excludedItems,
+    excludedNameLookup,
     pinnedItems,
     selectedItems,
     sacrificeSlotCount,
     overriddenPrices,
-    findBestCombination,
+    itemBonus,
+    hasAutoSelected,
     getEffectivePrice,
     mode,
     priceMode,
@@ -1969,21 +1803,7 @@ function AppContent({ contributors = [] }: AppProps) {
             match.buyFor &&
             match.buyFor.length > 0
           ) {
-            let bestTrader: number | undefined = undefined;
-            for (const offer of match.buyFor) {
-              const vendor = offer.vendor?.normalizedName as
-                keyof TraderLevels | undefined;
-              if (!vendor) continue;
-              const minLvl = offer.vendor?.minTraderLevel ?? 1;
-              const userLvl = traderLevels[vendor];
-              if (userLvl && userLvl >= minLvl) {
-                if (typeof offer.priceRUB === "number") {
-                  if (bestTrader === undefined || offer.priceRUB < bestTrader)
-                    bestTrader = offer.priceRUB;
-                }
-              }
-            }
-            itemPrice = bestTrader;
+            itemPrice = cheapestTraderPrice(match, traderLevels);
           }
 
           // 4. Flea fallback for weapons only
@@ -2106,15 +1926,17 @@ function AppContent({ contributors = [] }: AppProps) {
       );
       setSelectedItems(items);
       setPendingSharedItems(null);
-      sonnerToast("Items Loaded!", {
-        description: `Loaded ${items.filter(Boolean).length} items from code.`,
+      sonnerToast(t("Items Loaded!"), {
+        description: t("Loaded {count} items from code.", {
+          count: items.filter(Boolean).length,
+        }),
       });
     });
 
     return () => {
       cancelled = true;
     };
-  }, [mode, pendingSharedItems, rawItemsData]);
+  }, [mode, pendingSharedItems, rawItemsData, t]);
 
   // Handler to copy item name to clipboard
   const handleCopyToClipboard = (index: number): void => {
@@ -2262,16 +2084,8 @@ function AppContent({ contributors = [] }: AppProps) {
   }, [excludedItems, overriddenPrices, t]);
 
   // Handler to toggle excluded items
-  const toggleExcludedItem = useCallback((uid: string) => {
-    setExcludedItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(uid)) {
-        newSet.delete(uid);
-      } else {
-        newSet.add(uid);
-      }
-      return newSet;
-    });
+  const toggleExcludedItem = useCallback((item: SimplifiedItem) => {
+    setExcludedItems((prev) => toggleItemExclusion(prev, item));
     setHasAutoSelected(false); // Reset Auto Select on exclusion change
   }, []);
 
@@ -2505,13 +2319,24 @@ function AppContent({ contributors = [] }: AppProps) {
                         <div className="min-w-0">
                           <p className="font-semibold">
                             {isRetryingTarkovRequest
-                              ? `Tarkov.dev is not responding. Retrying in ${retrySeconds}s... attempt ${requestStatus.attempt} of ${requestStatus.maxAttempts}.`
-                              : `Tarkov.dev is unavailable. Using cached data where possible. Try again in ${cooldownSeconds}s.`}
+                              ? t(
+                                  "Tarkov.dev is not responding. Retrying in {seconds}s... attempt {attempt} of {max}.",
+                                  {
+                                    seconds: retrySeconds,
+                                    attempt: requestStatus.attempt,
+                                    max: requestStatus.maxAttempts,
+                                  },
+                                )
+                              : t(
+                                  "Tarkov.dev is unavailable. Using cached data where possible. Try again in {seconds}s.",
+                                  { seconds: cooldownSeconds },
+                                )}
                           </p>
                           {requestStatus.usingStaleData && (
                             <p className="mt-0.5 text-[11px] text-amber-200/80">
-                              The calculator is showing the last cached item
-                              data.
+                              {t(
+                                "The calculator is showing the last cached item data.",
+                              )}
                             </p>
                           )}
                         </div>
@@ -2534,12 +2359,17 @@ function AppContent({ contributors = [] }: AppProps) {
                       <AlertCircle className="mx-auto h-6 w-6 text-red-300" />
                       <div>
                         <p className="font-semibold">
-                          Tarkov.dev item data could not be loaded.
+                          {t("Tarkov.dev item data could not be loaded.")}
                         </p>
                         <p className="mt-1 text-xs text-red-200/80">
                           {isCoolingDownTarkovRequest
-                            ? `The API is cooling down after repeated failures. Try again in ${cooldownSeconds}s.`
-                            : "The API did not recover after retries. Try again when the service is stable."}
+                            ? t(
+                                "The API is cooling down after repeated failures. Try again in {seconds}s.",
+                                { seconds: cooldownSeconds },
+                              )
+                            : t(
+                                "The API did not recover after retries. Try again when the service is stable.",
+                              )}
                         </p>
                       </div>
                       <Button
@@ -2596,7 +2426,7 @@ function AppContent({ contributors = [] }: AppProps) {
                           style={{ animationDelay: `${index * 0.1}s` }}
                         >
                           <React.Fragment>
-                            <Suspense fallback={<div>Loading...</div>}>
+                            <Suspense fallback={<div>{t("Loading...")}</div>}>
                               <DynamicItemSelector
                                 ref={(el: ItemSelectorHandle | null) => {
                                   selectorRefs.current[index] = el;
@@ -2617,10 +2447,10 @@ function AppContent({ contributors = [] }: AppProps) {
                                 isAutoPickActive={hasAutoSelected}
                                 overriddenPrices={overriddenPrices}
                                 isExcluded={
-                                  item ? excludedItems.has(item.name) : false
+                                  item ? isItemNameExcluded(item, excludedNameLookup) : false
                                 }
                                 onToggleExclude={() =>
-                                  item && toggleExcludedItem(item.name)
+                                  item && toggleExcludedItem(item)
                                 }
                                 excludedItems={excludedItems}
                                 fleaPriceType={fleaPriceType}
@@ -2749,16 +2579,24 @@ function AppContent({ contributors = [] }: AppProps) {
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     {Object.keys(overriddenPrices).length > 0 && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                        ⚠ {Object.keys(overriddenPrices).length} override
-                        {Object.keys(overriddenPrices).length !== 1
-                          ? "s"
-                          : ""}
+                        ⚠{" "}
+                        {t(
+                          Object.keys(overriddenPrices).length === 1
+                            ? "{count} override"
+                            : "{count} overrides",
+                          { count: Object.keys(overriddenPrices).length },
+                        )}
                       </span>
                     )}
                     {excludedItems.size > 0 && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                        ⚠ {excludedItems.size} exclusion
-                        {excludedItems.size !== 1 ? "s" : ""}
+                        ⚠{" "}
+                        {t(
+                          excludedItems.size === 1
+                            ? "{count} exclusion"
+                            : "{count} exclusions",
+                          { count: excludedItems.size },
+                        )}
                       </span>
                     )}
                     <IncompatibleItemsNotice />
@@ -2839,7 +2677,9 @@ function AppContent({ contributors = [] }: AppProps) {
           </aside>
         </div>
       </div>
-      <div className="background-credit">Background by Zombiee</div>
+      <div className="background-credit">
+        {t("Background by {name}", { name: "Zombiee" })}
+      </div>
 
       {isFeedbackFormVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
@@ -2948,9 +2788,10 @@ function AppContent({ contributors = [] }: AppProps) {
             }}
             onClearRitualHistory={async () => {
               await clearRitualHistory();
-              sonnerToast.success("Ritual history deleted", {
-                description:
+              sonnerToast.success(t("Ritual history deleted"), {
+                description: t(
                   "Active countdowns and completed records were removed.",
+                ),
               });
             }}
             onSortChange={handleSortChange}
@@ -2967,6 +2808,7 @@ function AppContent({ contributors = [] }: AppProps) {
             excludeIncompatible={excludeIncompatible}
             onExcludeIncompatibleChange={setExcludeIncompatible}
             excludedItems={excludedItems}
+            items={rawItemsData}
             onExcludedItemsChange={setExcludedItems}
             useLastOfferCountFilter={useLastOfferCountFilter}
             onUseLastOfferCountFilterChange={

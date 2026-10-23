@@ -3,6 +3,7 @@ import type { ComponentType } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ScavInvadersEasterEgg } from "@/components/scav-invaders/scav-invaders-easter-egg.component";
+import { LanguageProvider } from "@/contexts/language-context";
 import { KONAMI_SEQUENCE, KONAMI_SESSION_KEY } from "@/lib/konami-code";
 
 vi.mock("next/dynamic", () => ({
@@ -36,7 +37,11 @@ describe("Scav Invaders easter egg", () => {
   });
 
   it("reveals the Play button after the full code and opens the game", () => {
-    render(<ScavInvadersEasterEgg />);
+    render(
+      <LanguageProvider>
+        <ScavInvadersEasterEgg />
+      </LanguageProvider>,
+    );
     expect(
       screen.queryByRole("button", { name: "Play Scav Invaders" }),
     ).not.toBeInTheDocument();
@@ -59,10 +64,10 @@ describe("Scav Invaders easter egg", () => {
 
   it("ignores code entry while typing in an editable field", () => {
     render(
-      <>
+      <LanguageProvider>
         <input aria-label="Search" />
         <ScavInvadersEasterEgg />
-      </>,
+      </LanguageProvider>,
     );
 
     enterKonamiCode(screen.getByRole("textbox", { name: "Search" }));
@@ -75,7 +80,11 @@ describe("Scav Invaders easter egg", () => {
 
   it("restores the unlock for the current browser tab", () => {
     window.sessionStorage.setItem(KONAMI_SESSION_KEY, "true");
-    render(<ScavInvadersEasterEgg />);
+    render(
+      <LanguageProvider>
+        <ScavInvadersEasterEgg />
+      </LanguageProvider>,
+    );
 
     expect(
       screen.getByRole("button", { name: "Play Scav Invaders" }),

@@ -28,6 +28,7 @@ function ContributorAvatars({
   size?: string;
   className?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <TooltipProvider>
       <div className={`flex items-center ${className}`}>
@@ -56,8 +57,12 @@ function ContributorAvatars({
                 {contributor.login}
               </div>
               <div className="text-[11px] text-slate-400">
-                {contributor.contributions} contribution
-                {contributor.contributions === 1 ? "" : "s"}
+                {t(
+                  contributor.contributions === 1
+                    ? "{count} contribution"
+                    : "{count} contributions",
+                  { count: contributor.contributions },
+                )}
               </div>
             </TooltipContent>
           </Tooltip>

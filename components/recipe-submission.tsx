@@ -24,6 +24,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { useItemsData } from "@/hooks/use-items-data";
+import { useLanguage } from "@/contexts/language-context";
 import { GAME_MODES, GAME_MODE_LABELS, type GameMode } from "@/lib/game-mode";
 import {
   recipeSubmissionSchema,
@@ -49,6 +50,7 @@ function ItemList({
   sacrifice?: boolean;
   disabled: boolean;
 }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const total = selected.reduce((sum, item) => sum + item.quantity, 0);
@@ -75,8 +77,8 @@ function ItemList({
         <h3 className="font-medium text-gray-100">{label}</h3>
         <span className="text-xs text-gray-400">
           {sacrifice
-            ? `${total} / 5 items`
-            : `${selected.length} / 5 item types`}
+            ? t("{count} / 5 items", { count: total })
+            : t("{count} / 5 item types", { count: selected.length })}
         </span>
       </div>
       {selected.map((item) => (
@@ -85,7 +87,7 @@ function ItemList({
             {items.find((entry) => entry.id === item.id)?.name ?? item.name}
           </span>
           <Input
-            aria-label={`Quantity of ${item.name}`}
+            aria-label={t("Quantity of {name}", { name: item.name })}
             type="number"
             min={1}
             max={sacrifice ? 5 - total + item.quantity : 999}
@@ -107,7 +109,7 @@ function ItemList({
             variant="ghost"
             size="icon"
             disabled={disabled}
-            aria-label={`Remove ${item.name}`}
+            aria-label={t("Remove {name}", { name: item.name })}
             className="h-9 w-9 shrink-0 text-gray-400"
             onClick={() =>
               onChange(selected.filter((entry) => entry.id !== item.id))
@@ -134,7 +136,7 @@ function ItemList({
               className="w-full border-dashed border-gray-600 bg-transparent"
             >
               <Plus className="mr-2 h-4 w-4" />
-              {sacrifice ? "Add sacrificed item" : "Add reward item"}
+              {sacrifice ? t("Add sacrificed item") : t("Add reward item")}
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -143,13 +145,17 @@ function ItemList({
           >
             <Command shouldFilter={false}>
               <CommandInput
-                aria-label={`Search ${label.toLowerCase()}`}
-                placeholder="Search items…"
+                aria-label={t("Search {label}", {
+                  label: label.toLowerCase(),
+                })}
+                placeholder={t("Search items…")}
                 value={search}
                 onValueChange={setSearch}
               />
               <CommandList className="max-h-56">
-                <CommandEmpty>No items found. Try another name.</CommandEmpty>
+                <CommandEmpty>
+                  {t("No items found. Try another name.")}
+                </CommandEmpty>
                 {matches.map((item) => (
                   <CommandItem
                     key={item.id}
@@ -189,6 +195,7 @@ function SubmissionDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useLanguage();
   const [gameMode, setGameMode] = useState(initialMode);
   const {
     data: items,
@@ -240,7 +247,9 @@ function SubmissionDialog({
       setError(
         parsed.error.issues.find((issue) => issue.path[0] === "timerSeconds")
           ?.message ??
-          "Add 1–5 sacrificed items, at least one reward and valid quantities.",
+          t(
+            "Add 1–5 sacrificed items, at least one reward and valid quantities.",
+          ),
       );
       return;
     }
@@ -255,7 +264,7 @@ function SubmissionDialog({
       });
       if (response.status === 429)
         throw new Error(
-          "Too many submissions. Please wait a minute and try again.",
+          t("Too many submissions. Please wait a minute and try again."),
         );
       const result = await response.json();
       if (
@@ -269,7 +278,9 @@ function SubmissionDialog({
         !("status" in result) ||
         result.status !== "pending"
       ) {
-        throw new Error("Could not submit your recipe. Please try again.");
+        throw new Error(
+          t("Could not submit your recipe. Please try again."),
+        );
       }
       setSuccess(true);
       setSacrifices([]);
@@ -280,9 +291,13 @@ function SubmissionDialog({
       attempt.current = null;
     } catch (cause) {
       setError(
-        cause instanceof Error && cause.message.startsWith("Too many")
+        cause instanceof Error &&
+          cause.message ===
+            t("Too many submissions. Please wait a minute and try again.")
           ? cause.message
-          : "Could not submit your recipe. Your selections are saved here — please try again.",
+          : t(
+              "Could not submit your recipe. Your selections are saved here — please try again.",
+            ),
       );
     } finally {
       submitting.current = false;
@@ -299,22 +314,25 @@ function SubmissionDialog({
     >
       <DialogContent className="max-h-[90dvh] w-[calc(100%-1.5rem)] max-w-xl overflow-y-auto rounded-2xl border-gray-700 bg-gray-900 p-4 text-gray-100 sm:p-6">
         <DialogHeader className="pr-7 text-left">
-          <DialogTitle className="text-xl">Submit a special recipe</DialogTitle>
+          <DialogTitle className="text-xl">
+            {t("Submit a special recipe")}
+          </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Found a special timer? Share exactly what you sacrificed and
-            received. Submissions are reviewed before being added.
+            {t(
+              "Found a special timer? Share exactly what you sacrificed and received. Submissions are reviewed before being added.",
+            )}
           </DialogDescription>
         </DialogHeader>
         {success ? (
           <div className="space-y-4 py-5 text-center" role="status">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400" />
-            <h3 className="text-lg font-semibold">Recipe submitted</h3>
+            <h3 className="text-lg font-semibold">{t("Recipe submitted")}</h3>
             <p className="text-sm text-gray-400">
-              Thanks for sharing your find! It’s now waiting for review.
+              {t("Thanks for sharing your find! It’s now waiting for review.")}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               <Button variant="outline" onClick={() => setSuccess(false)}>
-                Submit another
+                {t("Submit another")}
               </Button>
               <Button
                 onClick={() => {
@@ -322,14 +340,16 @@ function SubmissionDialog({
                   setSuccess(false);
                 }}
               >
-                Done
+                {t("Done")}
               </Button>
             </div>
           </div>
         ) : (
           <form onSubmit={submit} className="min-w-0 space-y-4">
             <fieldset disabled={pending} className="space-y-2">
-              <legend className="mb-2 text-sm font-medium">Game mode</legend>
+              <legend className="mb-2 text-sm font-medium">
+                {t("Game mode")}
+              </legend>
               <div className="flex flex-wrap gap-2">
                 {GAME_MODES.map((mode) => (
                   <label
@@ -344,19 +364,19 @@ function SubmissionDialog({
                       onChange={() => setGameMode(mode)}
                       className="accent-amber-400"
                     />
-                    {GAME_MODE_LABELS[mode]}
+                    {t(GAME_MODE_LABELS[mode])}
                   </label>
                 ))}
               </div>
             </fieldset>
             {isLoading && (
               <p role="status" className="text-sm text-gray-400">
-                Loading item list…
+                {t("Loading item list…")}
               </p>
             )}
             {hasError && (
               <div role="alert" className="text-sm text-amber-200">
-                Could not refresh the item list.{" "}
+                {t("Could not refresh the item list.")}{" "}
                 <Button
                   type="button"
                   variant="link"
@@ -366,12 +386,12 @@ function SubmissionDialog({
                     void mutate();
                   }}
                 >
-                  Retry
+                  {t("Retry")}
                 </Button>
               </div>
             )}
             <ItemList
-              label="Items sacrificed"
+              label={t("Items sacrificed")}
               items={items}
               selected={sacrifices}
               onChange={setSacrifices}
@@ -379,7 +399,7 @@ function SubmissionDialog({
               disabled={pending}
             />
             <ItemList
-              label="Rewards received"
+              label={t("Rewards received")}
               items={items}
               selected={rewards}
               onChange={setRewards}
@@ -387,7 +407,7 @@ function SubmissionDialog({
             />
             <fieldset disabled={pending}>
               <legend className="mb-2 text-sm font-medium">
-                Which timer did you get?
+                {t("Which timer did you get?")}
               </legend>
               <div className="grid grid-cols-2 gap-2">
                 {SPECIAL_RECIPE_TIMERS.map((timer) => (
@@ -405,7 +425,7 @@ function SubmissionDialog({
                       }}
                       className="accent-amber-400"
                     />
-                    {timer.label}
+                    {t(timer.label)}
                   </label>
                 ))}
                 <label
@@ -418,7 +438,7 @@ function SubmissionDialog({
                     onChange={() => setOtherTimer(true)}
                     className="accent-amber-400"
                   />
-                  Other special timer
+                  {t("Other special timer")}
                 </label>
               </div>
               {otherTimer && (
@@ -428,7 +448,7 @@ function SubmissionDialog({
                       key={unit}
                       className="space-y-1 text-xs capitalize text-gray-400"
                     >
-                      <span>{unit}</span>
+                      <span>{t(unit)}</span>
                       <Input
                         type="number"
                         min={0}
@@ -448,8 +468,9 @@ function SubmissionDialog({
                 </div>
               )}
               <p className="mt-2 text-xs text-gray-500">
-                Use the original timer, before it counted down. Regular
-                sacrifice timers aren’t recipes.
+                {t(
+                  "Use the original timer, before it counted down. Regular sacrifice timers aren’t recipes.",
+                )}
               </p>
             </fieldset>
             {error && (
@@ -472,7 +493,7 @@ function SubmissionDialog({
               ) : (
                 <Send className="mr-2 h-4 w-4" />
               )}
-              {pending ? "Submitting…" : "Submit recipe for review"}
+              {pending ? t("Submitting…") : t("Submit recipe for review")}
             </Button>
           </form>
         )}
@@ -482,6 +503,7 @@ function SubmissionDialog({
 }
 
 export function RecipeSubmissionButton({ mode }: { mode: GameMode }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [started, setStarted] = useState(false);
   return (
@@ -495,7 +517,7 @@ export function RecipeSubmissionButton({ mode }: { mode: GameMode }) {
         className="border-amber-400/30 bg-amber-400/5 text-amber-200 hover:bg-amber-400/10 hover:text-amber-100"
       >
         <Plus className="mr-2 h-4 w-4" />
-        Submit a recipe
+        {t("Submit a recipe")}
       </Button>
       {started && (
         <SubmissionDialog

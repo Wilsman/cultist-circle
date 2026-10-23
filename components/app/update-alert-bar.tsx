@@ -64,7 +64,7 @@ export function UpdateAlertBar({ className = "" }: { className?: string }) {
           className="flex min-w-0 flex-1 flex-col items-start rounded py-1 text-left sm:flex-row sm:items-baseline sm:gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50"
         >
           <span className="line-clamp-2 min-w-0 text-[13px] font-semibold leading-5 text-amber-50 sm:truncate">
-            {current.title}
+            {t(current.title)}
           </span>
           {current.date && (
             <time

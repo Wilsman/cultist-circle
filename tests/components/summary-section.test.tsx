@@ -52,4 +52,31 @@ describe("Summary section", () => {
     expect(screen.getByText("Total Base Value")).toBeTruthy();
     expect(screen.getByText("needed")).toBeTruthy();
   });
+
+  it("shows base value per rouble and reassures when overshooting", () => {
+    const { container } = render(
+      <LanguageProvider>
+        <SummarySection
+          loading={false}
+          total={1_000_000}
+          totalFleaCost={50_000}
+          threshold={400_000}
+          isThresholdMet
+        />
+      </LanguageProvider>,
+    );
+
+    expect(container.querySelector("[data-value-ratio]")?.textContent).toContain(
+      "20.00×",
+    );
+    expect(
+      container.querySelector("[data-overshoot-note]")?.textContent,
+    ).toContain("₽600,000 over the threshold");
+  });
+
+  it("hides the overshoot note until the threshold is met", () => {
+    renderSummary();
+
+    expect(document.querySelector("[data-overshoot-note]")).toBeNull();
+  });
 });

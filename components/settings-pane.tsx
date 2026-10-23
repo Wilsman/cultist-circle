@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { toast as sonnerToast } from "sonner";
@@ -53,6 +53,7 @@ import {
   type ItemCategory,
 } from "@/config/item-categories";
 import { DEFAULT_EXCLUDED_ITEMS } from "@/config/excluded-items";
+import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import {
   TraderLevelSelector,
   TraderLevels,
@@ -95,6 +96,8 @@ interface SettingsPaneProps {
   excludeIncompatible: boolean;
   onExcludeIncompatibleChange: (exclude: boolean) => void;
   excludedItems: Set<string>;
+  /** Loaded items, used to show stored exclusions under their localized name. */
+  items?: SimplifiedItem[];
   onExcludedItemsChange: React.Dispatch<React.SetStateAction<Set<string>>>;
   onClearLocalStorage: () => void;
   useLastOfferCountFilter: boolean;
@@ -132,6 +135,7 @@ export default function SettingsPane({
   excludeIncompatible,
   onExcludeIncompatibleChange,
   excludedItems,
+  items,
   onExcludedItemsChange,
   onHardReset,
   onClearRitualHistory,
@@ -157,6 +161,24 @@ export default function SettingsPane({
   const [searchTerm, setSearchTerm] = useState("");
   const [excludedItemsSearch, setExcludedItemsSearch] = useState("");
   const { language, setLanguage, supported, t } = useLanguage();
+
+  // Exclusions are stored by (usually English) name; show the localized one.
+  const excludedItemLabels = useMemo(() => {
+    const byName = new Map<string, string>();
+    for (const item of items ?? []) {
+      for (const name of [item.englishName, item.name]) {
+        if (name && !byName.has(name.toLowerCase())) {
+          byName.set(name.toLowerCase(), item.name);
+        }
+      }
+    }
+    return new Map(
+      Array.from(excludedItems, (id) => [
+        id,
+        byName.get(id.toLowerCase()) ?? id,
+      ]),
+    );
+  }, [excludedItems, items]);
 
   // Update parent component when sortOption changes
   useEffect(() => {
@@ -383,11 +405,6 @@ export default function SettingsPane({
                             </SelectContent>
                           </Select>
                         </div>
-                        <p className="text-xs text-gray-400 leading-relaxed italic">
-                          {t(
-                            'Known issue: the "Excluded Items" list is still shown in English.',
-                          )}
-                        </p>
                       </section>
                     )}
 
@@ -513,7 +530,7 @@ export default function SettingsPane({
                       <section className="space-y-4 pt-4 border-t border-white/5">
                         <div className="flex items-center gap-2">
                           <Label className="text-base font-semibold text-white">
-                            Trader Levels
+                            {t("Trader Levels")}
                           </Label>
                         </div>
                         <TraderLevelSelector
@@ -527,7 +544,7 @@ export default function SettingsPane({
                     <section className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Label className="text-base font-semibold text-white">
-                          Flea Market Price Basis
+                          {t("Flea Market Price Basis")}
                         </Label>
                       </div>
                       <RadioGroup
@@ -554,9 +571,11 @@ export default function SettingsPane({
                               id="lastLowPrice"
                               className="sr-only"
                             />
-                            <span className="font-medium">Last Low Price</span>
+                            <span className="font-medium">
+                              {t("Last Low Price")}
+                            </span>
                             <span className="text-gray-500 text-xs">
-                              Uses the most recent lowest listing
+                              {t("Uses the most recent lowest listing")}
                             </span>
                           </div>
                           {currentFleaPriceType === "lastLowPrice" && (
@@ -579,10 +598,10 @@ export default function SettingsPane({
                               className="sr-only"
                             />
                             <span className="font-medium">
-                              Average 24h Price
+                              {t("Average 24h Price")}
                             </span>
                             <span className="text-gray-500 text-xs">
-                              Weighted average over the last 24h
+                              {t("Weighted average over the last 24h")}
                             </span>
                           </div>
                           {currentFleaPriceType === "avg24hPrice" && (
@@ -598,37 +617,37 @@ export default function SettingsPane({
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <Label className="text-base font-semibold text-white">
-                              Exclude Low Offer Count Items
+                              {t("Exclude Low Offer Count Items")}
                             </Label>
                             {currentPriceMode !== "flea" && (
                               <Badge
                                 variant="outline"
                                 className="bg-white/5 border-white/10 text-[10px] text-gray-400 uppercase px-2 py-0"
                               >
-                                Flea Only
+                                {t("Flea Only")}
                               </Badge>
                             )}
                           </div>
                           <p className="text-xs text-gray-400 leading-relaxed">
-                            Items with fewer than 5 active flea offers will be
-                            excluded from calculations.
+                            {t(
+                              "Items with fewer than 5 active flea offers will be excluded from calculations.",
+                            )}
                           </p>
                           {currentPriceMode !== "flea" && (
                             <p className="text-xs text-gray-500 leading-relaxed">
-                              Only applies when Price Mode is set to Flea
-                              Market.
+                              {t(
+                                "Only applies when Price Mode is set to Flea Market.",
+                              )}
                             </p>
                           )}
                           {currentPriceMode === "flea" &&
                             currentUseLastOfferCountFilter &&
                             lowOfferCountFilteredCount > 0 && (
                               <p className="text-xs font-medium text-yellow-400 leading-relaxed">
-                                Filtered{" "}
-                                {lowOfferCountFilteredCount.toLocaleString()}{" "}
-                                low-offer{" "}
-                                {lowOfferCountFilteredCount === 1
-                                  ? "item"
-                                  : "items"}
+                                {t("Filtered {count} low-offer items", {
+                                  count:
+                                    lowOfferCountFilteredCount.toLocaleString(),
+                                })}
                               </p>
                             )}
                         </div>
@@ -648,7 +667,7 @@ export default function SettingsPane({
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <Label className="text-base font-semibold text-white">
-                              Flea Market Level Filter
+                              {t("Flea Market Level Filter")}
                             </Label>
                             <Popover>
                               <PopoverTrigger asChild>
@@ -662,7 +681,7 @@ export default function SettingsPane({
                               >
                                 <div className="space-y-4">
                                   <h4 className="text-sm font-semibold text-yellow-400 lowercase tracking-wider">
-                                    Level Requirements
+                                    {t("Level Requirements")}
                                   </h4>
                                   <ScrollArea className="h-48">
                                     <div className="space-y-2 pr-4">
@@ -692,8 +711,9 @@ export default function SettingsPane({
                             </Popover>
                           </div>
                           <p className="text-xs text-gray-400">
-                            Filter items you can&apos;t buy yet based on your
-                            level.
+                            {t(
+                              "Filter items you can't buy yet based on your level.",
+                            )}
                           </p>
                         </div>
                         <Switch
@@ -714,7 +734,7 @@ export default function SettingsPane({
                           >
                             <div className="space-y-1 flex-1">
                               <Label className="text-sm font-medium">
-                                Your Current Level
+                                {t("Your Current Level")}
                               </Label>
                               <div className="flex items-center gap-3">
                                 <Input
@@ -736,8 +756,11 @@ export default function SettingsPane({
                             </div>
                             {playerLevel < 30 && (
                               <div className="w-32 text-[10px] text-yellow-400/80 leading-relaxed bg-yellow-400/5 p-2 rounded-lg border border-yellow-400/10">
-                                ⚠️ High-value categories are restricted at Lv.
-                                {playerLevel}.
+                                ⚠️{" "}
+                                {t(
+                                  "High-value categories are restricted at Lv.{level}.",
+                                  { level: playerLevel },
+                                )}
                               </div>
                             )}
                           </motion.div>
@@ -957,20 +980,22 @@ export default function SettingsPane({
 
                       <ScrollArea className="h-[300px] border border-white/5 bg-black/20 rounded-2xl p-4">
                         <div className="grid grid-cols-1 gap-1">
-                          {Array.from(excludedItems)
-                            .filter((id) =>
-                              id
-                                .toLowerCase()
-                                .includes(excludedItemsSearch.toLowerCase()),
-                            )
-                            .sort()
-                            .map((id) => (
+                          {Array.from(excludedItemLabels)
+                            .filter(([id, label]) => {
+                              const query = excludedItemsSearch.toLowerCase();
+                              return (
+                                id.toLowerCase().includes(query) ||
+                                label.toLowerCase().includes(query)
+                              );
+                            })
+                            .sort(([, a], [, b]) => a.localeCompare(b))
+                            .map(([id, label]) => (
                               <div
                                 key={id}
                                 className="flex items-center justify-between p-2 pl-4 rounded-xl hover:bg-white/5 transition-colors group"
                               >
                                 <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
-                                  {id}
+                                  {label}
                                 </span>
                                 <Button
                                   size="sm"
@@ -1064,11 +1089,12 @@ export default function SettingsPane({
                           </div>
                           <div>
                             <h4 className="font-semibold text-white">
-                              Ritual history
+                              {t("Ritual history")}
                             </h4>
                             <p className="mt-1 max-w-md text-xs leading-relaxed text-gray-500">
-                              Tracker records are included in profile exports
-                              and preserved when calculator settings are reset.
+                              {t(
+                                "Tracker records are included in profile exports and preserved when calculator settings are reset.",
+                              )}
                             </p>
                           </div>
                         </div>
@@ -1078,7 +1104,7 @@ export default function SettingsPane({
                           className="border-red-400/20 bg-red-400/5 text-red-200 hover:bg-red-400/10 hover:text-red-100"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete ritual history
+                          {t("Delete ritual history")}
                         </Button>
                       </div>
                     </section>
@@ -1093,8 +1119,9 @@ export default function SettingsPane({
                             {t("System Hard Reset")}
                           </h4>
                           <p className="text-sm text-gray-400 leading-relaxed max-w-md">
-                            This clears calculator settings, exclusions, and
-                            preferred price modes. Ritual history is preserved.
+                            {t(
+                              "This clears calculator settings, exclusions, and preferred price modes. Ritual history is preserved.",
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1124,8 +1151,9 @@ export default function SettingsPane({
                   {t("Clear All Data?")}
                 </DialogTitle>
                 <DialogDescription className="text-gray-400 text-sm leading-relaxed max-w-[320px] mx-auto">
-                  Your calculator settings and exclusions will be reset. Ritual
-                  history will remain available in the Tracker.
+                  {t(
+                    "Your calculator settings and exclusions will be reset. Ritual history will remain available in the Tracker.",
+                  )}
                 </DialogDescription>
               </div>
             </DialogHeader>
@@ -1163,12 +1191,12 @@ export default function SettingsPane({
               </div>
               <div className="text-center space-y-2">
                 <DialogTitle className="text-2xl font-bold">
-                  Delete ritual history?
+                  {t("Delete ritual history?")}
                 </DialogTitle>
                 <DialogDescription className="text-gray-400 text-sm leading-relaxed max-w-[360px] mx-auto">
-                  Active countdowns, returned rewards, and personal insights
-                  will be permanently removed. Export a backup first if you may
-                  need them later.
+                  {t(
+                    "Active countdowns, returned rewards, and personal insights will be permanently removed. Export a backup first if you may need them later.",
+                  )}
                 </DialogDescription>
               </div>
             </DialogHeader>
@@ -1179,7 +1207,7 @@ export default function SettingsPane({
                 className="h-11 rounded-2xl border-white/10 bg-white/5 text-white hover:bg-white/10"
               >
                 <Download className="mr-2 h-4 w-4" />
-                Export backup first
+                {t("Export backup first")}
               </Button>
               <Button
                 variant="destructive"
@@ -1189,14 +1217,14 @@ export default function SettingsPane({
                 }}
                 className="h-12 rounded-2xl font-bold bg-red-400 hover:bg-red-500"
               >
-                Delete ritual history
+                {t("Delete ritual history")}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setShowConfirmTrackerClear(false)}
                 className="h-11 rounded-2xl text-gray-400 hover:text-white hover:bg-white/5"
               >
-                Cancel
+                {t("Cancel")}
               </Button>
             </div>
           </DialogContent>

@@ -11,6 +11,7 @@ import {
   RecipeFeedback,
   RecipeFeedbackProvider,
 } from "@/components/recipe-feedback.component";
+import { LanguageProvider } from "@/contexts/language-context";
 import { useRecipeFeedbackStore } from "@/hooks/use-recipe-feedback";
 import {
   RECIPE_USER_MODES_STORAGE_KEY,
@@ -26,12 +27,14 @@ const testRecipeId = "recipe-test-verification";
 
 function renderFeedback(modeRestriction?: "pvp-only") {
   return render(
-    <RecipeFeedbackProvider>
-      <RecipeFeedback
-        recipeId={testRecipeId}
-        modeRestriction={modeRestriction}
-      />
-    </RecipeFeedbackProvider>,
+    <LanguageProvider>
+      <RecipeFeedbackProvider>
+        <RecipeFeedback
+          recipeId={testRecipeId}
+          modeRestriction={modeRestriction}
+        />
+      </RecipeFeedbackProvider>
+    </LanguageProvider>,
   );
 }
 
