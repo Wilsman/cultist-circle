@@ -1,3 +1,4 @@
+import { formatMessage } from "@/config/i18n";
 import { GAME_MODE_LABELS, GAME_MODES, isGameMode } from "@/lib/game-mode";
 import type { GameMode } from "@/lib/game-mode";
 import type {
@@ -143,14 +144,7 @@ export type MessageTranslator = (
   vars?: Record<string, string | number>,
 ) => string;
 
-const identityTranslator: MessageTranslator = (key, vars) =>
-  vars
-    ? key.replace(/\{(\w+)\}/g, (match, name) =>
-        Object.prototype.hasOwnProperty.call(vars, name)
-          ? String(vars[name])
-          : match,
-      )
-    : key;
+const identityTranslator: MessageTranslator = formatMessage;
 
 /**
  * Picks the compact relative-time message for a timestamp ("just now",

@@ -971,23 +971,13 @@ function AppContent({ contributors = [] }: AppProps) {
         : 0;
 
     // Then filter out individually excluded items (case-insensitive, language-agnostic)
-    const excludedItemNames = new Set(
-      Array.from(excludedItems, (name) => name.toLowerCase()),
-    );
     const filterExcludedItems = (candidateItems: SimplifiedItem[]) =>
       excludeIncompatible
-        ? candidateItems.filter((item: SimplifiedItem) => {
-            if (ignoreFilters) return true; // Bypass individual exclusions
-            const candidates = [
-              item.name,
-              item.shortName,
-              item.englishName,
-              item.englishShortName,
-            ].filter(Boolean) as string[];
-            return !candidates.some((n) =>
-              excludedItemNames.has(n.toLowerCase()),
-            );
-          })
+        ? candidateItems.filter(
+            (item: SimplifiedItem) =>
+              ignoreFilters || // Bypass individual exclusions
+              !isItemNameExcluded(item, excludedNameLookup),
+          )
         : candidateItems;
 
     const excludedFiltered = filterExcludedItems(lowOfferFiltered);
@@ -1033,7 +1023,7 @@ function AppContent({ contributors = [] }: AppProps) {
     sortOption,
     excludedCategories,
     excludeIncompatible,
-    excludedItems,
+    excludedNameLookup,
     loading,
     useLevelFilter,
     playerLevel,

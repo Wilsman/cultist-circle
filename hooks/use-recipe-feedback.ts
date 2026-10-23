@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { create } from "zustand";
+import { formatMessage } from "@/config/i18n";
 import type { GameMode } from "@/lib/game-mode";
 import {
   applyModeVote,
@@ -464,18 +465,9 @@ function getClockSnapshot() {
   return clockNow;
 }
 
-const passThrough: MessageTranslator = (key, vars) =>
-  vars
-    ? key.replace(/\{(\w+)\}/g, (match, name) =>
-        Object.prototype.hasOwnProperty.call(vars, name)
-          ? String(vars[name])
-          : match,
-      )
-    : key;
-
 export function useRecipeFeedback(
   recipeId: string,
-  t: MessageTranslator = passThrough,
+  t: MessageTranslator = formatMessage,
 ) {
   const stats = useRecipeFeedbackStore(
     (state) => state.stats[recipeId] ?? EMPTY_RECIPE_FEEDBACK_STATS,
