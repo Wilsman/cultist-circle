@@ -48,6 +48,8 @@ next-env.d.ts
 /public/all_items_*
 tools/recipe-review/submissions.json
 tools/feedback-dashboard/data.json
+tools/base-value-lab/lab.js
+tools/base-value-lab/items-*.json
 repomix-output.txt
 CCC.md
 /.opencode/

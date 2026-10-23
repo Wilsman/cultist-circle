@@ -1,0 +1,1050 @@
+{
+  "version": 1,
+  "subjects": [
+    {
+      "id": "sheet-pve-adar-2-15-5-56x45-carbine-default-100",
+      "mode": "pve",
+      "name": "ADAR 2-15 5.56x45 carbine Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-beretta-m9a3-9x19-pistol-default-100",
+      "mode": "pve",
+      "name": "Beretta M9A3 9x19 pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-chiappa-rhino-200ds-9x19-revolver-default-100",
+      "mode": "pve",
+      "name": "Chiappa Rhino 200DS 9x19 revolver Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-chiappa-rhino-50ds-357-revolver-default-100",
+      "mode": "pve",
+      "name": "Chiappa Rhino 50DS .357 revolver Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-colt-m1911a1-45-acp-pistol-default-100",
+      "mode": "pve",
+      "name": "Colt M1911A1 .45 ACP pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-fn-scar-l-5-56x45-assault-rifle-fde-100",
+      "mode": "pve",
+      "name": "FN SCAR-L 5.56x45 assault rifle (FDE)",
+      "kind": "weapon-bare",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-glock-17-9x19-pistol-100",
+      "mode": "pve",
+      "name": "Glock 17 9x19 pistol",
+      "kind": "weapon-bare",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-toz-106-20ga-bolt-action-shotgun-100",
+      "mode": "pve",
+      "name": "TOZ-106 20ga bolt-action shotgun",
+      "kind": "weapon-bare",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-glock-19x-9x19-pistol-default-100",
+      "mode": "pve",
+      "name": "Glock 19X 9x19 pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+      "mode": "pve",
+      "name": "HK MP5 9x19 submachine gun (Navy 3 Round Burst) Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pvp-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+      "mode": "pvp",
+      "name": "HK MP5 9x19 submachine gun (Navy 3 Round Burst) Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
+      "mode": "pve",
+      "name": "HK MP5 9x19 submachine gun (Navy 3 Round Burst) SD",
+      "kind": "weapon-bare",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-hk-ump-45-acp-submachine-gun-default-100",
+      "mode": "pve",
+      "name": "HK UMP .45 ACP submachine gun Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-hk-usp-45-acp-pistol-default-100",
+      "mode": "pve",
+      "name": "HK USP .45 ACP pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-kalashnikov-aks-74u-5-45x39-assault-rifle-100",
+      "mode": "pve",
+      "name": "Kalashnikov AKS-74U 5.45x39 assault rifle",
+      "kind": "weapon-bare",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-kalashnikov-aks-74u-5-45x39-assault-rifle-default-100",
+      "mode": "pve",
+      "name": "Kalashnikov AKS-74U 5.45x39 assault rifle Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-lebedev-pl-15-9x19-pistol-default-100",
+      "mode": "pve",
+      "name": "Lebedev PL-15 9x19 pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-makarov-pm-9x18pm-pistol-default-100",
+      "mode": "pve",
+      "name": "Makarov PM 9x18PM pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-molot-arms-vpo-136-vepr-km-7-62x39-carbine-default-100",
+      "mode": "pve",
+      "name": "Molot Arms VPO-136 Vepr-KM 7.62x39 carbine Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pvp-molot-arms-vpo-215-gornostay-366-tkm-bolt-action-rifle-default-100",
+      "mode": "pvp",
+      "name": "Molot Arms VPO-215 Gornostay .366 TKM bolt-action rifle Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-mp-18-7-62x54r-single-shot-rifle-default-100",
+      "mode": "pve",
+      "name": "MP-18 7.62x54R single-shot rifle Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-mp-43-12ga-sawed-off-double-barrel-shotgun-default-100",
+      "mode": "pve",
+      "name": "MP-43 12ga sawed-off double-barrel shotgun Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-mp-43-1c-12ga-double-barrel-shotgun-default-100",
+      "mode": "pve",
+      "name": "MP-43-1C 12ga double-barrel shotgun Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-pb-9x18pm-silenced-pistol-100",
+      "mode": "pve",
+      "name": "PB 9x18PM silenced pistol",
+      "kind": "weapon-bare",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-pb-9x18pm-silenced-pistol-default-100",
+      "mode": "pve",
+      "name": "PB 9x18PM silenced pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-pp-19-01-vityaz-9x19-submachine-gun-100",
+      "mode": "pve",
+      "name": "PP-19-01 Vityaz 9x19 submachine gun",
+      "kind": "weapon-bare",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-pp-91-01-kedr-b-9x18pm-submachine-gun-default-100",
+      "mode": "pve",
+      "name": "PP-91-01 Kedr-B 9x18PM submachine gun Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-saiga-9-9x19-carbine-default-100",
+      "mode": "pve",
+      "name": "Saiga-9 9x19 carbine Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pvp-sig-p226r-9x19-pistol-default-100",
+      "mode": "pvp",
+      "name": "SIG P226R 9x19 pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-sig-p226r-9x19-pistol-default-100",
+      "mode": "pve",
+      "name": "SIG P226R 9x19 pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-stechkin-aps-9x18pm-machine-pistol-default-100",
+      "mode": "pve",
+      "name": "Stechkin APS 9x18PM machine pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-toz-106-20ga-bolt-action-shotgun-default-100",
+      "mode": "pve",
+      "name": "TOZ-106 20ga bolt-action shotgun Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-tt-33-7-62x25-tt-pistol-default-100",
+      "mode": "pve",
+      "name": "TT-33 7.62x25 TT pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-yarygin-mp-443-grach-9x19-pistol-default-100",
+      "mode": "pve",
+      "name": "Yarygin MP-443 Grach 9x19 pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-pve-hk-g28-7-62x51-marksman-rifle-default-100",
+      "mode": "pve",
+      "name": "HK G28 7.62x51 marksman rifle Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    }
+  ],
+  "tests": [
+    {
+      "id": "sheet-11",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-adar-2-15-5-56x45-carbine-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "5h",
+      "notes": "Sheet test 11"
+    },
+    {
+      "id": "sheet-37",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-beretta-m9a3-9x19-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 37"
+    },
+    {
+      "id": "sheet-23",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-chiappa-rhino-200ds-9x19-revolver-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "2h",
+      "notes": "Sheet test 23. Max Hideout skill"
+    },
+    {
+      "id": "sheet-35",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-chiappa-rhino-50ds-357-revolver-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 35"
+    },
+    {
+      "id": "sheet-31",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-colt-m1911a1-45-acp-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 31"
+    },
+    {
+      "id": "sheet-44",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-fn-scar-l-5-56x45-assault-rifle-fde-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 44"
+    },
+    {
+      "id": "sheet-43",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-glock-17-9x19-pistol-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "2h",
+      "notes": "Sheet test 43"
+    },
+    {
+      "id": "sheet-32",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-toz-106-20ga-bolt-action-shotgun-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 32"
+    },
+    {
+      "id": "sheet-22",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-glock-19x-9x19-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "Sheet test 22"
+    },
+    {
+      "id": "sheet-5",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 5
+        }
+      ],
+      "fillers": [],
+      "timer": "14h",
+      "notes": "Sheet test 5"
+    },
+    {
+      "id": "sheet-8",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 5
+        }
+      ],
+      "fillers": [],
+      "timer": "6h",
+      "notes": "Sheet test 8"
+    },
+    {
+      "id": "sheet-13",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 4
+        }
+      ],
+      "fillers": [],
+      "timer": "14h",
+      "notes": "Sheet test 13"
+    },
+    {
+      "id": "sheet-14",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 3
+        }
+      ],
+      "fillers": [],
+      "timer": "12h",
+      "notes": "Sheet test 14"
+    },
+    {
+      "id": "sheet-15",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 4
+        }
+      ],
+      "fillers": [],
+      "timer": "14h",
+      "excluded": true,
+      "notes": "Sheet test 15. Changed setup: cocking handle removed"
+    },
+    {
+      "id": "sheet-16",
+      "mode": "pvp",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pvp-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 4
+        }
+      ],
+      "fillers": [],
+      "timer": "12h",
+      "excluded": true,
+      "notes": "Sheet test 16. Changed setup: magazine removed"
+    },
+    {
+      "id": "sheet-17",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 3
+        }
+      ],
+      "fillers": [],
+      "timer": "12h",
+      "excluded": true,
+      "notes": "Sheet test 17. Changed setup: w/ 20-rounders, w/o cocking handle & -1 Drum rear sight"
+    },
+    {
+      "id": "sheet-18",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 3
+        }
+      ],
+      "fillers": [],
+      "timer": "12h",
+      "excluded": true,
+      "notes": "Sheet test 18. Changed setup: w/ 20-rounders, w/o cocking handle"
+    },
+    {
+      "id": "sheet-27",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 2
+        }
+      ],
+      "fillers": [],
+      "timer": "8h",
+      "notes": "Sheet test 27"
+    },
+    {
+      "id": "sheet-46",
+      "mode": "pvp",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pvp-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 4
+        }
+      ],
+      "fillers": [],
+      "timer": "6h",
+      "excluded": true,
+      "notes": "Sheet test 46. Changed setup: with 1 additional FP-100 filter"
+    },
+    {
+      "id": "sheet-3",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
+          "qty": 2
+        }
+      ],
+      "fillers": [],
+      "timer": "14h",
+      "notes": "Sheet test 3"
+    },
+    {
+      "id": "sheet-19",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "8h",
+      "excluded": true,
+      "notes": "Sheet test 19. Changed setup: how was an extra 26k added to hit 100k?"
+    },
+    {
+      "id": "sheet-20",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
+          "qty": 4
+        }
+      ],
+      "fillers": [],
+      "timer": "6h",
+      "excluded": true,
+      "notes": "Sheet test 20. Mode not recorded in the sheet (assumed PvE). Changed setup: with Additional HK UMP .45 ACP submachine gun Default"
+    },
+    {
+      "id": "sheet-25",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
+          "qty": 3
+        }
+      ],
+      "fillers": [],
+      "timer": "14h",
+      "excluded": true,
+      "notes": "Sheet test 25. Mode not recorded in the sheet (assumed PvE). Changed setup: with 2 Additional HK UMP .45 ACP submachine gun Default"
+    },
+    {
+      "id": "sheet-row25",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
+          "qty": 4
+        }
+      ],
+      "fillers": [],
+      "timer": "14h",
+      "excluded": true,
+      "notes": "Sheet test (no number). Mode not recorded in the sheet (assumed PvE). Changed setup: with 1 additional Diary"
+    },
+    {
+      "id": "sheet-4",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-ump-45-acp-submachine-gun-default-100",
+          "qty": 5
+        }
+      ],
+      "fillers": [],
+      "timer": "12h",
+      "notes": "Sheet test 4"
+    },
+    {
+      "id": "sheet-7",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-ump-45-acp-submachine-gun-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "5h",
+      "notes": "Sheet test 7"
+    },
+    {
+      "id": "sheet-21",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-usp-45-acp-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "Sheet test 21"
+    },
+    {
+      "id": "sheet-45",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-kalashnikov-aks-74u-5-45x39-assault-rifle-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 45"
+    },
+    {
+      "id": "sheet-34",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-kalashnikov-aks-74u-5-45x39-assault-rifle-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "Sheet test 34"
+    },
+    {
+      "id": "sheet-26",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-lebedev-pl-15-9x19-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "Sheet test 26. Max Hideout skill"
+    },
+    {
+      "id": "sheet-40",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-makarov-pm-9x18pm-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 40"
+    },
+    {
+      "id": "sheet-row33",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-molot-arms-vpo-136-vepr-km-7-62x39-carbine-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "Sheet test (no number)"
+    },
+    {
+      "id": "sheet-33",
+      "mode": "pvp",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pvp-molot-arms-vpo-215-gornostay-366-tkm-bolt-action-rifle-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "Sheet test 33"
+    },
+    {
+      "id": "sheet-28",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-mp-18-7-62x54r-single-shot-rifle-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 28. first 3h hit | testing under 25k weapons"
+    },
+    {
+      "id": "sheet-39",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-mp-43-12ga-sawed-off-double-barrel-shotgun-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 39"
+    },
+    {
+      "id": "sheet-38",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-mp-43-1c-12ga-double-barrel-shotgun-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 38"
+    },
+    {
+      "id": "sheet-12",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-pb-9x18pm-silenced-pistol-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 12"
+    },
+    {
+      "id": "sheet-6",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-pb-9x18pm-silenced-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "Sheet test 6"
+    },
+    {
+      "id": "sheet-9",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-pp-19-01-vityaz-9x19-submachine-gun-100",
+          "qty": 5
+        }
+      ],
+      "fillers": [],
+      "timer": "8h",
+      "notes": "Sheet test 9"
+    },
+    {
+      "id": "sheet-1",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-pp-91-01-kedr-b-9x18pm-submachine-gun-default-100",
+          "qty": 5
+        }
+      ],
+      "fillers": [],
+      "timer": "6h",
+      "notes": "Sheet test 1"
+    },
+    {
+      "id": "sheet-2",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-pp-91-01-kedr-b-9x18pm-submachine-gun-default-100",
+          "qty": 4
+        }
+      ],
+      "fillers": [],
+      "timer": "12h",
+      "notes": "Sheet test 2"
+    },
+    {
+      "id": "sheet-10",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-saiga-9-9x19-carbine-default-100",
+          "qty": 5
+        }
+      ],
+      "fillers": [],
+      "timer": "8h",
+      "notes": "Sheet test 10"
+    },
+    {
+      "id": "sheet-24",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-saiga-9-9x19-carbine-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "Sheet test 24. -18,780"
+    },
+    {
+      "id": "sheet-29",
+      "mode": "pvp",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pvp-sig-p226r-9x19-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "Sheet test 29"
+    },
+    {
+      "id": "sheet-47",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-sig-p226r-9x19-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "excluded": true,
+      "notes": "Sheet test 47. Changed setup: mag removed (P226 9x19 15-round magazine = bv 2,096)"
+    },
+    {
+      "id": "sheet-48",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-sig-p226r-9x19-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "excluded": true,
+      "notes": "Sheet test 48. Changed setup: barrel removed (P226 9x19 112mm barrel = bv 1,563)"
+    },
+    {
+      "id": "sheet-49",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-sig-p226r-9x19-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "excluded": true,
+      "notes": "Sheet test 49. Changed setup: fonrt sight removed (P226 front sight = bv 500)"
+    },
+    {
+      "id": "sheet-30",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-stechkin-aps-9x18pm-machine-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 30"
+    },
+    {
+      "id": "sheet-42",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-toz-106-20ga-bolt-action-shotgun-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 42"
+    },
+    {
+      "id": "sheet-41",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-tt-33-7-62x25-tt-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 41"
+    },
+    {
+      "id": "sheet-36",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-yarygin-mp-443-grach-9x19-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 36"
+    },
+    {
+      "id": "sheet-50",
+      "mode": "pvp",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pvp-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 5
+        }
+      ],
+      "fillers": [],
+      "timer": "6h",
+      "notes": "Sheet test 50"
+    },
+    {
+      "id": "sheet-51",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-g28-7-62x51-marksman-rifle-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "14h",
+      "excluded": true,
+      "notes": "Sheet test 51. Mode not recorded in the sheet (assumed PvE)"
+    }
+  ],
+  "stash": {
+    "pvp": [],
+    "pve": []
+  },
+  "settings": {
+    "tolerance": 5000,
+    "maxItems": 10
+  }
+}

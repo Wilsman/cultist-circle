@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Base Value Lab (local only)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0a0a0b; color: #e5e5e5;
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 16px 12px 64px; }
+  header.top {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start;
+    justify-content: space-between; border-bottom: 1px solid #262626; padding-bottom: 12px;
+  }
+  h1 { font-size: 16px; margin: 0; display: flex; gap: 8px; align-items: center; }
+  h2 { font-size: 13px; margin: 0 0 8px; color: #d4d4d8; text-transform: uppercase; letter-spacing: .05em; }
+  .badge-local {
+    font-size: 10px; font-weight: 700; letter-spacing: .06em;
+    border: 1px solid rgba(56,189,248,.4); background: rgba(14,165,233,.15);
+    color: #bae6fd; border-radius: 999px; padding: 2px 8px;
+  }
+  .sub { color: #a3a3a3; font-size: 12px; margin: 4px 0 0; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  button, select, input {
+    background: #18181b; color: #e5e5e5; border: 1px solid #3f3f46;
+    border-radius: 6px; padding: 5px 10px; font-size: 12px;
+  }
+  input { min-width: 0; }
+  button { cursor: pointer; }
+  button:hover { border-color: #71717a; }
+  button.primary { background: #f4f4f5; color: #09090b; font-weight: 600; border-color: #f4f4f5; }
+  button[aria-pressed="true"] { background: #f4f4f5; color: #09090b; border-color: #f4f4f5; }
+  button.timer { min-width: 46px; font-weight: 600; }
+  button.danger { border-color: rgba(248,113,113,.5); color: #fca5a5; }
+  button.link { background: none; border: none; color: #93c5fd; padding: 0; }
+  section.card {
+    margin-top: 16px; border: 1px solid #27272a; background: #131316;
+    border-radius: 12px; padding: 12px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 6px 6px; border-top: 1px solid #222; vertical-align: top; }
+  th { color: #a3a3a3; font-weight: 500; border-top: none; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.selected td { background: rgba(59,130,246,.08); }
+  .muted { color: #737373; }
+  .pill { border: 1px solid #3f3f46; background: #27272a; border-radius: 999px; padding: 1px 8px; font-size: 11px; white-space: nowrap; }
+  .st-confident { border-color: rgba(52,211,153,.5); background: rgba(6,78,59,.4); color: #a7f3d0; }
+  .st-needs-confirmation { border-color: rgba(250,204,21,.45); background: rgba(113,63,18,.35); color: #fde68a; }
+  .st-open, .st-untested { color: #d4d4d8; }
+  .st-conflict { border-color: rgba(248,113,113,.5); background: rgba(127,29,29,.35); color: #fca5a5; }
+  .st-too-high { border-color: rgba(167,139,250,.5); background: rgba(76,29,149,.3); color: #ddd6fe; }
+  .plan { display: grid; gap: 10px; }
+  .recipe { display: grid; gap: 4px; padding: 10px; border-radius: 8px; background: #0f0f12; border: 1px solid #27272a; }
+  .recipe .line { display: flex; justify-content: space-between; gap: 8px; }
+  .outcomes { display: flex; gap: 6px; flex-wrap: wrap; }
+  .outcome { border: 1px solid #3f3f46; border-radius: 8px; padding: 6px 8px; font-size: 12px; background: #18181b; cursor: pointer; text-align: left; }
+  .outcome b { display: block; font-size: 14px; }
+  .search { position: relative; flex: 1 1 260px; }
+  .search input { width: 100%; }
+  .results {
+    position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin-top: 2px;
+    background: #18181b; border: 1px solid #3f3f46; border-radius: 6px; max-height: 260px; overflow: auto;
+  }
+  .results div { padding: 5px 8px; cursor: pointer; font-size: 12px; display: flex; justify-content: space-between; gap: 8px; }
+  .results div:hover, .results div.hl { background: #27272a; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+  .hint { font-size: 12px; color: #a3a3a3; }
+  .warn { color: #fca5a5; font-size: 12px; }
+  .toast {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: #f4f4f5; color: #09090b; padding: 8px 14px; border-radius: 8px; font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  }
+  input.small { width: 64px; }
+  details summary { cursor: pointer; color: #a3a3a3; font-size: 12px; }
+  .lead { font-size: 13px; margin: 0 0 10px; }
+  .todo { border: 1px solid rgba(59,130,246,.45); background: rgba(30,58,138,.25); border-radius: 8px; padding: 10px; margin: 10px 0; }
+  .todo b.title { display: block; color: #bfdbfe; margin-bottom: 4px; }
+  .step { border-top: 1px solid #27272a; padding: 8px 0; }
+  .step > summary { list-style: none; display: flex; gap: 8px; align-items: center; color: #e5e5e5; font-size: 13px; }
+  .step > summary::-webkit-details-marker { display: none; }
+  .step .n { width: 20px; height: 20px; border-radius: 999px; background: #27272a; display: inline-grid; place-items: center; font-size: 11px; flex: none; }
+  .step .body { padding: 6px 0 0 28px; display: grid; gap: 6px; font-size: 12px; }
+  .finding { border-left: 2px solid #3f3f46; padding-left: 8px; }
+  .finding.good { border-color: rgba(52,211,153,.7); }
+  .finding.bad { border-color: rgba(248,113,113,.7); }
+  .rules td:first-child { width: 34%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Base Value Lab <span class="badge-local">LOCAL</span></h1>
+      <p class="sub">Works out the hidden base values and the rule behind them. Follow "Do this next", report the timer, and it explains what the result means. 0% bonus assumed.</p>
+    </div>
+    <div class="row">
+      <span class="row" role="group" aria-label="Game mode">
+        <button data-action="mode" data-mode="pvp">PvP</button>
+        <button data-action="mode" data-mode="pve">PvE</button>
+      </span>
+      <button data-action="export">Export</button>
+      <button data-action="import">Import</button>
+      <button data-action="seed" title="Load the tests from the shared Google Sheet">Import sheet tests</button>
+      <input type="file" id="import-file" accept="application/json" hidden />
+    </div>
+  </header>
+
+  <section class="card" id="guide"></section>
+  <section class="card" id="next"></section>
+  <section class="card" id="subjects"></section>
+  <div class="grid2">
+    <section class="card" id="stash"></section>
+    <section class="card" id="settings"></section>
+  </div>
+  <section class="card" id="tests"></section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script type="module">
+import {
+  TIMERS, TIMER_RANGES, emptyState, fillerTotal, mergeStates, parseState,
+  partsRange, planTest, solve, timerForTotal,
+  checkControls, comparePair, compareRanges, doubtfulResults, fitRules,
+  pickFillers, predictRange, subjectKey, suggestExperiment,
+} from "./lab.js";
+
+const STORE = "base-value-lab:v1";
+const UNKNOWN_TYPES = ["gun", "preset", "armor", "armorPlate", "helmet", "keys"];
+const $ = (sel) => document.querySelector(sel);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const rub = (v) => (v === Infinity ? "∞" : `₽${Math.round(v).toLocaleString("en-US")}`);
+const k = (v) => (v === Infinity ? "∞" : v >= 1000 ? `${(v / 1000).toFixed(v >= 100_000 ? 0 : 1)}k` : String(Math.round(v)));
+const uid = () => crypto.randomUUID().slice(0, 8);
+
+let state = load();
+let mode = localStorage.getItem(`${STORE}:mode`) === "pvp" ? "pvp" : "pve";
+let selected = null;
+let items = { pvp: null, pve: null };
+let traderLevel = Number(localStorage.getItem(`${STORE}:trader`) || 4);
+let buyFillers = localStorage.getItem(`${STORE}:buy`) !== "false";
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    return raw ? parseState(JSON.parse(raw)) : emptyState();
+  } catch (err) {
+    console.error(err);
+    return emptyState();
+  }
+}
+function save() {
+  localStorage.setItem(STORE, JSON.stringify(state));
+  render();
+}
+function toast(msg) {
+  const el = $("#toast");
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => (el.hidden = true), 2600);
+}
+
+async function loadItems(m) {
+  if (items[m]) return items[m];
+  const res = await fetch(`items-${m}.json`);
+  if (!res.ok) throw new Error(`items-${m}.json missing: run bun run lab`);
+  const data = await res.json();
+  const byId = new Map(data.items.map((it) => [it.id, it]));
+  const byName = new Map(data.items.map((it) => [it.name.toLowerCase(), it]));
+  items[m] = { list: data.items, byId, byName, fetchedAt: data.fetchedAt };
+  return items[m];
+}
+
+const subjectsFor = () => state.subjects.filter((s) => s.mode === mode);
+const testsFor = () => state.tests.filter((t) => t.mode === mode);
+const subjectById = (id) => state.subjects.find((s) => s.id === id);
+
+function kindFor(item) {
+  const t = item.types;
+  if (t.includes("preset")) return "weapon";
+  if (t.includes("gun")) return "weapon-bare";
+  if (t.includes("keys")) return "key";
+  if (t.includes("armor") || t.includes("armorPlate") || t.includes("helmet")) return "armour";
+  return "other";
+}
+const KIND_LABEL = { weapon: "Weapon (with mods)", "weapon-bare": "Bare weapon", armour: "Armour", key: "Key", other: "Other" };
+const STATUS_LABEL = {
+  untested: "Untested", open: "Narrowing", "needs-confirmation": "Needs 2nd check",
+  confident: "Confident", "too-high": "Above 350k", conflict: "Conflict",
+};
+
+function condition(s) {
+  const bits = [];
+  if (s.durability !== undefined) bits.push(`${s.durability}% dur`);
+  if (s.uses !== undefined) bits.push(`${s.uses} uses`);
+  return bits.join(", ");
+}
+
+// Cheapest trader offer the chosen loyalty level unlocks, or null.
+function traderPrice(it) {
+  const prices = (it.trader ?? [])
+    .filter((o) => o.level <= traderLevel)
+    .map((o) => o.price);
+  return prices.length ? Math.min(...prices) : null;
+}
+
+// Built once per render: it scans the whole item list, which is not cheap.
+let cachedFillers = null;
+function fillerOptions() {
+  if (cachedFillers) return cachedFillers;
+  const opts = state.stash[mode].map((st) => ({
+    itemId: st.itemId, name: st.name, baseValue: st.baseValue, cost: 0, available: st.count, owned: true,
+  }));
+  const data = items[mode];
+  if (!buyFillers || !data) return (cachedFillers = opts);
+  const priced = [];
+  for (const it of data.list) {
+    if (!it.basePrice || it.types.some((t) => UNKNOWN_TYPES.includes(t))) continue;
+    const prices = [];
+    if (it.flea && !it.types.includes("noFlea")) prices.push(it.flea);
+    const trader = traderPrice(it);
+    if (trader !== null) prices.push(trader);
+    if (!prices.length) continue;
+    priced.push({ it, cost: Math.min(...prices) });
+  }
+  // Best value per rouble overall, plus the best per value band so any gap can be filled.
+  priced.sort((a, b) => a.cost / a.it.basePrice - b.cost / b.it.basePrice);
+  const pick = new Map(priced.slice(0, 30).map((p) => [p.it.id, p]));
+  for (let lo = 200; lo < 400_000; lo *= 1.6) {
+    const band = priced.filter((p) => p.it.basePrice >= lo && p.it.basePrice < lo * 1.6).slice(0, 2);
+    for (const p of band) pick.set(p.it.id, p);
+  }
+  for (const { it, cost } of pick.values()) {
+    if (opts.some((o) => o.itemId === it.id)) continue;
+    opts.push({ itemId: it.id, name: it.name, baseValue: it.basePrice, cost, available: state.settings.maxItems, owned: false });
+  }
+  return (cachedFillers = opts);
+}
+
+// Extra copies of the item under test have to be bought too.
+function copyCost(subject) {
+  const it = subject.itemId && items[mode]?.byId.get(subject.itemId);
+  if (!it) return 50_000;
+  const prices = [it.flea, traderPrice(it)].filter(Boolean);
+  return prices.length ? Math.min(...prices) : 50_000;
+}
+
+function results() {
+  return solve(subjectsFor(), testsFor(), state.settings);
+}
+
+// ---------- rendering ----------
+
+function render() {
+  cachedFillers = null;
+  document.querySelectorAll('[data-action="mode"]').forEach((b) =>
+    b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+  const res = results();
+  const subs = subjectsFor();
+  if (!selected || !subs.some((s) => s.id === selected)) {
+    selected = subs.find((s) => ["untested", "open", "needs-confirmation"].includes(res.get(s.id)?.status))?.id ?? subs[0]?.id ?? null;
+  }
+  renderGuide(res);
+  renderNext(res);
+  renderSubjects(res);
+  renderStash();
+  renderSettings();
+  renderTests(res);
+}
+
+let currentPlan = null;
+
+function renderNext(res) {
+  const el = $("#next");
+  const subject = selected && subjectById(selected);
+  if (!subject) {
+    el.innerHTML = `<h2>Next test</h2><p class="hint">Add an item below to start. Weapons with mods, bare weapons, armour and keys are all fine.</p>`;
+    currentPlan = null;
+    return;
+  }
+  const r = res.get(subject.id);
+  const head = `<h2>Next test · ${esc(subject.name)} <span class="muted">${esc(condition(subject))}</span></h2>`;
+  if (r?.status === "confident") {
+    el.innerHTML = `${head}<p>Confident: <b>${rub(r.confirmed.lo)} – ${rub(r.confirmed.hi)}</b> (each edge backed by two tests). Pick another item below.</p>`;
+    currentPlan = null;
+    return;
+  }
+  if (r?.status === "conflict") {
+    el.innerHTML = `${head}<p class="warn">These tests disagree. Exclude or fix the suspect test${r.suspects.length > 1 ? "s" : ""} below (highlighted), then the planner continues.</p>`;
+    currentPlan = null;
+    return;
+  }
+  if (r?.status === "too-high") {
+    el.innerHTML = `${head}<p>One copy is already above ${rub(350_000)}; every timer from there up looks the same (14h, or a 25% 6h at 400k+), so it can't be narrowed further. Best known: <b>${rub(r.range.lo)}+</b>.</p>`;
+    currentPlan = null;
+    return;
+  }
+  const t0 = performance.now();
+  const plan = planTest({ subject, result: r, fillers: fillerOptions(), settings: state.settings, copyCost: copyCost(subject) });
+  const ms = Math.round(performance.now() - t0);
+  currentPlan = plan;
+  if (!plan) {
+    el.innerHTML = `${head}<p class="warn">No test fits. Add fillers to your stash, allow buying, raise the item limit, or set how many copies you own.</p>`;
+    return;
+  }
+  const goal = {
+    narrow: `Is it above <b>${rub(plan.splitAt)}</b>?`,
+    "confirm-low": `Second check that it's above <b>${rub(plan.splitAt)}</b>.`,
+    "confirm-high": `Second check that it's at most <b>${rub(plan.splitAt)}</b>.`,
+  }[plan.goal];
+  const total = (v) => plan.qty * v + plan.fillerTotal;
+  el.innerHTML = `${head}
+    <div class="plan">
+      <div>${goal} <span class="muted">Known so far: ${rub(r?.range.lo ?? 0)} – ${rub(r?.range.hi ?? Infinity)}.</span></div>
+      <div class="recipe">
+        <div class="line"><span><b>${plan.qty}×</b> ${esc(subject.name)}</span><span class="muted">unknown</span></div>
+        ${plan.fillers.map((f) => `<div class="line"><span><b>${f.qty}×</b> ${esc(f.name)} ${f.owned ? '<span class="pill">stash</span>' : `<span class="pill">buy ${rub(f.cost)} ea</span>`}</span><span class="num">${rub(f.baseValue * f.qty)}</span></div>`).join("")}
+        <div class="line muted"><span>Known fillers total ${plan.fillerCost ? `· costs ${rub(plan.fillerCost)}` : ""}</span><span>${rub(plan.fillerTotal)}</span></div>
+      </div>
+      <div class="hint">Sacrifice it and tap the timer you got. Each button shows what it would prove.</div>
+      <div class="outcomes">
+        ${TIMERS.map((t) => {
+          const o = plan.outcomes.find((x) => x.timer === t);
+          return `<button class="outcome" data-action="record" data-timer="${t}" ${o ? "" : 'style="opacity:.45"'}>
+            <b>${t}</b>${o ? `${k(o.implies.lo)} – ${k(o.implies.hi)}` : "unexpected"}</button>`;
+        }).join("")}
+      </div>
+      <div class="muted" style="font-size:11px">Planned in ${ms} ms · expected total if the API value were right: ${subject.apiBaseValue ? `${rub(total(subject.apiBaseValue))} → ${timerForTotal(total(subject.apiBaseValue))}` : "n/a"}</div>
+    </div>`;
+}
+
+// ---------- guide: finding the rule ----------
+
+const ratioText = (r) => `×${r.lo.toFixed(2)}–${r.hi === Infinity ? "∞" : r.hi.toFixed(2)}`;
+const rangeText = (r) => `${rub(r.lo)} – ${rub(r.hi)}`;
+const isWeapon = (s) => s.kind === "weapon" || s.kind === "weapon-bare";
+const atFull = (s) => s.kind === "key" || s.durability === undefined || s.durability >= 100;
+const sameCondition = (a, b) => (a.durability ?? 100) === (b.durability ?? 100);
+
+// What the API says the item is made of: gun body plus attached mods.
+function compositionFor(s) {
+  if (s.build) {
+    const mods = s.build.mods;
+    return {
+      gun: s.build.gunValue,
+      mods: mods.reduce((sum, m) => sum + m.baseValue * m.count, 0),
+      modCount: mods.reduce((n, m) => n + m.count, 0),
+    };
+  }
+  const data = items[s.mode];
+  const it = data && (s.itemId ? data.byId.get(s.itemId) : data.byName.get(s.name.toLowerCase()));
+  if (!it) return s.apiBaseValue ? { gun: s.apiBaseValue, mods: 0, modCount: 0 } : null;
+  if (!it.parts) return { gun: it.basePrice, mods: 0, modCount: 0 };
+  const comp = { gun: 0, mods: 0, modCount: 0 };
+  for (const p of it.parts) {
+    const part = data.byId.get(p.id);
+    if (!part) continue;
+    if (part.types.includes("gun")) comp.gun += part.basePrice * p.count;
+    else { comp.mods += part.basePrice * p.count; comp.modCount += p.count; }
+  }
+  return comp;
+}
+
+// The bare gun a preset or build is built on.
+function bareItemId(s) {
+  if (s.kind === "weapon-bare") return s.itemId;
+  if (s.build) return s.itemId;
+  return s.itemId ? items[s.mode]?.byId.get(s.itemId)?.baseItem : undefined;
+}
+const findBare = (s) => subjectsFor().find((b) => b.kind === "weapon-bare" && b.itemId === bareItemId(s) && sameCondition(b, s));
+const measured = (r) => r && r.testCount > 0 && r.status !== "conflict";
+
+function observations(res, filter) {
+  return subjectsFor().flatMap((s) => {
+    const r = res.get(s.id);
+    const comp = filter(s) && atFull(s) && measured(r) ? compositionFor(s) : null;
+    return comp && comp.gun + comp.mods > 0 ? [{ id: s.id, name: s.name, range: r.range, comp }] : [];
+  });
+}
+
+let draftBuild = { gun: null, mods: [] };
+let controlPlans = [];
+
+function controlPlan(target, expect) {
+  const pick = pickFillers(fillerOptions(), target, 250, state.settings.maxItems);
+  return pick && pick.picks.length ? { expect, ...pick } : null;
+}
+
+function pairText(s, bare, cmp) {
+  const body = ratioText(cmp.gunRatio);
+  const mods = `${rangeText(cmp.modsValue)} (${ratioText(cmp.modsRatio)} their loose value)`;
+  return {
+    "mods-extra": [`good`, `The bare gun is worth what the API says (${body}). The extra is in the attached mods: they add ${mods}. <b>Attaching mods makes them count more.</b>`],
+    "gun-extra": [`good`, `The gun body itself is worth more than the API (${body}), while the mods add about their loose value (${mods}). <b>The hidden value is in the gun, not the mods.</b>`],
+    "both-extra": [`good`, `Both count extra: gun body ${body}, attached mods add ${mods}.`],
+    "matches-api": [`good`, `Both match the API: body ${body}, mods ${mods}. <b>This gun is valued normally.</b>`],
+    unclear: [``, `Not precise enough yet: body ${body}, mods add ${mods}. Keep testing both with the Test buttons.`],
+  }[cmp.finding];
+}
+
+function stepHtml(n, title, status, open, body) {
+  const pill = { done: '<span class="pill st-confident">done</span>', doing: '<span class="pill st-needs-confirmation">in progress</span>', todo: '<span class="pill">to do</span>' }[status];
+  return `<details class="step" ${open ? "open" : ""}><summary><span class="n">${n}</span><span style="flex:1">${title}</span>${pill}</summary><div class="body">${body}</div></details>`;
+}
+
+const testBtn = (s) => `<button data-action="select" data-id="${esc(s.id)}" data-scroll="1">Test ${esc(s.name)}</button>`;
+const addBtn = (itemId, label) => `<button data-action="add-item" data-item="${esc(itemId)}">${esc(label)}</button>`;
+
+function renderGuide(res) {
+  const el = $("#guide");
+  const data = items[mode];
+  const subs = subjectsFor();
+  const weaponObs = observations(res, isWeapon);
+  const fits = fitRules(weaponObs, { weapons: true });
+  const testCount = (id) => res.get(id)?.testCount ?? 0;
+  const doubtful = doubtfulResults(fits, testCount);
+  const alive = fits.filter((f) => f.verdict === "fits");
+  const controls = checkControls(testsFor());
+  const failedControls = controls.filter((c) => !c.ok);
+
+  // Pairs: a gun with mods (preset or build) next to the same bare gun.
+  const pairs = subs.flatMap((s) => {
+    if (s.kind !== "weapon") return [];
+    const bare = findBare(s);
+    const comp = compositionFor(s);
+    const r = res.get(s.id);
+    const rb = bare && res.get(bare.id);
+    if (!bare || !comp || !measured(r) || !measured(rb)) return [];
+    return [{ s, bare, cmp: comparePair(rb.range, r.range, comp) }];
+  });
+  const presetPairs = pairs.filter((p) => !p.s.build);
+  const buildPairs = pairs.filter((p) => p.s.build);
+  // Guns with the most mod value first: they show the biggest difference.
+  const missingBare = subs
+    .filter((s) => s.kind === "weapon" && !s.build && measured(res.get(s.id)) && !findBare(s) && bareItemId(s))
+    .map((s) => ({ s, mods: compositionFor(s)?.mods ?? 0 }))
+    .sort((a, b) => b.mods - a.mods)
+    .map((x) => x.s);
+
+  // ---- summary of rules ----
+  let summary;
+  if (!weaponObs.length) summary = "No weapon results yet. Start with step 1 below, then step 2.";
+  else if (fits[0].verdict === "fits") summary = "So far the API value matches every weapon you measured.";
+  else if (alive.length > 1) summary = `The API is wrong, and ${alive.length} simple rules could still explain it. The next test below is chosen to tell them apart.`;
+  else if (alive.length === 1) summary = `Only one simple rule fits everything so far: <b>${esc(alive[0].title)}</b>${alive[0].fitted && alive[0].informative ? ` (${alive[0].param.label} ${paramText(alive[0])})` : ""}. Test more guns to see if it keeps holding.`;
+  else summary = `No single simple rule fits all ${weaponObs.length} weapon results. Either a few results are wrong (re-check the doubtful ones), or each gun has its own hidden value. Steps 2–4 will tell which.`;
+
+  const ruleRows = fits.map((f) => {
+    const pill = { fits: '<span class="pill st-confident">still possible</span>', "ruled-out": '<span class="pill st-conflict">ruled out</span>', untested: '<span class="pill">no data</span>' }[f.verdict];
+    let detail = "";
+    if (f.verdict === "fits") {
+      detail = f.param ? (f.informative ? `${f.param.label}: <b>${paramText(f)}</b>` : `Can't pin the ${f.param.label} yet: measure a gun with mods.`) : `Matches all ${f.checked}.`;
+    } else if (f.verdict === "ruled-out") {
+      const ok = f.checked - f.offenders.length;
+      const list = f.offenders.slice(0, 3).map((o) => `${esc(short(o.name))} (measured ${k(o.measured.lo)}–${k(o.measured.hi)}, rule says ${k(o.predicted)})`).join("; ");
+      detail = `${f.param ? `Best ${f.param.label} ${paramText(f)} fits ${ok} of ${f.checked}. ` : ""}Broken by ${list}${f.offenders.length > 3 ? ` and ${f.offenders.length - 3} more` : ""}.`;
+    }
+    return `<tr><td><b>${esc(f.title)}</b><div class="muted">${esc(f.idea)}</div></td><td>${pill}</td><td>${detail}</td></tr>`;
+  }).join("");
+
+  // ---- the one thing to do next ----
+  const suggestion = suggestExperiment(fits, [
+    ...subs.filter((s) => isWeapon(s) && atFull(s)).flatMap((s) => {
+      const comp = compositionFor(s);
+      const r = res.get(s.id);
+      return comp && r?.status !== "conflict" && r?.status !== "too-high" ? [{ id: s.id, name: s.name, comp, range: r.range }] : [];
+    }),
+    ...missingBare.map((s) => {
+      const it = data?.byId.get(bareItemId(s));
+      return it ? { id: `add:${it.id}`, name: it.name, comp: { gun: it.basePrice, mods: 0, modCount: 0 }, range: { lo: 0, hi: Infinity } } : null;
+    }).filter(Boolean),
+  ], state.settings.tolerance);
+
+  let todo;
+  const goTo = (c) => c.id.startsWith("add:") ? addBtn(c.id.slice(4), `Add ${short(c.name)} and test it`) : testBtn(subjectById(c.id));
+  if (failedControls.length) {
+    todo = `<b class="title">Re-run a control test</b>A test with only known items gave an unexpected timer (step 1). Until that's explained, the timer edges themselves are in doubt, so other results can't be trusted. Check the items were right, then run step 1 again.`;
+  } else if (doubtful.length) {
+    const d = doubtful[0];
+    todo = `<b class="title">Re-check ${esc(d.name)}</b>Only one test backs this result, and it alone breaks ${d.breaks} of the rules. A single misread timer would do that. Run it again: if it holds up, those rules really are dead; if not, exclude the old test.<div class="row" style="margin-top:6px">${testBtn(subjectById(d.id))}</div>`;
+  } else if (suggestion) {
+    const guesses = suggestion.guesses.map((g) => `<li>If <b>${esc(g.rule.title.toLowerCase())}</b> is right: about <b>${rub(g.value)}</b></li>`).join("");
+    todo = `<b class="title">Measure ${esc(suggestion.candidate.name)}</b>The rules that are still possible disagree about this item:<ul style="margin:4px 0">${guesses}</ul>Whatever timer you get rules at least one of them out.<div class="row" style="margin-top:6px">${goTo(suggestion.candidate)}</div>`;
+  } else if (controls.filter((c) => c.ok).length < 2) {
+    todo = `<b class="title">Run step 1: two control tests</b>Prove the timer edges with items whose value is known, so every later result can be trusted.`;
+  } else if (!presetPairs.length) {
+    todo = missingBare.length
+      ? `<b class="title">Measure a bare gun (step 2)</b>You've measured ${esc(missingBare[0].name)}. Strip it (or buy the bare gun) and measure that too: comparing the two shows whether the extra value is in the gun or in the mods.<div class="row" style="margin-top:6px">${addBtn(bareItemId(missingBare[0]), `Add bare ${short(missingBare[0].name)}`)}</div>`
+      : `<b class="title">Step 2: a gun with and without mods</b>Add a Default weapon you own (the MP5 Navy Default is a good one: it already measures about twice its API value) and the same gun bare, using the search below.`;
+  } else if (!buildPairs.length) {
+    todo = `<b class="title">Step 3: attach one mod</b>Build a gun you've measured bare with one expensive mod (10k+ loose, like a suppressor or scope), add it with the builder in step 3, and measure it.`;
+  } else {
+    todo = `<b class="title">Keep going down the steps</b>Try the same mod on a different gun (step 4), then a worn copy (step 5) and the other game mode (step 6).`;
+  }
+
+  // ---- steps ----
+  const okControls = controls.filter((c) => c.ok).length;
+  controlPlans = data ? [controlPlan(10_350, "3h"), controlPlan(9_650, "2h")] : [];
+  const step1 = `
+    <div><b>Why:</b> every result assumes the timer edges (10k, 25k, 50k…) are right and that ordinary items are worth their API value. Two quick tests with only known items check that.</div>
+    <div><b>How:</b> sacrifice one of these. Only junk with a known value, nothing under test.</div>
+    ${controlPlans.map((p, i) => p ? `<div class="recipe"><div>${p.picks.map((x) => `${x.qty}× ${esc(x.option.name)}${x.option.owned ? "" : ` <span class="pill">buy ${rub(x.option.cost)}</span>`}`).join(", ")} = <b>${rub(p.total)}</b>, expect <b>${p.expect}</b></div>
+      <div class="row">Got: ${TIMERS.slice(0, 4).map((t) => `<button class="timer" data-action="control" data-i="${i}" data-timer="${t}">${t}</button>`).join("")}</div></div>` : `<div class="warn">No filler combination near ${i ? "9.6k" : "10.4k"}: add owned junk or allow buying.</div>`).join("")}
+    ${controls.map((c) => `<div class="finding ${c.ok ? "good" : "bad"}">${rub(c.total)} of known items gave <b>${c.got}</b> (expected ${c.expected}). ${c.ok ? "As expected." : "<b>Unexpected:</b> either an item's value is off or the edge isn't where we think. Check it and run it again."}</div>`).join("")}`;
+
+  const step2 = `
+    <div><b>Why:</b> a Default weapon is a gun body plus mods. If the bare gun matches the API but the full one doesn't, the extra comes from attaching mods. If the bare gun is already too high, it's the gun itself.</div>
+    <div><b>How:</b> measure the same gun both ways. Loose mods are worth their API value, so only these two are unknown.</div>
+    ${missingBare.length ? `<div class="muted">Measured with mods but not bare (most mod value first, so the clearest comparisons are at the top):</div>` : ""}
+    ${missingBare.slice(0, 3).map((s) => `<div class="row">${esc(short(s.name))} ${addBtn(bareItemId(s), `Add bare ${short(s.name)}`)}</div>`).join("")}
+    ${missingBare.length > 3 ? `<details><summary class="muted">${missingBare.length - 3} more</summary>${missingBare.slice(3).map((s) => `<div class="row">${esc(short(s.name))} ${addBtn(bareItemId(s), `Add bare ${short(s.name)}`)}</div>`).join("")}</details>` : ""}
+    ${presetPairs.map((p) => { const [cls, text] = pairText(p.s, p.bare, p.cmp); return `<div class="finding ${cls}"><b>${esc(short(p.s.name))}</b>: ${text}</div>`; }).join("") || '<div class="muted">No pair measured yet.</div>'}`;
+
+  const step3 = `
+    <div><b>Why:</b> a preset changes many parts at once. Adding one known mod to a bare gun shows exactly what attaching does: double its value, add a fixed amount, or nothing.</div>
+    <div><b>How:</b> pick a gun you've measured bare and one mod worth 10k+ loose (smaller differences hide inside the 5k tolerance). Attach it in game, add the build here and measure it.</div>
+    <div class="row"><div class="search" id="build-gun"></div><div class="search" id="build-mod"></div></div>
+    ${draftBuild.gun ? `<div class="recipe"><div><b>${esc(draftBuild.gun.name)}</b> (bare ${rub(draftBuild.gun.basePrice)})</div>${draftBuild.mods.map((m, i) => `<div class="line"><span>+ ${esc(m.name)}</span><span>${rub(m.basePrice)} <button class="link" data-action="build-unmod" data-i="${i}">remove</button></span></div>`).join("")}
+      <div class="row"><button class="primary" data-action="build-create" ${draftBuild.mods.length ? "" : "disabled"}>Add this build</button><button data-action="build-clear">Clear</button></div></div>` : ""}
+    ${buildPairs.map((p) => { const [cls, text] = pairText(p.s, p.bare, p.cmp); return `<div class="finding ${cls}"><b>${esc(p.s.name)}</b>: ${text}</div>`; }).join("")}
+    ${subs.filter((s) => s.build && !findBare(s)).map((s) => `<div class="row">${esc(s.name)} needs its bare gun measured too. ${addBtn(s.itemId, "Add bare gun")}</div>`).join("")}`;
+
+  // Same single mod on two different guns.
+  const byMod = new Map();
+  for (const p of buildPairs) {
+    if (p.s.build.mods.length !== 1) continue;
+    const m = p.s.build.mods[0];
+    const key = m.itemId ?? m.name;
+    if (!byMod.has(key)) byMod.set(key, []);
+    byMod.get(key).push(p);
+  }
+  const modFindings = [...byMod.values()].filter((list) => list.length > 1).map((list) => {
+    const [a, b] = list;
+    const verdict = compareRanges(a.cmp.modsValue, b.cmp.modsValue, state.settings.tolerance);
+    const text = { same: "adds the same on both guns: <b>the extra belongs to the mod, not the gun.</b>", different: "adds different amounts on each gun: <b>the extra depends on which gun it's on.</b>", unclear: "can't be compared yet; measure both builds more closely." }[verdict];
+    return `<div class="finding ${verdict === "unclear" ? "" : "good"}"><b>${esc(a.s.build.mods[0].name)}</b> ${text} (${esc(short(a.bare.name))}: ${rangeText(a.cmp.modsValue)}, ${esc(short(b.bare.name))}: ${rangeText(b.cmp.modsValue)})</div>`;
+  });
+  const step4 = `
+    <div><b>Why:</b> tells apart "this mod is secretly worth more" from "this gun multiplies whatever is attached".</div>
+    <div><b>How:</b> put the same mod from step 3 on a different gun, add that build, and measure it and that gun bare.</div>
+    ${modFindings.join("") || '<div class="muted">Needs two measured builds that share one mod.</div>'}`;
+
+  const sameItem = (a, b) => a.id !== b.id && a.itemId && a.itemId === b.itemId && a.kind === b.kind && JSON.stringify(a.build ?? null) === JSON.stringify(b.build ?? null);
+  const durFindings = [];
+  for (const a of subs) for (const b of subs) {
+    if (!sameItem(a, b) || (a.durability ?? 100) <= (b.durability ?? 100)) continue;
+    const ra = res.get(a.id), rb = res.get(b.id);
+    if (!measured(ra) || !measured(rb)) continue;
+    const v = compareRanges(ra.range, rb.range, state.settings.tolerance);
+    durFindings.push(`<div class="finding ${v === "unclear" ? "" : "good"}"><b>${esc(short(a.name))}</b> at ${a.durability ?? 100}%: ${rangeText(ra.range)}, at ${b.durability}%: ${rangeText(rb.range)}. ${{ same: "<b>Durability makes no difference.</b>", different: "<b>Durability changes the value.</b>", unclear: "Too close to call yet." }[v]}</div>`);
+  }
+  const step5 = `
+    <div><b>Why:</b> if worn guns or armour are worth less, every value needs a durability note. Testers have assumed both ways.</div>
+    <div><b>How:</b> add the same item again with a lower durability (set Durability % before adding) and measure it.</div>
+    ${durFindings.join("") || '<div class="muted">Needs one item measured at two durabilities.</div>'}`;
+
+  const other = mode === "pve" ? "pvp" : "pve";
+  const otherSubs = state.subjects.filter((s) => s.mode === other);
+  const otherRes = solve(otherSubs, state.tests.filter((t) => t.mode === other), state.settings);
+  const modeKey = (s) => subjectKey({ ...s, mode: "x" });
+  const modeFindings = subs.flatMap((s) => {
+    const o = otherSubs.find((x) => modeKey(x) === modeKey(s));
+    const ra = res.get(s.id), rb = o && otherRes.get(o.id);
+    if (!o || !measured(ra) || !measured(rb)) return [];
+    const v = compareRanges(ra.range, rb.range, state.settings.tolerance);
+    return [`<div class="finding ${v === "unclear" ? "" : "good"}"><b>${esc(short(s.name))}</b> ${mode.toUpperCase()}: ${rangeText(ra.range)}, ${other.toUpperCase()}: ${rangeText(rb.range)}. ${{ same: "<b>Same in both modes.</b>", different: "<b>The modes differ</b>: keep separate values.", unclear: "Too close to call yet." }[v]}</div>`];
+  });
+  const step6 = `
+    <div><b>Why:</b> the P226 already looks different between PvP and PvE. If the modes differ, every value needs measuring twice.</div>
+    <div><b>How:</b> measure an item you've done here in the other mode (switch at the top).</div>
+    ${modeFindings.join("") || '<div class="muted">Needs one item measured in both modes.</div>'}`;
+
+  const status = (done, started) => (done ? "done" : started ? "doing" : "todo");
+  // Two clear pairs, so one misread timer can't decide a step on its own.
+  const decisive = (list) => list.filter((p) => p.cmp.finding !== "unclear").length >= 2;
+  const steps = [
+    ["Check the timer edges with known items", status(okControls >= 2 && !failedControls.length, controls.length > 0), step1],
+    ["Same gun with and without mods", status(decisive(presetPairs), presetPairs.length || missingBare.length), step2],
+    ["Attach one mod at a time", status(decisive(buildPairs), subs.some((s) => s.build)), step3],
+    ["Same mod on a different gun", status(modFindings.length > 0 && !modFindings.every((f) => f.includes("can't be compared")), byMod.size > 0), step4],
+    ["Does durability matter?", status(durFindings.some((f) => !f.includes("Too close")), durFindings.length > 0), step5],
+    ["PvP vs PvE", status(modeFindings.some((f) => !f.includes("Too close")), modeFindings.length > 0), step6],
+  ];
+  const firstOpen = steps.findIndex(([, st]) => st !== "done");
+
+  el.innerHTML = `
+    <h2>Finding the hidden rule (${mode.toUpperCase()})</h2>
+    <details ${state.tests.length ? "" : "open"}><summary>How this works</summary>
+      <p class="hint">The circle adds up a hidden value for everything you sacrifice and picks the timer from the total. For most items that hidden value is the API base value, but for many guns it's higher. The lab measures each item from timers, then checks simple rules (below) that could explain the gap, like "attached mods count double". A rule survives only while one number fits every result. It then tells you which test would kill a rule fastest. You don't need to do the maths: follow "Do this next", press the timer you got, and read the findings.</p>
+    </details>
+    <p class="lead">${summary}</p>
+    <div class="todo">${todo}</div>
+    ${weaponObs.length ? `<table class="rules"><thead><tr><th>Rule</th><th>Status</th><th>Why</th></tr></thead><tbody>${ruleRows}</tbody></table>
+      <div class="muted" style="font-size:11px;margin-top:4px">Checked against ${weaponObs.length} weapon result(s) at full durability. Worn items and conflicting results are left out.</div>` : ""}
+    ${doubtful.length > 1 ? `<div class="hint" style="margin-top:6px">Also worth re-checking (single test, breaks most rules): ${doubtful.slice(1, 5).map((d) => `<button class="link" data-action="select" data-id="${esc(d.id)}" data-scroll="1">${esc(d.name)}</button>`).join(", ")}</div>` : ""}
+    <div style="margin-top:10px">${steps.map(([title, st, body], i) => stepHtml(i + 1, title, st, i === firstOpen, body)).join("")}</div>`;
+
+  mountSearch($("#build-gun"), draftBuild.gun ? "Change bare gun…" : "1. Bare gun…", (it) => it.types.includes("gun") && !it.types.includes("preset"), (it) => { draftBuild = { gun: it, mods: [] }; render(); });
+  mountSearch($("#build-mod"), "2. Mod to attach…", (it) => it.types.includes("mods") && it.basePrice > 0, (it) => {
+    if (!draftBuild.gun) return toast("Pick the bare gun first.");
+    draftBuild.mods.push(it);
+    render();
+  });
+}
+
+function paramText(f) {
+  const r = f.fitted;
+  if (!r) return "";
+  if (f.param.unit === "x") return ratioText(r);
+  return `${r.lo === -Infinity ? "−∞" : rub(r.lo)} – ${rub(r.hi)}`;
+}
+
+// "HK MP5 9x19 submachine gun (Navy 3 Round Burst) Default" -> "HK MP5 (Navy 3 Round Burst) Default"
+const short = (name) => name.replace(/ \.?\d+(\.\d+)?x\d+\w*/, "").replace(/ (submachine gun|assault rifle|machine pistol|pistol|carbine)\b/, "");
+
+function partsNote(s, res) {
+  if (s.kind !== "weapon" || !s.itemId) return "";
+  const data = items[mode];
+  const item = data?.byId.get(s.itemId);
+  if (!item?.baseItem) return "";
+  const bare = subjectsFor().find((b) => b.kind === "weapon-bare" && b.itemId === item.baseItem && b.durability === s.durability);
+  const loose = (item.parts ?? []).filter((p) => p.id !== item.baseItem)
+    .reduce((sum, p) => sum + (data.byId.get(p.id)?.basePrice ?? 0) * p.count, 0);
+  const full = res.get(s.id);
+  const bareRes = bare && res.get(bare.id);
+  if (!bareRes || !full || bareRes.testCount === 0 || full.testCount === 0) {
+    return `<div class="muted">Loose parts: ${rub(loose)}. Add the bare gun to see what attached parts add.</div>`;
+  }
+  const p = partsRange(full.range, bareRes.range);
+  return `<div class="muted">Attached parts add ${rub(p.lo)} – ${rub(p.hi)} vs ${rub(loose)} loose${loose ? ` (×${(p.lo / loose).toFixed(2)}–${p.hi === Infinity ? "∞" : (p.hi / loose).toFixed(2)})` : ""}</div>`;
+}
+
+function renderSubjects(res) {
+  const subs = subjectsFor();
+  const rows = subs.map((s) => {
+    const r = res.get(s.id);
+    const ratio = s.apiBaseValue && r.testCount ? `×${(r.range.lo / s.apiBaseValue).toFixed(2)}–${r.range.hi === Infinity ? "∞" : (r.range.hi / s.apiBaseValue).toFixed(2)}` : "";
+    const conf = r.confirmed.hi === Infinity && r.confirmed.lo === 0 ? '<span class="muted">—</span>' : `${rub(r.confirmed.lo)} – ${rub(r.confirmed.hi)}`;
+    return `<tr class="${s.id === selected ? "selected" : ""}">
+      <td><button class="link" data-action="select" data-id="${esc(s.id)}">${esc(s.name)}</button>
+        <div class="muted">${KIND_LABEL[s.kind]}${condition(s) ? ` · ${esc(condition(s))}` : ""}</div>${partsNote(s, res)}</td>
+      <td class="num">${s.apiBaseValue ? rub(s.apiBaseValue) : "—"}</td>
+      <td class="num">${r.testCount ? `${rub(r.range.lo)} – ${rub(r.range.hi)}` : "—"}<div class="muted">${ratio}</div></td>
+      <td class="num">${conf}</td>
+      <td><span class="pill st-${r.status}">${STATUS_LABEL[r.status]}</span><div class="muted">${r.testCount} test${r.testCount === 1 ? "" : "s"}</div></td>
+      <td class="num"><input class="small" type="number" min="1" max="20" value="${s.owned ?? 1}" data-action="owned" data-id="${esc(s.id)}" title="Copies you can put in one test" /></td>
+      <td><button class="danger" data-action="del-subject" data-id="${esc(s.id)}" title="Remove">✕</button></td>
+    </tr>`;
+  }).join("");
+  $("#subjects").innerHTML = `
+    <h2>Items under test (${mode.toUpperCase()})</h2>
+    <div class="row" style="margin-bottom:8px">
+      <div class="search" id="subject-search"></div>
+      <label class="row muted">Durability % <input class="small" id="new-dur" type="number" min="0" max="100" value="100" /></label>
+      <label class="row muted">Key uses <input class="small" id="new-uses" type="number" min="0" placeholder="—" /></label>
+      <label class="row muted">Copies <input class="small" id="new-owned" type="number" min="1" value="1" /></label>
+    </div>
+    ${subs.length ? `<table><thead><tr><th>Item</th><th class="num">API value</th><th class="num">Known range</th><th class="num">Confirmed twice</th><th>Status</th><th class="num">Max copies</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="hint">Nothing yet. Search for a weapon preset, bare gun, armour or key.</p>'}`;
+  mountSearch($("#subject-search"), "Add item: weapon, armour, key…",
+    (it) => it.types.some((t) => UNKNOWN_TYPES.includes(t)), addSubject);
+}
+
+function renderStash() {
+  const list = state.stash[mode];
+  $("#stash").innerHTML = `
+    <h2>My filler items</h2>
+    <p class="hint">Junk you own with a known base value. These are used first and taken off the list when sacrificed.</p>
+    <div class="row" style="margin-bottom:8px"><div class="search" id="stash-search"></div></div>
+    ${list.length ? `<table><tbody>${list.map((st, i) => `<tr>
+      <td>${esc(st.name)}</td><td class="num">${rub(st.baseValue)}</td>
+      <td class="num"><input class="small" type="number" min="0" value="${st.count}" data-action="stash-count" data-i="${i}" /></td>
+      <td><button class="danger" data-action="stash-del" data-i="${i}">✕</button></td></tr>`).join("")}</tbody></table>` : '<p class="muted">Empty.</p>'}`;
+  mountSearch($("#stash-search"), "Add owned filler…",
+    (it) => it.basePrice > 0 && !it.types.some((t) => UNKNOWN_TYPES.includes(t)), (it) => {
+      const ex = state.stash[mode].find((s) => s.itemId === it.id);
+      if (ex) ex.count += 1;
+      else state.stash[mode].push({ itemId: it.id, name: it.name, baseValue: it.basePrice, count: 1 });
+      save();
+    });
+}
+
+function renderSettings() {
+  const data = items[mode];
+  $("#settings").innerHTML = `
+    <h2>Settings</h2>
+    <div style="display:grid;gap:8px">
+      <label class="row">Confident within <input class="small" type="number" step="500" min="500" value="${state.settings.tolerance}" data-action="setting" data-key="tolerance" /> ₽ (each edge seen twice)</label>
+      <label class="row">Max items per test <input class="small" type="number" min="1" max="30" value="${state.settings.maxItems}" data-action="setting" data-key="maxItems" /></label>
+      <label class="row"><input type="checkbox" data-action="buy" ${buyFillers ? "checked" : ""} /> Suggest buying fillers when the stash can't hit the target</label>
+      <label class="row">Trader loyalty level for buying <input class="small" type="number" min="1" max="4" value="${traderLevel}" data-action="trader" /></label>
+      <div class="muted">Item data: ${data ? `${data.list.length} items, fetched ${new Date(data.fetchedAt).toLocaleString()}` : "loading…"}. Refresh with <code>bun run lab -- --refresh</code>.</div>
+    </div>`;
+}
+
+function renderTests(res) {
+  const tests = testsFor().slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const suspects = new Set([...res.values()].flatMap((r) => r.suspects));
+  const rows = tests.map((t) => {
+    const what = t.entries.length
+      ? t.entries.map((e) => `${e.qty}× ${esc(subjectById(e.subjectId)?.name ?? "?")}`).join(" + ")
+      : '<span class="pill">control</span> only known items:';
+    const fill = t.fillers.length ? ` ${t.entries.length ? "+ " : ""}${t.fillers.map((f) => `${f.qty}× ${esc(f.name)}`).join(", ")} <span class="muted">(${rub(fillerTotal(t.fillers))})</span>` : "";
+    return `<tr class="${suspects.has(t.id) ? "selected" : ""}" ${suspects.has(t.id) ? 'style="outline:1px solid rgba(248,113,113,.6)"' : ""}>
+      <td class="muted">${t.createdAt.slice(0, 10)}</td>
+      <td>${what}${fill}${t.notes ? `<div class="muted">${esc(t.notes)}</div>` : ""}${suspects.has(t.id) ? '<div class="warn">Suspect: the other tests agree without this one.</div>' : ""}</td>
+      <td><select data-action="test-timer" data-id="${esc(t.id)}"><option value="">pending</option>${TIMERS.map((x) => `<option ${t.timer === x ? "selected" : ""}>${x}</option>`).join("")}</select></td>
+      <td><label class="row muted"><input type="checkbox" data-action="test-exclude" data-id="${esc(t.id)}" ${t.excluded ? "checked" : ""} /> exclude</label></td>
+      <td><button class="danger" data-action="test-del" data-id="${esc(t.id)}">✕</button></td></tr>`;
+  }).join("");
+  const subs = subjectsFor();
+  $("#tests").innerHTML = `
+    <h2>Test log (${tests.length})</h2>
+    <details><summary>Record a test you ran yourself</summary>
+      <div class="row" style="margin:8px 0">
+        <select id="m-subject">${subs.map((s) => `<option value="${esc(s.id)}">${esc(s.name)} ${esc(condition(s))}</option>`).join("")}</select>
+        <label class="row muted">Qty <input class="small" id="m-qty" type="number" min="1" value="1" /></label>
+        <label class="row muted">Other known value ₽ <input id="m-fill" type="number" min="0" value="0" style="width:100px" /></label>
+        <select id="m-timer">${TIMERS.map((x) => `<option>${x}</option>`).join("")}</select>
+        <input id="m-notes" placeholder="Notes" />
+        <button class="primary" data-action="manual">Add</button>
+      </div>
+    </details>
+    ${tests.length ? `<table><thead><tr><th>Date</th><th>Sacrificed</th><th>Timer</th><th></th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="muted">No tests yet.</p>'}`;
+}
+
+// ---------- search ----------
+
+function mountSearch(host, placeholder, filter, onPick) {
+  host.innerHTML = `<input placeholder="${esc(placeholder)}" /><div class="results" hidden></div>`;
+  const input = host.querySelector("input");
+  const box = host.querySelector(".results");
+  let matches = [];
+  const show = () => {
+    const q = input.value.trim().toLowerCase();
+    const data = items[mode];
+    if (!q || !data) { box.hidden = true; return; }
+    const words = q.split(/\s+/);
+    matches = data.list.filter((it) => filter(it) && words.every((w) => it.name.toLowerCase().includes(w) || it.shortName.toLowerCase().includes(w))).slice(0, 15);
+    box.innerHTML = matches.map((it, i) => `<div data-i="${i}" class="${i === 0 ? "hl" : ""}"><span>${esc(it.name)}</span><span class="muted">${rub(it.basePrice)}</span></div>`).join("") || '<div class="muted">No match</div>';
+    box.hidden = false;
+  };
+  input.addEventListener("input", show);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && matches[0]) { onPick(matches[0]); input.value = ""; box.hidden = true; }
+    if (e.key === "Escape") box.hidden = true;
+  });
+  box.addEventListener("mousedown", (e) => {
+    const row = e.target.closest("[data-i]");
+    if (!row) return;
+    e.preventDefault();
+    onPick(matches[Number(row.dataset.i)]);
+    input.value = "";
+    box.hidden = true;
+  });
+  input.addEventListener("blur", () => setTimeout(() => (box.hidden = true), 100));
+}
+
+function addSubject(it, preset = {}) {
+  const kind = kindFor(it);
+  const dur = preset.durability !== undefined ? String(preset.durability) : $("#new-dur").value;
+  const uses = $("#new-uses").value;
+  const s = {
+    id: uid(), mode, itemId: it.id, name: it.name, kind,
+    durability: kind === "key" || dur === "" ? undefined : Number(dur),
+    uses: kind === "key" && uses !== "" ? Number(uses) : undefined,
+    apiBaseValue: it.basePrice || undefined,
+    owned: Math.max(1, Number($("#new-owned").value) || 1),
+  };
+  state.subjects.push(s);
+  selected = s.id;
+  save();
+}
+
+// ---------- actions ----------
+
+// Sacrificed stash fillers are gone.
+function useUpStash(used) {
+  for (const f of used) {
+    const st = state.stash[mode].find((s) => (f.itemId ? s.itemId === f.itemId : s.name === f.name));
+    if (st) st.count = Math.max(0, st.count - f.qty);
+  }
+  state.stash[mode] = state.stash[mode].filter((s) => s.count > 0);
+}
+
+function record(timer) {
+  const plan = currentPlan;
+  if (!plan) return;
+  state.tests.push({
+    id: uid(), mode, createdAt: new Date().toISOString(),
+    entries: [{ subjectId: plan.subjectId, qty: plan.qty }],
+    fillers: plan.fillers.map((f) => ({ itemId: f.itemId, name: f.name, baseValue: f.baseValue, qty: f.qty })),
+    timer,
+  });
+  useUpStash(plan.fillers.filter((f) => f.owned));
+  save();
+  toast(`Recorded ${timer}.`);
+}
+
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn || btn.tagName === "INPUT" || btn.tagName === "SELECT") return;
+  const { action, id } = btn.dataset;
+  if (action === "mode") {
+    mode = btn.dataset.mode;
+    localStorage.setItem(`${STORE}:mode`, mode);
+    selected = null;
+    await loadItems(mode).catch((err) => toast(err.message));
+    render();
+  } else if (action === "select") {
+    selected = id;
+    render();
+    if (btn.dataset.scroll) $("#next").scrollIntoView({ behavior: "smooth", block: "start" });
+  } else if (action === "add-item") {
+    const it = items[mode]?.byId.get(btn.dataset.item);
+    if (!it) return toast("Item data not loaded yet.");
+    const existing = subjectsFor().find((s) => s.itemId === it.id && s.kind === kindFor(it) && !s.build && (s.durability ?? 100) === 100);
+    if (existing) selected = existing.id;
+    else addSubject(it, { durability: 100 });
+    render();
+    $("#next").scrollIntoView({ behavior: "smooth", block: "start" });
+  } else if (action === "control") {
+    const plan = controlPlans[Number(btn.dataset.i)];
+    if (!plan) return;
+    state.tests.push({
+      id: uid(), mode, createdAt: new Date().toISOString(), entries: [],
+      fillers: plan.picks.map((x) => ({ itemId: x.option.itemId, name: x.option.name, baseValue: x.option.baseValue, qty: x.qty })),
+      timer: btn.dataset.timer, notes: `Control: expected ${plan.expect}`,
+    });
+    useUpStash(plan.picks.filter((x) => x.option.owned).map((x) => ({ itemId: x.option.itemId, name: x.option.name, qty: x.qty })));
+    save();
+    toast(btn.dataset.timer === plan.expect ? "As expected." : "Unexpected timer: see step 1.");
+  } else if (action === "build-unmod") { draftBuild.mods.splice(Number(btn.dataset.i), 1); render(); }
+  else if (action === "build-clear") { draftBuild = { gun: null, mods: [] }; render(); }
+  else if (action === "build-create") {
+    const { gun, mods } = draftBuild;
+    if (!gun || !mods.length) return;
+    const grouped = [];
+    for (const m of mods) {
+      const g = grouped.find((x) => x.itemId === m.id);
+      if (g) g.count++;
+      else grouped.push({ itemId: m.id, name: m.name, baseValue: m.basePrice, count: 1 });
+    }
+    const build = { gunValue: gun.basePrice, mods: grouped };
+    const s = {
+      id: uid(), mode, itemId: gun.id, kind: "weapon", durability: 100, owned: 1,
+      name: `${short(gun.name)} + ${grouped.map((m) => `${m.count > 1 ? `${m.count}Ã— ` : ""}${m.name}`).join(" + ")}`,
+      apiBaseValue: gun.basePrice + grouped.reduce((sum, m) => sum + m.baseValue * m.count, 0),
+      build,
+    };
+    if (state.subjects.some((x) => subjectKey(x) === subjectKey(s))) return toast("That build is already listed.");
+    state.subjects.push(s);
+    selected = s.id;
+    draftBuild = { gun: null, mods: [] };
+    save();
+    toast("Build added. Make sure the bare gun is measured too.");
+  }
+  else if (action === "record") record(btn.dataset.timer);
+  else if (action === "del-subject") {
+    const used = state.tests.filter((t) => t.entries.some((x) => x.subjectId === id)).length;
+    if (!confirm(`Remove this item${used ? ` and its ${used} test(s)` : ""}?`)) return;
+    state.subjects = state.subjects.filter((s) => s.id !== id);
+    state.tests = state.tests.filter((t) => !t.entries.some((x) => x.subjectId === id));
+    save();
+  } else if (action === "stash-del") { state.stash[mode].splice(Number(btn.dataset.i), 1); save(); }
+  else if (action === "test-del") {
+    if (!confirm("Delete this test?")) return;
+    state.tests = state.tests.filter((t) => t.id !== id);
+    save();
+  } else if (action === "manual") {
+    const subjectId = $("#m-subject").value;
+    if (!subjectId) return toast("Add an item first.");
+    const fill = Number($("#m-fill").value) || 0;
+    state.tests.push({
+      id: uid(), mode, createdAt: new Date().toISOString(),
+      entries: [{ subjectId, qty: Math.max(1, Number($("#m-qty").value) || 1) }],
+      fillers: fill ? [{ name: "Other known items", baseValue: fill, qty: 1 }] : [],
+      timer: $("#m-timer").value, notes: $("#m-notes").value || undefined,
+    });
+    save();
+  } else if (action === "export") {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(blob), download: `base-value-lab-${new Date().toISOString().slice(0, 10)}.json`,
+    });
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } else if (action === "import") $("#import-file").click();
+  else if (action === "seed") {
+    const res = await fetch("sheet-seed.json");
+    if (!res.ok) return toast("sheet-seed.json not found.");
+    importState(await res.json(), "sheet tests");
+  }
+});
+
+document.addEventListener("change", (e) => {
+  const el = e.target;
+  const { action, id } = el.dataset;
+  if (action === "owned") { subjectById(id).owned = Math.max(1, Number(el.value) || 1); save(); }
+  else if (action === "stash-count") { state.stash[mode][Number(el.dataset.i)].count = Math.max(0, Number(el.value) || 0); save(); }
+  else if (action === "setting") { state.settings[el.dataset.key] = Math.max(1, Number(el.value) || 1); save(); }
+  else if (action === "buy") { buyFillers = el.checked; localStorage.setItem(`${STORE}:buy`, String(buyFillers)); render(); }
+  else if (action === "trader") { traderLevel = Math.min(4, Math.max(1, Number(el.value) || 4)); localStorage.setItem(`${STORE}:trader`, String(traderLevel)); render(); }
+  else if (action === "test-timer") { state.tests.find((t) => t.id === id).timer = el.value || null; save(); }
+  else if (action === "test-exclude") { state.tests.find((t) => t.id === id).excluded = el.checked || undefined; save(); }
+});
+
+$("#import-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  try { importState(JSON.parse(await file.text()), file.name); }
+  catch (err) { toast(`Import failed: ${err.message}`); }
+});
+
+async function importState(raw, label) {
+  let incoming;
+  try { incoming = parseState(raw); }
+  catch (err) { return toast(`Import failed: ${err.message}`); }
+  // Fill in item ids and API values for name-only subjects (sheet imports).
+  for (const s of incoming.subjects) {
+    const data = await loadItems(s.mode).catch(() => null);
+    const it = s.itemId ? data?.byId.get(s.itemId) : data?.byName.get(s.name.toLowerCase());
+    if (it) {
+      s.itemId = it.id;
+      s.kind = kindFor(it);
+      s.apiBaseValue ??= it.basePrice || undefined;
+    }
+  }
+  const before = state.tests.length;
+  state = mergeStates(state, incoming);
+  save();
+  toast(`Imported ${state.tests.length - before} test(s) from ${label}.`);
+}
+
+render();
+loadItems(mode).then(render).catch((err) => toast(err.message));
+</script>
+</body>
+</html>
