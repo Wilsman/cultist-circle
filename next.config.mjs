@@ -7,6 +7,9 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: __dirname,
+  experimental: {
+    agentUpgrade: "security",
+  },
   // The Stash Scan icon index is built before `next build`
   // (scripts/build-stash-scan-index.ts) and read at runtime, so tracing cannot
   // see it. Ship it with the scan route, and keep the image caches out.
