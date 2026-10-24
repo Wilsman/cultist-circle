@@ -1,8 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { VersionInfo } from "@/components/version-info";
-import { CURRENT_VERSION } from "@/config/changelog";
+import { VersionTag } from "@/components/version-tag";
 import { useLanguage } from "@/contexts/language-context";
 import { UpdateAlertBar } from "@/components/app/update-alert-bar";
 import { ScavInvadersEasterEgg } from "@/components/scav-invaders/scav-invaders-easter-egg.component";
@@ -31,7 +30,7 @@ export function HeaderSection() {
       {/* Version and Discord share one row on desktop to save height */}
       <div className="space-y-3 lg:flex lg:flex-wrap lg:items-center lg:justify-center lg:gap-x-5 lg:gap-y-2 lg:space-y-0">
         <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
-          <VersionInfo version={CURRENT_VERSION} />
+          <VersionTag />
         </div>
         <div className="flex items-center justify-center gap-3">
           <a
