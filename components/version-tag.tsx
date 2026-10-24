@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CURRENT_VERSION, LAST_UPDATED } from "@/config/changelog";
+import { CURRENT_VERSION } from "@/config/changelog";
 import { latestRelease } from "@/config/generated/latest";
 import type { ChangelogEntry } from "@/lib/changelog-core";
 import { useLanguage } from "@/contexts/language-context";
@@ -87,23 +87,6 @@ function Diffstat({ entry }: { entry: ChangelogEntry }) {
   );
 }
 
-// Format date from YYYY-MM-DD to a readable format. Parsed as a local date:
-// `new Date("YYYY-MM-DD")` is UTC midnight and renders a day early in
-// negative-offset timezones.
-function formatDate(dateString: string): string {
-  try {
-    const [year, month, day] = dateString.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return dateString;
-  }
-}
-
 const isDev = process.env.NODE_ENV === "development";
 
 /**
@@ -138,9 +121,6 @@ export function VersionTag() {
           <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-400" />v
           {CURRENT_VERSION}
           {isDev ? "-dev" : ""}
-        </span>
-        <span className="text-xs text-slate-400" suppressHydrationWarning>
-          {t("Last updated: {date}", { date: formatDate(LAST_UPDATED) })}
         </span>
       </div>
     );
@@ -206,9 +186,6 @@ export function VersionTag() {
           </HoverCardContent>
         </HoverCardPortal>
       </HoverCard>
-      <span className="text-xs text-slate-400" suppressHydrationWarning>
-        {t("Last updated: {date}", { date: formatDate(latestRelease.date) })}
-      </span>
       <ChangelogDialog open={open} onOpenChange={setOpen} entries={entries} />
     </div>
   );
