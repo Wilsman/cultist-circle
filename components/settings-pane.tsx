@@ -73,7 +73,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CURRENT_VERSION } from "@/config/changelog";
+import { APP_VERSION } from "@/lib/app-version";
 
 interface SettingsPaneProps {
   isOpen: boolean;
@@ -347,7 +347,7 @@ export default function SettingsPane({
                 variant="outline"
                 className="bg-black/40 border-white/5 text-[10px] text-gray-400 px-2 py-0"
               >
-                v{CURRENT_VERSION}
+                v{APP_VERSION}
               </Badge>
               <span className="text-[10px] text-gray-600">{t("Stable")}</span>
             </div>

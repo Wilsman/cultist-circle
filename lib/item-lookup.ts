@@ -115,7 +115,11 @@ export const LOOKUP_PAGES: LookupPage[] = [
   { href: "/scan", label: "Stash Scan", keywords: ["screenshot"] },
   { href: "/base-values", label: "Base Values", keywords: ["prices", "table"] },
   { href: "/faq", label: "Help & FAQ", keywords: ["help", "faq"] },
-  { href: "/updates", label: "Updates", keywords: ["changelog", "news"] },
+  {
+    href: "/updates",
+    label: "Changelog",
+    keywords: ["updates", "news", "version"],
+  },
 ];
 
 export function searchLookupPages(

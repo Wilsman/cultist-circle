@@ -2,7 +2,10 @@ import useSWR from "swr";
 import { isMissingItemIcon, resolveItemIcon } from "@/lib/item-icon";
 import { useEffect, useRef, useState } from "react";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
-import { createSWRPersistMiddleware } from "@/utils/swr-persistence";
+import {
+  createSWRPersistMiddleware,
+  pruneStaleSWRCache,
+} from "@/utils/swr-persistence";
 import {
   fetchTarkovData,
   CACHE_TTL,
@@ -13,7 +16,7 @@ import {
 } from "@/hooks/use-tarkov-api";
 import { toast as sonnerToast } from "sonner";
 import { useLanguage } from "@/contexts/language-context";
-import { CURRENT_VERSION } from "@/config/changelog";
+import { ITEM_CACHE_KEY } from "@/lib/app-version";
 import {
   GAME_MODES,
   toTarkovJsonGameMode,
@@ -21,11 +24,15 @@ import {
 } from "@/lib/game-mode";
 
 // Create a single persistence middleware for the combined data
-// The middleware handles localStorage quota errors and clears old cache when needed
+// The middleware handles localStorage quota errors and clears old cache when needed.
+// ITEM_CACHE_KEY only changes when the code shaping cached items changes.
 const swrPersistMiddleware = createSWRPersistMiddleware(
-  CURRENT_VERSION,
+  ITEM_CACHE_KEY,
   CACHE_TTL,
 ); // Using centralized cache TTL
+
+// Drop item data persisted under an older cache key.
+pruneStaleSWRCache(ITEM_CACHE_KEY);
 
 const lastData = Object.fromEntries(
   GAME_MODES.map((mode) => [mode, [] as SimplifiedItem[]]),
@@ -82,7 +89,7 @@ export function useItemsData(mode: GameMode) {
   }, []);
 
   // Use separate SWR keys for each mode to ensure proper mode switching
-  const swrKey = `tarkov-dev-api/${mode}/${language}?v=${CURRENT_VERSION}`;
+  const swrKey = `tarkov-dev-api/${mode}/${language}?v=${ITEM_CACHE_KEY}`;
 
   // Track mode changes without clearing cache
   useEffect(() => {

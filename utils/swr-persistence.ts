@@ -123,6 +123,28 @@ export function createSWRPersistMiddleware(version: string, ttl: number = CACHE_
 }
 
 /**
+ * Removes persisted SWR entries saved under any other cache version, so data
+ * left behind by an old cache key does not keep using localStorage quota.
+ */
+export function pruneStaleSWRCache(version: string): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const suffix = `-${version}`;
+    const keys = Array.from({ length: localStorage.length }, (_, i) =>
+      localStorage.key(i),
+    );
+    keys.forEach(key => {
+      if (key?.startsWith(STORAGE_KEY_PREFIX) && !key.endsWith(suffix)) {
+        localStorage.removeItem(key);
+      }
+    });
+  } catch (error) {
+    console.error('Error pruning SWR cache:', error);
+  }
+}
+
+/**
  * Clears SWR cached data from localStorage
  * @param keyPattern Optional pattern to selectively clear cache entries
  */

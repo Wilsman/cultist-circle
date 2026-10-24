@@ -1,4 +1,5 @@
 import React from "react";
+import { STORAGE_SCHEMA_VERSION } from "@/config/changelog";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -38,7 +39,7 @@ function renderWithLanguage(ui: React.ReactNode) {
 describe("Tarkov request status UI", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("appVersion", "2.1.2");
+    localStorage.setItem("storageSchemaVersion", String(STORAGE_SCHEMA_VERSION));
     class ResizeObserverMock {
       observe() {}
       unobserve() {}

@@ -57,7 +57,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast as sonnerToast } from "sonner";
 import NextItemHints from "@/components/next-item-hints";
 // ShareCardButton and ShareCodeDialog merged into ShareButton
-import { CURRENT_VERSION } from "@/config/changelog";
+import { STORAGE_SCHEMA_VERSION } from "@/config/changelog";
+import { ensureStorageSchema } from "@/lib/storage-schema";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 import { IncompatibleItemsNotice } from "@/components/incompatible-items-notice";
 import { useLanguage } from "@/contexts/language-context";
@@ -1978,42 +1979,27 @@ function AppContent({ contributors = [] }: AppProps) {
     }
   }, [isThresholdMet, threshold, t]);
 
-  // Check if the app version has changed since the user last used it
+  // Clear stale localStorage once when STORAGE_SCHEMA_VERSION is bumped.
+  // Ordinary releases keep visitors' saved data.
   useEffect(() => {
-    // Get the version that is currently stored in local storage
-    const storedVersion = localStorage.getItem("appVersion");
-    // If the stored version is different from the one we define in the code
-    if (storedVersion !== CURRENT_VERSION) {
-      // Print a message to the console to let us know that the version has changed
-      console.log(
-        `App version changed from ${
-          storedVersion || "none"
-        } to ${CURRENT_VERSION}`,
-      );
-      // If the version has changed, we want to clear out most items in local storage.
-      // Keep durable user preferences and progress that should survive releases.
-      const preservedStorageKeys = new Set([
+    const result = ensureStorageSchema(
+      localStorage,
+      STORAGE_SCHEMA_VERSION,
+      new Set([
         "cookieConsent",
         GAME_MODE_STORAGE_KEY,
         RECIPE_COMPLETION_STORAGE_KEY,
         SEEN_UPDATES_STORAGE_KEY,
-      ]);
-      Object.keys(localStorage).forEach((key) => {
-        if (!preservedStorageKeys.has(key)) {
-          localStorage.removeItem(key);
-        }
-      });
-      // Now that we have cleared out the old data, update the version in local storage
-      localStorage.setItem("appVersion", CURRENT_VERSION);
-
-      // NOTE: no state resets here. The synchronous reload below discards
-      // this render's state updates before React could commit them, so
-      // setState calls would be dead code (and trip set-state-in-effect).
-
-      // Force a page reload to ensure all state is properly reset
+      ]),
+    );
+    if (result === "reset") {
+      console.log(
+        `Storage schema changed to v${STORAGE_SCHEMA_VERSION}; cleared saved data`,
+      );
+      // Reload so all state starts from the cleared storage.
       window.location.reload();
     }
-  }, [t]);
+  }, []);
 
   // Move these useMemo hooks here, right after the state declarations
   const isClearButtonDisabled = useMemo(() => {
