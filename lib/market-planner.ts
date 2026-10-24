@@ -4,6 +4,7 @@
 // never penalised and fewer items are fine.
 
 import { planSacrifice, type OwnedItem } from "@/lib/stash-scan/optimize";
+import { sacrificeBaseValue } from "@/lib/stash-scan/owned-items";
 import type { TraderLevels } from "@/components/ui/trader-level-selector";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 
@@ -86,6 +87,22 @@ export function marketPool(
   for (const c of byRatio.slice(0, poolSize)) pool.set(c.id, c);
   for (const c of clearers) pool.set(c.id, c);
   return [...pool.values()];
+}
+
+/**
+ * Base value still needed once pinned slots contribute their bonus-adjusted
+ * base value, matching how `MarketCandidate.baseValue` is computed.
+ */
+export function remainingAfterPinned(
+  pinnedItems: ReadonlyArray<SimplifiedItem | null | undefined>,
+  threshold: number,
+  itemBonus: number,
+): number {
+  const pinnedTotal = pinnedItems.reduce(
+    (sum, item) => sum + (item ? sacrificeBaseValue(item, itemBonus) : 0),
+    0,
+  );
+  return Math.max(0, threshold - pinnedTotal);
 }
 
 export function planFromMarket(input: MarketPlanInput): MarketPlan | null {

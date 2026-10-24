@@ -139,6 +139,7 @@ import { clearRitualHistory, listRituals } from "@/lib/ritual-tracker-db";
 import {
   cheapestTraderPrice,
   planFromMarket,
+  remainingAfterPinned,
   singleSlotCandidates,
   type MarketCandidate,
 } from "@/lib/market-planner";
@@ -1587,12 +1588,11 @@ function AppContent({ contributors = [] }: AppProps) {
       // Small delay to prevent UI freezing
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      const pinnedTotal = activeSlots.reduce(
-        (sum, item, index) => sum + (isPinned(index) && item ? item.basePrice : 0),
-        0,
+      const remainingThreshold = remainingAfterPinned(
+        activeSlots.map((item, i) => (isPinned(i) ? item : null)),
+        threshold,
+        itemBonus,
       );
-
-      const remainingThreshold = Math.max(0, threshold - pinnedTotal);
 
       // If there's nothing left to fulfill, keep current unpinned items as-is and mark success
       if (remainingThreshold === 0) {
@@ -1605,7 +1605,6 @@ function AppContent({ contributors = [] }: AppProps) {
           .filter((item, i): item is SimplifiedItem => Boolean(item) && isPinned(i))
           .map((item) => item.id),
       );
-      const bonusMultiplier = 1 + itemBonus / 100;
       const itemsById = new Map<string, SimplifiedItem>();
       const candidates: MarketCandidate[] = [];
       for (const item of items) {
@@ -1622,7 +1621,7 @@ function AppContent({ contributors = [] }: AppProps) {
         itemsById.set(item.id, item);
         candidates.push({
           id: item.id,
-          baseValue: Math.floor(item.basePrice * bonusMultiplier),
+          baseValue: sacrificeBaseValue(item, itemBonus),
           cost: price,
         });
       }

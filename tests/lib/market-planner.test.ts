@@ -3,11 +3,15 @@ import { describe, expect, it } from "vitest";
 import {
   cheapestTraderPrice,
   planFromMarket,
+  remainingAfterPinned,
   singleSlotCandidates,
   type MarketCandidate,
 } from "@/lib/market-planner";
 import type { TraderLevels } from "@/components/ui/trader-level-selector";
-import type { TraderBuyOffer } from "@/types/SimplifiedItem";
+import type {
+  SimplifiedItem,
+  TraderBuyOffer,
+} from "@/types/SimplifiedItem";
 
 const item = (
   id: string,
@@ -96,6 +100,39 @@ describe("planFromMarket", () => {
         slots: 2,
       }),
     ).toBeNull();
+  });
+});
+
+describe("remainingAfterPinned", () => {
+  const pinned = (basePrice: number): SimplifiedItem =>
+    ({ basePrice }) as SimplifiedItem;
+
+  it("counts pinned items with the sacrifice bonus applied", () => {
+    // Regression: raw basePrice said 300k remained, so auto-select rejected a
+    // 290k candidate that actually completed the circle.
+    expect(
+      remainingAfterPinned([pinned(100_000)], 400_000, 20),
+    ).toBe(280_000);
+  });
+
+  it("floors each pinned contribution like MarketCandidate.baseValue", () => {
+    // 33_333 * 1.2 = 39_999.6 -> 39_999 per item, so two pinned items leave
+    // 320_002 rather than 320_000.8.
+    expect(
+      remainingAfterPinned([pinned(33_333), pinned(33_333)], 400_000, 20),
+    ).toBe(320_002);
+  });
+
+  it("treats empty and null slots as contributing nothing", () => {
+    expect(remainingAfterPinned([null, pinned(50_000), null], 100_000, 0)).toBe(
+      50_000,
+    );
+    expect(remainingAfterPinned([], 400_000, 25)).toBe(400_000);
+  });
+
+  it("clamps to zero when pinned items already meet the threshold", () => {
+    expect(remainingAfterPinned([pinned(400_000)], 400_000, 0)).toBe(0);
+    expect(remainingAfterPinned([pinned(300_000)], 400_000, 50)).toBe(0);
   });
 });
 
