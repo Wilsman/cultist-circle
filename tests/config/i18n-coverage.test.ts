@@ -80,6 +80,13 @@ const DYNAMIC_KEYS = [
   "Recipe report could not be saved",
   // Ritual reminder notification (uses getMessage directly, not t())
   "{mode} ritual ready",
+  // Relative-time labels (t(relative.key) via relativeTimeParts)
+  "just now",
+  "{n}m ago",
+  "{n}h ago",
+  "yesterday",
+  "{n}d ago",
+  "{n}mo ago",
 ];
 
 function sourceFiles(dir: string): string[] {

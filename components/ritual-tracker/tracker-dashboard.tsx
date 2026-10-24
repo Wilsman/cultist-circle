@@ -99,8 +99,8 @@ const STATUS_LABELS: Record<RitualStatus | "ready", string> = {
   cancelled: "Cancelled",
 };
 
-function formatRubles(value: number | null): string {
-  if (value === null) return "Incomplete";
+function formatRubles(value: number | null, incompleteLabel: string): string {
+  if (value === null) return incompleteLabel;
   const rounded = Math.round(value);
   return `${rounded < 0 ? "-" : ""}₽${Math.abs(rounded).toLocaleString()}`;
 }
@@ -275,7 +275,7 @@ function ActiveRitualCard({
             {t("Input cost")}
           </p>
           <p className="mt-1 text-sm font-semibold tabular-nums text-cyan-300">
-            {formatRubles(ritual.totals.inputCost)}
+            {formatRubles(ritual.totals.inputCost, t("Incomplete"))}
           </p>
         </div>
       </div>
@@ -657,22 +657,22 @@ export function TrackerDashboard() {
             />
             <MetricCard
               label={t("Total cost")}
-              value={formatRubles(insights.totalInputCost)}
+              value={formatRubles(insights.totalInputCost, t("Incomplete"))}
               icon={Coins}
             />
             <MetricCard
               label={t("Avg cost")}
-              value={formatRubles(insights.averageInputCost)}
+              value={formatRubles(insights.averageInputCost, t("Incomplete"))}
               icon={LineChart}
             />
             <MetricCard
               label={t("Rewards")}
-              value={formatRubles(insights.totalRewardValue)}
+              value={formatRubles(insights.totalRewardValue, t("Incomplete"))}
               icon={PackageOpen}
             />
             <MetricCard
               label={t("Net return")}
-              value={formatRubles(insights.netReturn)}
+              value={formatRubles(insights.netReturn, t("Incomplete"))}
               tone={insights.netReturn >= 0 ? "positive" : "negative"}
               icon={insights.netReturn >= 0 ? TrendingUp : TrendingDown}
             />
@@ -735,7 +735,7 @@ export function TrackerDashboard() {
                       </p>
                       <p className="text-[11px] text-slate-600">
                         {t("{value} captured value", {
-                          value: formatRubles(reward.totalValue),
+                          value: formatRubles(reward.totalValue, t("Incomplete")),
                         })}
                       </p>
                     </div>
@@ -801,7 +801,7 @@ export function TrackerDashboard() {
                               className={`text-sm font-semibold tabular-nums ${combo.averageNet >= 0 ? "text-emerald-300" : "text-red-300"}`}
                             >
                               {combo.averageNet >= 0 ? "+" : ""}
-                              {formatRubles(combo.averageNet)}
+                              {formatRubles(combo.averageNet, t("Incomplete"))}
                             </span>
                             <span className="text-[10px] text-amber-200/70 opacity-0 transition-opacity group-hover:opacity-100">
                               {t("Load combo")}
@@ -906,7 +906,7 @@ export function TrackerDashboard() {
                       >
                         {net === null
                           ? t("Incomplete")
-                          : `${net >= 0 ? "+" : ""}${formatRubles(net)}`}
+                          : `${net >= 0 ? "+" : ""}${formatRubles(net, t("Incomplete"))}`}
                       </span>
                     </summary>
                     <div className="border-t border-white/7 px-4 py-4 sm:pl-12">
