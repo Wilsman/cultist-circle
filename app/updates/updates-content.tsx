@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { CURRENT_VERSION, LAST_UPDATED } from "@/config/changelog";
+import { APP_RELEASE_DATE, APP_VERSION } from "@/lib/app-version";
 import { useLanguage } from "@/contexts/language-context";
 
 function formatDate(dateString: string): string {
   try {
-    const date = new Date(dateString);
+    // Parse YYYY-MM-DD as a local date; `new Date(string)` is UTC midnight
+    // and shows the previous day in negative-offset timezones.
+    const [year, month, day] = dateString.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString(undefined, {
       year: "numeric",
       month: "long",
@@ -37,12 +40,12 @@ export function UpdatesContent() {
         <div className="mb-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/60 px-4 py-2 text-lg text-slate-200">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            {t("Current Version: v{version}", { version: CURRENT_VERSION })}
+            {t("Current Version: v{version}", { version: APP_VERSION })}
           </div>
         </div>
 
-        <p className="text-slate-400 mb-6">
-          {t("Last updated: {date}", { date: formatDate(LAST_UPDATED) })}
+        <p className="text-slate-400 mb-6" suppressHydrationWarning>
+          {t("Last updated: {date}", { date: formatDate(APP_RELEASE_DATE) })}
         </p>
 
         <div className="text-sm text-slate-500">

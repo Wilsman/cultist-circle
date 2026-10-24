@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLanguage } from "@/contexts/language-context";
 import { formatMessageSlots } from "@/lib/format-message-slots";
-import { CURRENT_VERSION } from "@/config/changelog";
+import { APP_BUILD } from "@/lib/app-version";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -42,7 +42,7 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ type, description, version: CURRENT_VERSION }),
+        body: JSON.stringify({ type, description, version: APP_BUILD }),
       });
 
       const result: { error?: string; data?: unknown } = await response.json();

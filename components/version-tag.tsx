@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CURRENT_VERSION } from "@/config/changelog";
+import { APP_VERSION } from "@/lib/app-version";
 import { latestRelease } from "@/config/generated/latest";
 import type { ChangelogEntry } from "@/lib/changelog-core";
 import { useLanguage } from "@/contexts/language-context";
@@ -92,7 +92,7 @@ const isDev = process.env.NODE_ENV === "development";
 /**
  * Commit-derived version pill. Hover (desktop) shows the latest release;
  * click/tap opens the full changelog dialog. Falls back to the manually
- * maintained CURRENT_VERSION when no git history was available at build time.
+ * maintained fallback version when no git history was available at build time.
  */
 export function VersionTag() {
   const { t } = useLanguage();
@@ -119,7 +119,7 @@ export function VersionTag() {
       <div className="inline-flex items-center gap-3 justify-center">
         <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] text-slate-200 shadow-sm">
           <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-400" />v
-          {CURRENT_VERSION}
+          {APP_VERSION}
           {isDev ? "-dev" : ""}
         </span>
       </div>
