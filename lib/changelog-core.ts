@@ -29,8 +29,9 @@ interface ClassifiedCommit {
 }
 
 // Subjects that look like a feature even without a conventional prefix.
+// "add" needs a word boundary so "address"/"additional" don't count as feats.
 const MINOR_WORDS =
-  /^(add|implement|introduce|redesign|phase \d|expand|integrate)/i;
+  /^(add(ed|s|ing)?\b|implement|introduce|redesign|phase \d|expand|integrate)/i;
 
 // Noise commits left out of the log entirely.
 export const SKIP_PATTERNS: RegExp[] = [
@@ -42,6 +43,9 @@ export const SKIP_PATTERNS: RegExp[] = [
 // Attribution/sign-off trailers stripped from commit bodies.
 const TRAILER =
   /^(Co-Authored-By|Signed-off-by|Reviewed-by|Acked-by|Tested-by|Approved-by|Suggested-by|Reported-by|Cc):/i;
+
+// Manual release markers this repo appends to commit bodies ("[v2.1.2]").
+const RELEASE_TAG = /^\[v?\d+\.\d+\.\d+\]$/i;
 
 export function classifyCommit(subject: string): ClassifiedCommit {
   const m = subject.match(/^(\w+)(?:\(([^)]+)\))?(!)?:\s*(.+)$/);
@@ -75,8 +79,14 @@ export function buildChangelog(
 
   for (const record of rawLog.split("\x1e")) {
     if (!record.trim()) continue;
-    const [hash, date, subject, bodyRaw = "", stat = ""] = record.split("\x1f");
-    const trimmedSubject = subject.trim();
+    // The diffstat is always the last \x1f field; rejoin the fields before it
+    // so a stray delimiter in the body cannot silently drop the stat or body.
+    const fields = record.split("\x1f");
+    const stat = fields.length > 4 ? (fields.pop() as string) : "";
+    const [hash, date, subject] = fields;
+    if (!hash || !date) continue;
+    const bodyRaw = fields.slice(3).join("\x1f");
+    const trimmedSubject = (subject ?? "").trim();
     if (SKIP_PATTERNS.some((re) => re.test(trimmedSubject))) continue;
 
     const { kind, scope, breaking, title } = classifyCommit(trimmedSubject);
@@ -95,7 +105,10 @@ export function buildChangelog(
     const body = bodyRaw
       .split(/\r?\n/)
       .map((l) => l.trimEnd())
-      .filter((l) => l.trim() && !TRAILER.test(l.trim()));
+      .filter(
+        (l) =>
+          l.trim() && !TRAILER.test(l.trim()) && !RELEASE_TAG.test(l.trim()),
+      );
     const num = (re: RegExp) => Number(stat.match(re)?.[1] ?? 0);
 
     out.push({

@@ -36,6 +36,13 @@ describe("classifyCommit", () => {
     expect(classifyCommit("speed up perf of the lookup").kind).toBe("perf");
     expect(classifyCommit("tweak spacing").kind).toBe("change");
   });
+
+  it("does not treat words that merely start with 'add' as feats", () => {
+    expect(classifyCommit("Address review feedback").kind).toBe("change");
+    expect(classifyCommit("Additional tests for parser").kind).toBe("change");
+    expect(classifyCommit("Add a settings pane").kind).toBe("feat");
+    expect(classifyCommit("added fuzzy search").kind).toBe("feat");
+  });
 });
 
 describe("buildChangelog", () => {
@@ -102,6 +109,24 @@ describe("buildChangelog", () => {
     ].join("\n");
     const entries = buildChangelog(rec("a000001", "fix: x", body));
     expect(entries[0].body).toEqual(["First note", "Second note"]);
+  });
+
+  it("strips manual release tag markers from bodies", () => {
+    const body = "Real note\n\n[v2.1.2]";
+    const entries = buildChangelog(rec("a000001", "fix: x", body));
+    expect(entries[0].body).toEqual(["Real note"]);
+  });
+
+  it("keeps the diffstat when the body contains the field delimiter", () => {
+    const entries = buildChangelog(
+      rec("a000001", "fix: x", "first\x1fsecond", STAT),
+    );
+    expect(entries[0].body).toEqual(["first\x1fsecond"]);
+    expect(entries[0]).toMatchObject({
+      files: 3,
+      insertions: 10,
+      deletions: 5,
+    });
   });
 
   it("skips noise commits", () => {
