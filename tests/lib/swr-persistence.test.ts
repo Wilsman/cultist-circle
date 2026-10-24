@@ -3,6 +3,7 @@ import {
   createSWRPersistMiddleware,
   isPlaceholderCacheData,
   isTruncatedItemArray,
+  pruneStaleSWRCache,
 } from "@/utils/swr-persistence";
 
 describe("swr persistence helpers", () => {
@@ -71,5 +72,24 @@ describe("createSWRPersistMiddleware", () => {
 
     expect(firstData).toHaveLength(1);
     expect(result.current.data).toBe(firstData);
+  });
+});
+
+describe("pruneStaleSWRCache", () => {
+  it("removes item data saved under other cache keys only", () => {
+    localStorage.clear();
+    localStorage.setItem("swr-cache-tarkov-dev-api/pvp/en?v=2.1.2-2.1.2", "{}");
+    localStorage.setItem("swr-cache-tarkov-dev-api/pvp/en?v=abc-abc", "{}");
+    localStorage.setItem("selectedItemIds", "[1]");
+
+    pruneStaleSWRCache("abc");
+
+    expect(
+      localStorage.getItem("swr-cache-tarkov-dev-api/pvp/en?v=2.1.2-2.1.2"),
+    ).toBeNull();
+    expect(
+      localStorage.getItem("swr-cache-tarkov-dev-api/pvp/en?v=abc-abc"),
+    ).toBe("{}");
+    expect(localStorage.getItem("selectedItemIds")).toBe("[1]");
   });
 });

@@ -11,3 +11,7 @@ declare module "@/config/generated/latest" {
 declare module "@/config/generated/changelog" {
   export const changelog: import("@/lib/changelog-core").ChangelogEntry[];
 }
+
+declare module "@/config/generated/build-info" {
+  export const itemCacheKey: string;
+}
