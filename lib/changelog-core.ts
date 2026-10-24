@@ -47,6 +47,25 @@ const TRAILER =
 // Manual release markers this repo appends to commit bodies ("[v2.1.2]").
 const RELEASE_TAG = /^\[v?\d+\.\d+\.\d+\]$/i;
 
+// Commit kinds that only matter to developers. Hidden from players by
+// default; everything else (feat, fix, perf, unprefixed changes) is shown.
+const DEVELOPER_KINDS = new Set([
+  "build",
+  "chore",
+  "ci",
+  "docs",
+  "refactor",
+  "style",
+  "test",
+]);
+
+/** Whether a release is worth showing to players. Milestones always are. */
+export function isPlayerFacing(
+  entry: Pick<ChangelogEntry, "kind" | "milestone">,
+): boolean {
+  return !!entry.milestone || !DEVELOPER_KINDS.has(entry.kind);
+}
+
 export function classifyCommit(subject: string): ClassifiedCommit {
   const m = subject.match(/^(\w+)(?:\(([^)]+)\))?(!)?:\s*(.+)$/);
   if (m)

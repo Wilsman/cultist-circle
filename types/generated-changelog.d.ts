@@ -6,6 +6,7 @@
 
 declare module "@/config/generated/latest" {
   export const latestRelease: import("@/lib/changelog-core").ChangelogEntry | null;
+  export const latestPlayerRelease: import("@/lib/changelog-core").ChangelogEntry | null;
 }
 
 declare module "@/config/generated/changelog" {

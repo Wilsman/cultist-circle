@@ -19,7 +19,11 @@ import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { buildChangelog, type ChangelogEntry } from "../lib/changelog-core";
+import {
+  buildChangelog,
+  isPlayerFacing,
+  type ChangelogEntry,
+} from "../lib/changelog-core";
 
 // Commits that start a new era and cut a major version. Add an abbreviated
 // hash here (prefix match, so a short hash stays valid) plus a short era name.
@@ -72,7 +76,7 @@ function writeGenerated(entries: ChangelogEntry[]) {
   );
   writeFileSync(
     path.join(outputDir, "latest.ts"),
-    `${header}import type { ChangelogEntry } from "@/lib/changelog-core";\n\nexport const latestRelease: ChangelogEntry | null = ${JSON.stringify(entries[0] ?? null, null, 2)};\n`,
+    `${header}import type { ChangelogEntry } from "@/lib/changelog-core";\n\nexport const latestRelease: ChangelogEntry | null = ${JSON.stringify(entries[0] ?? null, null, 2)};\n\n// Newest release players would care about (skips build/test/chore etc.).\nexport const latestPlayerRelease: ChangelogEntry | null = ${JSON.stringify(entries.find(isPlayerFacing) ?? null, null, 2)};\n`,
   );
   log(`wrote ${entries.length} releases to config/generated/`);
 }

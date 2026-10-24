@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { Portal as HoverCardPortal } from "@radix-ui/react-hover-card";
 import {
   HoverCard,
@@ -14,9 +15,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { APP_VERSION } from "@/lib/app-version";
-import { latestRelease } from "@/config/generated/latest";
-import type { ChangelogEntry } from "@/lib/changelog-core";
+import { latestPlayerRelease, latestRelease } from "@/config/generated/latest";
+import { isPlayerFacing, type ChangelogEntry } from "@/lib/changelog-core";
 import { useLanguage } from "@/contexts/language-context";
 
 const KIND_STYLES: Record<string, { label: string; className: string }> = {
@@ -97,6 +99,7 @@ const isDev = process.env.NODE_ENV === "development";
 export function VersionTag() {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [cardOpen, setCardOpen] = useState(false);
   const [entries, setEntries] = useState<ChangelogEntry[] | null>(null);
   const loadStarted = useRef(false);
 
@@ -111,6 +114,7 @@ export function VersionTag() {
 
   const openDialog = () => {
     loadChangelog();
+    setCardOpen(false);
     setOpen(true);
   };
 
@@ -127,13 +131,19 @@ export function VersionTag() {
   }
 
   const version = `v${latestRelease.version}${isDev ? "-dev" : ""}`;
+  // The card shows the newest change players care about, which can be older
+  // than the current build when the latest commits were build/test chores.
+  const featured = latestPlayerRelease ?? latestRelease;
 
   return (
     <div className="inline-flex items-center gap-3 justify-center">
       <HoverCard
         openDelay={120}
         closeDelay={80}
+        // Controlled so the card closes when the dialog opens over it.
+        open={cardOpen && !open}
         onOpenChange={(hoverOpen) => {
+          setCardOpen(hoverOpen);
           if (hoverOpen) loadChangelog();
         }}
       >
@@ -159,18 +169,20 @@ export function VersionTag() {
             className="w-80 border-slate-700 bg-slate-900 p-3 text-left text-slate-200"
           >
             <div className="flex items-center justify-between gap-2 text-xs">
-              <span className="font-semibold text-emerald-300">{version}</span>
+              <span className="font-semibold text-emerald-300">
+                v{featured.version}
+              </span>
               <span className="font-mono text-slate-500">
-                {latestRelease.hash} · {latestRelease.date}
+                {featured.hash} · {featured.date}
               </span>
             </div>
             <div className="mt-2 flex items-start gap-2 text-sm leading-snug">
-              <KindChip kind={latestRelease.kind} />
-              <span>{latestRelease.title}</span>
+              <KindChip kind={featured.kind} />
+              <span>{featured.title}</span>
             </div>
-            {latestRelease.body.length > 0 && (
+            {featured.body.length > 0 && (
               <ul className="mt-2 max-h-40 space-y-0.5 overflow-hidden text-xs text-slate-400">
-                {latestRelease.body.slice(0, 6).map((line, i) => (
+                {featured.body.slice(0, 6).map((line, i) => (
                   <li key={i} className="whitespace-pre-wrap">
                     {line}
                   </li>
@@ -178,7 +190,7 @@ export function VersionTag() {
               </ul>
             )}
             <div className="mt-2 flex items-center justify-between gap-2 border-t border-slate-700/60 pt-2 text-[11px]">
-              <Diffstat entry={latestRelease} />
+              <Diffstat entry={featured} />
               <span className="ml-auto text-emerald-400/80">
                 {t("Click for full changelog")} ▸
               </span>
@@ -203,9 +215,64 @@ function ChangelogDialog({
   entries,
 }: ChangelogDialogProps) {
   const { t } = useLanguage();
-  // The newest release starts expanded; latestRelease is the same entry.
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col gap-0 border-slate-700 bg-slate-900 p-0 text-slate-200">
+        <DialogHeader className="border-b border-slate-700/60 px-5 py-4 pr-12 text-left">
+          <div className="flex items-baseline justify-between gap-3">
+            <DialogTitle className="text-sm font-semibold tracking-wide text-slate-100">
+              {t("Changelog")}
+            </DialogTitle>
+            <Link
+              href="/updates"
+              onClick={() => onOpenChange(false)}
+              className="text-xs text-emerald-400/80 underline-offset-4 hover:text-emerald-300 hover:underline"
+            >
+              {t("Open full page")} ▸
+            </Link>
+          </div>
+          <DialogDescription className="sr-only">
+            {t("Every change to Cultist Circle, newest first.")}
+          </DialogDescription>
+        </DialogHeader>
+        <ChangelogList
+          entries={entries}
+          className="min-h-0 flex-1 overflow-y-auto px-3 pb-4"
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface ChangelogListProps {
+  /** All releases, newest first; null while loading. */
+  entries: ChangelogEntry[] | null;
+  className?: string;
+  /** Background for the sticky era headers, matching the scroll container. */
+  stickyClassName?: string;
+}
+
+/**
+ * Releases grouped into major-version eras. Developer-only commits (build,
+ * test, chore, ...) stay hidden until "Show all changes" is switched on.
+ */
+export function ChangelogList({
+  entries,
+  className,
+  stickyClassName = "bg-slate-900/95",
+}: ChangelogListProps) {
+  const { t } = useLanguage();
+  const switchId = useId();
+  const [showAll, setShowAll] = useState(false);
+  // The featured release (the one in the hover card) starts expanded.
   const [expanded, setExpanded] = useState<string | null>(
-    latestRelease?.hash ?? null,
+    (latestPlayerRelease ?? latestRelease)?.hash ?? null,
+  );
+
+  const visible = useMemo(
+    () => (showAll ? entries : entries?.filter(isPlayerFacing)) ?? [],
+    [entries, showAll],
   );
 
   // Group releases by major version so each era gets a header.
@@ -215,7 +282,7 @@ function ChangelogDialog({
       name: string | null;
       entries: ChangelogEntry[];
     }[] = [];
-    for (const entry of entries ?? []) {
+    for (const entry of visible) {
       const major = entry.version.split(".")[0];
       let group = groups[groups.length - 1];
       if (!group || group.major !== major)
@@ -224,62 +291,60 @@ function ChangelogDialog({
       if (entry.milestone) group.name = entry.milestone;
     }
     return groups;
-  }, [entries]);
+  }, [visible]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col gap-0 border-slate-700 bg-slate-900 p-0 text-slate-200">
-        <DialogHeader className="border-b border-slate-700/60 px-5 py-4 text-left">
-          <DialogTitle className="text-sm font-semibold tracking-wide text-slate-100">
-            {t("Changelog")}
-          </DialogTitle>
-          <DialogDescription className="text-xs text-slate-400">
-            {entries
-              ? t(
-                  "{count} releases, one per commit. Click a release to see what changed.",
-                  { count: entries.length },
-                )
-              : t("Loading...")}
-          </DialogDescription>
-        </DialogHeader>
-        <div
-          className="min-h-0 flex-1 overflow-y-auto px-3 pb-4"
-          data-testid="changelog-list"
+    <div className={className} data-testid="changelog-list">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-2 py-3 text-xs text-slate-400">
+        <span>
+          {entries
+            ? t(
+                visible.length === 1
+                  ? "{count} update. Click it to see what changed."
+                  : "{count} updates. Click one to see what changed.",
+                { count: visible.length },
+              )
+            : t("Loading...")}
+        </span>
+        <label
+          htmlFor={switchId}
+          className="inline-flex cursor-pointer items-center gap-2"
         >
-          {entries === null && (
-            <p className="px-2 py-6 text-center text-sm text-slate-500">
-              {t("Loading...")}
-            </p>
-          )}
-          {eras.map((era) => (
-            <section key={era.major}>
-              <h3 className="sticky top-0 z-10 -mx-3 border-b border-slate-700/40 bg-slate-900/95 px-5 py-2 text-[11px] font-semibold tracking-widest text-emerald-300 backdrop-blur">
-                V{era.major}
-                {era.name && (
-                  <span className="ml-2 text-xs font-normal tracking-normal text-slate-400">
-                    {era.name}
-                  </span>
-                )}
-              </h3>
-              <ul>
-                {era.entries.map((entry) => (
-                  <ChangelogRow
-                    key={entry.hash}
-                    entry={entry}
-                    open={expanded === entry.hash}
-                    onToggle={() =>
-                      setExpanded((cur) =>
-                        cur === entry.hash ? null : entry.hash,
-                      )
-                    }
-                  />
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+          <Switch
+            id={switchId}
+            checked={showAll}
+            onCheckedChange={setShowAll}
+          />
+          {t("Show all changes")}
+        </label>
+      </div>
+      {eras.map((era) => (
+        <section key={era.major}>
+          <h3
+            className={`sticky top-0 z-10 -mx-3 border-b border-slate-700/40 px-5 py-2 text-[11px] font-semibold tracking-widest text-emerald-300 backdrop-blur ${stickyClassName}`}
+          >
+            V{era.major}
+            {era.name && (
+              <span className="ml-2 text-xs font-normal tracking-normal text-slate-400">
+                {era.name}
+              </span>
+            )}
+          </h3>
+          <ul>
+            {era.entries.map((entry) => (
+              <ChangelogRow
+                key={entry.hash}
+                entry={entry}
+                open={expanded === entry.hash}
+                onToggle={() =>
+                  setExpanded((cur) => (cur === entry.hash ? null : entry.hash))
+                }
+              />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }
 

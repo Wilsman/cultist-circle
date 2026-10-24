@@ -1,5 +1,10 @@
 // @vitest-environment node
-import { buildChangelog, classifyCommit, SKIP_PATTERNS } from "@/lib/changelog-core";
+import {
+  buildChangelog,
+  classifyCommit,
+  isPlayerFacing,
+  SKIP_PATTERNS,
+} from "@/lib/changelog-core";
 
 const ISO = "2026-01-05T10:00:00+00:00";
 
@@ -159,5 +164,48 @@ describe("buildChangelog", () => {
 
   it("SKIP_PATTERNS stays narrow", () => {
     expect(SKIP_PATTERNS.some((re) => re.test("feat: real work"))).toBe(false);
+  });
+});
+
+describe("isPlayerFacing", () => {
+  const entries = buildChangelog(
+    [
+      rec("a1", "feat: new recipe viewer"),
+      rec("b2", "fix(tracker): timer drift"),
+      rec("c3", "perf: faster item search"),
+      rec("d4", "Tweak spacing on mobile"),
+      rec("e5", "build: keep type-checking working"),
+      rec("f6", "test: cover storage reset"),
+      rec("g7", "chore: bump deps"),
+      rec("h8", "refactor: split hooks"),
+      rec("i9", "docs: update readme"),
+      rec("j0", "refactor: rebuild data layer"),
+    ].join(""),
+    { j0: "Data layer" },
+  );
+  const shown = (hash: string) =>
+    isPlayerFacing(entries.find((e) => e.hash === hash)!);
+
+  it("shows features, fixes, perf and unprefixed changes", () => {
+    expect(["a1", "b2", "c3", "d4"].map(shown)).toEqual([
+      true,
+      true,
+      true,
+      true,
+    ]);
+  });
+
+  it("hides developer-only commits", () => {
+    expect(["e5", "f6", "g7", "h8", "i9"].map(shown)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it("always shows milestones, whatever their kind", () => {
+    expect(shown("j0")).toBe(true);
   });
 });
