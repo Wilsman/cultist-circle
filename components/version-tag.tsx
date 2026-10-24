@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { Portal as HoverCardPortal } from "@radix-ui/react-hover-card";
 import {
   HoverCard,
   HoverCardContent,
@@ -168,39 +169,42 @@ export function VersionTag() {
             {version}
           </button>
         </HoverCardTrigger>
-        <HoverCardContent
-          side="top"
-          align="center"
-          className="w-80 border-slate-700 bg-slate-900/95 p-3 text-slate-200"
-        >
-          <div className="flex items-center justify-between gap-2 text-xs">
-            <span className="font-semibold text-emerald-300">
-              v{latestRelease.version}
-            </span>
-            <span className="font-mono text-slate-500">
-              {latestRelease.hash} · {latestRelease.date}
-            </span>
-          </div>
-          <div className="mt-2 flex items-start gap-2 text-sm leading-snug">
-            <KindChip kind={latestRelease.kind} />
-            <span>{latestRelease.title}</span>
-          </div>
-          {latestRelease.body.length > 0 && (
-            <ul className="mt-2 max-h-40 space-y-0.5 overflow-hidden text-xs text-slate-400">
-              {latestRelease.body.slice(0, 6).map((line, i) => (
-                <li key={i} className="whitespace-pre-wrap">
-                  {line}
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="mt-2 flex items-center justify-between gap-2 border-t border-slate-700/60 pt-2 text-[11px]">
-            <Diffstat entry={latestRelease} />
-            <span className="ml-auto text-emerald-400/80">
-              {t("Click for full changelog")} ▸
-            </span>
-          </div>
-        </HoverCardContent>
+        {/* Portal so the card ignores the header's centring and opens
+            below the pill instead of over the logo. */}
+        <HoverCardPortal>
+          <HoverCardContent
+            side="bottom"
+            align="center"
+            collisionPadding={8}
+            className="w-80 border-slate-700 bg-slate-900 p-3 text-left text-slate-200"
+          >
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="font-semibold text-emerald-300">{version}</span>
+              <span className="font-mono text-slate-500">
+                {latestRelease.hash} · {latestRelease.date}
+              </span>
+            </div>
+            <div className="mt-2 flex items-start gap-2 text-sm leading-snug">
+              <KindChip kind={latestRelease.kind} />
+              <span>{latestRelease.title}</span>
+            </div>
+            {latestRelease.body.length > 0 && (
+              <ul className="mt-2 max-h-40 space-y-0.5 overflow-hidden text-xs text-slate-400">
+                {latestRelease.body.slice(0, 6).map((line, i) => (
+                  <li key={i} className="whitespace-pre-wrap">
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-2 flex items-center justify-between gap-2 border-t border-slate-700/60 pt-2 text-[11px]">
+              <Diffstat entry={latestRelease} />
+              <span className="ml-auto text-emerald-400/80">
+                {t("Click for full changelog")} ▸
+              </span>
+            </div>
+          </HoverCardContent>
+        </HoverCardPortal>
       </HoverCard>
       <span className="text-xs text-slate-400" suppressHydrationWarning>
         {t("Last updated: {date}", { date: formatDate(latestRelease.date) })}
@@ -216,7 +220,11 @@ interface ChangelogDialogProps {
   entries: ChangelogEntry[] | null;
 }
 
-function ChangelogDialog({ open, onOpenChange, entries }: ChangelogDialogProps) {
+function ChangelogDialog({
+  open,
+  onOpenChange,
+  entries,
+}: ChangelogDialogProps) {
   const { t } = useLanguage();
   // The newest release starts expanded; latestRelease is the same entry.
   const [expanded, setExpanded] = useState<string | null>(
