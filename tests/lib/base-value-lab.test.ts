@@ -300,6 +300,41 @@ describe("helpers", () => {
     expect(merged.tests[0].entries[0].subjectId).toBe("gun-2");
   });
 
+  it("merges stash items and adopts settings still at defaults", () => {
+    const a = emptyState();
+    a.stash.pve.push({
+      itemId: "moonshine",
+      name: "Moonshine",
+      baseValue: 200_000,
+      count: 2,
+    });
+    a.settings.tolerance = 9_000; // customised locally: the import must not win
+
+    const b = emptyState();
+    b.stash.pve.push(
+      { itemId: "moonshine", name: "Moonshine", baseValue: 200_000, count: 5 },
+      { itemId: "vase", name: "Antique vase", baseValue: 67_800, count: 3 },
+    );
+    b.settings = { tolerance: 7_500, maxItems: 8 };
+
+    const merged = mergeStates(a, b);
+    expect(merged.stash.pve).toEqual([
+      { itemId: "moonshine", name: "Moonshine", baseValue: 200_000, count: 2 },
+      { itemId: "vase", name: "Antique vase", baseValue: 67_800, count: 3 },
+    ]);
+    expect(merged.settings.tolerance).toBe(9_000);
+    expect(merged.settings.maxItems).toBe(8);
+  });
+
+  it("matches stash items by name when they have no item id", () => {
+    const a = emptyState();
+    a.stash.pve.push({ name: "Loose junk", baseValue: 1_000, count: 2 });
+    const b = emptyState();
+    b.stash.pve.push({ name: "Loose junk", baseValue: 1_000, count: 9 });
+
+    expect(mergeStates(a, b).stash.pve).toHaveLength(1);
+  });
+
   it("rejects malformed imports", () => {
     expect(() => parseState({ version: 2 })).toThrow("Unsupported");
     expect(() =>
@@ -309,5 +344,51 @@ describe("helpers", () => {
         tests: [{ id: "x", mode: "pve", entries: [], timer: "7h" }],
       }),
     ).toThrow("unknown timer");
+
+    const valid = () => ({
+      version: 1,
+      subjects: [{ id: "s1", mode: "pve", name: "Thing" }],
+      tests: [
+        {
+          id: "t1",
+          mode: "pve",
+          entries: [{ subjectId: "s1", qty: 1 }] as {
+            subjectId: string;
+            qty: number;
+          }[],
+          fillers: [] as { name: string; baseValue: number; qty: number }[],
+          timer: "5h",
+        },
+      ],
+    });
+
+    // A negative filler value would flip a measurement's maths, and a
+    // non-positive or fractional qty is meaningless.
+    for (const filler of [
+      { name: "J", baseValue: -50_000, qty: 1 },
+      { name: "J", baseValue: 1_000, qty: 0 },
+      { name: "J", baseValue: 1_000, qty: -2 },
+      { name: "J", baseValue: 1_000, qty: 1.5 },
+    ]) {
+      const raw = valid();
+      raw.tests[0].fillers = [filler];
+      expect(() => parseState(raw)).toThrow("bad filler");
+    }
+
+    // Entry qty has to be a positive integer too.
+    for (const qty of [0, -1, 0.5]) {
+      const raw = valid();
+      raw.tests[0].entries = [{ subjectId: "s1", qty }];
+      expect(() => parseState(raw)).toThrow("bad entry");
+    }
+
+    // Entries must reference a subject in the same export, or a merge would
+    // attach the test to an unrelated local subject sharing the id.
+    const dangling = valid();
+    dangling.tests[0].entries = [{ subjectId: "ghost", qty: 1 }];
+    expect(() => parseState(dangling)).toThrow("unknown subject");
+
+    // A well-formed export still parses.
+    expect(parseState(valid()).tests).toHaveLength(1);
   });
 });

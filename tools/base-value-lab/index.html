@@ -849,7 +849,7 @@ document.addEventListener("click", async (e) => {
     const build = { gunValue: gun.basePrice, mods: grouped };
     const s = {
       id: uid(), mode, itemId: gun.id, kind: "weapon", durability: 100, owned: 1,
-      name: `${short(gun.name)} + ${grouped.map((m) => `${m.count > 1 ? `${m.count}Ã— ` : ""}${m.name}`).join(" + ")}`,
+      name: `${short(gun.name)} + ${grouped.map((m) => `${m.count > 1 ? `${m.count}× ` : ""}${m.name}`).join(" + ")}`,
       apiBaseValue: gun.basePrice + grouped.reduce((sum, m) => sum + m.baseValue * m.count, 0),
       build,
     };
@@ -875,10 +875,10 @@ document.addEventListener("click", async (e) => {
   } else if (action === "manual") {
     const subjectId = $("#m-subject").value;
     if (!subjectId) return toast("Add an item first.");
-    const fill = Number($("#m-fill").value) || 0;
+    const fill = Math.max(0, Number($("#m-fill").value) || 0);
     state.tests.push({
       id: uid(), mode, createdAt: new Date().toISOString(),
-      entries: [{ subjectId, qty: Math.max(1, Number($("#m-qty").value) || 1) }],
+      entries: [{ subjectId, qty: Math.max(1, Math.floor(Number($("#m-qty").value) || 1)) }],
       fillers: fill ? [{ name: "Other known items", baseValue: fill, qty: 1 }] : [],
       timer: $("#m-timer").value, notes: $("#m-notes").value || undefined,
     });
@@ -933,9 +933,11 @@ async function importState(raw, label) {
     }
   }
   const before = state.tests.length;
+  const stashBefore = state.stash.pvp.length + state.stash.pve.length;
   state = mergeStates(state, incoming);
   save();
-  toast(`Imported ${state.tests.length - before} test(s) from ${label}.`);
+  const stashAdded = state.stash.pvp.length + state.stash.pve.length - stashBefore;
+  toast(`Imported ${state.tests.length - before} test(s)${stashAdded ? ` and ${stashAdded} stash item(s)` : ""} from ${label}.`);
 }
 
 render();

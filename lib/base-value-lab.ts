@@ -694,6 +694,21 @@ export function mergeStates(base: LabState, incoming: LabState): LabState {
       fillers: t.fillers.map((f) => ({ ...f })),
     });
   }
+  // Bring over stash items the local state doesn't have yet; the stash key is
+  // the item id when present, the name otherwise (same as useUpStash).
+  for (const m of ["pvp", "pve"] as const) {
+    for (const item of incoming.stash[m]) {
+      const held = out.stash[m].some((s) =>
+        item.itemId ? s.itemId === item.itemId : s.name === item.name,
+      );
+      if (!held) out.stash[m].push({ ...item });
+    }
+  }
+  // Adopt imported settings only where the local ones are still defaults.
+  for (const key of ["tolerance", "maxItems"] as const) {
+    if (out.settings[key] === DEFAULT_SETTINGS[key])
+      out.settings[key] = incoming.settings[key];
+  }
   return out;
 }
 
@@ -775,7 +790,12 @@ export function parseState(raw: unknown): LabState {
         const x = e as Record<string, unknown>;
         const subjectId = str(x.subjectId);
         const qty = num(x.qty);
-        if (!subjectId || !qty || qty < 0)
+        if (
+          !subjectId ||
+          qty === undefined ||
+          !Number.isInteger(qty) ||
+          qty <= 0
+        )
           throw new Error(`Test ${i + 1} has a bad entry.`);
         return { subjectId, qty };
       }),
@@ -783,7 +803,13 @@ export function parseState(raw: unknown): LabState {
         const x = f as Record<string, unknown>;
         const baseValue = num(x.baseValue);
         const qty = num(x.qty);
-        if (baseValue === undefined || !qty)
+        if (
+          baseValue === undefined ||
+          baseValue < 0 ||
+          qty === undefined ||
+          !Number.isInteger(qty) ||
+          qty <= 0
+        )
           throw new Error(`Test ${i + 1} has a bad filler.`);
         return {
           itemId: str(x.itemId),
@@ -797,6 +823,14 @@ export function parseState(raw: unknown): LabState {
       notes: str(t.notes),
     };
   });
+
+  // A test entry must reference a subject in the same export; a dangling id
+  // would silently attach to a local subject on merge.
+  const subjectIds = new Set(subjects.map((s) => s.id));
+  for (const [i, t] of tests.entries()) {
+    if (t.entries.some((e) => !subjectIds.has(e.subjectId)))
+      throw new Error(`Test ${i + 1} references an unknown subject.`);
+  }
 
   const stashRaw = (r.stash ?? {}) as Record<string, unknown>;
   const stash = { pvp: [], pve: [] } as Record<LabMode, StashItem[]>;
