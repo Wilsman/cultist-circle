@@ -86,10 +86,13 @@ function Diffstat({ entry }: { entry: ChangelogEntry }) {
   );
 }
 
-// Format date from YYYY-MM-DD to a readable format
+// Format date from YYYY-MM-DD to a readable format. Parsed as a local date:
+// `new Date("YYYY-MM-DD")` is UTC midnight and renders a day early in
+// negative-offset timezones.
 function formatDate(dateString: string): string {
   try {
-    const date = new Date(dateString);
+    const [year, month, day] = dateString.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
@@ -135,7 +138,7 @@ export function VersionTag() {
           {CURRENT_VERSION}
           {isDev ? "-dev" : ""}
         </span>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-slate-400" suppressHydrationWarning>
           {t("Last updated: {date}", { date: formatDate(LAST_UPDATED) })}
         </span>
       </div>
@@ -157,6 +160,7 @@ export function VersionTag() {
           <button
             type="button"
             data-testid="version-tag"
+            aria-haspopup="dialog"
             onClick={openDialog}
             className="inline-flex items-center rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] text-slate-200 shadow-sm transition hover:border-emerald-500/50 hover:text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
           >
@@ -198,7 +202,7 @@ export function VersionTag() {
           </div>
         </HoverCardContent>
       </HoverCard>
-      <span className="text-xs text-slate-400">
+      <span className="text-xs text-slate-400" suppressHydrationWarning>
         {t("Last updated: {date}", { date: formatDate(latestRelease.date) })}
       </span>
       <ChangelogDialog open={open} onOpenChange={setOpen} entries={entries} />
