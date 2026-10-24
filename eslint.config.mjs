@@ -25,6 +25,7 @@ const config = [
       "cloudflare/feedback/worker-configuration.d.ts",
       "vitest.config.ts",
       "tests/setup.ts",
+      "config/generated/**",
     ],
   },
 ];

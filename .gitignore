@@ -78,3 +78,6 @@ output/
 # stash scan build output
 /.stash-scan
 /public/scan-demo/demo.json
+
+# generated commit changelog
+/config/generated/
