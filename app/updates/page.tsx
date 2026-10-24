@@ -1,8 +1,8 @@
 import { UpdatesContent } from "./updates-content";
 
 export const metadata = {
-  title: "Version Info | Cultist Circle",
-  description: "Current version and update information.",
+  title: "Changelog",
+  description: "Every change to Cultist Circle, newest first.",
 };
 
 export default function UpdatesPage() {
