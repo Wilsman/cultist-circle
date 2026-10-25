@@ -1205,5 +1205,10 @@
   "Your stash will be saved. Adjust the plan in the calculator.": "Dein Lager wird gespeichert. Passe den Plan im Rechner an.",
   "Your workflow": "Dein Ablauf",
   "Zoom into screenshot": "Screenshot vergrößern",
-  "Zoom out of screenshot": "Screenshot verkleinern"
+  "Zoom out of screenshot": "Screenshot verkleinern",
+
+  // Item category names tarkov.dev leaves in English
+  "Battle Pass Document": "Battle-Pass-Dokument",
+  "Mark of the Unheard": "Mal der Ungehörten",
+  "Volumetric Throw Weapon": "Volumetrische Wurfwaffe"
 }

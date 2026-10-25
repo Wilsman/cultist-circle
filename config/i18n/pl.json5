@@ -1205,5 +1205,19 @@
   "Your stash will be saved. Adjust the plan in the calculator.": "Schowek zostanie zapisany. Dostosuj plan w kalkulatorze.",
   "Your workflow": "Twój sposób działania",
   "Zoom into screenshot": "Powiększ zrzut",
-  "Zoom out of screenshot": "Pomniejsz zrzut"
+  "Zoom out of screenshot": "Pomniejsz zrzut",
+
+  // Item category names tarkov.dev leaves in English
+  "Battle Pass Document": "Dokument przepustki bojowej",
+  "Completable": "Do ukończenia",
+  "Dialog Item": "Przedmiot dialogowy",
+  "Mark of the Unheard": "Znak Niesłyszanych",
+  "Multitools": "Multitoole",
+  "Planting Kits": "Zestawy do podłożenia",
+  "Posters": "Plakaty",
+  "Recorder": "Rejestrator",
+  "Rocket": "Rakieta",
+  "Rocket Launcher": "Wyrzutnia rakiet",
+  "Tapes": "Taśmy",
+  "Volumetric Throw Weapon": "Objętościowa broń miotana"
 }

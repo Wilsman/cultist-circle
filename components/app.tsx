@@ -27,6 +27,7 @@ import {
   CATEGORY_BY_ID,
   CATEGORY_ID_BY_NAME,
   getCategoryDisplayName,
+  localizeCategories,
   LEGACY_DEFAULT_EXCLUDED_CATEGORY_IDS_WITH_FLYER,
   type ItemCategory,
 } from "@/config/item-categories";
@@ -185,7 +186,7 @@ function AppContent({ contributors = [] }: AppProps) {
   const [autoSelectSource, setAutoSelectSource] = useLocalStorageString<
     "market" | "stash"
   >("autoSelectSource", "market", ["market", "stash"]);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   // Define state variables and hooks
   const [mode, setMode] = useState<GameMode>(() => {
     if (typeof window !== "undefined") {
@@ -424,7 +425,10 @@ function AppContent({ contributors = [] }: AppProps) {
 
   // Build localized category list (ID -> localized name) from current items
   const allCategoriesLocalized: ItemCategory[] = useMemo(() => {
-    if (!rawItemsData || rawItemsData.length === 0) return ALL_ITEM_CATEGORIES;
+    const translateCategory = (name: string) => t(name);
+    if (!rawItemsData || rawItemsData.length === 0) {
+      return localizeCategories(ALL_ITEM_CATEGORIES, translateCategory, language);
+    }
     const byId = new Map<string, string>();
     for (const item of rawItemsData) {
       const cats = item.categories_display ?? [];
@@ -437,21 +441,23 @@ function AppContent({ contributors = [] }: AppProps) {
         if (!byId.has(id)) byId.set(id, c.name);
       }
     }
-    if (byId.size === 0) return ALL_ITEM_CATEGORIES;
-    return Array.from(byId.entries())
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [rawItemsData]);
+    const categories =
+      byId.size === 0
+        ? ALL_ITEM_CATEGORIES
+        : Array.from(byId.entries()).map(([id, name]) => ({ id, name }));
+    return localizeCategories(categories, translateCategory, language);
+  }, [rawItemsData, t, language]);
   const selectorCategoryFilterLabel = useMemo(() => {
     if (selectorCategoryFilter === ALL_CATEGORIES_FILTER) {
       return t("All categories");
     }
-    return getCategoryDisplayName(
+    const fallbackName = CATEGORY_BY_ID.get(selectorCategoryFilter)?.name;
+    return (
       allCategoriesLocalized.find(
         (category) => category.id === selectorCategoryFilter,
       )?.name ??
-        CATEGORY_BY_ID.get(selectorCategoryFilter)?.name ??
-        t("Selected category"),
+      (fallbackName ? t(getCategoryDisplayName(fallbackName)) : undefined) ??
+      t("Selected category")
     );
   }, [allCategoriesLocalized, selectorCategoryFilter, t]);
 

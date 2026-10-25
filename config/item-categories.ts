@@ -28,6 +28,25 @@ export function getCategoryDisplayName(originalName: string): string {
   return CATEGORY_ALIASES[originalName] || originalName;
 }
 
+/**
+ * Applies display aliases and the app's own translations, then sorts by the
+ * current locale. tarkov.dev leaves some category names in English for most
+ * languages; `translate` returns its input unchanged when there is no entry,
+ * so names it already localized pass through as they are.
+ */
+export function localizeCategories(
+  categories: ItemCategory[],
+  translate: (name: string) => string,
+  locale?: string,
+): ItemCategory[] {
+  return categories
+    .map((category) => ({
+      id: category.id,
+      name: translate(getCategoryDisplayName(category.name)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, locale));
+}
+
 export function getCategoryNameById(id: string): string | undefined {
   const found = CATEGORY_BY_ID.get(id);
   return found ? getCategoryDisplayName(found.name) : undefined;

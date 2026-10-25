@@ -1205,5 +1205,9 @@
   "Your stash will be saved. Adjust the plan in the calculator.": "Votre réserve sera enregistrée. Ajustez le plan dans le calculateur.",
   "Your workflow": "Votre méthode",
   "Zoom into screenshot": "Zoomer sur la capture",
-  "Zoom out of screenshot": "Dézoomer la capture"
+  "Zoom out of screenshot": "Dézoomer la capture",
+
+  // Item category names tarkov.dev leaves in English
+  "Battle Pass Document": "Document du Battle Pass",
+  "Volumetric Throw Weapon": "Arme de lancer volumétrique"
 }

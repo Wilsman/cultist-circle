@@ -1205,5 +1205,15 @@
   "Your stash will be saved. Adjust the plan in the calculator.": "Схрон будет сохранён. Настройте план в калькуляторе.",
   "Your workflow": "Ваш порядок действий",
   "Zoom into screenshot": "Увеличить скриншот",
-  "Zoom out of screenshot": "Уменьшить скриншот"
+  "Zoom out of screenshot": "Уменьшить скриншот",
+
+  // Item category names tarkov.dev leaves in English
+  "Battle Pass Document": "Документ боевого пропуска",
+  "Completable": "Выполняемое",
+  "Dialog Item": "Предмет диалога",
+  "Recorder": "Диктофон",
+  "Rocket": "Ракета",
+  "Rocket Launcher": "Реактивный гранатомёт",
+  "Tapes": "Кассеты",
+  "Volumetric Throw Weapon": "Объёмное метательное оружие"
 }
