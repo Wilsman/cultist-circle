@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import { captureError } from "@/lib/posthog-client";
 
 interface Props {
   children: ReactNode;
@@ -20,6 +21,10 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
+    captureError(error, {
+      boundary: "component",
+      component_stack: errorInfo.componentStack ?? undefined,
+    });
   }
 
   public render() {

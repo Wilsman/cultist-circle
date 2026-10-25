@@ -2,13 +2,16 @@
 
 import NextError from "next/error";
 import { useEffect } from "react";
+import { captureError } from "@/lib/posthog-client";
 
 export default function GlobalError({
   error,
 }: {
   error: Error & { digest?: string };
 }) {
-  useEffect(() => {}, [error]);
+  useEffect(() => {
+    captureError(error, { boundary: "global", digest: error.digest });
+  }, [error]);
 
   return (
     <html lang="en">

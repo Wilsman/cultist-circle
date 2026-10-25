@@ -32,6 +32,7 @@ import {
   type RecipeSubmissionItem,
 } from "@/lib/recipe-submission";
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
+import { captureEvent } from "@/lib/posthog-client";
 
 const ENDPOINT = `${process.env.NODE_ENV === "development" ? "" : "https://cultist-circle-feedback.cultistcircle.workers.dev"}/api/recipe-submissions`;
 
@@ -283,6 +284,10 @@ function SubmissionDialog({
         );
       }
       setSuccess(true);
+      captureEvent("recipe_submitted", {
+        sacrifice_count: parsed.data.sacrifices?.length,
+        reward_count: parsed.data.rewards?.length,
+      });
       setSacrifices([]);
       setRewards([]);
       setTimerSeconds(null);
