@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { ENABLE_LANGUAGE_FEATURE } from "@/config/feature-flags";
 import { DEFAULT_LANGUAGE, formatMessage, getMessage } from "@/config/i18n";
+import { captureEvent, setAnalyticsProperties } from "@/lib/posthog-client";
 
 export interface LanguageContextValue {
   language: string;
@@ -59,6 +60,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       localStorage.setItem("language", lang);
     }
+    setAnalyticsProperties({ language: lang });
+    captureEvent("language_changed", { language: lang });
   };
 
   useEffect(() => {

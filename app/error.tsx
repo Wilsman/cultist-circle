@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useLanguage } from "@/contexts/language-context";
+import { captureError } from "@/lib/posthog-client";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -13,6 +14,7 @@ export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
      
     console.error("App Router error boundary:", error);
+    captureError(error, { boundary: "route", digest: error.digest });
   }, [error]);
 
   return (

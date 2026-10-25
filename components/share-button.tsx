@@ -24,6 +24,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/language-context";
+import { captureEvent } from "@/lib/posthog-client";
 // Clock icon removed - not used
 
 interface ShareButtonProps {
@@ -108,6 +109,7 @@ export function ShareButton({
       .writeText(currentCode)
       .then(() => {
         const itemCount = selectedItems.filter((item) => item !== null).length;
+        captureEvent("share_code_copied", { mode, item_count: itemCount });
         sonnerToast(t("Code Copied!"), {
           description: `${t("Shareable code copied to clipboard.")} (${itemCount})`,
         });
@@ -155,6 +157,7 @@ __Output__:
     navigator.clipboard
       .writeText(discordText)
       .then(() => {
+        captureEvent("results_post_copied", { mode, actual_timer: actualTimer });
         sonnerToast(t("Copied for #results ({timer})", { timer: actualTimer }), {
           description: t("Paste into Discord!"),
         });
@@ -360,6 +363,7 @@ __Output__:
       if (!blob) throw new Error("Failed to encode PNG");
       const item = new ClipboardItem({ "image/png": blob });
       await navigator.clipboard.write([item]);
+      captureEvent("share_card_copied", { mode });
       sonnerToast(t("Share card copied"), {
         description: t("PNG image placed in your clipboard."),
       });

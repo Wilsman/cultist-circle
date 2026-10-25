@@ -59,6 +59,7 @@ import NextItemHints from "@/components/next-item-hints";
 // ShareCardButton and ShareCodeDialog merged into ShareButton
 import { STORAGE_SCHEMA_VERSION } from "@/config/changelog";
 import { ensureStorageSchema } from "@/lib/storage-schema";
+import { captureEvent } from "@/lib/posthog-client";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
 import { IncompatibleItemsNotice } from "@/components/incompatible-items-notice";
 import { useLanguage } from "@/contexts/language-context";
@@ -840,6 +841,7 @@ function AppContent({ contributors = [] }: AppProps) {
 
   // Calls handleReset and also clears the users cookies and local storage
   const handleReset = useCallback(async () => {
+    captureEvent("user_data_reset");
     await resetUserData(
       setSelectedItems,
       setPinnedItems,
@@ -1573,6 +1575,13 @@ function AppContent({ contributors = [] }: AppProps) {
 
   // Function to handle auto-select and reroll
   const handleAutoPick = useCallback(async (): Promise<void> => {
+    captureEvent("auto_select_clicked", {
+      source: effectiveAutoSelectSource,
+      reroll: hasAutoSelected,
+      threshold,
+      mode,
+      slot_count: sacrificeSlotCount,
+    });
     if (effectiveAutoSelectSource === "stash" && stashPlanInput) {
       return handleStashAutoPick();
     }
@@ -1826,6 +1835,7 @@ function AppContent({ contributors = [] }: AppProps) {
 
   const handleUseHotSacrifice = useCallback(
     async (combo: SacrificeCombo) => {
+      captureEvent("hot_sacrifice_used", { combo_id: combo.id, mode });
       // Clear current selections
       setSelectedItems(Array(5).fill(null));
       setPinnedItems(Array(5).fill(false));
@@ -1870,13 +1880,14 @@ function AppContent({ contributors = [] }: AppProps) {
         });
       }
     },
-    [findMatchingItem, t, updateSelectedItem, sacrificeSlotCount],
+    [findMatchingItem, t, updateSelectedItem, sacrificeSlotCount, mode],
   );
 
   const handleModeChange = useCallback((nextMode: GameMode): void => {
     // Mode switching is now handled by SWR cache in use-items-data.ts
     // We just need to update the UI state
     console.log(`Switching to ${GAME_MODE_LABELS[nextMode]} mode`);
+    captureEvent("game_mode_changed", { mode: nextMode });
 
     // Update the mode state
     setMode(nextMode);
@@ -1916,6 +1927,10 @@ function AppContent({ contributors = [] }: AppProps) {
       );
       setSelectedItems(items);
       setPendingSharedItems(null);
+      captureEvent("share_code_loaded", {
+        mode,
+        item_count: items.filter(Boolean).length,
+      });
       sonnerToast(t("Items Loaded!"), {
         description: t("Loaded {count} items from code.", {
           count: items.filter(Boolean).length,
@@ -1969,6 +1984,7 @@ function AppContent({ contributors = [] }: AppProps) {
       sonnerToast(title, {
         description,
       });
+      captureEvent("threshold_met", { threshold });
 
       toastShownRef.current = true;
     }

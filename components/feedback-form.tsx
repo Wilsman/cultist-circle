@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLanguage } from "@/contexts/language-context";
 import { formatMessageSlots } from "@/lib/format-message-slots";
 import { APP_BUILD } from "@/lib/app-version";
+import { captureEvent } from "@/lib/posthog-client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -52,6 +53,7 @@ export function FeedbackForm({ onClose }: { onClose: () => void }) {
       }
 
       console.log("Feedback submitted successfully", result.data);
+      captureEvent("feedback_submitted", { feedback_type: type });
       onClose();
     } catch (error) {
       console.error("Error submitting feedback:", error);
