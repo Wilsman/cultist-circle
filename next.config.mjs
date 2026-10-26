@@ -34,6 +34,10 @@ const nextConfig = {
         destination: "http://127.0.0.1:8787/api/recipe-feedback",
       },
       {
+        source: "/api/base-value-lab",
+        destination: "http://127.0.0.1:8787/api/base-value-lab",
+      },
+      {
         source: "/api/recipe-submissions",
         destination: "http://127.0.0.1:8787/api/recipe-submissions",
       },
