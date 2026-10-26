@@ -13,9 +13,16 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseState } from "../../lib/base-value-lab";
 import { hasFlag, queryD1 } from "../lib/local-d1.mjs";
 
@@ -35,8 +42,59 @@ const sql = (v) =>
     ? "NULL"
     : `'${String(v).replaceAll("'", "''")}'`;
 
+// The local lab's item cache (written by `bun run lab`).
+const LAB_DIR = dirname(fileURLToPath(import.meta.url));
+const itemCache = new Map();
+function itemsFor(mode) {
+  if (!itemCache.has(mode)) {
+    const file = join(LAB_DIR, `items-${mode}.json`);
+    const raw = existsSync(file)
+      ? JSON.parse(readFileSync(file, "utf8"))
+      : null;
+    const list = raw ? (raw.items ?? raw) : [];
+    itemCache.set(mode, new Map(list.map((it) => [it.id, it])));
+  }
+  return itemCache.get(mode);
+}
+
+/**
+ * Adds the default preset's parts to stripped guns and Default presets so the
+ * page can list exactly what to take off (or what should be on).
+ */
+function withParts(subject) {
+  if (subject.parts || subject.build || !subject.itemId) return subject;
+  if (subject.kind !== "weapon-bare" && subject.kind !== "weapon")
+    return subject;
+  const byId = itemsFor(subject.mode);
+  const item = byId.get(subject.itemId);
+  if (!item) return subject;
+  let preset;
+  if (subject.kind === "weapon-bare") {
+    preset = [...byId.values()].find(
+      (it) => it.baseItem === item.id && it.name === `${item.name} Default`,
+    );
+  } else if (item.types?.includes("preset") && / Default$/.test(item.name)) {
+    preset = item;
+  }
+  const parts = (preset?.parts ?? [])
+    .filter((p) => p.id !== (preset.baseItem ?? item.id))
+    .map((p) => ({
+      name: byId.get(p.id)?.name ?? "Unknown part",
+      count: p.count,
+    }));
+  return parts.length ? { ...subject, parts } : subject;
+}
+
 function push(file) {
   const state = parseState(JSON.parse(readFileSync(file, "utf8")));
+  state.subjects = state.subjects.map(withParts);
+  const missing = state.subjects.filter(
+    (s) => s.kind === "weapon-bare" && !s.parts,
+  );
+  if (missing.length)
+    console.warn(
+      `No parts list for ${missing.map((s) => s.name).join(", ")}. Run \`bun run lab\` once to cache item data.`,
+    );
   const now = new Date().toISOString();
   const lines = [];
   for (const s of state.subjects) {

@@ -140,3 +140,77 @@ export function pickNextTest({
   }
   return null;
 }
+
+export type GunVersionTone = "stripped" | "default" | "build" | "preset";
+
+export interface GunVersion {
+  /** Short gun name (no caliber or weapon type), e.g. "HK MP5 (Navy 3 Round Burst)". */
+  name: string;
+  /** Short tag, e.g. "Stripped". */
+  tag: string;
+  /** One line telling the tester exactly what state the gun must be in. */
+  instruction: string;
+  tone: GunVersionTone;
+  /** Heading for the parts list, when there is one. */
+  partsLabel?: string;
+  parts: { name: string; count: number }[];
+}
+
+const WEAPON_TYPES =
+  /\s(?:(?:bolt|pump|lever)-action |(?:semi-)?automatic )?(submachine gun|assault rifle|assault carbine|machine pistol|pistol|carbine|shotgun|sniper rifle|marksman rifle|bolt-action rifle|light machine gun|machine gun|grenade launcher|revolver)\b/i;
+
+/** Drops the caliber and weapon type: "HK MP5 9x19 submachine gun (Navy)" -> "HK MP5 (Navy)". */
+export function shortGunName(name: string): string {
+  return name
+    .replace(/\s(\.?\d+(\.\d+)?x\d+\w*|\d+ga)\b/, "")
+    .replace(WEAPON_TYPES, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/**
+ * How a gun subject must be prepared. Players mix up "the gun" (the bare
+ * receiver) and "the gun Default" (the factory preset), so every gun says
+ * which one it is in plain words, with the parts to take off or keep on.
+ */
+export function gunVersion(subject: Subject): GunVersion | null {
+  const parts = subject.parts ?? [];
+  if (subject.kind === "weapon-bare")
+    return {
+      name: shortGunName(subject.name),
+      tag: "Stripped",
+      instruction:
+        "Take EVERY attachment off. Only the bare gun goes in, with nothing attached.",
+      tone: "stripped",
+      partsLabel: parts.length ? "Remove all of these:" : undefined,
+      parts,
+    };
+  if (subject.kind !== "weapon") return null;
+  if (subject.build)
+    return {
+      name: shortGunName(subject.name.split(" + ")[0]),
+      tag: "Custom build",
+      instruction:
+        "Strip the gun completely, then attach only these parts. Nothing else.",
+      tone: "build",
+      partsLabel: "Attach only these:",
+      parts: subject.build.mods.map((m) => ({ name: m.name, count: m.count })),
+    };
+  if (/ Default$/.test(subject.name))
+    return {
+      name: shortGunName(subject.name.replace(/ Default$/, "")),
+      tag: "Default",
+      instruction:
+        "Exactly as traders sell it, with all its factory parts on. Don't add or remove anything.",
+      tone: "default",
+      partsLabel: parts.length ? "It should have all of these on:" : undefined,
+      parts,
+    };
+  return {
+    name: shortGunName(subject.name),
+    tag: "Preset",
+    instruction: "Exactly as this preset comes. Don't add or remove anything.",
+    tone: "preset",
+    parts,
+  };
+}

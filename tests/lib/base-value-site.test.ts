@@ -1,9 +1,16 @@
 import { describe, expect, test } from "vitest";
-import { solve, type LabTest, type Subject } from "@/lib/base-value-lab";
+import {
+  parseState,
+  solve,
+  type LabTest,
+  type Subject,
+} from "@/lib/base-value-lab";
 import {
   buildFillerOptions,
   cheapestOffer,
+  gunVersion,
   pickNextTest,
+  shortGunName,
   type ShopItem,
 } from "@/lib/base-value-site";
 
@@ -113,5 +120,59 @@ describe("Base Value Lab site helpers", () => {
     expect(pickNextTest({ ...args, skip: new Set(["new"]) })?.subject.id).toBe(
       "tested",
     );
+  });
+
+  test("stripped guns list the parts to remove under a short name", () => {
+    const [mp5] = parseState({
+      version: 1,
+      subjects: [
+        {
+          id: "mp5-bare",
+          mode: "pve",
+          name: "HK MP5 9x19 submachine gun (Navy 3 Round Burst)",
+          kind: "weapon-bare",
+          parts: [
+            { name: "HK MP5 Navy style end cap", count: 1 },
+            { name: "HK MP5 20-round 9x19 magazine" },
+            { count: 2 },
+          ],
+        },
+      ],
+      tests: [],
+    }).subjects;
+    expect(gunVersion(mp5)).toMatchObject({
+      name: "HK MP5 (Navy 3 Round Burst)",
+      tag: "Stripped",
+      partsLabel: "Remove all of these:",
+      parts: [
+        { name: "HK MP5 Navy style end cap", count: 1 },
+        { name: "HK MP5 20-round 9x19 magazine", count: 1 },
+      ],
+    });
+  });
+
+  test("tells default presets and custom builds apart", () => {
+    const base = { id: "g", mode: "pve" as const, kind: "weapon" as const };
+    expect(
+      gunVersion({ ...base, name: "TOZ-106 20ga bolt-action shotgun Default" }),
+    ).toMatchObject({ name: "TOZ-106", tag: "Default", partsLabel: undefined });
+    expect(
+      gunVersion({
+        ...base,
+        name: "TOZ-106 + Scope",
+        build: {
+          gunItemId: "x",
+          mods: [{ name: "Scope", count: 1 }],
+        } as unknown as Subject["build"],
+      }),
+    ).toMatchObject({
+      tag: "Custom build",
+      partsLabel: "Attach only these:",
+      parts: [{ name: "Scope", count: 1 }],
+    });
+    expect(
+      gunVersion({ ...base, kind: "armour", name: "6B3TM" } as Subject),
+    ).toBeNull();
+    expect(shortGunName("Saiga-12K 12ga automatic shotgun")).toBe("Saiga-12K");
   });
 });

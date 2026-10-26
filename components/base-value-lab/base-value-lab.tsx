@@ -25,7 +25,9 @@ import {
 import {
   buildFillerOptions,
   cheapestOffer,
+  gunVersion,
   pickNextTest,
+  type GunVersionTone,
   type SiteFiller,
 } from "@/lib/base-value-site";
 import { baseValueTestSchema } from "@/lib/base-value-submission";
@@ -91,9 +93,35 @@ function loadPrefs(): Prefs {
   }
 }
 
+const TONE: Record<GunVersionTone, string> = {
+  stripped: "border-rose-400/60 bg-rose-500/15 text-rose-200",
+  default: "border-sky-400/60 bg-sky-500/15 text-sky-200",
+  build: "border-violet-400/60 bg-violet-500/15 text-violet-200",
+  preset: "border-sky-400/60 bg-sky-500/15 text-sky-200",
+};
+
+function VersionTag({ subject }: { subject: Subject }) {
+  const version = gunVersion(subject);
+  if (!version) return null;
+  return (
+    <span
+      className={`ml-2 inline-block whitespace-nowrap rounded-md border px-1.5 py-0.5 align-middle text-[11px] font-semibold uppercase tracking-wide ${TONE[version.tone]}`}
+    >
+      {version.tag}
+    </span>
+  );
+}
+
+/** Name plus version, e.g. "HK MP5 (Navy 3 Round Burst) [Stripped]". */
+function subjectLabel(subject?: Subject) {
+  if (!subject) return "Unknown item";
+  const version = gunVersion(subject);
+  return version ? `${version.name} [${version.tag}]` : subject.name;
+}
+
 function describeTest(test: LabTest, subjects: Map<string, Subject>) {
   const parts = test.entries.map(
-    (e) => `${e.qty}× ${subjects.get(e.subjectId)?.name ?? "Unknown item"}`,
+    (e) => `${e.qty}× ${subjectLabel(subjects.get(e.subjectId))}`,
   );
   for (const f of test.fillers) parts.push(`${f.qty}× ${f.name}`);
   return parts.join(" + ");
@@ -452,7 +480,10 @@ export function BaseValueLab() {
                         key={s.id}
                         className="border-t border-gray-800 align-top"
                       >
-                        <td className="p-2">{s.name}</td>
+                        <td className="p-2">
+                          {gunVersion(s)?.name ?? s.name}
+                          <VersionTag subject={s} />
+                        </td>
                         <td className="whitespace-nowrap p-2">
                           {tested ? `${k(r.range.lo)} – ${k(r.range.hi)}` : "?"}
                         </td>
@@ -531,6 +562,7 @@ function TestCard({
   onSkip: () => void;
 }) {
   const { subject, plan } = next;
+  const version = gunVersion(subject);
   const sourceOf = (itemId?: string) =>
     fillers.find((f) => f.itemId === itemId)?.source;
   return (
@@ -544,23 +576,44 @@ function TestCard({
         </p>
       </div>
       <ul className="space-y-2">
-        <li className="rounded-lg bg-gray-800/70 p-3">
-          <span className="font-semibold">{plan.qty}×</span> {subject.name}
-          <span className="block text-xs text-gray-400">
-            {subject.durability !== undefined
-              ? `${subject.durability}% durability`
-              : ""}
-            {subject.build ? " · build it from the bare gun with:" : ""}
+        <li
+          className={`rounded-lg p-3 ${version ? `border-2 ${TONE[version.tone]}` : "bg-gray-800/70"}`}
+        >
+          {version && (
+            <span
+              className={`mb-2 inline-block rounded-md border px-2 py-0.5 text-xs font-bold uppercase tracking-wider ${TONE[version.tone]}`}
+            >
+              {version.tag} gun
+            </span>
+          )}
+          <span className="block text-gray-100">
+            <span className="font-semibold">{plan.qty}×</span>{" "}
+            {version?.name ?? subject.name}
           </span>
-          {subject.build && (
-            <ul className="mt-1 list-disc pl-5 text-xs text-gray-300">
-              {subject.build.mods.map((m) => (
-                <li key={m.itemId ?? m.name}>
-                  {m.count > 1 ? `${m.count}× ` : ""}
-                  {m.name}
-                </li>
-              ))}
-            </ul>
+          {version && (
+            <span className="mt-1 block text-sm font-medium">
+              {version.instruction}
+            </span>
+          )}
+          {subject.durability !== undefined && (
+            <span className="mt-1 block text-xs text-gray-400">
+              {subject.durability}% durability
+            </span>
+          )}
+          {version?.partsLabel && (
+            <div className="mt-2 rounded-md bg-gray-950/50 p-2">
+              <p className="text-xs font-semibold uppercase tracking-wide">
+                {version.partsLabel}
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-sm text-gray-200">
+                {version.parts.map((p, i) => (
+                  <li key={`${p.name}-${i}`}>
+                    {p.count > 1 ? `${p.count}× ` : ""}
+                    {p.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </li>
         {plan.fillers.map((f) => (

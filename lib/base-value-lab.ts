@@ -56,6 +56,11 @@ export interface Subject {
   notes?: string;
   /** A bare gun with chosen mods attached (itemId is the gun). */
   build?: Build;
+  /**
+   * Guns only: the default preset's parts, without the gun itself. A
+   * stripped gun is missing all of them; a Default preset has all of them.
+   */
+  parts?: { name: string; count: number }[];
 }
 
 export interface Build {
@@ -882,6 +887,16 @@ function parseBuild(v: unknown): Build | undefined {
   };
 }
 
+function parseParts(v: unknown): Subject["parts"] {
+  if (!Array.isArray(v)) return undefined;
+  const parts = v.flatMap((p) => {
+    const x = p as Record<string, unknown>;
+    const name = str(x.name);
+    return name ? [{ name, count: num(x.count) ?? 1 }] : [];
+  });
+  return parts.length ? parts : undefined;
+}
+
 /** Validates an export file. Throws with a readable message when it's wrong. */
 export function parseState(raw: unknown): LabState {
   if (!raw || typeof raw !== "object") throw new Error("Not a lab export.");
@@ -910,6 +925,7 @@ export function parseState(raw: unknown): LabState {
       owned: num(s.owned),
       notes: str(s.notes),
       build: parseBuild(s.build),
+      parts: parseParts(s.parts),
     };
   });
 
