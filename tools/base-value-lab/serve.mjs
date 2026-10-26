@@ -13,7 +13,7 @@
  *   bun run lab -- --port 3220
  */
 
-import { existsSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hasFlag, serveStatic } from "../lib/local-d1.mjs";
@@ -22,6 +22,16 @@ const DIR = dirname(fileURLToPath(import.meta.url));
 const JSON_API = "https://json.tarkov.dev";
 const MAX_AGE_MS = 12 * 60 * 60 * 1000;
 const MODES = { pvp: "regular", pve: "pve" };
+// Bump when the cached item shape changes, so old caches refresh.
+const CACHE_VERSION = 2;
+
+function cacheVersion(file) {
+  try {
+    return JSON.parse(readFileSync(file, "utf8")).version ?? 1;
+  } catch {
+    return 0;
+  }
+}
 
 const built = await Bun.build({
   entrypoints: [join(DIR, "entry.ts")],
@@ -56,6 +66,16 @@ function traderOffers(offers) {
     : null;
 }
 
+function slotsOf(it) {
+  const slots = (it.properties?.slots ?? [])
+    .map((s) => ({
+      name: s.nameId ?? s.name ?? "slot",
+      allowed: s.filters?.allowedItems ?? [],
+    }))
+    .filter((s) => s.allowed.length);
+  return slots.length ? slots : undefined;
+}
+
 async function cacheMode(mode, english) {
   const file = join(DIR, `items-${mode}.json`);
   const data = await getJson(`${MODES[mode]}/items`);
@@ -75,10 +95,16 @@ async function cacheMode(mode, english) {
         ? it.containsItems.map((c) => ({ id: c.item, count: c.count }))
         : undefined,
     baseItem: it.properties?.baseItem,
+    // Which parts fit where, so the build picker only offers parts that fit.
+    slots: slotsOf(it),
   }));
   writeFileSync(
     file,
-    JSON.stringify({ fetchedAt: new Date().toISOString(), items }),
+    JSON.stringify({
+      version: CACHE_VERSION,
+      fetchedAt: new Date().toISOString(),
+      items,
+    }),
   );
   console.log(`Cached ${items.length} ${mode.toUpperCase()} items.`);
 }
@@ -86,7 +112,11 @@ async function cacheMode(mode, english) {
 const stale = Object.keys(MODES).filter((mode) => {
   if (hasFlag("--refresh")) return true;
   const file = join(DIR, `items-${mode}.json`);
-  return !existsSync(file) || Date.now() - statSync(file).mtimeMs >= MAX_AGE_MS;
+  return (
+    !existsSync(file) ||
+    Date.now() - statSync(file).mtimeMs >= MAX_AGE_MS ||
+    cacheVersion(file) !== CACHE_VERSION
+  );
 });
 
 try {

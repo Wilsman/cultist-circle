@@ -280,6 +280,355 @@
       "kind": "weapon",
       "durability": 100,
       "owned": 5
+    },
+    {
+      "id": "sheet-x-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-without-cocking-handle",
+      "mode": "pve",
+      "name": "HK MP5 9x19 submachine gun (Navy 3 Round Burst) Default without cocking handle",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5,
+      "itemId": "5926bb2186f7744b1c6c6e60",
+      "apiBaseValue": 39898,
+      "build": {
+        "gunValue": 12132,
+        "mods": [
+          {
+            "itemId": "5926c3b286f774640d189b6b",
+            "name": "HK MP5 9x19 30-round magazine",
+            "baseValue": 4010,
+            "count": 1
+          },
+          {
+            "itemId": "5926c0df86f77462f647f764",
+            "name": "HK MP5 9x19 upper receiver",
+            "baseValue": 3270,
+            "count": 1
+          },
+          {
+            "itemId": "5926c36d86f77467a92a8629",
+            "name": "HK MP5 Wide Tropical polymer handguard",
+            "baseValue": 3041,
+            "count": 1
+          },
+          {
+            "itemId": "5926d2be86f774134d668e4e",
+            "name": "HK MP5 Drum rear sight",
+            "baseValue": 2100,
+            "count": 1
+          },
+          {
+            "itemId": "5926d3c686f77410de68ebc8",
+            "name": "HK MP5 A2 stock",
+            "baseValue": 12579,
+            "count": 1
+          },
+          {
+            "itemId": "5926e16e86f7742f5a0f7ecb",
+            "name": "HK MP5 3-lug muzzle adapter",
+            "baseValue": 2766,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "sheet-x-pvp-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-without-magazine",
+      "mode": "pvp",
+      "name": "HK MP5 9x19 submachine gun (Navy 3 Round Burst) Default without magazine",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5,
+      "itemId": "5926bb2186f7744b1c6c6e60",
+      "apiBaseValue": 37538,
+      "build": {
+        "gunValue": 12132,
+        "mods": [
+          {
+            "itemId": "5926c0df86f77462f647f764",
+            "name": "HK MP5 9x19 upper receiver",
+            "baseValue": 3270,
+            "count": 1
+          },
+          {
+            "itemId": "5926c36d86f77467a92a8629",
+            "name": "HK MP5 Wide Tropical polymer handguard",
+            "baseValue": 3041,
+            "count": 1
+          },
+          {
+            "itemId": "5926d2be86f774134d668e4e",
+            "name": "HK MP5 Drum rear sight",
+            "baseValue": 2100,
+            "count": 1
+          },
+          {
+            "itemId": "5926d3c686f77410de68ebc8",
+            "name": "HK MP5 A2 stock",
+            "baseValue": 12579,
+            "count": 1
+          },
+          {
+            "itemId": "5926e16e86f7742f5a0f7ecb",
+            "name": "HK MP5 3-lug muzzle adapter",
+            "baseValue": 2766,
+            "count": 1
+          },
+          {
+            "itemId": "5926c32286f774616e42de99",
+            "name": "HK MP5 cocking handle",
+            "baseValue": 1650,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "sheet-x-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-with-20-round-magazine-without-cocking-handle",
+      "mode": "pve",
+      "name": "HK MP5 9x19 submachine gun (Navy 3 Round Burst) Default with 20-round magazine, without cocking handle",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5,
+      "itemId": "5926bb2186f7744b1c6c6e60",
+      "apiBaseValue": 38988,
+      "build": {
+        "gunValue": 12132,
+        "mods": [
+          {
+            "itemId": "5926c0df86f77462f647f764",
+            "name": "HK MP5 9x19 upper receiver",
+            "baseValue": 3270,
+            "count": 1
+          },
+          {
+            "itemId": "5926c36d86f77467a92a8629",
+            "name": "HK MP5 Wide Tropical polymer handguard",
+            "baseValue": 3041,
+            "count": 1
+          },
+          {
+            "itemId": "5926d2be86f774134d668e4e",
+            "name": "HK MP5 Drum rear sight",
+            "baseValue": 2100,
+            "count": 1
+          },
+          {
+            "itemId": "5926d3c686f77410de68ebc8",
+            "name": "HK MP5 A2 stock",
+            "baseValue": 12579,
+            "count": 1
+          },
+          {
+            "itemId": "5926e16e86f7742f5a0f7ecb",
+            "name": "HK MP5 3-lug muzzle adapter",
+            "baseValue": 2766,
+            "count": 1
+          },
+          {
+            "itemId": "5d2f213448f0355009199284",
+            "name": "HK MP5 9x19 20-round magazine",
+            "baseValue": 3100,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "sheet-x-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-with-20-round-magazine-without-cocking-handle-or-rear-sight",
+      "mode": "pve",
+      "name": "HK MP5 9x19 submachine gun (Navy 3 Round Burst) Default with 20-round magazine, without cocking handle or rear sight",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5,
+      "itemId": "5926bb2186f7744b1c6c6e60",
+      "apiBaseValue": 36888,
+      "build": {
+        "gunValue": 12132,
+        "mods": [
+          {
+            "itemId": "5926c0df86f77462f647f764",
+            "name": "HK MP5 9x19 upper receiver",
+            "baseValue": 3270,
+            "count": 1
+          },
+          {
+            "itemId": "5926c36d86f77467a92a8629",
+            "name": "HK MP5 Wide Tropical polymer handguard",
+            "baseValue": 3041,
+            "count": 1
+          },
+          {
+            "itemId": "5926d3c686f77410de68ebc8",
+            "name": "HK MP5 A2 stock",
+            "baseValue": 12579,
+            "count": 1
+          },
+          {
+            "itemId": "5926e16e86f7742f5a0f7ecb",
+            "name": "HK MP5 3-lug muzzle adapter",
+            "baseValue": 2766,
+            "count": 1
+          },
+          {
+            "itemId": "5d2f213448f0355009199284",
+            "name": "HK MP5 9x19 20-round magazine",
+            "baseValue": 3100,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "sheet-x-pve-sig-p226r-9x19-pistol-default-without-magazine",
+      "mode": "pve",
+      "name": "SIG P226R 9x19 pistol Default without magazine",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5,
+      "itemId": "56d59856d2720bd8418b456a",
+      "apiBaseValue": 13116,
+      "build": {
+        "gunValue": 6238,
+        "mods": [
+          {
+            "itemId": "56d5a1f7d2720bb3418b456a",
+            "name": "P226 9x19 112mm barrel",
+            "baseValue": 1563,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a2bbd2720bb8418b456a",
+            "name": "P226 polymer pistol grip (Black)",
+            "baseValue": 1000,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a407d2720bb3418b456b",
+            "name": "P226R MK25 pistol slide",
+            "baseValue": 3210,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a77ed2720b90418b4568",
+            "name": "P226 rear sight",
+            "baseValue": 605,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a661d2720bd8418b456b",
+            "name": "P226 front sight",
+            "baseValue": 500,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "sheet-x-pve-sig-p226r-9x19-pistol-default-without-barrel",
+      "mode": "pve",
+      "name": "SIG P226R 9x19 pistol Default without barrel",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5,
+      "itemId": "56d59856d2720bd8418b456a",
+      "apiBaseValue": 13649,
+      "build": {
+        "gunValue": 6238,
+        "mods": [
+          {
+            "itemId": "56d5a2bbd2720bb8418b456a",
+            "name": "P226 polymer pistol grip (Black)",
+            "baseValue": 1000,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a407d2720bb3418b456b",
+            "name": "P226R MK25 pistol slide",
+            "baseValue": 3210,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a77ed2720b90418b4568",
+            "name": "P226 rear sight",
+            "baseValue": 605,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a661d2720bd8418b456b",
+            "name": "P226 front sight",
+            "baseValue": 500,
+            "count": 1
+          },
+          {
+            "itemId": "56d59948d2720bb7418b4582",
+            "name": "P226 9x19 15-round magazine",
+            "baseValue": 2096,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "sheet-x-pve-sig-p226r-9x19-pistol-default-without-front-sight",
+      "mode": "pve",
+      "name": "SIG P226R 9x19 pistol Default without front sight",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5,
+      "itemId": "56d59856d2720bd8418b456a",
+      "apiBaseValue": 14712,
+      "build": {
+        "gunValue": 6238,
+        "mods": [
+          {
+            "itemId": "56d5a1f7d2720bb3418b456a",
+            "name": "P226 9x19 112mm barrel",
+            "baseValue": 1563,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a2bbd2720bb8418b456a",
+            "name": "P226 polymer pistol grip (Black)",
+            "baseValue": 1000,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a407d2720bb3418b456b",
+            "name": "P226R MK25 pistol slide",
+            "baseValue": 3210,
+            "count": 1
+          },
+          {
+            "itemId": "56d5a77ed2720b90418b4568",
+            "name": "P226 rear sight",
+            "baseValue": 605,
+            "count": 1
+          },
+          {
+            "itemId": "56d59948d2720bb7418b4582",
+            "name": "P226 9x19 15-round magazine",
+            "baseValue": 2096,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "sheet-x-pve-serdyukov-sr-1mp-gyurza-9x21-pistol-default",
+      "mode": "pve",
+      "name": "Serdyukov SR-1MP Gyurza 9x21 pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
+    },
+    {
+      "id": "sheet-x-pve-glock-17-9x19-pistol-default",
+      "mode": "pve",
+      "name": "Glock 17 9x19 pistol Default",
+      "kind": "weapon",
+      "durability": 100,
+      "owned": 5
     }
   ],
   "tests": [
@@ -323,7 +672,8 @@
       ],
       "fillers": [],
       "timer": "2h",
-      "notes": "Sheet test 23. Max Hideout skill"
+      "notes": "Sheet test 23. Max Hideout skill",
+      "hideoutSkill": 51
     },
     {
       "id": "sheet-35",
@@ -466,66 +816,6 @@
       "notes": "Sheet test 14"
     },
     {
-      "id": "sheet-15",
-      "mode": "pve",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
-          "qty": 4
-        }
-      ],
-      "fillers": [],
-      "timer": "14h",
-      "excluded": true,
-      "notes": "Sheet test 15. Changed setup: cocking handle removed"
-    },
-    {
-      "id": "sheet-16",
-      "mode": "pvp",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pvp-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
-          "qty": 4
-        }
-      ],
-      "fillers": [],
-      "timer": "12h",
-      "excluded": true,
-      "notes": "Sheet test 16. Changed setup: magazine removed"
-    },
-    {
-      "id": "sheet-17",
-      "mode": "pve",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
-          "qty": 3
-        }
-      ],
-      "fillers": [],
-      "timer": "12h",
-      "excluded": true,
-      "notes": "Sheet test 17. Changed setup: w/ 20-rounders, w/o cocking handle & -1 Drum rear sight"
-    },
-    {
-      "id": "sheet-18",
-      "mode": "pve",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
-          "qty": 3
-        }
-      ],
-      "fillers": [],
-      "timer": "12h",
-      "excluded": true,
-      "notes": "Sheet test 18. Changed setup: w/ 20-rounders, w/o cocking handle"
-    },
-    {
       "id": "sheet-27",
       "mode": "pve",
       "createdAt": "2025-01-01T00:00:00.000Z",
@@ -538,21 +828,6 @@
       "fillers": [],
       "timer": "8h",
       "notes": "Sheet test 27"
-    },
-    {
-      "id": "sheet-46",
-      "mode": "pvp",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pvp-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
-          "qty": 4
-        }
-      ],
-      "fillers": [],
-      "timer": "6h",
-      "excluded": true,
-      "notes": "Sheet test 46. Changed setup: with 1 additional FP-100 filter"
     },
     {
       "id": "sheet-3",
@@ -582,51 +857,6 @@
       "timer": "8h",
       "excluded": true,
       "notes": "Sheet test 19. Changed setup: how was an extra 26k added to hit 100k?"
-    },
-    {
-      "id": "sheet-20",
-      "mode": "pve",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
-          "qty": 4
-        }
-      ],
-      "fillers": [],
-      "timer": "6h",
-      "excluded": true,
-      "notes": "Sheet test 20. Mode not recorded in the sheet (assumed PvE). Changed setup: with Additional HK UMP .45 ACP submachine gun Default"
-    },
-    {
-      "id": "sheet-25",
-      "mode": "pve",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
-          "qty": 3
-        }
-      ],
-      "fillers": [],
-      "timer": "14h",
-      "excluded": true,
-      "notes": "Sheet test 25. Mode not recorded in the sheet (assumed PvE). Changed setup: with 2 Additional HK UMP .45 ACP submachine gun Default"
-    },
-    {
-      "id": "sheet-row25",
-      "mode": "pve",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
-          "qty": 4
-        }
-      ],
-      "fillers": [],
-      "timer": "14h",
-      "excluded": true,
-      "notes": "Sheet test (no number). Mode not recorded in the sheet (assumed PvE). Changed setup: with 1 additional Diary"
     },
     {
       "id": "sheet-4",
@@ -710,7 +940,8 @@
       ],
       "fillers": [],
       "timer": "4h",
-      "notes": "Sheet test 26. Max Hideout skill"
+      "notes": "Sheet test 26. Max Hideout skill",
+      "hideoutSkill": 51
     },
     {
       "id": "sheet-40",
@@ -909,51 +1140,6 @@
       "notes": "Sheet test 29"
     },
     {
-      "id": "sheet-47",
-      "mode": "pve",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pve-sig-p226r-9x19-pistol-default-100",
-          "qty": 1
-        }
-      ],
-      "fillers": [],
-      "timer": "3h",
-      "excluded": true,
-      "notes": "Sheet test 47. Changed setup: mag removed (P226 9x19 15-round magazine = bv 2,096)"
-    },
-    {
-      "id": "sheet-48",
-      "mode": "pve",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pve-sig-p226r-9x19-pistol-default-100",
-          "qty": 1
-        }
-      ],
-      "fillers": [],
-      "timer": "3h",
-      "excluded": true,
-      "notes": "Sheet test 48. Changed setup: barrel removed (P226 9x19 112mm barrel = bv 1,563)"
-    },
-    {
-      "id": "sheet-49",
-      "mode": "pve",
-      "createdAt": "2025-01-01T00:00:00.000Z",
-      "entries": [
-        {
-          "subjectId": "sheet-pve-sig-p226r-9x19-pistol-default-100",
-          "qty": 1
-        }
-      ],
-      "fillers": [],
-      "timer": "3h",
-      "excluded": true,
-      "notes": "Sheet test 49. Changed setup: fonrt sight removed (P226 front sight = bv 500)"
-    },
-    {
       "id": "sheet-30",
       "mode": "pve",
       "createdAt": "2025-01-01T00:00:00.000Z",
@@ -1037,6 +1223,328 @@
       "timer": "14h",
       "excluded": true,
       "notes": "Sheet test 51. Mode not recorded in the sheet (assumed PvE)"
+    },
+    {
+      "id": "sheet-x-15",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-x-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-without-cocking-handle",
+          "qty": 4
+        }
+      ],
+      "fillers": [],
+      "timer": "14h",
+      "notes": "Sheet test 15 (cocking handle removed)"
+    },
+    {
+      "id": "sheet-x-16",
+      "mode": "pvp",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-x-pvp-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-without-magazine",
+          "qty": 4
+        }
+      ],
+      "fillers": [],
+      "timer": "12h",
+      "notes": "Sheet test 16 (magazine removed)"
+    },
+    {
+      "id": "sheet-x-17",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-x-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-with-20-round-magazine-without-cocking-handle",
+          "qty": 2
+        },
+        {
+          "subjectId": "sheet-x-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-with-20-round-magazine-without-cocking-handle-or-rear-sight",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "12h",
+      "notes": "Sheet test 17 (20-round mags, no cocking handles, one rear sight removed)"
+    },
+    {
+      "id": "sheet-x-18",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-x-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-with-20-round-magazine-without-cocking-handle",
+          "qty": 3
+        }
+      ],
+      "fillers": [],
+      "timer": "12h",
+      "notes": "Sheet test 18 (20-round mags, no cocking handles)"
+    },
+    {
+      "id": "sheet-x-46",
+      "mode": "pvp",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pvp-hk-mp5-9x19-submachine-gun-navy-3-round-burst-default-100",
+          "qty": 4
+        }
+      ],
+      "fillers": [
+        {
+          "itemId": "5d1b2f3f86f774252167a52c",
+          "name": "FP-100 filter absorber",
+          "baseValue": 82000,
+          "qty": 1
+        }
+      ],
+      "timer": "6h",
+      "notes": "Sheet test 46 (plus 1 FP-100 filter)"
+    },
+    {
+      "id": "sheet-x-20",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
+          "qty": 4
+        },
+        {
+          "subjectId": "sheet-pve-hk-ump-45-acp-submachine-gun-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "6h",
+      "notes": "Sheet test 20 (plus 1 UMP Default). Mode not recorded in the sheet (assumed PvE)"
+    },
+    {
+      "id": "sheet-x-25",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
+          "qty": 3
+        },
+        {
+          "subjectId": "sheet-pve-hk-ump-45-acp-submachine-gun-default-100",
+          "qty": 2
+        }
+      ],
+      "fillers": [],
+      "timer": "14h",
+      "notes": "Sheet test 25 (plus 2 UMP Default). Mode not recorded in the sheet (assumed PvE)"
+    },
+    {
+      "id": "sheet-x-row25",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-hk-mp5-9x19-submachine-gun-navy-3-round-burst-sd-100",
+          "qty": 4
+        }
+      ],
+      "fillers": [
+        {
+          "itemId": "590c645c86f77412b01304d9",
+          "name": "Diary",
+          "baseValue": 58000,
+          "qty": 1
+        }
+      ],
+      "timer": "14h",
+      "notes": "Sheet test without a number (plus 1 Diary). Mode not recorded in the sheet (assumed PvE)"
+    },
+    {
+      "id": "sheet-x-47",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-x-pve-sig-p226r-9x19-pistol-default-without-magazine",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 47 (magazine removed)"
+    },
+    {
+      "id": "sheet-x-48",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-x-pve-sig-p226r-9x19-pistol-default-without-barrel",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 48 (barrel removed)"
+    },
+    {
+      "id": "sheet-x-49",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-x-pve-sig-p226r-9x19-pistol-default-without-front-sight",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "Sheet test 49 (front sight removed)"
+    },
+    {
+      "id": "sheet-x-25k-gyurza",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-x-pve-serdyukov-sr-1mp-gyurza-9x21-pistol-default",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "4h",
+      "notes": "25k(4h) sheet. Mode not recorded (assumed PvE)"
+    },
+    {
+      "id": "sheet-x-25k-glock17",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-x-pve-glock-17-9x19-pistol-default",
+          "qty": 1
+        }
+      ],
+      "fillers": [],
+      "timer": "3h",
+      "notes": "25k(4h) sheet. Mode not recorded (assumed PvE)"
+    },
+    {
+      "id": "sheet-x-pb-1",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-pb-9x18pm-silenced-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [
+        {
+          "itemId": "570fd721d2720bc5458b4596",
+          "name": "Walther MRS reflex sight",
+          "baseValue": 10000,
+          "qty": 1
+        },
+        {
+          "itemId": "6130ca3fd92c473c77020dbd",
+          "name": "AK CSS knurled charging handle",
+          "baseValue": 5000,
+          "qty": 1
+        },
+        {
+          "itemId": "574db213245977459a2f3f5d",
+          "name": "SKS rear sight",
+          "baseValue": 300,
+          "qty": 1
+        }
+      ],
+      "timer": "5h",
+      "notes": "PB Pistol Parts sheet. Mode not recorded (assumed PvE)"
+    },
+    {
+      "id": "sheet-x-pb-2",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-pb-9x18pm-silenced-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [
+        {
+          "itemId": "570fd721d2720bc5458b4596",
+          "name": "Walther MRS reflex sight",
+          "baseValue": 10000,
+          "qty": 1
+        },
+        {
+          "itemId": "6130ca3fd92c473c77020dbd",
+          "name": "AK CSS knurled charging handle",
+          "baseValue": 5000,
+          "qty": 1
+        }
+      ],
+      "timer": "4h",
+      "notes": "PB Pistol Parts sheet. Mode not recorded (assumed PvE)"
+    },
+    {
+      "id": "sheet-x-pb-3",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-pb-9x18pm-silenced-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [
+        {
+          "itemId": "590c595c86f7747884343ad7",
+          "name": "Gas mask air filter",
+          "baseValue": 10039,
+          "qty": 1
+        },
+        {
+          "itemId": "6130ca3fd92c473c77020dbd",
+          "name": "AK CSS knurled charging handle",
+          "baseValue": 5000,
+          "qty": 1
+        }
+      ],
+      "timer": "4h",
+      "notes": "PB Pistol Parts sheet. Mode not recorded (assumed PvE)"
+    },
+    {
+      "id": "sheet-x-pb-4",
+      "mode": "pve",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "entries": [
+        {
+          "subjectId": "sheet-pve-pb-9x18pm-silenced-pistol-default-100",
+          "qty": 1
+        }
+      ],
+      "fillers": [
+        {
+          "itemId": "5c791e872e2216001219c40a",
+          "name": "Strike Industries Cobra Tactical foregrip",
+          "baseValue": 10050,
+          "qty": 1
+        },
+        {
+          "itemId": "6130ca3fd92c473c77020dbd",
+          "name": "AK CSS knurled charging handle",
+          "baseValue": 5000,
+          "qty": 1
+        }
+      ],
+      "timer": "4h",
+      "notes": "PB Pistol Parts sheet. Mode not recorded (assumed PvE)"
     }
   ],
   "stash": {

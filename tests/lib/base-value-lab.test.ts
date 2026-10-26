@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  combineModes,
   emptyState,
+  freeSlots,
   mergeStates,
   parseState,
   partsRange,
@@ -185,6 +187,39 @@ describe("planTest", () => {
 
     expect(plan.fillers.every((f) => f.owned)).toBe(true);
     expect(plan.fillerCost).toBe(0);
+  });
+
+  it("settles for an owned filler that lands near, not on, the aim", () => {
+    // Bare gun, API 3,526: ideal filler is ~6.5k, but only 5k is owned.
+    const bare: Subject = {
+      ...gun,
+      id: "bare",
+      kind: "weapon-bare",
+      apiBaseValue: 3_526,
+      owned: 1,
+    };
+    const plan = planTest({
+      subject: bare,
+      fillers: [
+        {
+          name: "Owned 5k",
+          baseValue: 5_000,
+          cost: 0,
+          available: 1,
+          owned: true,
+        },
+        {
+          name: "Shop 6.5k",
+          baseValue: 6_450,
+          cost: 9_000,
+          available: 5,
+          owned: false,
+        },
+      ],
+    })!;
+
+    expect(plan.fillers.map((f) => f.name)).toEqual(["Owned 5k"]);
+    expect(plan.splitAt).toBe(5_000);
   });
 
   it("re-checks a tight but unconfirmed edge", () => {
@@ -390,5 +425,136 @@ describe("helpers", () => {
 
     // A well-formed export still parses.
     expect(parseState(valid()).tests).toHaveLength(1);
+  });
+
+  it("keeps a test's hideout skill and drops impossible levels", () => {
+    const withSkill = (hideoutSkill: unknown) =>
+      parseState({
+        version: 1,
+        subjects: [{ id: "s1", mode: "pve", name: "Thing" }],
+        tests: [
+          {
+            id: "t1",
+            mode: "pve",
+            entries: [{ subjectId: "s1", qty: 1 }],
+            fillers: [],
+            timer: "5h",
+            hideoutSkill,
+          },
+        ],
+      }).tests[0].hideoutSkill;
+
+    expect(withSkill(51)).toBe(51);
+    expect(withSkill(0)).toBe(0);
+    expect(withSkill(52)).toBeUndefined();
+    expect(withSkill(-1)).toBeUndefined();
+    expect(withSkill("51")).toBeUndefined();
+    expect(withSkill(undefined)).toBeUndefined();
+  });
+});
+
+describe("combineModes", () => {
+  const pvpGun: Subject = { ...gun, id: "pvp-gun", mode: "pvp", owned: 9 };
+  const state = () => ({
+    ...emptyState(),
+    subjects: [
+      gun,
+      pvpGun,
+      {
+        ...gun,
+        id: "pvp-only",
+        mode: "pvp" as const,
+        name: "Other",
+        itemId: "other",
+      },
+    ],
+    tests: [
+      {
+        ...test(1, "3h"),
+        mode: "pvp" as const,
+        entries: [{ subjectId: "pvp-gun", qty: 1 }],
+      },
+      test(1, "4h"),
+    ],
+    stash: {
+      pvp: [
+        { itemId: "a", name: "A", baseValue: 5_000, count: 1 },
+        { itemId: "b", name: "B", baseValue: 1_000, count: 2 },
+      ],
+      pve: [{ itemId: "a", name: "A", baseValue: 5_000, count: 3 }],
+    },
+  });
+
+  it("joins the same item from both modes into one subject", () => {
+    const out = combineModes(state(), "pve");
+    expect(out.subjects.map((s) => [s.id, s.mode])).toEqual([
+      ["gun", "pve"],
+      ["pvp-only", "pve"],
+    ]);
+    expect(out.subjects[0].owned).toBe(9);
+    expect(out.tests.every((t) => t.mode === "pve")).toBe(true);
+    expect(out.tests.flatMap((t) => t.entries.map((e) => e.subjectId))).toEqual(
+      ["gun", "gun"],
+    );
+  });
+
+  it("keeps the target stash and adds items only the other mode had", () => {
+    const out = combineModes(state(), "pve");
+    expect(out.stash.pve.map((s) => [s.itemId, s.count])).toEqual([
+      ["a", 3],
+      ["b", 2],
+    ]);
+    expect(out.stash.pvp).toEqual([]);
+  });
+
+  it("changes nothing when run twice", () => {
+    const once = combineModes(state(), "pve");
+    expect(combineModes(once, "pve")).toEqual(once);
+  });
+});
+
+describe("freeSlots", () => {
+  const rifle = {
+    id: "rifle",
+    name: "Test rifle",
+    slots: [
+      { name: "mod_magazine", allowed: ["mag"] },
+      { name: "mod_mount_000", allowed: ["mount"] },
+    ],
+  };
+  const mount = {
+    id: "mount",
+    name: "Test mount",
+    slots: [{ name: "mod_scope", allowed: ["scope"] }],
+  };
+
+  it("returns null when the gun has no slot data", () => {
+    expect(freeSlots({ id: "x", name: "Old cache gun" }, [])).toBeNull();
+  });
+
+  it("lists the gun's own slots", () => {
+    expect(freeSlots(rifle, [])?.map((s) => s.name)).toEqual([
+      "magazine",
+      "mount",
+    ]);
+  });
+
+  it("fills a slot and opens the slots on the part", () => {
+    const open = freeSlots(rifle, [mount]) ?? [];
+    expect(open.map((s) => [s.name, s.host])).toEqual([
+      ["magazine", "Test rifle"],
+      ["scope", "Test mount"],
+    ]);
+    expect(open[1].allowed.has("scope")).toBe(true);
+  });
+
+  it("has nothing left once every slot is full", () => {
+    expect(
+      freeSlots(rifle, [
+        mount,
+        { id: "mag", name: "Mag" },
+        { id: "scope", name: "Scope" },
+      ]),
+    ).toEqual([]);
   });
 });

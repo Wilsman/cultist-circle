@@ -67,6 +67,52 @@ describe("fitRules", () => {
     expect(byId(fits, "whole").fitted).toEqual({ lo: 1.5, hi: 2 });
   });
 
+  it("pins a rare-parts multiplier from the rarity-tagged value", () => {
+    // Hidden truth: Rare/Superrare parts count x2, the rest at API value.
+    const fits = fitRules(
+      [
+        // 10k API, 4k of it rare -> 14k.
+        obs(
+          "rare",
+          { gun: 6_000, mods: 4_000, modCount: 2, rare: 4_000 },
+          13_500,
+          14_500,
+        ),
+        // Nothing rare -> stays at API value.
+        obs(
+          "plain",
+          { gun: 8_000, mods: 2_000, modCount: 1, rare: 0 },
+          9_500,
+          10_500,
+        ),
+      ],
+      { weapons: true },
+    );
+    const rare = byId(fits, "rare");
+
+    expect(rare.verdict).toBe("fits");
+    expect(rare.informative).toBe(1);
+    expect(rare.fitted).toEqual({ lo: 1.875, hi: 2.125 });
+    // A gun with no rare parts must sit at its API value.
+    const broken = fitRules(
+      [
+        obs(
+          "plain",
+          { gun: 8_000, mods: 2_000, modCount: 1, rare: 0 },
+          15_000,
+          16_000,
+        ),
+      ],
+      { weapons: true },
+    );
+    expect(byId(broken, "rare").verdict).toBe("ruled-out");
+  });
+
+  it("leaves the rarity rule out without rarity data", () => {
+    const fits = fitRules(data, { weapons: true });
+    expect(fits.some((f) => f.id === "rare")).toBe(false);
+  });
+
   it("can't pin a mod multiplier from bare guns alone", () => {
     const fits = fitRules([data[2]], { weapons: true });
     const mods = byId(fits, "mods");

@@ -23,6 +23,11 @@ export interface Composition {
   mods: number;
   /** Number of attached mods. */
   modCount: number;
+  /**
+   * API value of the parts (gun body included) the community sheet tags
+   * Rare or Superrare. Missing when rarity data isn't loaded.
+   */
+  rare?: number;
 }
 
 export interface Observation {
@@ -33,7 +38,7 @@ export interface Observation {
   comp: Composition;
 }
 
-export type RuleId = "api" | "whole" | "mods" | "gun" | "flat";
+export type RuleId = "api" | "whole" | "mods" | "gun" | "flat" | "rare";
 
 export interface RuleInfo {
   id: RuleId;
@@ -81,6 +86,13 @@ export const RULES: readonly RuleInfo[] = [
     param: { label: "bonus per mod", unit: "rub" },
     weaponOnly: true,
   },
+  {
+    id: "rare",
+    title: "Rare parts × multiplier",
+    idea: "Parts the community sheet tags Rare or Superrare count extra; everything else is worth its API value.",
+    param: { label: "rare multiplier", unit: "x" },
+    weaponOnly: false,
+  },
 ];
 
 const OPEN: Range = { lo: 0, hi: Infinity };
@@ -101,6 +113,8 @@ export function ruleValue(id: RuleId, c: Composition, p: number): number {
       return mul(c.gun) + c.mods;
     case "flat":
       return api(c) + mul(c.modCount);
+    case "rare":
+      return api(c) - (c.rare ?? 0) + mul(c.rare ?? 0);
   }
 }
 
@@ -126,6 +140,8 @@ function paramRange(id: RuleId, o: Observation): Range | "any" {
       return between(c.mods, c.gun, 0);
     case "flat":
       return between(api(c), c.modCount, -Infinity);
+    case "rare":
+      return between(api(c) - (c.rare ?? 0), c.rare ?? 0, 0);
   }
 }
 
@@ -164,9 +180,11 @@ export function fitRules(
   observations: readonly Observation[],
   { weapons }: { weapons: boolean },
 ): RuleFit[] {
-  return RULES.filter((r) => weapons || !r.weaponOnly).map((rule) =>
-    fitRule(rule, observations),
-  );
+  // The rarity rule needs rarity data; without it it's just "the API is right".
+  const hasRarity = observations.some((o) => o.comp.rare !== undefined);
+  return RULES.filter(
+    (r) => (weapons || !r.weaponOnly) && (r.id !== "rare" || hasRarity),
+  ).map((rule) => fitRule(rule, observations));
 }
 
 function fitRule(rule: RuleInfo, obs: readonly Observation[]): RuleFit {

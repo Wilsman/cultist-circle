@@ -88,6 +88,11 @@ export interface LabTest {
   /** Kept for reference but left out of the maths. */
   excluded?: boolean;
   notes?: string;
+  /**
+   * Hideout Management skill level (0-51) when the ritual was run. Its bonus
+   * may shift the result, so tests with a high skill are flagged.
+   */
+  hideoutSkill?: number;
 }
 
 export interface StashItem {
@@ -586,8 +591,39 @@ export function planTest(input: PlanInput): TestPlan | null {
   const split = chooseSplit(subject, result, settings.tolerance);
   if (!split) return null;
 
-  const maxQty = Math.max(1, Math.min(subject.owned ?? 1, settings.maxItems));
   const range = result?.range ?? OPEN;
+  const best = searchPlans(input, split, range, input.fillers, split.slack);
+  if (best && best.fillerCost === 0) return best;
+  if (split.goal !== "narrow") return best;
+  // Nothing owned hits the ideal point. A looser aim with only owned items
+  // still halves the range well enough and saves buying anything.
+  const owned = input.fillers.filter((o) => o.owned);
+  if (!owned.length) return best;
+  const lo = range.lo;
+  const hi = range.hi === Infinity ? split.x * 3 : range.hi;
+  const edge = (hi - lo) * 0.15;
+  const fromStash = searchPlans(
+    input,
+    split,
+    range,
+    owned,
+    split.slack * 4,
+    (at) => at > lo + edge && at < hi - edge,
+  );
+  return fromStash ?? best;
+}
+
+function searchPlans(
+  input: PlanInput,
+  split: { x: number; slack: number; goal: TestPlan["goal"] },
+  range: Range,
+  options: readonly FillerOption[],
+  slack: number,
+  accept: (splitAt: number) => boolean = () => true,
+): TestPlan | null {
+  const settings = input.settings ?? DEFAULT_SETTINGS;
+  const { subject } = input;
+  const maxQty = Math.max(1, Math.min(subject.owned ?? 1, settings.maxItems));
   let best: TestPlan | null = null;
   let bestScore = Infinity;
 
@@ -595,23 +631,24 @@ export function planTest(input: PlanInput): TestPlan | null {
   for (let qty = 1; qty <= maxQty; qty++) {
     for (const boundary of BOUNDARIES) {
       const need = boundary - qty * split.x;
-      if (need >= -qty * split.slack)
+      if (need >= -qty * slack)
         combos.push({ qty, boundary, need: Math.max(0, need) });
     }
   }
   if (!combos.length) return null;
-  const maxFill = Math.max(...combos.map((c) => c.need + c.qty * split.slack));
+  const maxFill = Math.max(...combos.map((c) => c.need + c.qty * slack));
   const query = fillerTable(
-    input.fillers,
+    options,
     maxFill,
-    split.slack / 4,
+    slack / 4,
     Math.max(0, settings.maxItems - 1),
   );
 
   for (const { qty, boundary, need } of combos) {
-    const fill = query(need, qty * split.slack, settings.maxItems - qty);
+    const fill = query(need, qty * slack, settings.maxItems - qty);
     if (!fill) continue;
     const splitAt = (boundary - fill.total) / qty;
+    if (!accept(splitAt)) continue;
     const itemCount = fill.picks.reduce((n, p) => n + p.qty, 0);
     // Extra copies are cheap to reuse, but fewer items is easier to run.
     // Cost, hassle, and how far the split lands from the ideal point.
@@ -712,6 +749,100 @@ export function mergeStates(base: LabState, incoming: LabState): LabState {
   return out;
 }
 
+/**
+ * Folds PvP and PvE into one mode, once testing showed both give the same
+ * values. The same item from both modes becomes one subject, so its tests
+ * count together. Safe to run more than once.
+ */
+export function combineModes(state: LabState, into: LabMode): LabState {
+  const out: LabState = structuredClone(state);
+  // Subjects already in the target mode win, so their ids stay stable.
+  const ordered = [
+    ...out.subjects.filter((s) => s.mode === into),
+    ...out.subjects.filter((s) => s.mode !== into),
+  ];
+  const byKey = new Map<string, Subject>();
+  const remap = new Map<string, string>();
+  out.subjects = [];
+  for (const s of ordered) {
+    const key = subjectKey({ ...s, mode: into });
+    const kept = byKey.get(key);
+    if (kept) {
+      remap.set(s.id, kept.id);
+      if (s.owned !== undefined)
+        kept.owned = Math.max(kept.owned ?? 0, s.owned);
+      kept.apiBaseValue ??= s.apiBaseValue;
+      continue;
+    }
+    const merged = { ...s, mode: into };
+    byKey.set(key, merged);
+    out.subjects.push(merged);
+  }
+  out.tests = out.tests.map((t) => ({
+    ...t,
+    mode: into,
+    entries: t.entries.map((e) => ({
+      ...e,
+      subjectId: remap.get(e.subjectId) ?? e.subjectId,
+    })),
+  }));
+  const other: LabMode = into === "pvp" ? "pve" : "pvp";
+  for (const item of out.stash[other]) {
+    const held = out.stash[into].some((s) =>
+      item.itemId ? s.itemId === item.itemId : s.name === item.name,
+    );
+    if (!held) out.stash[into].push(item);
+  }
+  out.stash[other] = [];
+  return out;
+}
+
+/** An item's attachment slots, as cached from json.tarkov.dev. */
+export interface SlottedItem {
+  id: string;
+  name: string;
+  slots?: { name: string; allowed: string[] }[];
+}
+
+export interface FreeSlot {
+  /** Readable slot name, e.g. "scope" or "stock". */
+  name: string;
+  /** The gun or part the slot is on. */
+  host: string;
+  allowed: Set<string>;
+}
+
+const slotLabel = (raw: string) =>
+  raw.replace(/^mod_/, "").replace(/_\d+$/, "").replace(/_/g, " ");
+
+/**
+ * Slots still empty on a gun with these parts attached, in the order they were
+ * added. Each part takes the first free slot that accepts it, and its own slots
+ * open up. Null when the gun has no slot data (an old item cache).
+ */
+export function freeSlots(
+  gun: SlottedItem,
+  mods: readonly SlottedItem[],
+): FreeSlot[] | null {
+  if (!gun.slots) return null;
+  const open: FreeSlot[] = [];
+  const addSlots = (host: SlottedItem) => {
+    for (const s of host.slots ?? [])
+      open.push({
+        name: slotLabel(s.name),
+        host: host.name,
+        allowed: new Set(s.allowed),
+      });
+  };
+  addSlots(gun);
+  for (const mod of mods) {
+    const i = open.findIndex((s) => s.allowed.has(mod.id));
+    if (i >= 0) open.splice(i, 1);
+    addSlots(mod);
+  }
+  return open;
+}
+
 const KINDS: SubjectKind[] = [
   "weapon",
   "weapon-bare",
@@ -723,6 +854,14 @@ const isMode = (v: unknown): v is LabMode => v === "pvp" || v === "pve";
 const num = (v: unknown) =>
   typeof v === "number" && Number.isFinite(v) ? v : undefined;
 const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+/** Hideout Management runs 0-51; anything else is dropped. */
+export const MAX_HIDEOUT_SKILL = 51;
+const skillLevel = (v: unknown) => {
+  const n = num(v);
+  return n !== undefined && n >= 0 && n <= MAX_HIDEOUT_SKILL
+    ? Math.round(n)
+    : undefined;
+};
 
 function parseBuild(v: unknown): Build | undefined {
   if (!v || typeof v !== "object") return undefined;
@@ -821,6 +960,7 @@ export function parseState(raw: unknown): LabState {
       timer: timer as Timer | null,
       excluded: t.excluded === true || undefined,
       notes: str(t.notes),
+      hideoutSkill: skillLevel(t.hideoutSkill),
     };
   });
 
