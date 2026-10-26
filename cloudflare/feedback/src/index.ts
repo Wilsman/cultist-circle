@@ -1,6 +1,10 @@
 import { recipeSubmissionSchema } from "../../../lib/recipe-submission";
+import { baseValueTestSchema } from "../../../lib/base-value-submission";
 
 const FEEDBACK_PATH = "/api/submit-feedback";
+const BASE_VALUE_LAB_PATH = "/api/base-value-lab";
+// The page solves every test in the browser; this caps one GET's size.
+const BASE_VALUE_MAX_TESTS = 5000;
 const RECIPE_SUBMISSIONS_PATH = "/api/recipe-submissions";
 const RECIPE_FEEDBACK_PATH = "/api/recipe-feedback";
 const MAX_BODY_BYTES = 8 * 1024;
@@ -541,6 +545,215 @@ async function handleRecipeFeedback(
   }
 }
 
+type BaseValueRow = { data_json: string; source?: string; contributor?: string | null };
+
+function parseRows(rows: BaseValueRow[]): JsonRecord[] {
+  return rows.flatMap((row) => {
+    try {
+      const data = JSON.parse(row.data_json) as JsonRecord;
+      return [
+        row.source
+          ? { ...data, source: row.source, contributor: row.contributor ?? undefined }
+          : data,
+      ];
+    } catch {
+      return [];
+    }
+  });
+}
+
+// Hidden Base Value Lab page: GET the shared subjects and tests, POST a test.
+async function handleBaseValueLab(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const origin = getAllowedOrigin(request);
+
+  if (request.method === "OPTIONS") {
+    if (!origin) {
+      return jsonResponse({ success: false, error: "Origin not allowed" }, 403);
+    }
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Max-Age": "86400",
+        Vary: "Origin",
+      },
+    });
+  }
+
+  if (request.method === "GET") {
+    if (request.headers.has("origin") && !origin) {
+      return jsonResponse({ success: false, error: "Origin not allowed" }, 403);
+    }
+    try {
+      const [subjects, tests] = await env.DB.batch<BaseValueRow>([
+        env.DB.prepare(
+          `SELECT data_json FROM base_value_subjects
+           WHERE hidden = 0 ORDER BY created_at`,
+        ),
+        env.DB.prepare(
+          `SELECT data_json, source, contributor FROM base_value_tests
+           WHERE hidden = 0 ORDER BY created_at DESC LIMIT ?`,
+        ).bind(BASE_VALUE_MAX_TESTS),
+      ]);
+      return jsonResponse(
+        {
+          success: true,
+          data: {
+            subjects: parseRows(subjects?.results ?? []),
+            tests: parseRows(tests?.results ?? []),
+          },
+        },
+        200,
+        { "Cache-Control": "public, max-age=10" },
+        origin ?? undefined,
+      );
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          event: "base_value_read_failed",
+          error: error instanceof Error ? error.message : "Unknown error",
+        }),
+      );
+      return jsonResponse(
+        { success: false, error: "Failed to load the lab." },
+        500,
+        undefined,
+        origin ?? undefined,
+      );
+    }
+  }
+
+  if (request.method !== "POST") {
+    return jsonResponse(
+      { success: false, error: "Method not allowed" },
+      405,
+      { Allow: "GET, POST" },
+      origin ?? undefined,
+    );
+  }
+  if (!origin) {
+    return jsonResponse({ success: false, error: "Origin not allowed" }, 403);
+  }
+
+  const rateLimit = await env.FEEDBACK_RATE_LIMITER.limit({
+    key: `bvl:${getRateLimitKey(request)}`,
+  });
+  if (!rateLimit.success) {
+    return jsonResponse(
+      { success: false, error: "Too many requests. Please try again shortly." },
+      429,
+      { "Retry-After": String(RATE_LIMIT_SECONDS) },
+      origin,
+    );
+  }
+
+  const invalid = () =>
+    jsonResponse(
+      { success: false, error: "Invalid test." },
+      400,
+      undefined,
+      origin,
+    );
+  const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.startsWith("application/json")) return invalid();
+  const body = await readBoundedBody(request);
+  if (body === null) {
+    return jsonResponse(
+      { success: false, error: "Test is too large." },
+      413,
+      undefined,
+      origin,
+    );
+  }
+  let raw: unknown;
+  try {
+    raw = JSON.parse(body);
+  } catch {
+    return invalid();
+  }
+  const parsed = baseValueTestSchema.safeParse(raw);
+  if (!parsed.success) return invalid();
+  const payload = parsed.data;
+
+  try {
+    const ids = payload.entries.map((e) => e.subjectId);
+    const known = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM base_value_subjects
+       WHERE mode = ? AND hidden = 0 AND id IN (${ids.map(() => "?").join(", ")})`,
+    )
+      .bind(payload.mode, ...ids)
+      .first<{ n: number }>();
+    if (Number(known?.n ?? 0) !== ids.length) {
+      return jsonResponse(
+        { success: false, error: "That item is no longer being tested." },
+        400,
+        undefined,
+        origin,
+      );
+    }
+
+    const createdAt = new Date().toISOString();
+    const test = {
+      id: payload.testId,
+      mode: payload.mode,
+      createdAt,
+      entries: payload.entries,
+      fillers: payload.fillers,
+      timer: payload.timer,
+      ...(payload.hideoutSkill !== undefined
+        ? { hideoutSkill: payload.hideoutSkill }
+        : {}),
+      ...(payload.notes ? { notes: payload.notes } : {}),
+    };
+    const result = await env.DB.prepare(
+      `INSERT INTO base_value_tests
+         (id, mode, data_json, source, contributor, created_at)
+       VALUES (?, ?, ?, 'contributor', ?, ?)
+       ON CONFLICT(id) DO NOTHING`,
+    )
+      .bind(
+        payload.testId,
+        payload.mode,
+        JSON.stringify(test),
+        payload.contributor || null,
+        createdAt,
+      )
+      .run();
+    if (!result.success) throw new Error("D1 insert was unsuccessful");
+    return jsonResponse(
+      {
+        success: true,
+        data: {
+          ...test,
+          source: "contributor",
+          contributor: payload.contributor || undefined,
+        },
+      },
+      201,
+      undefined,
+      origin,
+    );
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "base_value_test_failed",
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+    );
+    return jsonResponse(
+      { success: false, error: "Could not save your test. Please try again." },
+      500,
+      undefined,
+      origin,
+    );
+  }
+}
+
 export async function handleRequest(
   request: Request,
   env: Env,
@@ -548,6 +761,9 @@ export async function handleRequest(
   const url = new URL(request.url);
   if (url.pathname === RECIPE_FEEDBACK_PATH) {
     return handleRecipeFeedback(request, env);
+  }
+  if (url.pathname === BASE_VALUE_LAB_PATH) {
+    return handleBaseValueLab(request, env);
   }
 
   if (

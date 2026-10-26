@@ -35,6 +35,8 @@
     "feedback:dashboard": "bun tools/feedback-dashboard/fetch.mjs --serve",
     "feedback:dashboard:fetch": "bun tools/feedback-dashboard/fetch.mjs",
     "lab": "bun tools/base-value-lab/serve.mjs",
+    "lab:push": "bun tools/base-value-lab/sync.mjs push",
+    "lab:pull": "bun tools/base-value-lab/sync.mjs pull",
     "stash-scan:index": "bun scripts/build-stash-scan-index.ts"
   },
   "dependencies": {
