@@ -434,13 +434,13 @@ const ItemBadge = React.memo(function ItemBadge({
       <Badge
         variant="secondary"
         title={itemName}
-        className={`inline-flex items-center flex-1 min-w-0 truncate rounded-lg border py-1.5 px-2 lg:py-1.5 lg:px-3 text-xs lg:text-sm font-medium transition-colors ${
+        className={`inline-flex items-center flex-1 min-w-0 whitespace-normal break-words text-left leading-snug rounded-lg border py-1.5 px-2 lg:py-1.5 lg:px-3 text-xs lg:text-sm font-medium transition-colors ${
           isOutput
             ? "bg-green-900/30 text-green-300 border-green-700/40 hover:bg-green-900/50"
             : "bg-gray-800/60 text-gray-200 border-gray-700 hover:bg-gray-700/70"
         }`}
       >
-        <span className="truncate">{itemName}</span>
+        <span className="min-w-0 break-words">{itemName}</span>
       </Badge>
     </div>
   );
