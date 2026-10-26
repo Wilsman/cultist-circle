@@ -100,6 +100,11 @@ export interface LabTest {
    * may shift the result, so tests with a high skill are flagged.
    */
   hideoutSkill?: number;
+  /**
+   * Game mode the tester played in, when they said. Recorded for later;
+   * results are pooled across modes.
+   */
+  playedMode?: LabMode;
 }
 
 export interface StashItem {
@@ -980,6 +985,7 @@ export function parseState(raw: unknown): LabState {
       excluded: t.excluded === true || undefined,
       notes: str(t.notes),
       hideoutSkill: skillLevel(t.hideoutSkill),
+      playedMode: isMode(t.playedMode) ? t.playedMode : undefined,
     };
   });
 

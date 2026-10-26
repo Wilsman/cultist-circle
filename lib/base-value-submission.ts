@@ -41,6 +41,8 @@ export const baseValueTestSchema = z
     fillers: z.array(fillerSchema).max(10),
     timer: z.enum(TIMERS),
     hideoutSkill: z.number().int().min(0).max(MAX_HIDEOUT_SKILL).optional(),
+    /** Game mode the tester played in, when they said. */
+    playedMode: z.enum(["pvp", "pve"]).optional(),
     contributor: z.string().trim().max(40).optional(),
     notes: z.string().trim().max(300).optional(),
   })

@@ -41,7 +41,8 @@ const MODE_LABELS: Record<LabMode, string> = { pvp: "PvP", pve: "PvE" };
 type SharedTest = LabTest & { source?: string; contributor?: string };
 type ApiBody = { success?: boolean; error?: string; data?: unknown };
 interface Prefs {
-  mode: LabMode;
+  /** Game mode the tester plays, if they said. Optional. */
+  played: LabMode | null;
   name: string;
   skill: string;
 }
@@ -89,12 +90,12 @@ function loadPrefs(): Prefs {
   try {
     const raw = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}");
     return {
-      mode: raw.mode === "pvp" ? "pvp" : "pve",
+      played: raw.played === "pvp" || raw.played === "pve" ? raw.played : null,
       name: typeof raw.name === "string" ? raw.name : "",
       skill: typeof raw.skill === "string" ? raw.skill : "",
     };
   } catch {
-    return { mode: "pve", name: "", skill: "" };
+    return { played: null, name: "", skill: "" };
   }
 }
 
@@ -134,7 +135,7 @@ function describeTest(test: LabTest, subjects: Map<string, Subject>) {
 
 export function BaseValueLab() {
   const [prefs, setPrefs] = useState<Prefs>({
-    mode: "pve",
+    played: null,
     name: "",
     skill: "",
   });
@@ -201,24 +202,6 @@ export function BaseValueLab() {
     void load();
   }, [load]);
 
-  const mode = prefs.mode;
-  useEffect(() => {
-    if (items[mode]) return;
-    let cancelled = false;
-    fetchMinimalTarkovData(mode === "pve" ? "pve" : "regular", "en")
-      .then((list) => {
-        if (!cancelled) setItems((current) => ({ ...current, [mode]: list }));
-      })
-      .catch(() => {
-        if (!cancelled)
-          toast.error("Could not load item prices. Suggestions use none.");
-        if (!cancelled) setItems((current) => ({ ...current, [mode]: [] }));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [items, mode]);
-
   const modes = useMemo(
     () =>
       (["pvp", "pve"] as const).filter((m) =>
@@ -226,6 +209,32 @@ export function BaseValueLab() {
       ),
     [subjects],
   );
+  // The set of items under test. Base values don't change between modes, so
+  // a tester's game mode only picks this when that mode has its own items.
+  const mode: LabMode =
+    prefs.played && modes.includes(prefs.played)
+      ? prefs.played
+      : (modes[0] ?? "pve");
+  // Filler prices follow the mode the tester plays.
+  const priceMode: LabMode = prefs.played ?? mode;
+  useEffect(() => {
+    if (items[priceMode]) return;
+    let cancelled = false;
+    fetchMinimalTarkovData(priceMode === "pve" ? "pve" : "regular", "en")
+      .then((list) => {
+        if (!cancelled)
+          setItems((current) => ({ ...current, [priceMode]: list }));
+      })
+      .catch(() => {
+        if (!cancelled)
+          toast.error("Could not load item prices. Suggestions use none.");
+        if (!cancelled)
+          setItems((current) => ({ ...current, [priceMode]: [] }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [items, priceMode]);
   const modeSubjects = useMemo(
     () => subjects.filter((s) => s.mode === mode),
     [subjects, mode],
@@ -256,15 +265,15 @@ export function BaseValueLab() {
   );
   const multiplier = sharedMultiplier(partsRows.map((r) => r.value));
   const itemById = useMemo(
-    () => new Map((items[mode] ?? []).map((it) => [it.id, it])),
-    [items, mode],
+    () => new Map((items[priceMode] ?? []).map((it) => [it.id, it])),
+    [items, priceMode],
   );
   const fillers = useMemo(
-    () => buildFillerOptions(items[mode] ?? []),
-    [items, mode],
+    () => buildFillerOptions(items[priceMode] ?? []),
+    [items, priceMode],
   );
   const next = useMemo(() => {
-    if (!items[mode]) return null;
+    if (!items[priceMode]) return null;
     return pickNextTest({
       subjects: modeSubjects,
       results,
@@ -275,7 +284,7 @@ export function BaseValueLab() {
         return (it && cheapestOffer(it)?.cost) || 50_000;
       },
     });
-  }, [items, mode, modeSubjects, results, fillers, skip, itemById]);
+  }, [items, priceMode, modeSubjects, results, fillers, skip, itemById]);
 
   // A new suggestion starts with nothing picked.
   const planKey = next
@@ -303,6 +312,7 @@ export function BaseValueLab() {
       })),
       timer,
       ...(skill !== undefined ? { hideoutSkill: skill } : {}),
+      ...(prefs.played ? { playedMode: prefs.played } : {}),
       ...(prefs.name.trim() ? { contributor: prefs.name.trim() } : {}),
       ...(notes.trim() ? { notes: notes.trim() } : {}),
     });
@@ -360,15 +370,18 @@ export function BaseValueLab() {
 
       <div className="mb-6 grid gap-3 rounded-xl border border-gray-700 bg-gray-900/70 p-4 sm:grid-cols-3">
         <fieldset className="space-y-1">
-          <legend className="text-xs text-gray-400">Game mode</legend>
+          <legend className="text-xs text-gray-400">
+            Game mode you play (optional)
+          </legend>
           <div className="flex gap-2">
-            {(modes.length ? modes : (["pve"] as const)).map((m) => (
+            {(["pve", "pvp"] as const).map((m) => (
               <Button
                 key={m}
                 size="sm"
-                variant={m === mode ? "default" : "outline"}
+                variant={m === prefs.played ? "default" : "outline"}
+                aria-pressed={m === prefs.played}
                 onClick={() => {
-                  updatePrefs({ mode: m });
+                  updatePrefs({ played: m === prefs.played ? null : m });
                   setSkip(new Set());
                 }}
               >
@@ -428,7 +441,7 @@ export function BaseValueLab() {
         </TabsList>
 
         <TabsContent value="test">
-          {loading || !items[mode] ? (
+          {loading || !items[priceMode] ? (
             <p
               role="status"
               className="flex items-center gap-2 text-sm text-gray-400"
@@ -598,7 +611,12 @@ export function BaseValueLab() {
                   <span className="min-w-0 flex-1">
                     {describeTest(t, subjectById)}
                     <span className="block text-xs text-gray-500">
-                      {MODE_LABELS[t.mode]} ·{" "}
+                      {t.playedMode
+                        ? MODE_LABELS[t.playedMode]
+                        : t.source === "contributor"
+                          ? "Mode not given"
+                          : MODE_LABELS[t.mode]}{" "}
+                      ·{" "}
                       {t.source === "contributor"
                         ? t.contributor || "Someone"
                         : "Owner"}{" "}

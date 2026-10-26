@@ -498,7 +498,12 @@ async function handleRecipeFeedback(
          last_didnt_work_pvp_at = excluded.last_didnt_work_pvp_at,
          last_didnt_work_pve_at = excluded.last_didnt_work_pve_at,
          last_didnt_work_season_at = excluded.last_didnt_work_season_at`,
-    ).bind(payload.recipeId, payload.recipeId, payload.recipeId, payload.recipeId);
+    ).bind(
+      payload.recipeId,
+      payload.recipeId,
+      payload.recipeId,
+      payload.recipeId,
+    );
     const readAggregate = env.DB.prepare(
       `SELECT ${RECIPE_STATS_COLUMNS}
        FROM recipe_feedback_stats
@@ -545,7 +550,11 @@ async function handleRecipeFeedback(
   }
 }
 
-type BaseValueRow = { data_json: string; source?: string; contributor?: string | null };
+type BaseValueRow = {
+  data_json: string;
+  source?: string;
+  contributor?: string | null;
+};
 
 function parseRows(rows: BaseValueRow[]): JsonRecord[] {
   return rows.flatMap((row) => {
@@ -553,7 +562,11 @@ function parseRows(rows: BaseValueRow[]): JsonRecord[] {
       const data = JSON.parse(row.data_json) as JsonRecord;
       return [
         row.source
-          ? { ...data, source: row.source, contributor: row.contributor ?? undefined }
+          ? {
+              ...data,
+              source: row.source,
+              contributor: row.contributor ?? undefined,
+            }
           : data,
       ];
     } catch {
@@ -708,6 +721,7 @@ async function handleBaseValueLab(
       ...(payload.hideoutSkill !== undefined
         ? { hideoutSkill: payload.hideoutSkill }
         : {}),
+      ...(payload.playedMode ? { playedMode: payload.playedMode } : {}),
       ...(payload.notes ? { notes: payload.notes } : {}),
     };
     const result = await env.DB.prepare(

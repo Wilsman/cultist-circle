@@ -112,6 +112,19 @@ describe("Base Value Lab API", () => {
     });
   });
 
+  test("saves the game mode a contributor plays, when given", async () => {
+    const { env, bind } = createEnv();
+    await handleRequest(post({ ...valid, playedMode: "pvp" }), env);
+    expect(JSON.parse(bind.mock.calls[1][2])).toMatchObject({
+      playedMode: "pvp",
+    });
+    const plain = createEnv();
+    await handleRequest(post(valid), plain.env);
+    expect(JSON.parse(plain.bind.mock.calls[1][2])).not.toHaveProperty(
+      "playedMode",
+    );
+  });
+
   test("rejects a test for an item that isn't being tested", async () => {
     const { env, run } = createEnv({ known: 0 });
     const response = await handleRequest(post(valid), env);
@@ -131,6 +144,7 @@ describe("Base Value Lab API", () => {
       ],
     },
     { hideoutSkill: 52 },
+    { playedMode: "arena" },
     { fillers: [{ name: "x", baseValue: -1, qty: 1 }] },
     { extra: true },
   ])("rejects an invalid test %o", async (change) => {

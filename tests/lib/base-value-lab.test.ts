@@ -453,6 +453,29 @@ describe("helpers", () => {
   });
 });
 
+it("keeps the game mode a tester plays and drops unknown ones", () => {
+  const played = (playedMode: unknown) =>
+    parseState({
+      version: 1,
+      subjects: [{ id: "s1", mode: "pve", name: "Thing" }],
+      tests: [
+        {
+          id: "t1",
+          mode: "pve",
+          entries: [{ subjectId: "s1", qty: 1 }],
+          fillers: [],
+          timer: "5h",
+          playedMode,
+        },
+      ],
+    }).tests[0].playedMode;
+
+  expect(played("pvp")).toBe("pvp");
+  expect(played("pve")).toBe("pve");
+  expect(played("arena")).toBeUndefined();
+  expect(played(undefined)).toBeUndefined();
+});
+
 describe("combineModes", () => {
   const pvpGun: Subject = { ...gun, id: "pvp-gun", mode: "pvp", owned: 9 };
   const state = () => ({
