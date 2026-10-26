@@ -26,7 +26,9 @@ import {
   buildFillerOptions,
   cheapestOffer,
   gunVersion,
+  partsValue,
   pickNextTest,
+  sharedMultiplier,
   type GunVersionTone,
   type SiteFiller,
 } from "@/lib/base-value-site";
@@ -43,6 +45,9 @@ interface Prefs {
   name: string;
   skill: string;
 }
+
+const mult = (n: number) =>
+  n === Infinity ? "∞" : `${n.toFixed(n >= 10 ? 0 : 1)}×`;
 
 const k = (n: number) =>
   n === Infinity
@@ -241,6 +246,15 @@ export function BaseValueLab() {
       ),
     [modeSubjects, modeTests],
   );
+  const partsRows = useMemo(
+    () =>
+      modeSubjects.flatMap((s) => {
+        const value = partsValue(s, results.get(s.id));
+        return value ? [{ subject: s, value }] : [];
+      }),
+    [modeSubjects, results],
+  );
+  const multiplier = sharedMultiplier(partsRows.map((r) => r.value));
   const itemById = useMemo(
     () => new Map((items[mode] ?? []).map((it) => [it.id, it])),
     [items, mode],
@@ -454,6 +468,68 @@ export function BaseValueLab() {
         </TabsContent>
 
         <TabsContent value="results" className="space-y-6">
+          {partsRows.length > 0 && (
+            <section className="space-y-2">
+              <h2 className="text-lg font-semibold">
+                What attached parts are really worth
+              </h2>
+              <p className="text-sm text-gray-400">
+                Bare gun frames match the API. The gap appears once parts are
+                attached, so this compares what the attached parts measured at
+                with what the API says they are worth.
+              </p>
+              {multiplier && (
+                <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100">
+                  {multiplier === "conflict"
+                    ? "No single multiplier fits every gun yet, so attached parts aren't simply worth a fixed multiple of their API value."
+                    : `So far, attached parts count about ${mult(multiplier.lo)} to ${mult(multiplier.hi)} their API value on every tested gun.`}
+                </p>
+              )}
+              <div className="overflow-x-auto rounded-xl border border-gray-700">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-800/80 text-left text-xs text-gray-400">
+                    <tr>
+                      <th className="p-2">Gun</th>
+                      <th className="p-2">Frame</th>
+                      <th className="p-2">Parts (API)</th>
+                      <th className="p-2">Parts (measured)</th>
+                      <th className="p-2">Multiplier</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partsRows.map(({ subject: s, value: v }) => (
+                      <tr
+                        key={s.id}
+                        className="border-t border-gray-800 align-top"
+                      >
+                        <td className="p-2">
+                          {gunVersion(s)?.name ?? s.name}
+                          <VersionTag subject={s} />
+                        </td>
+                        <td className="whitespace-nowrap p-2 text-gray-400">
+                          {k(v.frame)}
+                        </td>
+                        <td className="whitespace-nowrap p-2 text-gray-400">
+                          {k(v.apiParts)}
+                        </td>
+                        <td className="whitespace-nowrap p-2">
+                          {v.measured
+                            ? `${k(v.measured.lo)} – ${k(v.measured.hi)}`
+                            : "?"}
+                        </td>
+                        <td className="whitespace-nowrap p-2 font-semibold">
+                          {v.multiplier
+                            ? `${mult(v.multiplier.lo)} – ${mult(v.multiplier.hi)}`
+                            : "?"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">
               What we know ({MODE_LABELS[mode]})
@@ -574,6 +650,12 @@ function TestCard({
         <p className="mt-1 text-sm text-gray-400">
           Put exactly these in the circle, nothing else, and press sacrifice.
         </p>
+        {version && version.tone !== "stripped" && (
+          <p className="mt-1 text-sm text-gray-400">
+            Bare gun frames already match the API. This test measures what the
+            attached parts are really worth.
+          </p>
+        )}
       </div>
       <ul className="space-y-2">
         <li

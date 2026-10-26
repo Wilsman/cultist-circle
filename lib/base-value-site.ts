@@ -6,6 +6,7 @@ import {
   planTest,
   type FillerOption,
   type LabSettings,
+  type Range,
   type Subject,
   type SubjectResult,
   type TestPlan,
@@ -100,6 +101,12 @@ export interface NextTest {
   plan: TestPlan;
 }
 
+/**
+ * Bare gun frames match their API value, so testing focuses on guns with
+ * parts attached: they are where the API goes wrong.
+ */
+const hasParts = (s: Subject) => s.kind === "weapon";
+
 /** The most useful test to run next, skipping subjects the tester passed on. */
 export function pickNextTest({
   subjects,
@@ -117,13 +124,14 @@ export function pickNextTest({
   settings?: LabSettings;
 }): NextTest | null {
   const ranked = subjects
-    .filter((s) => !skip.has(s.id))
+    .filter((s) => !skip.has(s.id) && s.kind !== "weapon-bare")
     .map((subject) => ({ subject, result: results.get(subject.id) }))
     .filter(
       ({ result }) => PRIORITY[result?.status ?? "untested"] !== undefined,
     )
     .sort(
       (a, b) =>
+        Number(hasParts(b.subject)) - Number(hasParts(a.subject)) ||
         PRIORITY[a.result?.status ?? "untested"]! -
           PRIORITY[b.result?.status ?? "untested"]! ||
         (a.result?.testCount ?? 0) - (b.result?.testCount ?? 0),
@@ -213,4 +221,58 @@ export function gunVersion(subject: Subject): GunVersion | null {
     tone: "preset",
     parts,
   };
+}
+
+/** What the attached parts of one gun are worth, next to the API's figure. */
+export interface PartsValue {
+  /** API value of the bare frame (frames match the API). */
+  frame: number;
+  /** API value of the attached parts together. */
+  apiParts: number;
+  /** Measured value of the attached parts, once tested. */
+  measured?: Range;
+  /** Measured value divided by the API value. */
+  multiplier?: Range;
+}
+
+export function partsValue(
+  subject: Subject,
+  result?: SubjectResult,
+): PartsValue | null {
+  if (subject.kind !== "weapon" || subject.apiBaseValue === undefined)
+    return null;
+  const frame = subject.build?.gunValue ?? subject.frameValue;
+  if (frame === undefined) return null;
+  const apiParts = subject.apiBaseValue - frame;
+  if (apiParts <= 0) return { frame, apiParts };
+  const tested =
+    result &&
+    result.testCount > 0 &&
+    result.status !== "conflict" &&
+    result.status !== "untested";
+  if (!tested) return { frame, apiParts };
+  const measured = {
+    lo: Math.max(0, result.range.lo - frame),
+    hi: result.range.hi - frame,
+  };
+  return {
+    frame,
+    apiParts,
+    measured,
+    multiplier: { lo: measured.lo / apiParts, hi: measured.hi / apiParts },
+  };
+}
+
+/**
+ * The parts multiplier every tested gun agrees on, or "conflict" when no
+ * single multiplier fits them all.
+ */
+export function sharedMultiplier(
+  values: readonly (PartsValue | null)[],
+): Range | "conflict" | null {
+  const ranges = values.flatMap((v) => (v?.multiplier ? [v.multiplier] : []));
+  if (!ranges.length) return null;
+  const lo = Math.max(...ranges.map((r) => r.lo));
+  const hi = Math.min(...ranges.map((r) => r.hi));
+  return lo <= hi ? { lo, hi } : "conflict";
 }

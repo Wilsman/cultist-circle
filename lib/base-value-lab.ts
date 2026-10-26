@@ -61,6 +61,8 @@ export interface Subject {
    * stripped gun is missing all of them; a Default preset has all of them.
    */
   parts?: { name: string; count: number }[];
+  /** Guns with parts on: API value of the bare gun frame on its own. */
+  frameValue?: number;
 }
 
 export interface Build {
@@ -926,6 +928,7 @@ export function parseState(raw: unknown): LabState {
       notes: str(s.notes),
       build: parseBuild(s.build),
       parts: parseParts(s.parts),
+      frameValue: num(s.frameValue),
     };
   });
 

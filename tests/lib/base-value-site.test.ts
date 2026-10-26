@@ -4,12 +4,15 @@ import {
   solve,
   type LabTest,
   type Subject,
+  type SubjectResult,
 } from "@/lib/base-value-lab";
 import {
   buildFillerOptions,
   cheapestOffer,
   gunVersion,
+  partsValue,
   pickNextTest,
+  sharedMultiplier,
   shortGunName,
   type ShopItem,
 } from "@/lib/base-value-site";
@@ -174,5 +177,50 @@ describe("Base Value Lab site helpers", () => {
       gunVersion({ ...base, kind: "armour", name: "6B3TM" } as Subject),
     ).toBeNull();
     expect(shortGunName("Saiga-12K 12ga automatic shotgun")).toBe("Saiga-12K");
+  });
+
+  test("measures attached parts against the frame's API value", () => {
+    const gun: Subject = {
+      id: "mp5",
+      mode: "pve",
+      name: "HK MP5 Default",
+      kind: "weapon",
+      apiBaseValue: 40_000,
+      frameValue: 10_000,
+    };
+    const result = (lo: number, hi: number): SubjectResult => ({
+      subjectId: "mp5",
+      range: { lo, hi },
+      confirmed: { lo: 0, hi: Infinity },
+      status: "open",
+      testCount: 1,
+      suspects: [],
+    });
+    expect(partsValue(gun)).toEqual({ frame: 10_000, apiParts: 30_000 });
+    const a = partsValue(gun, result(100_000, 160_000));
+    expect(a).toMatchObject({
+      measured: { lo: 90_000, hi: 150_000 },
+      multiplier: { lo: 3, hi: 5 },
+    });
+    const b = partsValue(gun, result(130_000, 190_000));
+    expect(sharedMultiplier([a, b, null])).toEqual({ lo: 4, hi: 5 });
+    const c = partsValue(gun, result(40_000, 70_000));
+    expect(sharedMultiplier([a, c])).toBe("conflict");
+    expect(partsValue({ ...gun, frameValue: undefined })).toBeNull();
+  });
+
+  test("never asks for a bare frame", () => {
+    const subjects: Subject[] = [
+      { id: "bare", mode: "pve", name: "Bare", kind: "weapon-bare", owned: 1 },
+    ];
+    expect(
+      pickNextTest({
+        subjects,
+        results: solve(subjects, []),
+        fillers: [],
+        skip: new Set(),
+        copyCost: () => 1_000,
+      }),
+    ).toBeNull();
   });
 });

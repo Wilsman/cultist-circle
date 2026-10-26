@@ -62,7 +62,7 @@ function itemsFor(mode) {
  * page can list exactly what to take off (or what should be on).
  */
 function withParts(subject) {
-  if (subject.parts || subject.build || !subject.itemId) return subject;
+  if (subject.build || !subject.itemId) return subject;
   if (subject.kind !== "weapon-bare" && subject.kind !== "weapon")
     return subject;
   const byId = itemsFor(subject.mode);
@@ -76,13 +76,16 @@ function withParts(subject) {
   } else if (item.types?.includes("preset") && / Default$/.test(item.name)) {
     preset = item;
   }
+  const frame = preset ? byId.get(preset.baseItem ?? item.id) : undefined;
+  if (subject.kind === "weapon" && frame?.basePrice !== undefined)
+    subject = { ...subject, frameValue: frame.basePrice };
   const parts = (preset?.parts ?? [])
     .filter((p) => p.id !== (preset.baseItem ?? item.id))
     .map((p) => ({
       name: byId.get(p.id)?.name ?? "Unknown part",
       count: p.count,
     }));
-  return parts.length ? { ...subject, parts } : subject;
+  return parts.length && !subject.parts ? { ...subject, parts } : subject;
 }
 
 function push(file) {
