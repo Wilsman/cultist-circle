@@ -72,6 +72,18 @@ const recipeDefinitions: RecipeDefinition[] = [
     },
   },
   {
+    requiredItems: ["5x Ref figurine"],
+    craftingTime: "666 mins",
+    producedItems: ["A random item from the Arena Battlepass"],
+    isRepeatable: true,
+  },
+  {
+    requiredItems: ["1x PMC Origins figurine"],
+    craftingTime: "66 mins",
+    producedItems: ["1x PMC Origins figurine"],
+    isRepeatable: true,
+  },
+  {
     requiredItems: [
       "1x Christmas tree ornament (Silver)",
       "1x Christmas tree ornament (Red)",
@@ -79,19 +91,16 @@ const recipeDefinitions: RecipeDefinition[] = [
     ],
     craftingTime: "66 mins",
     producedItems: ["2x Ded Moroz figurine"],
-    isUpdated: true,
   },
   {
     requiredItems: ["1x Jaeger figurine"],
     craftingTime: "66 mins",
     producedItems: ["1x MTs-255-12 12ga shotgun", "1x Salty Dog beef sausage"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Lightkeeper figurine"],
     craftingTime: "66 mins",
     producedItems: ["1x Sacred Amulet"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Ragman figurine"],
@@ -109,19 +118,16 @@ const recipeDefinitions: RecipeDefinition[] = [
           "You always get 4 items from this pool. Possible combinations can include duplicates.",
       },
     ],
-    isNew: true,
   },
   {
     requiredItems: ["1x BTR figurine"],
     craftingTime: "66 mins",
     producedItems: ["1x OFZ 30x165mm shell"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Hideout Cat figurine"],
     craftingTime: "66 mins",
     producedItems: ["1x Cat figurine"],
-    isNew: true,
   },
   {
     requiredItems: ["1x Duck figurine"],
@@ -133,20 +139,6 @@ const recipeDefinitions: RecipeDefinition[] = [
     requiredItems: ["5x Can of duck pate"],
     craftingTime: "66 mins",
     producedItems: ["1x Duck figurine"],
-  },
-  {
-    requiredItems: ["1x PMC Origins figurine"],
-    craftingTime: "66 mins",
-    producedItems: ["1x PMC Origins figurine"],
-    isNew: true,
-    isRepeatable: true,
-  },
-  {
-    requiredItems: ["5x Ref figurine"],
-    craftingTime: "666 mins",
-    producedItems: ["A random item from the Arena Battlepass"],
-    isNew: true,
-    isRepeatable: true,
   },
   {
     requiredItems: ["1x Labrys research notes"],
