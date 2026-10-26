@@ -1,3 +1,5 @@
+import { type GameMode, isGameMode } from "./game-mode";
+
 // Base Value Lab: works out the true base value of items the API gets wrong
 // (weapons, armour, keys) from cultist circle timers.
 //
@@ -104,7 +106,7 @@ export interface LabTest {
    * Game mode the tester played in, when they said. Recorded for later;
    * results are pooled across modes.
    */
-  playedMode?: LabMode;
+  playedMode?: GameMode;
 }
 
 export interface StashItem {
@@ -985,7 +987,10 @@ export function parseState(raw: unknown): LabState {
       excluded: t.excluded === true || undefined,
       notes: str(t.notes),
       hideoutSkill: skillLevel(t.hideoutSkill),
-      playedMode: isMode(t.playedMode) ? t.playedMode : undefined,
+      playedMode:
+        typeof t.playedMode === "string" && isGameMode(t.playedMode)
+          ? t.playedMode
+          : undefined,
     };
   });
 

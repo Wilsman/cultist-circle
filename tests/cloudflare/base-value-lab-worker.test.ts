@@ -114,9 +114,9 @@ describe("Base Value Lab API", () => {
 
   test("saves the game mode a contributor plays, when given", async () => {
     const { env, bind } = createEnv();
-    await handleRequest(post({ ...valid, playedMode: "pvp" }), env);
+    await handleRequest(post({ ...valid, playedMode: "season" }), env);
     expect(JSON.parse(bind.mock.calls[1][2])).toMatchObject({
-      playedMode: "pvp",
+      playedMode: "season",
     });
     const plain = createEnv();
     await handleRequest(post(valid), plain.env);

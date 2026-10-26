@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { GAME_MODES } from "./game-mode";
 import { MAX_HIDEOUT_SKILL, TIMERS } from "./base-value-lab";
 
 // A test someone ran from the hidden Base Value Lab page. Shared by the
@@ -42,7 +43,7 @@ export const baseValueTestSchema = z
     timer: z.enum(TIMERS),
     hideoutSkill: z.number().int().min(0).max(MAX_HIDEOUT_SKILL).optional(),
     /** Game mode the tester played in, when they said. */
-    playedMode: z.enum(["pvp", "pve"]).optional(),
+    playedMode: z.enum(GAME_MODES).optional(),
     contributor: z.string().trim().max(40).optional(),
     notes: z.string().trim().max(300).optional(),
   })

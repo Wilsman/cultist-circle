@@ -33,16 +33,27 @@ import {
   type SiteFiller,
 } from "@/lib/base-value-site";
 import { baseValueTestSchema } from "@/lib/base-value-submission";
+import {
+  type GameMode,
+  isGameMode,
+  toTarkovJsonGameMode,
+} from "@/lib/game-mode";
 
 const ENDPOINT = `${process.env.NODE_ENV === "development" ? "" : "https://cultist-circle-feedback.cultistcircle.workers.dev"}/api/base-value-lab`;
 const PREFS_KEY = "base-value-lab:prefs";
-const MODE_LABELS: Record<LabMode, string> = { pvp: "PvP", pve: "PvE" };
+const MODE_LABELS: Record<GameMode, string> = {
+  pvp: "PvP",
+  pve: "PvE",
+  season: "PvP Season",
+};
+// Order of the game mode buttons.
+const PLAYED_MODES: readonly GameMode[] = ["pve", "pvp", "season"];
 
 type SharedTest = LabTest & { source?: string; contributor?: string };
 type ApiBody = { success?: boolean; error?: string; data?: unknown };
 interface Prefs {
   /** Game mode the tester plays, if they said. Optional. */
-  played: LabMode | null;
+  played: GameMode | null;
   name: string;
   skill: string;
 }
@@ -90,7 +101,10 @@ function loadPrefs(): Prefs {
   try {
     const raw = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}");
     return {
-      played: raw.played === "pvp" || raw.played === "pve" ? raw.played : null,
+      played:
+        typeof raw.played === "string" && isGameMode(raw.played)
+          ? raw.played
+          : null,
       name: typeof raw.name === "string" ? raw.name : "",
       skill: typeof raw.skill === "string" ? raw.skill : "",
     };
@@ -141,7 +155,7 @@ export function BaseValueLab() {
   });
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [tests, setTests] = useState<SharedTest[]>([]);
-  const [items, setItems] = useState<Partial<Record<LabMode, MinimalItem[]>>>(
+  const [items, setItems] = useState<Partial<Record<GameMode, MinimalItem[]>>>(
     {},
   );
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -211,16 +225,17 @@ export function BaseValueLab() {
   );
   // The set of items under test. Base values don't change between modes, so
   // a tester's game mode only picks this when that mode has its own items.
+  const played = prefs.played;
   const mode: LabMode =
-    prefs.played && modes.includes(prefs.played)
-      ? prefs.played
+    played && played !== "season" && modes.includes(played)
+      ? played
       : (modes[0] ?? "pve");
   // Filler prices follow the mode the tester plays.
-  const priceMode: LabMode = prefs.played ?? mode;
+  const priceMode: GameMode = played ?? mode;
   useEffect(() => {
     if (items[priceMode]) return;
     let cancelled = false;
-    fetchMinimalTarkovData(priceMode === "pve" ? "pve" : "regular", "en")
+    fetchMinimalTarkovData(toTarkovJsonGameMode(priceMode), "en")
       .then((list) => {
         if (!cancelled)
           setItems((current) => ({ ...current, [priceMode]: list }));
@@ -374,7 +389,7 @@ export function BaseValueLab() {
             Game mode you play (optional)
           </legend>
           <div className="flex gap-2">
-            {(["pve", "pvp"] as const).map((m) => (
+            {PLAYED_MODES.map((m) => (
               <Button
                 key={m}
                 size="sm"

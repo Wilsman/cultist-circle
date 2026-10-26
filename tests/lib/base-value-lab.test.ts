@@ -472,7 +472,9 @@ it("keeps the game mode a tester plays and drops unknown ones", () => {
 
   expect(played("pvp")).toBe("pvp");
   expect(played("pve")).toBe("pve");
+  expect(played("season")).toBe("season");
   expect(played("arena")).toBeUndefined();
+  expect(played("pvp-season")).toBeUndefined();
   expect(played(undefined)).toBeUndefined();
 });
 
