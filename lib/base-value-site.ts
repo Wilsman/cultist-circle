@@ -11,6 +11,10 @@ import {
   type SubjectResult,
   type TestPlan,
 } from "./base-value-lab";
+import {
+  getCategoryLevelRequirementByName,
+  getItemLevelRequirement,
+} from "@/config/flea-level-requirements";
 
 export interface ShopItem {
   id: string;
@@ -36,15 +40,48 @@ const UNRELIABLE =
 
 const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** The flea market opens at this player level. */
+export const FLEA_UNLOCK_LEVEL = 15;
+
+// The flea feed sometimes reports a dollar or euro price as if it were
+// roubles (a 9,000 ₽ part shows as "71"). Anything this far under the base
+// price is that mistake, not a real bargain.
+const FLEA_SANITY_RATIO = 0.1;
+
+/** Whether a player of this level can buy the item on the flea. */
+export function canUseFlea(item: ShopItem, playerLevel?: number): boolean {
+  if (playerLevel === undefined) return true;
+  if (playerLevel < FLEA_UNLOCK_LEVEL) return false;
+  const itemLevel = getItemLevelRequirement(item.name);
+  if (itemLevel !== undefined) return playerLevel >= itemLevel;
+  return item.categories.every(
+    (c) => playerLevel >= getCategoryLevelRequirementByName(c.name),
+  );
+}
+
+export interface OfferOptions {
+  /** Allow the flea at all. */
+  flea?: boolean;
+  /** The player's level, to respect flea unlock levels. Unknown = no limit. */
+  playerLevel?: number;
+  /** Trader loyalty levels the player has; offers above them are skipped. */
+  traderLevels?: Readonly<Record<string, number>>;
+}
+
 /** Cheapest way to buy one: a trader offer, or the flea when allowed. */
 export function cheapestOffer(
   item: ShopItem,
-  { flea = true }: { flea?: boolean } = {},
+  { flea = true, playerLevel, traderLevels }: OfferOptions = {},
 ): { cost: number; source: string } | null {
   let best: { cost: number; source: string } | null = null;
   for (const offer of item.buyFor ?? []) {
     const vendor = offer.vendor.normalizedName;
     if (vendor === "flea-market" || !(offer.priceRUB > 0)) continue;
+    if (
+      traderLevels &&
+      (traderLevels[vendor] ?? 1) < (offer.vendor.minTraderLevel ?? 1)
+    )
+      continue;
     if (!best || offer.priceRUB < best.cost) {
       const level = offer.vendor.minTraderLevel;
       best = {
@@ -53,8 +90,15 @@ export function cheapestOffer(
       };
     }
   }
-  if (flea && item.lastLowPrice && (!best || item.lastLowPrice < best.cost))
-    best = { cost: item.lastLowPrice, source: "Flea" };
+  const fleaPrice = item.lastLowPrice;
+  if (
+    flea &&
+    fleaPrice &&
+    fleaPrice >= item.basePrice * FLEA_SANITY_RATIO &&
+    canUseFlea(item, playerLevel) &&
+    (!best || fleaPrice < best.cost)
+  )
+    best = { cost: fleaPrice, source: "Flea" };
   return best;
 }
 
@@ -62,12 +106,14 @@ export function cheapestOffer(
 export function buildFillerOptions(
   items: readonly ShopItem[],
   maxItems = DEFAULT_SETTINGS.maxItems,
+  { blocked, ...limits }: OfferOptions & { blocked?: ReadonlySet<string> } = {},
 ): SiteFiller[] {
   const priced: { item: ShopItem; cost: number; source: string }[] = [];
   for (const item of items) {
     if (!(item.basePrice > 0)) continue;
+    if (blocked?.has(item.id)) continue;
     if (item.categories.some((c) => UNRELIABLE.test(c.name))) continue;
-    const offer = cheapestOffer(item);
+    const offer = cheapestOffer(item, limits);
     if (offer) priced.push({ item, ...offer });
   }
   priced.sort((a, b) => a.cost / a.item.basePrice - b.cost / b.item.basePrice);

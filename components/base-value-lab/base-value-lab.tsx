@@ -1,7 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, RefreshCw, SkipForward } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CheckCircle2,
+  Copy,
+  Loader2,
+  RefreshCw,
+  Repeat,
+  SkipForward,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +33,7 @@ import {
 import {
   buildFillerOptions,
   cheapestOffer,
+  FLEA_UNLOCK_LEVEL,
   gunVersion,
   partsValue,
   pickNextTest,
@@ -57,6 +65,10 @@ interface Prefs {
   played: GameMode | null;
   name: string;
   skill: string;
+  /** Player level, to keep the flea out of suggestions until it unlocks. */
+  level: string;
+  /** Filler items the tester can't get, so suggestions avoid them. */
+  blocked: string[];
 }
 
 const mult = (n: number) =>
@@ -68,6 +80,15 @@ const k = (n: number) =>
     : n >= 1000
       ? `${(n / 1000).toFixed(n >= 100_000 ? 0 : 1).replace(/\.0$/, "")}k`
       : String(Math.round(n));
+async function copyName(name: string) {
+  try {
+    await navigator.clipboard.writeText(name);
+    toast.success(`Copied "${name}"`);
+  } catch {
+    toast.error("Could not copy. Select the name by hand.");
+  }
+}
+
 const rub = (n: number) => `${Math.round(n).toLocaleString("en-US")} ₽`;
 const timerLabel = (t: Timer) =>
   t === "6h"
@@ -108,9 +129,13 @@ function loadPrefs(): Prefs {
           : null,
       name: typeof raw.name === "string" ? raw.name : "",
       skill: typeof raw.skill === "string" ? raw.skill : "",
+      level: typeof raw.level === "string" ? raw.level : "",
+      blocked: Array.isArray(raw.blocked)
+        ? raw.blocked.filter((id: unknown) => typeof id === "string")
+        : [],
     };
   } catch {
-    return { played: null, name: "", skill: "" };
+    return { played: null, name: "", skill: "", level: "", blocked: [] };
   }
 }
 
@@ -153,6 +178,8 @@ export function BaseValueLab() {
     played: null,
     name: "",
     skill: "",
+    level: "",
+    blocked: [],
   });
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [tests, setTests] = useState<SharedTest[]>([]);
@@ -284,9 +311,28 @@ export function BaseValueLab() {
     () => new Map((items[priceMode] ?? []).map((it) => [it.id, it])),
     [items, priceMode],
   );
+  const playerLevel = prefs.level === "" ? undefined : Number(prefs.level);
+  // The main calculator saves the trader levels here, on the same site.
+  const [traderLevels, setTraderLevels] = useState<
+    Record<string, number> | undefined
+  >();
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("traderLevels");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (saved) setTraderLevels(JSON.parse(saved));
+    } catch {
+      // No saved levels: every trader offer stays allowed.
+    }
+  }, []);
   const fillers = useMemo(
-    () => buildFillerOptions(items[priceMode] ?? []),
-    [items, priceMode],
+    () =>
+      buildFillerOptions(items[priceMode] ?? [], undefined, {
+        playerLevel,
+        traderLevels,
+        blocked: new Set(prefs.blocked),
+      }),
+    [items, priceMode, playerLevel, traderLevels, prefs.blocked],
   );
   const next = useMemo(() => {
     if (!items[priceMode]) return null;
@@ -297,15 +343,42 @@ export function BaseValueLab() {
       skip,
       copyCost: (s) => {
         const it = s.itemId ? itemById.get(s.itemId) : undefined;
-        return (it && cheapestOffer(it)?.cost) || 50_000;
+        return (
+          (it && cheapestOffer(it, { playerLevel, traderLevels })?.cost) ||
+          50_000
+        );
       },
     });
-  }, [items, priceMode, modeSubjects, results, fillers, skip, itemById]);
+  }, [
+    items,
+    priceMode,
+    modeSubjects,
+    results,
+    fillers,
+    skip,
+    itemById,
+    playerLevel,
+    traderLevels,
+  ]);
 
   // A new suggestion starts with nothing picked.
   const planKey = next
     ? `${next.subject.id}:${next.plan.qty}:${next.plan.fillerTotal}`
     : "";
+  // After a swap, say so when no other items fit and the next gun shows.
+  const swappedFor = useRef<string | null>(null);
+  useEffect(() => {
+    const from = swappedFor.current;
+    if (!from) return;
+    swappedFor.current = null;
+    if (next?.subject.id === from) return;
+    const name = subjectLabel(subjectById.get(from));
+    toast.info(
+      next
+        ? `No other items work for ${name}, so here is the next gun.`
+        : `No other items work for ${name}.`,
+    );
+  }, [next, subjectById]);
   const [shownPlan, setShownPlan] = useState(planKey);
   if (shownPlan !== planKey) {
     setShownPlan(planKey);
@@ -409,7 +482,7 @@ export function BaseValueLab() {
         </p>
       </header>
 
-      <div className="mb-6 grid gap-3 rounded-xl border border-gray-700 bg-gray-900/70 p-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-3 rounded-xl border border-gray-700 bg-gray-900/70 p-4 sm:grid-cols-2">
         <fieldset className="space-y-1">
           <legend className="text-xs text-gray-400">
             Game mode you play (optional)
@@ -451,6 +524,19 @@ export function BaseValueLab() {
               })
             }
             placeholder={`0–${MAX_HIDEOUT_SKILL}`}
+          />
+        </label>
+        <label className="space-y-1 text-xs text-gray-400">
+          Your player level (optional)
+          <Input
+            value={prefs.level}
+            inputMode="numeric"
+            onChange={(e) =>
+              updatePrefs({
+                level: e.target.value.replace(/\D/g, "").slice(0, 2),
+              })
+            }
+            placeholder={`Flea opens at level ${FLEA_UNLOCK_LEVEL}`}
           />
         </label>
       </div>
@@ -519,6 +605,10 @@ export function BaseValueLab() {
               }
             />
           )}
+              onSwap={(itemId) => {
+                swappedFor.current = next.subject.id;
+                updatePrefs({ blocked: [...prefs.blocked, itemId] });
+              }}
           {!loading && items[priceMode] && (
             <OtherTestForm
               subjects={modeSubjects}
@@ -695,6 +785,7 @@ function TestCard({
   onSkip,
 }: {
   next: NonNullable<ReturnType<typeof pickNextTest>>;
+  onSwap,
   fillers: SiteFiller[];
   timer: Timer | null;
   onTimer: (t: Timer) => void;
@@ -705,6 +796,8 @@ function TestCard({
   onSkip: () => void;
 }) {
   const { subject, plan } = next;
+  /** Drops an item the tester can't get; the plan picks another. */
+  onSwap: (itemId: string) => void;
   const version = gunVersion(subject);
   const sourceOf = (itemId?: string) =>
     fillers.find((f) => f.itemId === itemId)?.source;
@@ -770,10 +863,37 @@ function TestCard({
             key={f.itemId ?? f.name}
             className="rounded-lg bg-gray-800/70 p-3"
           >
-            <span className="font-semibold">{f.qty}×</span> {f.name}
-            <span className="block text-xs text-gray-400">
-              {sourceOf(f.itemId) ?? "Buy"} · about {rub(f.cost)} each
-            </span>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <span className="font-semibold">{f.qty}×</span> {f.name}
+                <span className="block text-xs text-gray-400">
+                  {sourceOf(f.itemId) ?? "Buy"} · about {rub(f.cost)} each
+                </span>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-label={`Copy name of ${f.name}`}
+                  title="Copy the name to paste into the in-game search"
+                  onClick={() => copyName(f.name)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                {f.itemId && !f.owned && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    title="Can't get this one? Suggest a different item"
+                    onClick={() => onSwap(f.itemId!)}
+                  >
+                    <Repeat className="mr-1 h-4 w-4" /> Swap
+                  </Button>
+                )}
+              </div>
+            </div>
           </li>
         ))}
       </ul>

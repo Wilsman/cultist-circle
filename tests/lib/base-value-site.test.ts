@@ -46,6 +46,50 @@ describe("Base Value Lab site helpers", () => {
     });
   });
 
+  test("flea offers respect the player level and ignore mispriced rows", () => {
+    const trader = {
+      priceRUB: 12_000,
+      vendor: { normalizedName: "prapor", minTraderLevel: 2 },
+    };
+    const item = shop({ id: "a", lastLowPrice: 9_000, buyFor: [trader] });
+    expect(cheapestOffer(item, { playerLevel: 2 })?.source).toBe("Prapor LL2");
+    expect(cheapestOffer(item, { playerLevel: 20 })?.source).toBe("Flea");
+    // A dollar price reported as roubles ("71") is not a real flea price.
+    const mispriced = shop({ id: "b", lastLowPrice: 71, buyFor: [trader] });
+    expect(cheapestOffer(mispriced)?.source).toBe("Prapor LL2");
+  });
+
+  test("trader offers above the player's trader level are skipped", () => {
+    const item = shop({
+      id: "a",
+      buyFor: [
+        {
+          priceRUB: 12_000,
+          vendor: { normalizedName: "peacekeeper", minTraderLevel: 4 },
+        },
+        {
+          priceRUB: 20_000,
+          vendor: { normalizedName: "prapor", minTraderLevel: 1 },
+        },
+      ],
+    });
+    expect(cheapestOffer(item)?.source).toBe("Peacekeeper LL4");
+    expect(
+      cheapestOffer(item, { traderLevels: { peacekeeper: 2, prapor: 1 } })
+        ?.source,
+    ).toBe("Prapor LL1");
+  });
+
+  test("blocked items never come back as fillers", () => {
+    const offer = [{ priceRUB: 5_000, vendor: { normalizedName: "jaeger" } }];
+    const options = buildFillerOptions(
+      [shop({ id: "x", buyFor: offer }), shop({ id: "y", buyFor: offer })],
+      undefined,
+      { blocked: new Set(["x"]) },
+    );
+    expect(options.map((o) => o.itemId)).toEqual(["y"]);
+  });
+
   test("fillers leave out guns, armour and keys", () => {
     const offer = [
       {
