@@ -580,20 +580,35 @@ export function BaseValueLab() {
             <div className="space-y-3 rounded-xl border border-gray-700 bg-gray-900/70 p-6 text-center">
               <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-400" />
               <p>
-                Nothing left to test in {MODE_LABELS[mode]} right now. Thank
-                you!
+                {skip.size > 0 || prefs.blocked.length > 0
+                  ? "Nothing left that you can test with the items you can get."
+                  : "Nothing left to test right now. Thank you!"}
               </p>
-              {skip.size > 0 && (
-                <Button variant="outline" onClick={() => setSkip(new Set())}>
-                  Show the ones I skipped
-                </Button>
-              )}
+              <div className="flex flex-wrap justify-center gap-2">
+                {skip.size > 0 && (
+                  <Button variant="outline" onClick={() => setSkip(new Set())}>
+                    Show the guns I skipped ({skip.size})
+                  </Button>
+                )}
+                {prefs.blocked.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => updatePrefs({ blocked: [] })}
+                  >
+                    Bring back swapped items ({prefs.blocked.length})
+                  </Button>
+                )}
+              </div>
             </div>
           ) : (
             <TestCard
               key={planKey}
               next={next}
               fillers={fillers}
+              onSwap={(itemId) => {
+                swappedFor.current = next.subject.id;
+                updatePrefs({ blocked: [...prefs.blocked, itemId] });
+              }}
               timer={timer}
               onTimer={setTimer}
               notes={notes}
@@ -605,10 +620,6 @@ export function BaseValueLab() {
               }
             />
           )}
-              onSwap={(itemId) => {
-                swappedFor.current = next.subject.id;
-                updatePrefs({ blocked: [...prefs.blocked, itemId] });
-              }}
           {!loading && items[priceMode] && (
             <OtherTestForm
               subjects={modeSubjects}
@@ -683,9 +694,7 @@ export function BaseValueLab() {
           )}
 
           <section className="space-y-2">
-            <h2 className="text-lg font-semibold">
-              What we know ({MODE_LABELS[mode]})
-            </h2>
+            <h2 className="text-lg font-semibold">What we know</h2>
             <div className="overflow-x-auto rounded-xl border border-gray-700">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/80 text-left text-xs text-gray-400">
@@ -776,6 +785,7 @@ export function BaseValueLab() {
 function TestCard({
   next,
   fillers,
+  onSwap,
   timer,
   onTimer,
   notes,
@@ -785,8 +795,9 @@ function TestCard({
   onSkip,
 }: {
   next: NonNullable<ReturnType<typeof pickNextTest>>;
-  onSwap,
   fillers: SiteFiller[];
+  /** Drops an item the tester can't get; the plan picks another. */
+  onSwap: (itemId: string) => void;
   timer: Timer | null;
   onTimer: (t: Timer) => void;
   notes: string;
@@ -796,8 +807,6 @@ function TestCard({
   onSkip: () => void;
 }) {
   const { subject, plan } = next;
-  /** Drops an item the tester can't get; the plan picks another. */
-  onSwap: (itemId: string) => void;
   const version = gunVersion(subject);
   const sourceOf = (itemId?: string) =>
     fillers.find((f) => f.itemId === itemId)?.source;
@@ -937,7 +946,8 @@ function TestCard({
           Send result
         </Button>
         <Button variant="ghost" onClick={onSkip} disabled={sending}>
-          <SkipForward className="mr-1 h-4 w-4" /> Can&apos;t do this one
+          <SkipForward className="mr-1 h-4 w-4" /> Can&apos;t do this one, next
+          gun
         </Button>
       </div>
     </div>
