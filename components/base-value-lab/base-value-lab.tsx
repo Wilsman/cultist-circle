@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, RefreshCw, SkipForward } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { OtherTestForm, type OtherTest } from "./other-test-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   fetchMinimalTarkovData,
@@ -312,24 +313,35 @@ export function BaseValueLab() {
     setNotes("");
   }
 
-  async function send() {
-    if (!next || !timer || sending) return;
+  /** Sends a test to the shared lab. Resolves true once it is saved. */
+  async function submit(test: {
+    entries: { subjectId: string; qty: number }[];
+    fillers: {
+      itemId?: string;
+      name: string;
+      baseValue: number;
+      qty: number;
+    }[];
+    timer: Timer;
+    notes: string;
+  }): Promise<boolean> {
+    if (sending) return false;
     const skill = prefs.skill.trim() === "" ? undefined : Number(prefs.skill);
     const parsed = baseValueTestSchema.safeParse({
       testId: crypto.randomUUID(),
       mode,
-      entries: [{ subjectId: next.subject.id, qty: next.plan.qty }],
-      fillers: next.plan.fillers.map(({ itemId, name, baseValue, qty }) => ({
+      entries: test.entries,
+      fillers: test.fillers.map(({ itemId, name, baseValue, qty }) => ({
         ...(itemId ? { itemId } : {}),
         name,
         baseValue,
         qty,
       })),
-      timer,
+      timer: test.timer,
       ...(skill !== undefined ? { hideoutSkill: skill } : {}),
       ...(prefs.played ? { playedMode: prefs.played } : {}),
       ...(prefs.name.trim() ? { contributor: prefs.name.trim() } : {}),
-      ...(notes.trim() ? { notes: notes.trim() } : {}),
+      ...(test.notes.trim() ? { notes: test.notes.trim() } : {}),
     });
     if (!parsed.success) {
       toast.error(
@@ -337,7 +349,7 @@ export function BaseValueLab() {
           ? `Hideout Management must be 0–${MAX_HIDEOUT_SKILL}.`
           : "That test could not be sent.",
       );
-      return;
+      return false;
     }
     setSending(true);
     try {
@@ -355,14 +367,28 @@ export function BaseValueLab() {
         throw new Error(body?.error ?? "Could not save your result.");
       setTests((current) => [...current, body.data as SharedTest]);
       toast.success("Thanks! Result saved.");
+      return true;
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Could not save your result.",
       );
+      return false;
     } finally {
       setSending(false);
     }
   }
+
+  function send() {
+    if (!next || !timer) return;
+    void submit({
+      entries: [{ subjectId: next.subject.id, qty: next.plan.qty }],
+      fillers: next.plan.fillers,
+      timer,
+      notes,
+    });
+  }
+
+  const sendOther = (test: OtherTest) => submit(test);
 
   const recent = useMemo(
     () =>
@@ -487,10 +513,18 @@ export function BaseValueLab() {
               notes={notes}
               onNotes={setNotes}
               sending={sending}
-              onSend={() => void send()}
+              onSend={send}
               onSkip={() =>
                 setSkip((current) => new Set(current).add(next.subject.id))
               }
+            />
+          )}
+          {!loading && items[priceMode] && (
+            <OtherTestForm
+              subjects={modeSubjects}
+              items={items[priceMode]}
+              sending={sending}
+              onSubmit={sendOther}
             />
           )}
         </TabsContent>
