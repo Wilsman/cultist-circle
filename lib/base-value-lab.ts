@@ -71,6 +71,11 @@ export interface Build {
   /** API value of the bare gun. */
   gunValue: number;
   mods: { itemId?: string; name: string; baseValue: number; count: number }[];
+  /**
+   * Single-part builds: item id of the part being measured. The other mods
+   * are what it hangs from.
+   */
+  main?: string;
 }
 
 export interface TestEntry {
@@ -627,6 +632,27 @@ export function planTest(input: PlanInput): TestPlan | null {
   return fromStash ?? best;
 }
 
+/**
+ * Plans a test that splits `range` as close to `x` as fillers allow. For
+ * callers that choose the split themselves, e.g. from a rule several guns
+ * share. `slack` is how far the split may land from `x`.
+ */
+export function planAt(
+  input: PlanInput,
+  range: Range,
+  x: number,
+  slack: number,
+): TestPlan | null {
+  if (x > MAX_TESTABLE) return null;
+  return searchPlans(
+    input,
+    { x, slack, goal: "narrow" },
+    range,
+    input.fillers,
+    slack,
+  );
+}
+
 function searchPlans(
   input: PlanInput,
   split: { x: number; slack: number; goal: TestPlan["goal"] },
@@ -857,6 +883,44 @@ export function freeSlots(
   return open;
 }
 
+/**
+ * For each part on a gun, the chain from the gun out to that part: the part
+ * plus everything it hangs from (usually mounts). The parts must fit together
+ * on the gun, like a Default preset or a saved build; any order works.
+ */
+export function partChains<T extends SlottedItem>(
+  gun: SlottedItem,
+  parts: readonly T[],
+): Map<string, T[]> {
+  const placed: { item: T; host: number }[] = [];
+  const open: { host: number; allowed: Set<string> }[] = [];
+  const addSlots = (item: SlottedItem, host: number) => {
+    for (const s of item.slots ?? [])
+      open.push({ host, allowed: new Set(s.allowed) });
+  };
+  addSlots(gun, -1);
+  let left = [...parts];
+  for (let progress = true; progress && left.length;) {
+    progress = false;
+    left = left.filter((item) => {
+      const i = open.findIndex((s) => s.allowed.has(item.id));
+      if (i < 0) return true;
+      placed.push({ item, host: open[i].host });
+      open.splice(i, 1);
+      addSlots(item, placed.length - 1);
+      progress = true;
+      return false;
+    });
+  }
+  const chains = new Map<string, T[]>();
+  placed.forEach(({ item }, i) => {
+    const chain: T[] = [];
+    for (let j = i; j >= 0; j = placed[j].host) chain.unshift(placed[j].item);
+    chains.set(item.id, chain);
+  });
+  return chains;
+}
+
 const KINDS: SubjectKind[] = [
   "weapon",
   "weapon-bare",
@@ -882,8 +946,10 @@ function parseBuild(v: unknown): Build | undefined {
   const b = v as Record<string, unknown>;
   const gunValue = num(b.gunValue);
   if (gunValue === undefined || !Array.isArray(b.mods)) return undefined;
+  const main = str(b.main);
   return {
     gunValue,
+    ...(main ? { main } : {}),
     mods: b.mods.flatMap((m) => {
       const x = m as Record<string, unknown>;
       const baseValue = num(x.baseValue);
