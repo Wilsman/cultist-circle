@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Copy,
   Loader2,
+  Pencil,
   RefreshCw,
   Repeat,
   SkipForward,
@@ -12,6 +13,9 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { k, TONE } from "./labels";
+import { EvidenceChart, ResultsTable } from "./results-charts";
+import { HiddenRule, TimerMeaning } from "./hidden-rule";
 import { OtherTestForm, type OtherTest } from "./other-test-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -27,7 +31,6 @@ import {
   type LabMode,
   type LabTest,
   type Subject,
-  type SubjectResult,
   type Timer,
 } from "@/lib/base-value-lab";
 import {
@@ -36,11 +39,9 @@ import {
   FLEA_UNLOCK_LEVEL,
   gunVersion,
   partsValue,
-  pickNextTest,
-  sharedMultiplier,
-  type GunVersionTone,
   type SiteFiller,
 } from "@/lib/base-value-site";
+import { pickTest, type PickedTest } from "@/lib/base-value-rule";
 import { baseValueTestSchema } from "@/lib/base-value-submission";
 import {
   type GameMode,
@@ -71,15 +72,6 @@ interface Prefs {
   blocked: string[];
 }
 
-const mult = (n: number) =>
-  n === Infinity ? "∞" : `${n.toFixed(n >= 10 ? 0 : 1)}×`;
-
-const k = (n: number) =>
-  n === Infinity
-    ? "∞"
-    : n >= 1000
-      ? `${(n / 1000).toFixed(n >= 100_000 ? 0 : 1).replace(/\.0$/, "")}k`
-      : String(Math.round(n));
 async function copyName(name: string) {
   try {
     await navigator.clipboard.writeText(name);
@@ -94,30 +86,6 @@ const timerLabel = (t: Timer) =>
   t === "6h"
     ? "6h (400k+)"
     : `${t} (${k(TIMER_RANGES[t][0])}–${k(TIMER_RANGES[t][1])})`;
-
-const STATUS: Record<
-  SubjectResult["status"],
-  { label: string; className: string }
-> = {
-  untested: { label: "Not tested", className: "border-gray-600 text-gray-300" },
-  open: { label: "Narrowing", className: "border-sky-500/50 text-sky-300" },
-  "needs-confirmation": {
-    label: "Needs a re-check",
-    className: "border-amber-500/50 text-amber-300",
-  },
-  confident: {
-    label: "Done",
-    className: "border-emerald-500/50 text-emerald-300",
-  },
-  "too-high": {
-    label: "Above 350k",
-    className: "border-purple-500/50 text-purple-300",
-  },
-  conflict: {
-    label: "Results disagree",
-    className: "border-red-500/50 text-red-300",
-  },
-};
 
 function loadPrefs(): Prefs {
   try {
@@ -137,25 +105,6 @@ function loadPrefs(): Prefs {
   } catch {
     return { played: null, name: "", skill: "", level: "", blocked: [] };
   }
-}
-
-const TONE: Record<GunVersionTone, string> = {
-  stripped: "border-rose-400/60 bg-rose-500/15 text-rose-200",
-  default: "border-sky-400/60 bg-sky-500/15 text-sky-200",
-  build: "border-violet-400/60 bg-violet-500/15 text-violet-200",
-  preset: "border-sky-400/60 bg-sky-500/15 text-sky-200",
-};
-
-function VersionTag({ subject }: { subject: Subject }) {
-  const version = gunVersion(subject);
-  if (!version) return null;
-  return (
-    <span
-      className={`ml-2 inline-block whitespace-nowrap rounded-md border px-1.5 py-0.5 align-middle text-[11px] font-semibold uppercase tracking-wide ${TONE[version.tone]}`}
-    >
-      {version.tag}
-    </span>
-  );
 }
 
 /** Name plus version, e.g. "HK MP5 (Navy 3 Round Burst) [Stripped]". */
@@ -192,10 +141,19 @@ export function BaseValueLab() {
   const [timer, setTimer] = useState<Timer | null>(null);
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
+  const [tab, setTab] = useState("test");
+  // Settings saved on an earlier visit start folded into one line.
+  const [prefsFolded, setPrefsFolded] = useState(false);
 
   // localStorage only exists in the browser, so read it after hydration.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setPrefs(loadPrefs()), []);
+  useEffect(() => {
+    const saved = loadPrefs();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPrefs(saved);
+    setPrefsFolded(
+      !!(saved.played || saved.name.trim() || saved.skill || saved.level),
+    );
+  }, []);
   const updatePrefs = (next: Partial<Prefs>) =>
     setPrefs((current) => {
       const merged = { ...current, ...next };
@@ -306,7 +264,6 @@ export function BaseValueLab() {
       }),
     [modeSubjects, results],
   );
-  const multiplier = sharedMultiplier(partsRows.map((r) => r.value));
   const itemById = useMemo(
     () => new Map((items[priceMode] ?? []).map((it) => [it.id, it])),
     [items, priceMode],
@@ -336,7 +293,7 @@ export function BaseValueLab() {
   );
   const next = useMemo(() => {
     if (!items[priceMode]) return null;
-    return pickNextTest({
+    return pickTest({
       subjects: modeSubjects,
       results,
       fillers,
@@ -463,6 +420,15 @@ export function BaseValueLab() {
 
   const sendOther = (test: OtherTest) => submit(test);
 
+  const prefsSummary = [
+    prefs.played ? `Plays ${MODE_LABELS[prefs.played]}` : "Game mode not set",
+    prefs.name.trim() ? `as ${prefs.name.trim()}` : null,
+    prefs.skill ? `Hideout Management ${prefs.skill}` : null,
+    prefs.level ? `level ${prefs.level}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   const recent = useMemo(
     () =>
       [...tests]
@@ -472,74 +438,98 @@ export function BaseValueLab() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 text-gray-100">
+    <main className="mx-auto w-full max-w-3xl px-4 py-8 text-gray-100 lg:max-w-6xl">
       <header className="mb-6 space-y-2">
         <h1 className="text-2xl font-bold">Base Value Lab</h1>
-        <p className="text-sm text-gray-400">
+        <p className="max-w-3xl text-sm text-gray-400">
           The API gets some base values wrong (mostly guns). Each cultist circle
           timer tells us roughly what went in, so a few tests pin down the true
           value.
         </p>
       </header>
 
-      <div className="mb-6 grid gap-3 rounded-xl border border-gray-700 bg-gray-900/70 p-4 sm:grid-cols-2">
-        <fieldset className="space-y-1">
-          <legend className="text-xs text-gray-400">
-            Game mode you play (optional)
-          </legend>
-          <div className="flex gap-2">
-            {PLAYED_MODES.map((m) => (
+      {prefsFolded ? (
+        <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-gray-700 bg-gray-900/70 px-4 py-2 text-sm text-gray-300">
+          <span className="min-w-0 flex-1">{prefsSummary}</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setPrefsFolded(false)}
+          >
+            <Pencil className="mr-1 h-4 w-4" /> Edit
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="mb-6 grid gap-3 rounded-xl border border-gray-700 bg-gray-900/70 p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <fieldset className="space-y-1">
+              <legend className="text-xs text-gray-400">
+                Game mode you play (optional)
+              </legend>
+              <div className="flex gap-2">
+                {PLAYED_MODES.map((m) => (
+                  <Button
+                    key={m}
+                    size="sm"
+                    variant={m === prefs.played ? "default" : "outline"}
+                    aria-pressed={m === prefs.played}
+                    onClick={() => {
+                      updatePrefs({ played: m === prefs.played ? null : m });
+                      setSkip(new Set());
+                    }}
+                  >
+                    {MODE_LABELS[m]}
+                  </Button>
+                ))}
+              </div>
+            </fieldset>
+            <label className="space-y-1 text-xs text-gray-400">
+              Your name (optional)
+              <Input
+                value={prefs.name}
+                maxLength={40}
+                onChange={(e) => updatePrefs({ name: e.target.value })}
+                placeholder="Shown next to your results"
+              />
+            </label>
+            <label className="space-y-1 text-xs text-gray-400">
+              Hideout Management level (optional)
+              <Input
+                value={prefs.skill}
+                inputMode="numeric"
+                onChange={(e) =>
+                  updatePrefs({
+                    skill: e.target.value.replace(/\D/g, "").slice(0, 2),
+                  })
+                }
+                placeholder={`0–${MAX_HIDEOUT_SKILL}`}
+              />
+            </label>
+            <label className="space-y-1 text-xs text-gray-400">
+              Your player level (optional)
+              <Input
+                value={prefs.level}
+                inputMode="numeric"
+                onChange={(e) =>
+                  updatePrefs({
+                    level: e.target.value.replace(/\D/g, "").slice(0, 2),
+                  })
+                }
+                placeholder={`Flea opens at level ${FLEA_UNLOCK_LEVEL}`}
+              />
+            </label>
+            <div className="sm:col-span-2 lg:col-span-4">
               <Button
-                key={m}
                 size="sm"
-                variant={m === prefs.played ? "default" : "outline"}
-                aria-pressed={m === prefs.played}
-                onClick={() => {
-                  updatePrefs({ played: m === prefs.played ? null : m });
-                  setSkip(new Set());
-                }}
+                variant="outline"
+                onClick={() => setPrefsFolded(true)}
               >
-                {MODE_LABELS[m]}
+                Done
               </Button>
-            ))}
+            </div>
           </div>
-        </fieldset>
-        <label className="space-y-1 text-xs text-gray-400">
-          Your name (optional)
-          <Input
-            value={prefs.name}
-            maxLength={40}
-            onChange={(e) => updatePrefs({ name: e.target.value })}
-            placeholder="Shown next to your results"
-          />
-        </label>
-        <label className="space-y-1 text-xs text-gray-400">
-          Hideout Management level (optional)
-          <Input
-            value={prefs.skill}
-            inputMode="numeric"
-            onChange={(e) =>
-              updatePrefs({
-                skill: e.target.value.replace(/\D/g, "").slice(0, 2),
-              })
-            }
-            placeholder={`0–${MAX_HIDEOUT_SKILL}`}
-          />
-        </label>
-        <label className="space-y-1 text-xs text-gray-400">
-          Your player level (optional)
-          <Input
-            value={prefs.level}
-            inputMode="numeric"
-            onChange={(e) =>
-              updatePrefs({
-                level: e.target.value.replace(/\D/g, "").slice(0, 2),
-              })
-            }
-            placeholder={`Flea opens at level ${FLEA_UNLOCK_LEVEL}`}
-          />
-        </label>
-      </div>
+        </>
+      )}
 
       {loadError && (
         <div
@@ -561,13 +551,16 @@ export function BaseValueLab() {
         </div>
       )}
 
-      <Tabs defaultValue="test">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="test">Test</TabsTrigger>
           <TabsTrigger value="results">Results</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="test">
+        <TabsContent
+          value="test"
+          className="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-6"
+        >
           {loading || !items[priceMode] ? (
             <p
               role="status"
@@ -601,181 +594,102 @@ export function BaseValueLab() {
               </div>
             </div>
           ) : (
-            <TestCard
-              key={planKey}
-              next={next}
-              fillers={fillers}
-              onSwap={(itemId) => {
-                swappedFor.current = next.subject.id;
-                updatePrefs({ blocked: [...prefs.blocked, itemId] });
-              }}
-              timer={timer}
-              onTimer={setTimer}
-              notes={notes}
-              onNotes={setNotes}
-              sending={sending}
-              onSend={send}
-              onSkip={() =>
-                setSkip((current) => new Set(current).add(next.subject.id))
-              }
-            />
+            <>
+              <TestCard
+                key={planKey}
+                next={next}
+                fillers={fillers}
+                onSwap={(itemId) => {
+                  swappedFor.current = next.subject.id;
+                  updatePrefs({ blocked: [...prefs.blocked, itemId] });
+                }}
+                timer={timer}
+                onTimer={setTimer}
+                notes={notes}
+                onNotes={setNotes}
+                sending={sending}
+                onSend={send}
+                onSkip={() =>
+                  setSkip((current) => new Set(current).add(next.subject.id))
+                }
+              />
+              <aside className="mt-6 space-y-3 rounded-xl border border-gray-700 bg-gray-900/70 p-5 lg:row-span-2 lg:mt-0">
+                <h2 className="font-medium">What each timer tells us</h2>
+                <p className="text-sm text-gray-400">
+                  {next.rule
+                    ? "This test is aimed at the hidden parts multiplier, so any result narrows it for every gun."
+                    : "This test narrows this gun's true value."}
+                </p>
+                <TimerMeaning next={next} />
+              </aside>
+            </>
           )}
           {!loading && items[priceMode] && (
-            <OtherTestForm
-              subjects={modeSubjects}
-              items={items[priceMode]}
-              sending={sending}
-              onSubmit={sendOther}
-            />
+            <div className="lg:col-start-1">
+              <OtherTestForm
+                subjects={modeSubjects}
+                items={items[priceMode]}
+                sending={sending}
+                onSubmit={sendOther}
+              />
+            </div>
           )}
         </TabsContent>
 
         <TabsContent value="results" className="space-y-6">
-          {partsRows.length > 0 && (
+          <HiddenRule
+            subjects={modeSubjects}
+            results={results}
+            partsRows={partsRows}
+            next={next}
+            onRunTest={() => setTab("test")}
+          />
+
+          <EvidenceChart
+            subjects={modeSubjects}
+            results={results}
+            testCount={modeTests.filter((t) => !t.excluded).length}
+          />
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+            <ResultsTable
+              subjects={modeSubjects}
+              results={results}
+              partsRows={partsRows}
+            />
+
             <section className="space-y-2">
-              <h2 className="text-lg font-semibold">
-                What attached parts are really worth
-              </h2>
-              <p className="text-sm text-gray-400">
-                Bare gun frames match the API. The gap appears once parts are
-                attached, so this compares what the attached parts measured at
-                with what the API says they are worth.
-              </p>
-              {multiplier && (
-                <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100">
-                  {multiplier === "conflict"
-                    ? "No single multiplier fits every gun yet, so attached parts aren't simply worth a fixed multiple of their API value."
-                    : `So far, attached parts count about ${mult(multiplier.lo)} to ${mult(multiplier.hi)} their API value on every tested gun.`}
-                </p>
-              )}
-              <div className="overflow-x-auto rounded-xl border border-gray-700">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-800/80 text-left text-xs text-gray-400">
-                    <tr>
-                      <th className="p-2">Gun</th>
-                      <th className="p-2">Frame</th>
-                      <th className="p-2">Parts (API)</th>
-                      <th className="p-2">Parts (measured)</th>
-                      <th className="p-2">Multiplier</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {partsRows.map(({ subject: s, value: v }) => (
-                      <tr
-                        key={s.id}
-                        className="border-t border-gray-800 align-top"
-                      >
-                        <td className="p-2">
-                          {gunVersion(s)?.name ?? s.name}
-                          <VersionTag subject={s} />
-                        </td>
-                        <td className="whitespace-nowrap p-2 text-gray-400">
-                          {k(v.frame)}
-                        </td>
-                        <td className="whitespace-nowrap p-2 text-gray-400">
-                          {k(v.apiParts)}
-                        </td>
-                        <td className="whitespace-nowrap p-2">
-                          {v.measured
-                            ? `${k(v.measured.lo)} – ${k(v.measured.hi)}`
-                            : "?"}
-                        </td>
-                        <td className="whitespace-nowrap p-2 font-semibold">
-                          {v.multiplier
-                            ? `${mult(v.multiplier.lo)} – ${mult(v.multiplier.hi)}`
-                            : "?"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          <section className="space-y-2">
-            <h2 className="text-lg font-semibold">What we know</h2>
-            <div className="overflow-x-auto rounded-xl border border-gray-700">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-800/80 text-left text-xs text-gray-400">
-                  <tr>
-                    <th className="p-2">Item</th>
-                    <th className="p-2">True value</th>
-                    <th className="p-2">API says</th>
-                    <th className="p-2">Tests</th>
-                    <th className="p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {modeSubjects.map((s) => {
-                    const r = results.get(s.id);
-                    const status = STATUS[r?.status ?? "untested"];
-                    const tested =
-                      r && r.testCount > 0 && r.status !== "conflict";
-                    return (
-                      <tr
-                        key={s.id}
-                        className="border-t border-gray-800 align-top"
-                      >
-                        <td className="p-2">
-                          {gunVersion(s)?.name ?? s.name}
-                          <VersionTag subject={s} />
-                        </td>
-                        <td className="whitespace-nowrap p-2">
-                          {tested ? `${k(r.range.lo)} – ${k(r.range.hi)}` : "?"}
-                        </td>
-                        <td className="whitespace-nowrap p-2 text-gray-400">
-                          {s.apiBaseValue !== undefined
-                            ? k(s.apiBaseValue)
-                            : "–"}
-                        </td>
-                        <td className="p-2">{r?.testCount ?? 0}</td>
-                        <td className="p-2">
-                          <span
-                            className={`whitespace-nowrap rounded-md border px-2 py-0.5 text-xs ${status.className}`}
-                          >
-                            {status.label}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="text-lg font-semibold">Latest tests</h2>
-            <ul className="divide-y divide-gray-800 rounded-xl border border-gray-700 text-sm">
-              {recent.map((t) => (
-                <li
-                  key={t.id}
-                  className={`flex gap-3 p-3 ${t.excluded ? "opacity-50" : ""}`}
-                >
-                  <span className="w-12 shrink-0 font-semibold text-amber-300">
-                    {t.timer}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    {describeTest(t, subjectById)}
-                    <span className="block text-xs text-gray-500">
-                      {t.playedMode
-                        ? MODE_LABELS[t.playedMode]
-                        : t.source === "contributor"
-                          ? "Mode not given"
-                          : MODE_LABELS[t.mode]}{" "}
-                      ·{" "}
-                      {t.source === "contributor"
-                        ? t.contributor || "Someone"
-                        : "Owner"}{" "}
-                      · {new Date(t.createdAt).toLocaleDateString()}
-                      {t.excluded ? " · not counted" : ""}
+              <h2 className="text-lg font-semibold">Latest tests</h2>
+              <ul className="divide-y divide-gray-800 rounded-xl border border-gray-700 text-sm">
+                {recent.map((t) => (
+                  <li
+                    key={t.id}
+                    className={`flex gap-3 p-3 ${t.excluded ? "opacity-50" : ""}`}
+                  >
+                    <span className="w-12 shrink-0 font-semibold text-amber-300">
+                      {t.timer}
                     </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
+                    <span className="min-w-0 flex-1">
+                      {describeTest(t, subjectById)}
+                      <span className="block text-xs text-gray-500">
+                        {t.playedMode
+                          ? MODE_LABELS[t.playedMode]
+                          : t.source === "contributor"
+                            ? "Mode not given"
+                            : MODE_LABELS[t.mode]}{" "}
+                        ·{" "}
+                        {t.source === "contributor"
+                          ? t.contributor || "Someone"
+                          : "Owner"}{" "}
+                        · {new Date(t.createdAt).toLocaleDateString()}
+                        {t.excluded ? " · not counted" : ""}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
         </TabsContent>
       </Tabs>
     </main>
@@ -794,7 +708,7 @@ function TestCard({
   onSend,
   onSkip,
 }: {
-  next: NonNullable<ReturnType<typeof pickNextTest>>;
+  next: PickedTest;
   fillers: SiteFiller[];
   /** Drops an item the tester can't get; the plan picks another. */
   onSwap: (itemId: string) => void;
