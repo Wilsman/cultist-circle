@@ -7,9 +7,13 @@
  *   bun run lab:push -- <export.json> --local     # seed local D1 (bun run dev)
  *   bun run lab:push -- <export.json> --remote    # publish to the live page
  *   bun run lab:pull -- [out.json] [--local]      # everything, as a lab export
+ *   bun run lab:suggest -- [out.json] [--local]   # single-part builds to add
  *
  * Push upserts subjects and your own tests. Tests people sent from the page
  * are never overwritten. Pull writes a file the local lab's Import accepts.
+ * Suggest writes single-part builds (one valuable part plus the mounts it
+ * needs on a bare frame) for the guns already in the lab; push that file to
+ * publish them.
  */
 
 import { spawnSync } from "node:child_process";
@@ -24,6 +28,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseState } from "../../lib/base-value-lab";
+import { singlePartBuilds } from "../../lib/base-value-rule";
 import { hasFlag, queryD1 } from "../lib/local-d1.mjs";
 
 const DATABASE = "cultist-circle-feedback";
@@ -167,11 +172,79 @@ function pull(out) {
   );
 }
 
+/** The bare gun and its parts, for a Default preset or a saved build. */
+function gunAndParts(subject) {
+  const byId = itemsFor(subject.mode);
+  const item = subject.itemId ? byId.get(subject.itemId) : undefined;
+  if (!item?.slots && !item?.parts) return null;
+  const expand = (list) =>
+    list.flatMap(({ id, count }) =>
+      byId.has(id) ? Array(count).fill(byId.get(id)) : [],
+    );
+  if (subject.build)
+    return {
+      gun: item,
+      parts: expand(
+        subject.build.mods.map((m) => ({ id: m.itemId, count: m.count })),
+      ),
+    };
+  if (subject.kind === "weapon" && item.parts) {
+    const gun = byId.get(item.baseItem);
+    if (!gun) return null;
+    return {
+      gun,
+      parts: expand(item.parts.filter((p) => p.id !== gun.id)),
+    };
+  }
+  return null;
+}
+
+function suggest(out) {
+  const existing = parseState({
+    version: 1,
+    subjects: queryD1(
+      "SELECT data_json FROM base_value_subjects WHERE hidden = 0",
+      { useLocal },
+    ).map((r) => JSON.parse(r.data_json)),
+    tests: [],
+  }).subjects;
+  const subjects = [];
+  for (const s of existing) {
+    const found = gunAndParts(s);
+    if (!found) continue;
+    subjects.push(
+      ...singlePartBuilds({
+        mode: s.mode,
+        gun: found.gun,
+        parts: found.parts,
+        existing: [...existing, ...subjects],
+      }),
+    );
+  }
+  if (!subjects.length) {
+    console.log(
+      "No new single-part builds. Run `bun run lab` once if the item cache is missing.",
+    );
+    return;
+  }
+  writeFileSync(
+    out,
+    JSON.stringify(parseState({ version: 1, subjects, tests: [] }), null, 2) +
+      "\n",
+  );
+  for (const s of subjects) console.log(`  ${s.mode}  ${s.name}`);
+  console.log(
+    `Wrote ${subjects.length} build${subjects.length === 1 ? "" : "s"} to ${out}. Publish with: bun run lab:push -- ${out} --local|--remote`,
+  );
+}
+
 if (command === "push" && files[0]) push(files[0]);
 else if (command === "pull") pull(files[0] ?? "base-value-lab-shared.json");
+else if (command === "suggest")
+  suggest(files[0] ?? "base-value-lab-suggested.json");
 else {
   console.error(
-    "Usage: sync.mjs push <export.json> --local|--remote | pull [out.json] [--local]",
+    "Usage: sync.mjs push <export.json> --local|--remote | pull [out.json] [--local] | suggest [out.json] [--local]",
   );
   process.exit(1);
 }
