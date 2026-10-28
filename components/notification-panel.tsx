@@ -65,7 +65,7 @@ export const NOTIFICATIONS: Notification[] = [
     description: (_notification, t) =>
       formatMessageSlots(
         t(
-          "Sorry, we marked the 5x Ferrum dogtag ritual as expired by mistake. It still works in {mode}, it just doesn't work in regular PvP or PvE. The launcher codes no longer work, so you need dogtags you already own. {view}",
+          "Sorry, we marked the 5x Ferrum dogtag ritual as expired by mistake. It still works in {mode}, it just doesn't work in regular PvP or PvE. The launcher codes no longer work, but you can find Ferrum dogtags on Black Division bodies or exchange BP documents for them in the Battlepass. {view}",
         ),
         {
           mode: <strong>{t("PvP Season")}</strong>,

@@ -508,11 +508,7 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
             <p className="text-sm font-bold uppercase tracking-wide text-violet-100">
               {t("PvP Season only")}
             </p>
-            <p className="mt-0.5">
-              {t(
-                "Confirmed working in PvP Season. Players report it no longer works in regular PvP or PvE.",
-              )}
-            </p>
+            <p className="mt-0.5">{t("Confirmed working in PvP Season.")}</p>
           </div>
         </div>
       )}
@@ -526,7 +522,7 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
             {t("The launcher codes no longer work.")}
           </span>{" "}
           {t(
-            "The promo codes that gave out Ferrum dogtags have expired, so they have been removed. You need 5 Ferrum dogtags you already own.",
+            "The promo codes that gave out Ferrum dogtags have expired, so they have been removed. Find Ferrum dogtags on Black Division bodies or exchange BP documents for them in the Battlepass.",
           )}
         </p>
       </div>

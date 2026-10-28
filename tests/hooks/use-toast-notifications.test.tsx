@@ -44,7 +44,7 @@ describe("useToastNotifications", () => {
       "Update: Black Division ritual works in PvP Season",
       expect.objectContaining({
         description:
-          "Confirmed working in PvP Season only. The launcher codes no longer work, so you need Ferrum dogtags you already own.",
+          "Confirmed working in PvP Season only. The launcher codes no longer work, but you can find Ferrum dogtags on Black Division bodies or exchange BP documents for them in the Battlepass.",
         icon: "🔐",
       }),
     );

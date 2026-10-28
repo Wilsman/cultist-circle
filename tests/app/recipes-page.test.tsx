@@ -324,12 +324,18 @@ describe("RecipesPage completion tracker", () => {
     expect(screen.getByText("PVP SEASON ONLY")).toBeInTheDocument();
     expect(screen.getByText("PvP Season only")).toBeInTheDocument();
     expect(
-      screen.getByText(/no longer works in regular PvP or PvE/i),
+      screen.getByText("Confirmed working in PvP Season."),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/regular PvP or PvE/i)).toBeNull();
     expect(
       screen.getByText("The launcher codes no longer work."),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Step 1 Â· Launcher unlock")).toBeNull();
+    expect(
+      screen.getByText(
+        /Find Ferrum dogtags on Black Division bodies or exchange BP documents/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Launcher unlock/)).toBeNull();
     expect(
       screen.queryAllByRole("button", { name: /copy promo code/i }),
     ).toHaveLength(0);
