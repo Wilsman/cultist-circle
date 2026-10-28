@@ -3,23 +3,21 @@
 // The Results tab's headline: which rule explains gun base values, how
 // tightly tests pin it down, and what the calculator would say with it today.
 
-import { AlertTriangle, CheckCircle2, CircleHelp, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CheckCircle2, ChevronRight, CircleHelp, XCircle } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Subject, SubjectResult } from "@/lib/base-value-lab";
 import {
   checkRules,
-  predict,
   RULE_GOAL,
   RULE_MIN_GUNS,
   ruleState,
   toMultiplier,
   type PickedTest,
+  type RuleCheck,
   type RuleState,
   type RuleVerdict,
 } from "@/lib/base-value-rule";
-import { gunVersion } from "@/lib/base-value-site";
-import { k, ratioSpan, shortLabel, span, VersionTag } from "./labels";
+import { ratioSpan, shortLabel, span } from "./labels";
 import {
   ChartLabel,
   MultiplierChart,
@@ -138,14 +136,7 @@ export function TimerMeaning({ next }: { next: PickedTest }) {
   );
 }
 
-function RuleList({
-  subjects,
-  results,
-}: {
-  subjects: readonly Subject[];
-  results: Map<string, SubjectResult>;
-}) {
-  const checks = checkRules(subjects, results);
+function RuleList({ checks }: { checks: readonly RuleCheck[] }) {
   return (
     <ul className="divide-y divide-gray-800 rounded-xl border border-gray-700">
       {checks.map((c) => {
@@ -172,89 +163,20 @@ function RuleList({
   );
 }
 
-function Predictions({
-  rows,
-  results,
-  state,
-}: {
-  rows: readonly PartsRow[];
-  results: Map<string, SubjectResult>;
-  state: RuleState;
-}) {
-  const band = state.fit?.band;
-  const guns = rows.filter((r) => r.value.apiParts > 0);
-  if (!guns.length) return null;
-  return (
-    <div className="overflow-x-auto rounded-xl border border-gray-700">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-800/80 text-left text-xs text-gray-400">
-          <tr>
-            <th className="p-2">Gun</th>
-            <th className="p-2">Calculator</th>
-            <th className="hidden p-2 sm:table-cell">API</th>
-            <th className="p-2">Measured</th>
-          </tr>
-        </thead>
-        <tbody>
-          {guns.map(({ subject, value }) => {
-            const r = results.get(subject.id);
-            const guess = band && band.hi !== Infinity && predict(value, band);
-            const measured = isMeasured(r) ? r.range : undefined;
-            const off =
-              guess &&
-              measured &&
-              (measured.hi < guess.lo || measured.lo > guess.hi);
-            return (
-              <tr key={subject.id} className="border-t border-gray-800">
-                <td className="p-2">
-                  {gunVersion(subject)?.name ?? subject.name}
-                  <VersionTag subject={subject} />
-                </td>
-                <td className="whitespace-nowrap p-2 tabular-nums text-gray-100">
-                  {guess ? span(guess) : "–"}
-                </td>
-                <td className="hidden whitespace-nowrap p-2 tabular-nums text-gray-400 sm:table-cell">
-                  {k(subject.apiBaseValue!)}
-                </td>
-                <td className="whitespace-nowrap p-2 tabular-nums">
-                  {measured ? (
-                    <span className={off ? "text-rose-300" : "text-gray-300"}>
-                      {off && (
-                        <AlertTriangle
-                          aria-label="Doesn't fit the rule"
-                          className="mr-1 inline size-3.5 align-[-2px]"
-                        />
-                      )}
-                      {span(measured)}
-                    </span>
-                  ) : (
-                    <span className="text-gray-500">untested</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 export function HiddenRule({
   subjects,
   results,
   partsRows,
-  next,
-  onRunTest,
 }: {
   subjects: readonly Subject[];
   results: Map<string, SubjectResult>;
   partsRows: readonly PartsRow[];
-  next: PickedTest | null;
-  onRunTest: () => void;
 }) {
   const state = ruleState(partsRows);
   const { fit } = state;
+  const checks = checkRules(subjects, results);
+  const ruledOut = checks.filter((c) => c.verdict === "ruled-out").length;
+  const open = checks.length - ruledOut;
   return (
     <TooltipProvider>
       <section className="space-y-5 rounded-xl border border-gray-700 bg-gray-900/70 p-5">
@@ -271,7 +193,7 @@ export function HiddenRule({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <Stat
             label="Parts multiplier"
             value={fit ? ratioSpan(fit.band) : "–"}
@@ -287,58 +209,34 @@ export function HiddenRule({
             sub={`goal ${percent(RULE_GOAL)}`}
           />
           <Stat
-            label="Guns that fit"
-            value={fit ? `${fit.fit.length}/${fit.tested.length}` : "–"}
-            sub={`at least ${RULE_MIN_GUNS} needed`}
-          />
-          <Stat
             label="Ready for the calculator"
             value={state.ready ? "Yes" : "Not yet"}
-            sub={state.ready ? "used for gun values" : notReadyReason(state)}
+            sub={
+              state.ready
+                ? "used for gun values"
+                : `${notReadyReason(state)} · at least ${RULE_MIN_GUNS} guns must fit`
+            }
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="min-w-0 space-y-3">
-            <h3 className="font-medium">Which rule fits the tests?</h3>
-            <RuleList subjects={subjects} results={results} />
-            {partsRows.some((r) => r.value.multiplier) && (
-              <div className="space-y-1">
-                <ChartLabel title="Parts multiplier by gun" hint={PARTS_HINT} />
-                <MultiplierChart rows={partsRows} />
-              </div>
-            )}
+        {partsRows.some((r) => r.value.multiplier) && (
+          <div className="space-y-1">
+            <ChartLabel title="Parts multiplier by gun" hint={PARTS_HINT} />
+            <MultiplierChart rows={partsRows} />
           </div>
-
-          <div className="min-w-0 space-y-3">
-            <h3 className="font-medium">What the calculator would say today</h3>
-            <Predictions rows={partsRows} results={results} state={state} />
-            {next && (
-              <div className="space-y-3 rounded-xl border border-amber-400/30 p-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-amber-300">
-                    Best next test
-                  </p>
-                  <p className="mt-1 text-sm text-gray-100">
-                    {next.plan.qty}× {shortLabel(next.subject)}
-                    {next.plan.fillers.length > 0 &&
-                      ` + ${next.plan.fillers.reduce((n, f) => n + f.qty, 0)} extra items`}
-                  </p>
-                  {next.rule && (
-                    <p className="text-xs text-gray-400">
-                      Splits the {ratioSpan(next.rule.band)} range, whatever the
-                      timer.
-                    </p>
-                  )}
-                </div>
-                <TimerMeaning next={next} />
-                <Button size="sm" onClick={onRunTest}>
-                  Run this test
-                </Button>
-              </div>
-            )}
+        )}
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-gray-400 hover:text-gray-200">
+            <ChevronRight className="size-4 transition-transform group-open:rotate-90" />
+            Other explanations we checked
+            <span className="text-xs text-gray-500">
+              {ruledOut} ruled out · {open} still open
+            </span>
+          </summary>
+          <div className="mt-3">
+            <RuleList checks={checks} />
           </div>
-        </div>
+        </details>
       </section>
     </TooltipProvider>
   );

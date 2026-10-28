@@ -4,7 +4,7 @@
 // and how much attached parts are really worth compared with the API.
 
 import { Fragment, useState, type ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
+import { AlertTriangle, ChevronRight } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -12,7 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { Range, Subject, SubjectResult } from "@/lib/base-value-lab";
-import { fitMultiplier } from "@/lib/base-value-rule";
+import { fitMultiplier, predict } from "@/lib/base-value-rule";
 import { gunVersion, type PartsValue } from "@/lib/base-value-site";
 import {
   k,
@@ -242,26 +242,6 @@ function ValueChart({
   return <BarChart rows={rows} max={max} ticks={ticks} tickLabel={k} />;
 }
 
-/** The shaded span and the sentence that explains it. */
-function multiplierStory(rows: readonly PartsRow[]) {
-  const fit = fitMultiplier(rows);
-  if (!fit) return null;
-  if (fit.fit.length === fit.tested.length)
-    return {
-      band: fit.band,
-      text: `Shaded: the ${ratioSpan(fit.band)} every tested gun allows.`,
-    };
-  if (fit.fit.length < 2)
-    return { text: "No two tested guns agree on a multiplier yet." };
-  const out = rows.filter(
-    (r) => r.value.multiplier && !fit.fit.includes(r.subject.id),
-  );
-  return {
-    band: fit.band,
-    text: `Shaded: the ${ratioSpan(fit.band)} that ${fit.fit.length} of ${fit.tested.length} guns allow. ${out.map((r) => shortLabel(r.subject)).join(", ")} ${out.length > 1 ? "don't" : "doesn't"} fit.`,
-  };
-}
-
 export function MultiplierChart({
   rows,
   focus,
@@ -271,7 +251,7 @@ export function MultiplierChart({
 }) {
   const tested = rows.filter((r) => r.value.multiplier);
   if (!tested.length) return null;
-  const story = focus ? null : multiplierStory(rows);
+  const band = focus ? undefined : fitMultiplier(rows)?.band;
   const top = Math.max(
     ...tested.flatMap(({ value: { multiplier: m } }) => [
       m!.lo,
@@ -304,11 +284,10 @@ export function MultiplierChart({
         max={max}
         ticks={ticks}
         tickLabel={(v) => `${v}×`}
-        band={story?.band}
+        band={band}
         reference={1}
         focus={focus}
       />
-      {story && <p className="text-xs text-gray-400">{story.text}</p>}
     </>
   );
 }
@@ -357,33 +336,8 @@ export function ChartLabel({ title, hint }: { title: string; hint: string }) {
 }
 
 const VALUE_HINT = "bar = measured range · ring = API value";
-export const PARTS_HINT = "measured parts ÷ API parts · line = API is right";
-
-/** Every item's API value next to what tests measured. */
-export function EvidenceChart({
-  subjects,
-  results,
-  testCount,
-}: {
-  subjects: readonly Subject[];
-  results: Map<string, SubjectResult>;
-  testCount: number;
-}) {
-  const measured = subjects.filter((s) => isMeasured(results.get(s.id)));
-  return (
-    <TooltipProvider>
-      <section className="space-y-1">
-        <h2 className="text-lg font-semibold">Evidence</h2>
-        <p className="text-xs text-gray-500">
-          {measured.length} of {subjects.length} items measured from {testCount}{" "}
-          {testCount === 1 ? "test" : "tests"}, every game mode combined.
-        </p>
-        <ChartLabel title="API value vs true value" hint={VALUE_HINT} />
-        <ValueChart subjects={subjects} results={results} />
-      </section>
-    </TooltipProvider>
-  );
-}
+export const PARTS_HINT =
+  "bar = measured multiplier · shade = the band that fits · line = API is right";
 
 /** "What we know": one row per item; measured rows open to their charts. */
 export function ResultsTable({
@@ -397,12 +351,15 @@ export function ResultsTable({
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const parts = new Map(partsRows.map((r) => [r.subject.id, r.value]));
+  const band = fitMultiplier(partsRows)?.band;
   return (
     <TooltipProvider>
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">What we know</h2>
         <p className="text-xs text-gray-500">
           Click a measured item to see its charts.
+          {band &&
+            ` "Calculator" is what the ${ratioSpan(band)} parts rule predicts.`}
         </p>
         <div className="relative overflow-x-auto rounded-xl border border-gray-700">
           <table className="w-full text-sm">
@@ -411,6 +368,7 @@ export function ResultsTable({
                 <th className="p-2">Item</th>
                 <th className="p-2">True value</th>
                 <th className="p-2">API says</th>
+                <th className="p-2">Calculator</th>
                 <th className="p-2">Tests</th>
                 <th className="p-2">Status</th>
                 <th className="w-8 p-2">
@@ -426,6 +384,15 @@ export function ResultsTable({
                 const canOpen = measured && s.apiBaseValue !== undefined;
                 const isOpen = canOpen && open === s.id;
                 const toggle = () => setOpen(isOpen ? null : s.id);
+                const pv = parts.get(s.id);
+                const guess =
+                  band && band.hi !== Infinity && pv?.apiParts
+                    ? predict(pv, band)
+                    : undefined;
+                const off =
+                  guess &&
+                  measured &&
+                  (r.range.hi < guess.lo || r.range.lo > guess.hi);
                 return (
                   <Fragment key={s.id}>
                     <tr
@@ -441,6 +408,23 @@ export function ResultsTable({
                       </td>
                       <td className="whitespace-nowrap p-2 tabular-nums text-gray-400">
                         {s.apiBaseValue !== undefined ? k(s.apiBaseValue) : "–"}
+                      </td>
+                      <td
+                        className={`whitespace-nowrap p-2 tabular-nums ${off ? "text-rose-300" : "text-gray-300"}`}
+                      >
+                        {guess ? (
+                          <>
+                            {off && (
+                              <AlertTriangle
+                                aria-label="Doesn't fit the rule"
+                                className="mr-1 inline size-3.5 align-[-2px]"
+                              />
+                            )}
+                            {span(guess)}
+                          </>
+                        ) : (
+                          <span className="text-gray-500">–</span>
+                        )}
                       </td>
                       <td className="p-2 tabular-nums">{r?.testCount ?? 0}</td>
                       <td className="p-2">
@@ -471,7 +455,7 @@ export function ResultsTable({
                     </tr>
                     {isOpen && (
                       <tr className="bg-gray-800/40">
-                        <td colSpan={6} className="px-3 pb-4 pt-1">
+                        <td colSpan={7} className="px-3 pb-4 pt-1">
                           <ItemDetail
                             subject={s}
                             result={r}

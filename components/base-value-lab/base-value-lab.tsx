@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { k, TONE } from "./labels";
-import { EvidenceChart, ResultsTable } from "./results-charts";
+import { ResultsTable } from "./results-charts";
 import { HiddenRule, TimerMeaning } from "./hidden-rule";
 import { OtherTestForm, type OtherTest } from "./other-test-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -433,7 +433,7 @@ export function BaseValueLab() {
     () =>
       [...tests]
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .slice(0, 25),
+        .slice(0, 8),
     [tests],
   );
 
@@ -641,16 +641,7 @@ export function BaseValueLab() {
             subjects={modeSubjects}
             results={results}
             partsRows={partsRows}
-            next={next}
-            onRunTest={() => setTab("test")}
           />
-
-          <EvidenceChart
-            subjects={modeSubjects}
-            results={results}
-            testCount={modeTests.filter((t) => !t.excluded).length}
-          />
-
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
             <ResultsTable
               subjects={modeSubjects}
