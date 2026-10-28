@@ -210,8 +210,8 @@ function parseRecipeFeedbackPayload(
       payload.gameMode !== undefined &&
       payload.gameMode !== null) ||
     (payload.vote !== null &&
-      recipeRestriction === "pvp-only" &&
-      payload.gameMode !== "pvp") ||
+      recipeRestriction !== undefined &&
+      payload.gameMode !== RESTRICTED_RECIPE_MODE[recipeRestriction]) ||
     typeof payload.clientId !== "string" ||
     !CLIENT_ID_PATTERN.test(payload.clientId)
   ) {
@@ -244,7 +244,10 @@ async function hashClientId(clientId: string): Promise<string> {
   ).join("");
 }
 
-function mapRecipeStats(row: RecipeStatsRow | null): RecipeFeedbackStats {
+function mapRecipeStats(
+  recipeId: string,
+  row: RecipeStatsRow | null,
+): RecipeFeedbackStats {
   const modes = {
     pvp: {
       worked: Number(row?.worked_pvp ?? 0),
@@ -265,6 +268,35 @@ function mapRecipeStats(row: RecipeStatsRow | null): RecipeFeedbackStats {
       lastDidntWorkAt: row?.last_didnt_work_season_at ?? null,
     },
   } satisfies RecipeFeedbackStats["modes"];
+
+  // Mode-restricted recipes only show reports from the mode they work in.
+  // Votes from other modes stay in D1 but are left out of what players see.
+  const restriction = RECIPE_CATALOG.get(recipeId);
+  if (restriction) {
+    const allowedMode = RESTRICTED_RECIPE_MODE[restriction];
+    const allowed = modes[allowedMode];
+    const empty = {
+      worked: 0,
+      didntWork: 0,
+      lastWorkedAt: null,
+      lastDidntWorkAt: null,
+    };
+    return {
+      workedCount: allowed.worked,
+      didntWorkCount: allowed.didntWork,
+      lastWorkedAt: allowed.lastWorkedAt,
+      lastWorkedMode: allowed.lastWorkedAt ? allowedMode : null,
+      lastDidntWorkAt: allowed.lastDidntWorkAt,
+      lastDidntWorkMode: allowed.lastDidntWorkAt ? allowedMode : null,
+      modes: {
+        pvp: { ...empty },
+        pve: { ...empty },
+        season: { ...empty },
+        [allowedMode]: allowed,
+      },
+    };
+  }
+
   return {
     workedCount: Number(row?.worked_count ?? 0),
     didntWorkCount: Number(row?.didnt_work_count ?? 0),
@@ -320,7 +352,10 @@ async function handleRecipeFeedback(
          FROM recipe_feedback_stats`,
       ).all<RecipeStatsRow>();
       const data = Object.fromEntries(
-        result.results.map((row) => [row.recipe_id, mapRecipeStats(row)]),
+        result.results.map((row) => [
+          row.recipe_id,
+          mapRecipeStats(row.recipe_id, row),
+        ]),
       );
 
       return jsonResponse(
@@ -518,7 +553,10 @@ async function handleRecipeFeedback(
     if (results.some((result) => !result.success)) {
       throw new Error("D1 recipe feedback transaction was unsuccessful");
     }
-    const stats = mapRecipeStats(results[2]?.results?.[0] ?? null);
+    const stats = mapRecipeStats(
+      payload.recipeId,
+      results[2]?.results?.[0] ?? null,
+    );
     return jsonResponse(
       {
         success: true,
@@ -993,3 +1031,4 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 import { tarkovRecipes } from "../../../data/recipes";
+import { RESTRICTED_RECIPE_MODE } from "../../../lib/recipe-mode-restriction";

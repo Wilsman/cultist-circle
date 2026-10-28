@@ -433,10 +433,13 @@ describe("Cloudflare feedback Worker", () => {
 describe("Cloudflare recipe feedback API", () => {
   const clientId = "123e4567-e89b-42d3-a456-426614174000";
   const regularRecipeId = tarkovRecipes.find(
-    (recipe) => recipe.modeRestriction !== "pvp-only",
+    (recipe) => !recipe.modeRestriction,
   )!.id;
   const pvpOnlyRecipeId = tarkovRecipes.find(
     (recipe) => recipe.modeRestriction === "pvp-only",
+  )!.id;
+  const seasonOnlyRecipeId = tarkovRecipes.find(
+    (recipe) => recipe.modeRestriction === "season-only",
   )!.id;
 
   function createRecipeEnvironment({
@@ -746,9 +749,7 @@ describe("Cloudflare recipe feedback API", () => {
     );
     const rebuildQuery: string = prepareMock.mock.calls
       .map((call) => String(call[0]))
-      .find((query) =>
-        query.includes("INSERT INTO recipe_feedback_stats"),
-      )!;
+      .find((query) => query.includes("INSERT INTO recipe_feedback_stats"))!;
     expect(rebuildQuery).toContain("last_didnt_work_at");
     expect(rebuildQuery).toContain("last_didnt_work_mode");
     expect(rebuildQuery).toContain("last_worked_pvp_at");
@@ -847,6 +848,108 @@ describe("Cloudflare recipe feedback API", () => {
     );
     expect(allowedResponse.status).toBe(200);
     expect(allowed.batchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("enforces PVP Season-only recipe restrictions", async () => {
+    for (const gameMode of ["pvp", "pve"]) {
+      const blocked = createRecipeEnvironment();
+      const blockedResponse = await handleRequest(
+        makeRecipeRequest("POST", {
+          recipeId: seasonOnlyRecipeId,
+          vote: "worked",
+          gameMode,
+          clientId,
+        }),
+        blocked.env,
+      );
+      expect(blockedResponse.status).toBe(400);
+      expect(blocked.batchMock).not.toHaveBeenCalled();
+    }
+
+    const allowed = createRecipeEnvironment();
+    const allowedResponse = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: seasonOnlyRecipeId,
+        vote: "worked",
+        gameMode: "season",
+        clientId,
+      }),
+      allowed.env,
+    );
+    expect(allowedResponse.status).toBe(200);
+    expect(allowed.batchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("shows only PVP Season reports for a PVP Season-only recipe", async () => {
+    const stats = {
+      recipe_id: seasonOnlyRecipeId,
+      worked_count: 77,
+      didnt_work_count: 462,
+      last_worked_at: "2026-10-28T10:00:00.000Z",
+      last_worked_mode: "pve" as const,
+      last_didnt_work_at: "2026-10-28T11:00:00.000Z",
+      last_didnt_work_mode: "pvp" as const,
+      worked_pvp: 9,
+      worked_pve: 28,
+      worked_season: 40,
+      didnt_work_pvp: 74,
+      didnt_work_pve: 294,
+      didnt_work_season: 94,
+      last_worked_pvp_at: "2026-10-20T00:00:00.000Z",
+      last_worked_pve_at: "2026-10-28T10:00:00.000Z",
+      last_worked_season_at: "2026-10-27T00:00:00.000Z",
+      last_didnt_work_pvp_at: "2026-10-28T11:00:00.000Z",
+      last_didnt_work_pve_at: "2026-10-26T00:00:00.000Z",
+      last_didnt_work_season_at: "2026-10-25T00:00:00.000Z",
+    };
+    const emptyMode = {
+      worked: 0,
+      didntWork: 0,
+      lastWorkedAt: null,
+      lastDidntWorkAt: null,
+    };
+    const expected = {
+      workedCount: 40,
+      didntWorkCount: 94,
+      lastWorkedAt: "2026-10-27T00:00:00.000Z",
+      lastWorkedMode: "season",
+      lastDidntWorkAt: "2026-10-25T00:00:00.000Z",
+      lastDidntWorkMode: "season",
+      modes: {
+        pvp: emptyMode,
+        pve: emptyMode,
+        season: {
+          worked: 40,
+          didntWork: 94,
+          lastWorkedAt: "2026-10-27T00:00:00.000Z",
+          lastDidntWorkAt: "2026-10-25T00:00:00.000Z",
+        },
+      },
+    };
+
+    const list = createRecipeEnvironment({ stats });
+    const listResponse = await handleRequest(
+      makeRecipeRequest("GET"),
+      list.env,
+    );
+    await expect(listResponse.json()).resolves.toEqual({
+      success: true,
+      data: { [seasonOnlyRecipeId]: expected },
+    });
+
+    const vote = createRecipeEnvironment({ stats });
+    const voteResponse = await handleRequest(
+      makeRecipeRequest("POST", {
+        recipeId: seasonOnlyRecipeId,
+        vote: "worked",
+        gameMode: "season",
+        clientId,
+      }),
+      vote.env,
+    );
+    await expect(voteResponse.json()).resolves.toMatchObject({
+      data: { stats: expected },
+    });
   });
 
   test("removes a report and rebuilds totals atomically", async () => {
