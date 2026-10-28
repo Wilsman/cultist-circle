@@ -66,9 +66,9 @@ const DYNAMIC_KEYS = [
   "Start & track",
   // Update alert / bell notification titles and toast notifications
   "SAS drive ➡️ THOR IC no longer works",
-  "Black Division ritual may no longer work",
-  "Update: Black Division ritual may not work",
-  "Many users report these codes no longer work. Please report Worked or Didn't work on the recipes page, and use Submit a recipe if you find a new one.",
+  "Black Division ritual still works in PvP Season",
+  "Update: Black Division ritual works in PvP Season",
+  "Confirmed working in PvP Season only. The launcher codes no longer work, so you need Ferrum dogtags you already own.",
   // Recipe feedback store messages ({key} objects, not t() literals)
   "Community reports are temporarily unavailable",
   "Too many reports. Try again in {seconds}s.",

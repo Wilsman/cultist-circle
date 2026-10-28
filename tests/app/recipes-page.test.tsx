@@ -20,15 +20,9 @@ const mockRecipes = vi.hoisted(() => [
     craftingTime: "5:55:55",
     producedItems: ["1x Briefcase with documents"],
     isNew: true,
+    modeRestriction: "season-only" as const,
     specialFlow: {
       type: "launcher-promo" as const,
-      codes: [
-        "6NU9-UFK1-W2TX-89RW-M96B",
-        "6NU9-W2TX-UFK1-89RW-M96B",
-        "UFK1-6NU9-W2TX-89RW-M96B",
-        "UFK1-W2TX-6NU9-89RW-M96B",
-        "W2TX-UFK1-6NU9-89RW-M96B",
-      ],
       sacrificeItemUrl: "https://tarkov.dev/item/bd-dogtag-ferrum",
       rewardItemUrl: "https://tarkov.dev/item/briefcase-with-documents",
     },
@@ -324,16 +318,21 @@ describe("RecipesPage completion tracker", () => {
     expect(screen.getAllByRole("checkbox")).toHaveLength(3);
   });
 
-  it("renders the launcher flow with exact codes, links, and supplied images", () => {
+  it("shows the PvP Season-only flow without the expired launcher codes", () => {
     render(<RecipesPage />);
 
-    expect(screen.getByText("Step 1 · Launcher unlock")).toBeInTheDocument();
+    expect(screen.getByText("PVP SEASON ONLY")).toBeInTheDocument();
+    expect(screen.getByText("PvP Season only")).toBeInTheDocument();
     expect(
-      screen.getByText(/each code delivers one Ferrum dogtag/i),
+      screen.getByText(/no longer works in regular PvP or PvE/i),
     ).toBeInTheDocument();
     expect(
-      screen.getAllByRole("button", { name: /copy promo code/i }),
-    ).toHaveLength(5);
+      screen.getByText("The launcher codes no longer work."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Step 1 Â· Launcher unlock")).toBeNull();
+    expect(
+      screen.queryAllByRole("button", { name: /copy promo code/i }),
+    ).toHaveLength(0);
     expect(screen.getByText("5:55:55")).toBeInTheDocument();
     expect(
       screen.getByRole("link", {
@@ -360,42 +359,7 @@ describe("RecipesPage completion tracker", () => {
     ).toHaveAttribute("src", "/images/recipes/briefcase-with-documents.png");
   });
 
-  it("copies each launcher code independently and reports clipboard failure", async () => {
-    render(<RecipesPage />);
-
-    const firstCopyButton = screen.getByRole("button", {
-      name: "Copy promo code 1",
-    });
-    fireEvent.click(firstCopyButton);
-
-    await waitFor(() => {
-      expect(clipboardWriteTextMock).toHaveBeenCalledWith(
-        "6NU9-UFK1-W2TX-89RW-M96B",
-      );
-    });
-    expect(
-      screen.getByRole("button", { name: "Copied promo code 1" }),
-    ).toHaveTextContent("Copied");
-    expect(
-      screen.getByRole("button", { name: "Copy promo code 2" }),
-    ).toBeInTheDocument();
-
-    clipboardWriteTextMock.mockRejectedValueOnce(new Error("blocked"));
-    fireEvent.click(screen.getByRole("button", { name: "Copy promo code 2" }));
-
-    await waitFor(() => {
-      expect(
-        screen.getByRole("button", {
-          name: "Copy failed for promo code 2",
-        }),
-      ).toHaveTextContent("Copy failed");
-    });
-    expect(screen.getByText("6NU9-W2TX-UFK1-89RW-M96B")).toHaveClass(
-      "select-all",
-    );
-  });
-
-  it("finds the special recipe by launcher terms and an exact promo code", async () => {
+  it("still finds the special recipe by launcher terms", async () => {
     render(<RecipesPage />);
 
     const search = screen.getByPlaceholderText("Search items or recipes...");
@@ -404,16 +368,9 @@ describe("RecipesPage completion tracker", () => {
     await waitFor(() => {
       expect(screen.getByText("1 recipe")).toBeInTheDocument();
     });
-    expect(screen.getByText("Step 1 · Launcher unlock")).toBeInTheDocument();
-
-    fireEvent.change(search, {
-      target: { value: "UFK1-W2TX-6NU9-89RW-M96B" },
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText("1 recipe")).toBeInTheDocument();
-    });
-    expect(screen.getByText("UFK1-W2TX-6NU9-89RW-M96B")).toBeInTheDocument();
+    expect(
+      screen.getByText("The launcher codes no longer work."),
+    ).toBeInTheDocument();
   });
 
   it("sorts HH:MM:SS crafting times numerically", async () => {
@@ -641,15 +598,15 @@ describe("RecipesPage completion tracker", () => {
     expect(
       screen.queryByText("Community recipe reports"),
     ).not.toBeInTheDocument();
-    fireEvent.click(workedButtons[0]);
+    fireEvent.click(workedButtons[1]);
     const modeGroup = screen.getByRole("radiogroup", {
       name: /game mode for worked report/i,
     });
     fireEvent.click(within(modeGroup).getByRole("radio", { name: "PVE" }));
     await waitFor(() =>
-      expect(workedButtons[0]).toHaveAttribute("aria-pressed", "true"),
+      expect(workedButtons[1]).toHaveAttribute("aria-pressed", "true"),
     );
-    expect(workedButtons[1]).toHaveAttribute("aria-pressed", "false");
+    expect(workedButtons[0]).toHaveAttribute("aria-pressed", "false");
     const post = vi
       .mocked(fetch)
       .mock.calls.find(([, init]) => init?.method === "POST");

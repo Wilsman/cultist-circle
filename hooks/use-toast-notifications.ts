@@ -25,13 +25,13 @@ const CURRENT_APP_VERSION = "2.1.2";
 
 const AVAILABLE_NOTIFICATIONS: Notification[] = [
   {
-    id: "black-division-dogtag-recipe",
-    title: "Update: Black Division ritual may not work",
+    id: "black-division-dogtag-recipe-season",
+    title: "Update: Black Division ritual works in PvP Season",
     description:
-      "Many users report these codes no longer work. Please report Worked or Didn't work on the recipes page, and use Submit a recipe if you find a new one.",
+      "Confirmed working in PvP Season only. The launcher codes no longer work, so you need Ferrum dogtags you already own.",
     version: CURRENT_APP_VERSION,
     type: "warning",
-    createdAt: "2026-08-04",
+    createdAt: "2026-10-28",
     icon: "🔐",
   },
 ];

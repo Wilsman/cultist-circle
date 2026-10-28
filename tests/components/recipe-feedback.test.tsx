@@ -25,7 +25,7 @@ const TEST_MODES = {
 };
 const testRecipeId = "recipe-test-verification";
 
-function renderFeedback(modeRestriction?: "pvp-only") {
+function renderFeedback(modeRestriction?: "pvp-only" | "season-only") {
   return render(
     <LanguageProvider>
       <RecipeFeedbackProvider>
@@ -298,6 +298,19 @@ describe("RecipeFeedback component", () => {
     expect(screen.getByRole("radio", { name: "PVE" })).toBeDisabled();
     expect(screen.getByRole("radio", { name: "PVP-S" })).toBeDisabled();
     expect(screen.getByText(/only be reported for PVP/i)).toBeInTheDocument();
+  });
+
+  it("offers only PVP Season for a season-only recipe", async () => {
+    renderFeedback("season-only");
+    fireEvent.click(
+      await screen.findByRole("button", { name: /mark as worked/i }),
+    );
+    expect(screen.getByRole("radio", { name: "PVP-S" })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "PVP" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "PVE" })).toBeDisabled();
+    expect(
+      screen.getByText(/only be reported for PVP Season/i),
+    ).toBeInTheDocument();
   });
 
   it("uses larger touch targets on narrow screens and announces success", async () => {

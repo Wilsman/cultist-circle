@@ -30,11 +30,15 @@ import {
   getUnspecifiedModeCounts,
 } from "@/lib/recipe-feedback";
 import { cn } from "@/lib/utils";
+import {
+  RESTRICTED_RECIPE_MODE,
+  type RecipeModeRestriction,
+} from "@/lib/recipe-mode-restriction";
 import type { UserVote } from "@/types/recipe-feedback";
 
 interface RecipeFeedbackProps {
   recipeId: string;
-  modeRestriction?: "pvp-only";
+  modeRestriction?: RecipeModeRestriction;
 }
 
 const FEEDBACK_MODES: { value: GameMode; label: string; title: string }[] = [
@@ -137,7 +141,7 @@ const VoteButton = React.forwardRef<
 interface VoteModePickerProps extends VoteButtonProps {
   userVote: UserVote | undefined;
   userMode: GameMode | undefined;
-  modeRestriction?: "pvp-only";
+  modeRestriction?: RecipeModeRestriction;
   onSelect: (mode: GameMode) => void;
   onRemove: () => void;
 }
@@ -159,6 +163,9 @@ function VoteModePicker({
   const worked = vote === "worked";
   const label = worked ? t("Worked") : t("Didn't work");
   const isCurrentVote = userVote === vote;
+  const allowedMode = modeRestriction
+    ? RESTRICTED_RECIPE_MODE[modeRestriction]
+    : undefined;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -191,7 +198,7 @@ function VoteModePicker({
         >
           {FEEDBACK_MODES.map((mode) => {
             const restricted =
-              modeRestriction === "pvp-only" && mode.value !== "pvp";
+              allowedMode !== undefined && mode.value !== allowedMode;
             const current = isCurrentVote && userMode === mode.value;
             return (
               <button
@@ -200,7 +207,9 @@ function VoteModePicker({
                 role="radio"
                 title={
                   restricted
-                    ? t("This recipe is available in PVP only")
+                    ? modeRestriction === "season-only"
+                      ? t("This recipe is available in PVP Season only")
+                      : t("This recipe is available in PVP only")
                     : mode.title
                 }
                 aria-checked={current}
@@ -224,9 +233,11 @@ function VoteModePicker({
             );
           })}
         </div>
-        {modeRestriction === "pvp-only" && (
+        {modeRestriction && (
           <p className="mt-2 text-[10px] text-amber-300/90">
-            {t("This recipe can only be reported for PVP.")}
+            {modeRestriction === "season-only"
+              ? t("This recipe can only be reported for PVP Season.")
+              : t("This recipe can only be reported for PVP.")}
           </p>
         )}
         {isCurrentVote && userMode && (

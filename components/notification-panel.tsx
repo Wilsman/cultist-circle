@@ -55,28 +55,20 @@ export const NOTIFICATIONS: Notification[] = [
       ),
   },
   {
-    id: "black-division-dogtag-recipe",
+    id: "black-division-dogtag-recipe-season",
     type: "warning",
     imageUrl: "/images/recipes/bd-dogtag-ferrum.png",
     imageAlt: "Black Division dogtag",
-    title: "Black Division ritual may no longer work",
+    title: "Black Division ritual still works in PvP Season",
     priority: 0,
-    date: "2026-09-09",
+    date: "2026-10-28",
     description: (_notification, t) =>
       formatMessageSlots(
         t(
-          "Many users report these launcher codes and this recipe might not work anymore. If you try it, please report {vote} on the {recipes} - thank you. {view}",
+          "Sorry, we marked the 5x Ferrum dogtag ritual as expired by mistake. It still works in {mode}, it just doesn't work in regular PvP or PvE. The launcher codes no longer work, so you need dogtags you already own. {view}",
         ),
         {
-          vote: <strong>{t("Worked or Didn't work")}</strong>,
-          recipes: (
-            <Link
-              href="/recipes"
-              className="font-semibold underline transition-colors hover:text-amber-200"
-            >
-              {t("recipes page")}
-            </Link>
-          ),
+          mode: <strong>{t("PvP Season")}</strong>,
           view: (
             <Link
               href="/recipes"

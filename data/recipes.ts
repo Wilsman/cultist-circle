@@ -1,5 +1,7 @@
 // Cultist Circle recipe data extracted from app/recipes/page.tsx
 
+import type { RecipeModeRestriction } from "../lib/recipe-mode-restriction";
+
 /**
  * Recipe type definition for Cultist Circle crafting recipes
  */
@@ -19,14 +21,13 @@ export interface Recipe {
    */
   expiredAt?: string;
   isRepeatable?: boolean;
-  modeRestriction?: "pvp-only";
+  modeRestriction?: RecipeModeRestriction;
   roomInfo?: {
     itemName: string;
     spawnInfo: string;
   };
   specialFlow?: {
     type: "launcher-promo";
-    codes: string[];
     sacrificeItemUrl: string;
     rewardItemUrl: string;
     sacrificeNote?: string;
@@ -57,16 +58,10 @@ const recipeDefinitions: RecipeDefinition[] = [
     requiredItems: ["5x BD dogtag •| Ferrum"],
     craftingTime: "5:55:55",
     producedItems: ["1x Briefcase with documents"],
-    expiredAt: "2026-10-19",
+    isUpdated: true,
+    modeRestriction: "season-only",
     specialFlow: {
       type: "launcher-promo",
-      codes: [
-        "6NU9-UFK1-W2TX-89RW-M96B",
-        "6NU9-W2TX-UFK1-89RW-M96B",
-        "UFK1-6NU9-W2TX-89RW-M96B",
-        "UFK1-W2TX-6NU9-89RW-M96B",
-        "W2TX-UFK1-6NU9-89RW-M96B",
-      ],
       sacrificeItemUrl: "https://tarkov.dev/item/bd-dogtag-ferrum",
       rewardItemUrl: "https://tarkov.dev/item/briefcase-with-documents",
     },

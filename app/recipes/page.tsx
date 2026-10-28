@@ -85,7 +85,6 @@ import {
   RotateCcw,
   Briefcase,
   Check,
-  Copy,
   KeyRound,
   Link2,
   Tag,
@@ -260,20 +259,30 @@ const ModeRestrictionBadge = React.memo(function ModeRestrictionBadge({
   t: (key: string) => string;
   modeRestriction: Recipe["modeRestriction"];
 }) {
-  if (modeRestriction !== "pvp-only") {
+  if (!modeRestriction) {
     return null;
   }
+
+  const isSeasonOnly = modeRestriction === "season-only";
 
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex cursor-help items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 shadow-lg">
-            {t("PVP ONLY")}
+          <span
+            className={`inline-flex cursor-help items-center px-2 py-0.5 rounded text-xs font-bold shadow-lg ${
+              isSeasonOnly
+                ? "bg-violet-500/25 border border-violet-400/50 text-violet-100"
+                : "bg-amber-500/20 border border-amber-400/40 text-amber-200"
+            }`}
+          >
+            {isSeasonOnly ? t("PVP SEASON ONLY") : t("PVP ONLY")}
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          {t("This recipe is available in PvP mode only.")}
+          {isSeasonOnly
+            ? t("This recipe works in PvP Season only.")
+            : t("This recipe is available in PvP mode only.")}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -484,178 +493,49 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
   ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
 }) {
   const { t } = useLanguage();
-  const [copyStatus, setCopyStatus] = useState<{
-    code: string;
-    state: "copied" | "failed";
-  } | null>(null);
-  const resetCopyStatusRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (resetCopyStatusRef.current) {
-        clearTimeout(resetCopyStatusRef.current);
-      }
-    },
-    [],
-  );
-
-  const handleCopy = useCallback(async (code: string) => {
-    if (resetCopyStatusRef.current) {
-      clearTimeout(resetCopyStatusRef.current);
-    }
-
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard API unavailable");
-      }
-      await navigator.clipboard.writeText(code);
-      setCopyStatus({ code, state: "copied" });
-    } catch {
-      setCopyStatus({ code, state: "failed" });
-    }
-
-    resetCopyStatusRef.current = setTimeout(() => {
-      setCopyStatus(null);
-      resetCopyStatusRef.current = null;
-    }, 1800);
-  }, []);
-
   const sacrificeItem = recipe.requiredItems[0];
   const rewardItem = recipe.producedItems[0];
 
   return (
     <div className="space-y-4">
-      {!isExpired && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-3.5 py-3 text-xs leading-relaxed text-amber-100/90">
+      {!isExpired && recipe.modeRestriction === "season-only" && (
+        <div className="flex items-start gap-3 rounded-xl border border-violet-400/40 bg-violet-500/[0.12] px-3.5 py-3 text-xs leading-relaxed text-violet-100/90">
           <Info
-            className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300"
+            className="mt-0.5 h-4 w-4 flex-shrink-0 text-violet-300"
             aria-hidden="true"
           />
-          <p>
-            <span className="font-semibold text-amber-200">
-              {t("Heads up: these codes and this recipe might not work anymore.")}
-            </span>{" "}
-            {formatMessageSlots(
-              t(
-                "Many users report it no longer works. If you try it, please report {worked} below - thank you. Found a new recipe? Use the {submit} button at the top of this page. New submissions are reviewed and tested before being added.",
-              ),
-              {
-                worked: (
-                  <span className="font-semibold">
-                    {t("Worked or Didn't work")}
-                  </span>
-                ),
-                submit: (
-                  <span className="font-semibold">{t("Submit a recipe")}</span>
-                ),
-              },
-            )}
-          </p>
-        </div>
-      )}
-      <section className="relative overflow-hidden rounded-xl border border-amber-400/20 bg-[linear-gradient(135deg,rgba(120,53,15,0.18),rgba(3,7,18,0.74)_48%,rgba(120,53,15,0.08))] p-3.5 shadow-[inset_0_1px_0_rgba(253,230,138,0.06)] sm:p-4">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full bg-amber-300/[0.055] blur-3xl"
-        />
-        <div className="relative mb-3 flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-amber-300/25 bg-amber-300/10 text-amber-200 shadow-[0_0_18px_rgba(251,191,36,0.08)]">
-              <KeyRound className="h-4 w-4" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300/75">
-                  {t("Step 1 · Launcher unlock")}
-                </span>
-                <span className="rounded-full border border-amber-300/15 bg-black/20 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-100/50">
-                  {t("5 codes")}
-                </span>
-              </div>
-              <p className="mt-1 text-sm font-medium text-amber-50/90">
-                {t("Redeem every code in the BSG Launcher")}
-              </p>
-              <p className="mt-0.5 text-xs leading-relaxed text-gray-400">
-                {t(
-                  "Open Settings → Activate code. Each code delivers one Ferrum dogtag.",
-                )}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-violet-100">
+              {t("PvP Season only")}
+            </p>
+            <p className="mt-0.5">
+              {t(
+                "Confirmed working in PvP Season. Players report it no longer works in regular PvP or PvE.",
+              )}
+            </p>
           </div>
         </div>
-
-        <div className="relative grid gap-2 lg:grid-cols-2">
-          {recipe.specialFlow.codes.map((code, index) => {
-            const status = copyStatus?.code === code ? copyStatus.state : null;
-            const buttonLabel =
-              status === "copied"
-                ? t("Copied promo code {number}", { number: index + 1 })
-                : status === "failed"
-                  ? t("Copy failed for promo code {number}", {
-                      number: index + 1,
-                    })
-                  : t("Copy promo code {number}", { number: index + 1 });
-
-            return (
-              <div
-                key={code}
-                className="group/code flex min-w-0 items-center gap-2 rounded-lg border border-gray-700/70 bg-black/25 p-1.5 pl-2.5 transition-colors hover:border-amber-300/25 hover:bg-black/35"
-              >
-                <span className="hidden w-4 flex-shrink-0 text-center font-mono text-[9px] text-amber-300/35 sm:inline">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <code className="min-w-0 flex-1 select-all whitespace-normal break-all font-mono text-[10px] tracking-[0.025em] text-gray-200 sm:text-[11px]">
-                  {code}
-                </code>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => void handleCopy(code)}
-                  aria-label={buttonLabel}
-                  className={`h-8 flex-shrink-0 rounded-md border px-2 text-[10px] font-semibold transition-all ${
-                    status === "copied"
-                      ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/15"
-                      : status === "failed"
-                        ? "border-red-400/25 bg-red-400/10 text-red-200 hover:bg-red-400/15"
-                        : "border-gray-700/70 bg-gray-900/70 text-gray-400 hover:border-amber-300/25 hover:bg-amber-300/10 hover:text-amber-100"
-                  }`}
-                >
-                  {status === "copied" ? (
-                    <>
-                      <Check className="mr-1 h-3 w-3" aria-hidden="true" />
-                      {t("Copied")}
-                    </>
-                  ) : status === "failed" ? (
-                    t("Copy failed")
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span className="sr-only">{t("Copy")}</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            );
-          })}
-        </div>
-        <p className="sr-only" aria-live="polite">
-          {copyStatus?.state === "copied"
-            ? t("{code} copied to clipboard", { code: copyStatus.code })
-            : copyStatus?.state === "failed"
-              ? t(
-                  "Could not copy {code}. Select the code and copy it manually.",
-                  { code: copyStatus.code },
-                )
-              : ""}
+      )}
+      <div className="flex items-start gap-2.5 rounded-xl border border-gray-700/70 bg-black/25 px-3.5 py-3 text-xs leading-relaxed text-gray-300">
+        <KeyRound
+          className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400"
+          aria-hidden="true"
+        />
+        <p>
+          <span className="font-semibold text-gray-100">
+            {t("The launcher codes no longer work.")}
+          </span>{" "}
+          {t(
+            "The promo codes that gave out Ferrum dogtags have expired, so they have been removed. You need 5 Ferrum dogtags you already own.",
+          )}
         </p>
-      </section>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch lg:gap-6">
         <div className="min-w-0">
           <div className="mb-3 flex items-center gap-2 border-b border-gray-700/50 pb-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-full border border-red-400/20 bg-red-500/10 font-mono text-[10px] font-bold text-red-300">
-              2
+              1
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-red-300">
@@ -718,7 +598,7 @@ const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
         <div className="min-w-0">
           <div className="mb-3 flex items-center gap-2 border-b border-gray-700/50 pb-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/10 font-mono text-[10px] font-bold text-emerald-300">
-              3
+              2
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
@@ -1608,7 +1488,6 @@ export default function RecipesPage() {
           "promo",
           "promo code",
           "activate code",
-          ...recipe.specialFlow.codes,
         ].some((term) => term.toLowerCase().includes(searchLower));
 
       return inInputs || inOutputs || inSpecialFlow;

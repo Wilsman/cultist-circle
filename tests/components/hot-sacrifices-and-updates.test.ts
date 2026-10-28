@@ -20,14 +20,15 @@ const comboById = (id: string) => {
 };
 
 describe("Update alerts", () => {
-  it("features the Black Division recipe warning", () => {
+  it("features the Black Division recipe's PvP Season return", () => {
     const recipeNotification = NOTIFICATIONS.find(
-      (notification) => notification.id === "black-division-dogtag-recipe",
+      (notification) =>
+        notification.id === "black-division-dogtag-recipe-season",
     );
 
     expect(recipeNotification).toMatchObject({
       type: "warning",
-      title: "Black Division ritual may no longer work",
+      title: "Black Division ritual still works in PvP Season",
       priority: 0,
     });
   });
@@ -38,6 +39,7 @@ describe("Update alerts", () => {
     );
 
     expect(notificationIds).not.toContain("tarkov-dev-api-issues");
+    expect(notificationIds).not.toContain("black-division-dogtag-recipe");
     expect(notificationIds).not.toContain("new-figurine-recipes-round");
     expect(notificationIds).not.toContain("thor-hot-sacrifice-pvp-warning");
   });

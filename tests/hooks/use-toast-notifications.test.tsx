@@ -29,7 +29,7 @@ describe("useToastNotifications", () => {
     window.sessionStorage.clear();
   });
 
-  it("announces the new Black Division recipe once", async () => {
+  it("announces the Black Division recipe's PvP Season return", async () => {
     render(
       <LanguageProvider>
         <ToastHarness />
@@ -41,10 +41,10 @@ describe("useToastNotifications", () => {
     });
 
     expect(toastMock).toHaveBeenCalledWith(
-      "Update: Black Division ritual may not work",
+      "Update: Black Division ritual works in PvP Season",
       expect.objectContaining({
         description:
-          "Many users report these codes no longer work. Please report Worked or Didn't work on the recipes page, and use Submit a recipe if you find a new one.",
+          "Confirmed working in PvP Season only. The launcher codes no longer work, so you need Ferrum dogtags you already own.",
         icon: "🔐",
       }),
     );
