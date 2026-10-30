@@ -8,7 +8,9 @@ import type { RecipeModeRestriction } from "../lib/recipe-mode-restriction";
 export interface Recipe {
   id: string;
   requiredItems: string[];
+  /** Use UNKNOWN_CRAFTING_TIME until the community confirms the timer. */
   craftingTime: string;
+  /** Leave empty until the community confirms the reward. */
   producedItems:
     | string[]
     | { type: "multiple_possible"; items: string[]; explanation: string }[];
@@ -36,6 +38,16 @@ export interface Recipe {
 
 type RecipeDefinition = Omit<Recipe, "id">;
 
+export const UNKNOWN_CRAFTING_TIME = "Unknown";
+
+export function hasUnknownCraftingTime(recipe: Pick<Recipe, "craftingTime">) {
+  return recipe.craftingTime === UNKNOWN_CRAFTING_TIME;
+}
+
+export function hasUnknownReward(recipe: Pick<Recipe, "producedItems">) {
+  return recipe.producedItems.length === 0;
+}
+
 function createRecipeId(requiredItems: string[]): string {
   const source = requiredItems
     .map((item) => item.trim().toLowerCase())
@@ -54,6 +66,26 @@ function createRecipeId(requiredItems: string[]): string {
  * Escape from Tarkov Cultist Circle crafting recipes
  */
 const recipeDefinitions: RecipeDefinition[] = [
+  {
+    requiredItems: ["1x Black Division Operator figurine"],
+    craftingTime: "66 mins",
+    producedItems: [
+      "1x First Spear Siege-R Optimized M.A.S.S. Plate Carrier (Black Division) Default",
+    ],
+    isNew: true,
+  },
+  {
+    requiredItems: ["1x Wedge figurine"],
+    craftingTime: "66 mins",
+    producedItems: [],
+    isNew: true,
+  },
+  {
+    requiredItems: ["1x Black Division Team Leader figurine"],
+    craftingTime: UNKNOWN_CRAFTING_TIME,
+    producedItems: [],
+    isNew: true,
+  },
   {
     requiredItems: ["5x BD dogtag •| Ferrum"],
     craftingTime: "5:55:55",

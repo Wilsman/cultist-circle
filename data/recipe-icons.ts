@@ -4,6 +4,8 @@ export const recipeIconMap: Record<string, string> = {
   "5x BD dogtag •| Ferrum": "/images/recipes/bd-dogtag-ferrum.png",
   "1x Briefcase with documents":
     "/images/recipes/briefcase-with-documents.png",
+  "1x First Spear Siege-R Optimized M.A.S.S. Plate Carrier (Black Division) Default":
+    "https://assets.tarkov.dev/68a602cbfb13db424b090c13-icon.webp",
   Soap: "https://assets.tarkov.dev/5c13cd2486f774072c757944-icon.webp",
   Awl: "https://assets.tarkov.dev/62a0a098de7ac8199358053b-icon.webp",
   "Scav Vest": "https://assets.tarkov.dev/572b7adb24597762ae139821-icon.webp",

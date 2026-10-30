@@ -50,6 +50,25 @@ describe("useToastNotifications", () => {
     );
   });
 
+  it("announces the new Black Division and Wedge figurine recipes", async () => {
+    render(
+      <LanguageProvider>
+        <ToastHarness />
+      </LanguageProvider>,
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+
+    expect(toastMock).toHaveBeenCalledWith(
+      "New figurine recipes: Black Division and Wedge",
+      expect.objectContaining({
+        description: expect.stringContaining("Post it in our Discord"),
+      }),
+    );
+  });
+
   it("does not show the retired Tarkov.dev API warning toast", async () => {
     render(
       <LanguageProvider>

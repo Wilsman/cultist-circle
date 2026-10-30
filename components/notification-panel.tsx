@@ -80,6 +80,40 @@ export const NOTIFICATIONS: Notification[] = [
         },
       ),
   },
+  {
+    id: "black-division-wedge-figurine-recipes",
+    type: "info",
+    imageUrl: "https://assets.tarkov.dev/68a602cbfb13db424b090c13-icon.webp",
+    imageAlt: "First Spear Siege-R plate carrier (Black Division)",
+    title: "New figurine recipes: Black Division and Wedge",
+    priority: 0,
+    date: "2026-10-30",
+    description: (_notification, t) =>
+      formatMessageSlots(
+        t(
+          "New rituals found: the Black Division Operator figurine returns a First Spear Siege-R plate carrier in 66 mins. The Wedge figurine reward and the Black Division Team Leader timer and reward are still unknown. If you know them, post in our {discord}. {view}",
+        ),
+        {
+          discord: (
+            <a
+              href="https://discord.com/invite/3dFmr5qaJK"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t("Cultist Circle Discord")}
+            </a>
+          ),
+          view: (
+            <Link
+              href="/recipes"
+              className="font-semibold underline transition-colors hover:text-amber-200"
+            >
+              {t("View the new recipes →")}
+            </Link>
+          ),
+        },
+      ),
+  },
 ];
 
 export const UPDATE_IDS = NOTIFICATIONS.map((notification) => notification.id);

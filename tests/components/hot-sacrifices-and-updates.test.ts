@@ -33,6 +33,18 @@ describe("Update alerts", () => {
     });
   });
 
+  it("announces the new Black Division and Wedge figurine recipes", () => {
+    const notification = NOTIFICATIONS.find(
+      (candidate) => candidate.id === "black-division-wedge-figurine-recipes",
+    );
+
+    expect(notification).toMatchObject({
+      type: "info",
+      title: "New figurine recipes: Black Division and Wedge",
+      date: "2026-10-30",
+    });
+  });
+
   it("removes retired priority notices", () => {
     const notificationIds = NOTIFICATIONS.map(
       (notification) => notification.id,

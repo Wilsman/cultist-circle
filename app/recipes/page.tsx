@@ -53,7 +53,12 @@ import { recipeIconMap } from "@/data/recipe-icons";
 import { useRecipeItemData } from "@/hooks/use-recipe-item-data";
 import { useLanguage } from "@/contexts/language-context";
 import { formatMessageSlots } from "@/lib/format-message-slots";
-import { tarkovRecipes, type Recipe } from "@/data/recipes";
+import {
+  hasUnknownCraftingTime,
+  hasUnknownReward,
+  tarkovRecipes,
+  type Recipe,
+} from "@/data/recipes";
 import { useRecipeFeedbackStore } from "@/hooks/use-recipe-feedback";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import {
@@ -92,6 +97,8 @@ import {
   ChevronRight,
   ThumbsDown,
   ThumbsUp,
+  HelpCircle,
+  MessageCircle,
 } from "lucide-react";
 
 // ============================================================================
@@ -170,6 +177,10 @@ const CraftingTimeDisplay = React.memo(function CraftingTimeDisplay({
   className: string;
   convertedClassName: string;
 }) {
+  const { t } = useLanguage();
+  if (hasUnknownCraftingTime({ craftingTime: timeStr })) {
+    return <span className={className}>{t("Unknown")}</span>;
+  }
   const converted = getCraftingTimeMinsEquivalent(timeStr);
   if (!converted) {
     return <span className={className}>{timeStr}</span>;
@@ -480,6 +491,49 @@ const ItemBadge = React.memo(function ItemBadge({
 
   return linkedBadgeContent;
 });
+
+const DISCORD_INVITE_URL = "https://discord.com/invite/3dFmr5qaJK";
+
+const UnknownRecipeDetailsNotice = React.memo(
+  function UnknownRecipeDetailsNotice({
+    timerUnknown,
+    rewardUnknown,
+  }: {
+    timerUnknown: boolean;
+    rewardUnknown: boolean;
+  }) {
+    const { t } = useLanguage();
+    const message =
+      timerUnknown && rewardUnknown
+        ? t("Know the timer or reward? Post it in our {discord}.")
+        : timerUnknown
+          ? t("Know the timer? Post it in our {discord}.")
+          : t("Know the reward? Post it in our {discord}.");
+
+    return (
+      <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-indigo-400/30 bg-indigo-500/[0.08] px-3.5 py-3 text-xs leading-relaxed text-indigo-100/90">
+        <MessageCircle
+          className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-300"
+          aria-hidden="true"
+        />
+        <p>
+          {formatMessageSlots(message, {
+            discord: (
+              <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-indigo-200 underline transition-colors hover:text-white"
+              >
+                {t("Cultist Circle Discord")}
+              </a>
+            ),
+          })}
+        </p>
+      </div>
+    );
+  },
+);
 
 const LauncherPromoFlow = React.memo(function LauncherPromoFlow({
   recipe,
@@ -840,6 +894,9 @@ const RecipeCard = React.memo(function RecipeCard({
     }
   }, [processedOutputs]);
 
+  const timerUnknown = hasUnknownCraftingTime(recipe);
+  const rewardUnknown = hasUnknownReward(recipe);
+
   const completionLabel = isCompleted
     ? t("Mark recipe requiring {items} as not completed", {
         items: requiredItemList,
@@ -1049,11 +1106,24 @@ const RecipeCard = React.memo(function RecipeCard({
                       {t("Rewards")}
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400 font-medium">
-                      {outputCount}
+                      {rewardUnknown ? "?" : outputCount}
                     </span>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
+                  {rewardUnknown && (
+                    <div className="flex items-center gap-2 lg:gap-3">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-600/70 bg-gray-900/50 lg:h-14 lg:w-14">
+                        <HelpCircle
+                          className="h-5 w-5 text-gray-500"
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <span className="flex-1 rounded-lg border border-dashed border-gray-600/70 px-2 py-1.5 text-xs font-medium italic text-gray-400 lg:px-3 lg:text-sm">
+                        {t("Unknown reward")}
+                      </span>
+                    </div>
+                  )}
                   {processedOutputs.map((output, idx) => {
                     if (output.type === "normal") {
                       return (
@@ -1092,6 +1162,12 @@ const RecipeCard = React.memo(function RecipeCard({
                 )}
               </div>
             </div>
+          )}
+          {!isExpired && (timerUnknown || rewardUnknown) && (
+            <UnknownRecipeDetailsNotice
+              timerUnknown={timerUnknown}
+              rewardUnknown={rewardUnknown}
+            />
           )}
           <RecipeFeedback
             recipeId={recipe.id}
@@ -1501,19 +1577,19 @@ export default function RecipesPage() {
       feedbackStats[id]?.lastDidntWorkAt;
     switch (sortBy) {
       case "time-asc":
+      case "time-desc": {
+        const direction = sortBy === "time-asc" ? 1 : -1;
+        // Unknown timers stay last in both directions.
         filtered = [...filtered].sort(
           (a, b) =>
-            parseCraftingTime(a.craftingTime) -
-            parseCraftingTime(b.craftingTime),
+            Number(hasUnknownCraftingTime(a)) -
+              Number(hasUnknownCraftingTime(b)) ||
+            direction *
+              (parseCraftingTime(a.craftingTime) -
+                parseCraftingTime(b.craftingTime)),
         );
         break;
-      case "time-desc":
-        filtered = [...filtered].sort(
-          (a, b) =>
-            parseCraftingTime(b.craftingTime) -
-            parseCraftingTime(a.craftingTime),
-        );
-        break;
+      }
       case "newest":
         filtered = [...filtered].sort(
           (a, b) =>
@@ -1881,7 +1957,7 @@ export default function RecipesPage() {
                     ),
                     discord: (
                       <a
-                        href="https://discord.com/invite/3dFmr5qaJK"
+                        href={DISCORD_INVITE_URL}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-400 hover:text-blue-300 underline transition-colors"

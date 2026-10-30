@@ -55,7 +55,8 @@ const useRecipeItemDataMock = vi.hoisted(() =>
 );
 const clipboardWriteTextMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/data/recipes", () => ({
+vi.mock("@/data/recipes", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/data/recipes")>()),
   tarkovRecipes: mockRecipes,
 }));
 
@@ -389,6 +390,62 @@ describe("RecipesPage completion tracker", () => {
       "Mark recipe requiring 5x BD dogtag •| Ferrum as completed",
       "Mark recipe requiring 1x Bravo sacrifice as completed",
     ]);
+  });
+
+  it("asks for unknown timers and rewards on Discord and sorts them last", async () => {
+    const unknownRecipes = [
+      {
+        id: "recipe-unknown-both",
+        requiredItems: ["1x Delta figurine"],
+        craftingTime: "Unknown",
+        producedItems: [],
+      },
+      {
+        id: "recipe-unknown-reward",
+        requiredItems: ["1x Echo figurine"],
+        craftingTime: "6 mins",
+        producedItems: [],
+      },
+    ];
+    mockRecipes.push(...unknownRecipes);
+    try {
+      render(<RecipesPage />);
+
+      const bothCard = document.getElementById("recipe-unknown-both")!;
+      expect(within(bothCard).getByText("Unknown")).toBeInTheDocument();
+      expect(within(bothCard).getByText("Unknown reward")).toBeInTheDocument();
+      expect(
+        within(bothCard).getByText(/Know the timer or reward\? Post it in our/),
+      ).toBeInTheDocument();
+      expect(
+        within(bothCard).getByRole("link", { name: "Cultist Circle Discord" }),
+      ).toHaveAttribute("href", "https://discord.com/invite/3dFmr5qaJK");
+
+      const rewardCard = document.getElementById("recipe-unknown-reward")!;
+      expect(
+        within(rewardCard).getByText(/Know the reward\? Post it in our/),
+      ).toBeInTheDocument();
+      expect(within(rewardCard).queryByText("Unknown")).not.toBeInTheDocument();
+
+      const aliveCard = document.getElementById("recipe-alpha")!;
+      expect(
+        within(aliveCard).queryByRole("link", {
+          name: "Cultist Circle Discord",
+        }),
+      ).not.toBeInTheDocument();
+
+      await selectSort("Fastest First");
+      expect(checkboxOrder().at(-1)).toBe(
+        "Mark recipe requiring 1x Delta figurine as completed",
+      );
+
+      await selectSort("Slowest First");
+      expect(checkboxOrder().at(-1)).toBe(
+        "Mark recipe requiring 1x Delta figurine as completed",
+      );
+    } finally {
+      mockRecipes.splice(-unknownRecipes.length);
+    }
   });
 
   it("sorts by most recently worked, with unreported recipes last", async () => {

@@ -4,7 +4,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Clock, Package } from "lucide-react";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { useLanguage } from "@/contexts/language-context";
-import { tarkovRecipes, Recipe } from "@/data/recipes";
+import {
+  hasUnknownCraftingTime,
+  hasUnknownReward,
+  tarkovRecipes,
+  Recipe,
+} from "@/data/recipes";
 import { useMemo } from "react";
 import {
   isRecipeOverrideItem,
@@ -75,6 +80,7 @@ export function RecipeWarning({ selectedItems }: RecipeWarningProps) {
   }
 
   const formatProducedItems = (recipe: Recipe): string => {
+    if (hasUnknownReward(recipe)) return t("Unknown reward");
     return recipe.producedItems
       .map((item) => {
         if (typeof item === "string") {
@@ -109,7 +115,9 @@ export function RecipeWarning({ selectedItems }: RecipeWarningProps) {
                   <div className="flex items-center gap-3 text-amber-400/80">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {recipe.craftingTime}
+                      {hasUnknownCraftingTime(recipe)
+                        ? t("Unknown")
+                        : recipe.craftingTime}
                     </span>
                   </div>
                   <div className="mt-1.5 pt-1.5 border-t border-amber-500/20 text-emerald-400/90">

@@ -29,7 +29,11 @@ import {
 } from "@/components/ui/command";
 import { useItemsData } from "@/hooks/use-items-data";
 import { useLanguage } from "@/contexts/language-context";
-import { tarkovRecipes } from "@/data/recipes";
+import {
+  hasUnknownCraftingTime,
+  hasUnknownReward,
+  tarkovRecipes,
+} from "@/data/recipes";
 import {
   GAME_MODES,
   GAME_MODE_LABELS,
@@ -606,7 +610,9 @@ function ItemDetail({
               <li key={recipe.id} className="text-xs">
                 <div className="mb-0.5 flex flex-wrap items-center gap-1.5">
                   <span className="rounded-sm bg-amber-300/[0.08] px-1.5 py-0.5 text-[10px] font-semibold text-amber-200/90">
-                    {recipe.craftingTime}
+                    {hasUnknownCraftingTime(recipe)
+                      ? t("Unknown")
+                      : recipe.craftingTime}
                   </span>
                   {asOutput && (
                     <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300/80">
@@ -623,11 +629,13 @@ function ItemDetail({
                   {recipe.requiredItems.join(", ")}
                   <span className="mx-1 text-slate-600">→</span>
                   <span className="text-slate-300">
-                    {recipe.producedItems
-                      .flatMap((entry) =>
-                        typeof entry === "string" ? [entry] : entry.items,
-                      )
-                      .join(", ")}
+                    {hasUnknownReward(recipe)
+                      ? t("Unknown reward")
+                      : recipe.producedItems
+                          .flatMap((entry) =>
+                            typeof entry === "string" ? [entry] : entry.items,
+                          )
+                          .join(", ")}
                   </span>
                 </p>
               </li>
