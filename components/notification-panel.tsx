@@ -91,18 +91,9 @@ export const NOTIFICATIONS: Notification[] = [
     description: (_notification, t) =>
       formatMessageSlots(
         t(
-          "New rituals found: in 66 mins the Black Division Operator figurine returns a First Spear Siege-R plate carrier and the Wedge figurine returns a Model 8230 CS gas grenade. The Black Division Team Leader figurine returns a Spiritus Systems LV-119 plate carrier (Black Division V1), but its timer is still unknown. If you know it, post in our {discord}. {view}",
+          "New rituals found: in 66 mins the Black Division Operator figurine returns a First Spear Siege-R plate carrier, the Black Division Team Leader figurine returns a Spiritus Systems LV-119 plate carrier (Black Division V1) and the Wedge figurine returns a Model 8230 CS gas grenade. {view}",
         ),
         {
-          discord: (
-            <a
-              href="https://discord.com/invite/3dFmr5qaJK"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t("Cultist Circle Discord")}
-            </a>
-          ),
           view: (
             <Link
               href="/recipes"

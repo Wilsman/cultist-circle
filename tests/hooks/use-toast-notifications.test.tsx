@@ -64,7 +64,7 @@ describe("useToastNotifications", () => {
     expect(toastMock).toHaveBeenCalledWith(
       "New figurine recipes: Black Division and Wedge",
       expect.objectContaining({
-        description: expect.stringContaining("Post it in our Discord"),
+        description: expect.stringContaining("LV-119 plate carrier"),
       }),
     );
   });
