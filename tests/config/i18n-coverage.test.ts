@@ -69,7 +69,7 @@ const DYNAMIC_KEYS = [
   "Black Division ritual still works in PvP Season",
   "Update: Black Division ritual works in PvP Season",
   "New figurine recipes: Black Division and Wedge",
-  "The Black Division Operator figurine returns a Siege-R plate carrier in 66 mins. Know the Wedge reward or the Team Leader timer and reward? Post it in our Discord.",
+  "In 66 mins the Black Division Operator figurine returns a Siege-R plate carrier and the Wedge figurine returns a CS gas grenade. Know the Team Leader timer and reward? Post it in our Discord.",
   "Confirmed working in PvP Season only. The launcher codes no longer work, but you can find Ferrum dogtags on Black Division bodies or exchange BP documents for them in the Battlepass.",
   // Recipe feedback store messages ({key} objects, not t() literals)
   "Community reports are temporarily unavailable",

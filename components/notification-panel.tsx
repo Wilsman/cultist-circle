@@ -91,7 +91,7 @@ export const NOTIFICATIONS: Notification[] = [
     description: (_notification, t) =>
       formatMessageSlots(
         t(
-          "New rituals found: the Black Division Operator figurine returns a First Spear Siege-R plate carrier in 66 mins. The Wedge figurine reward and the Black Division Team Leader timer and reward are still unknown. If you know them, post in our {discord}. {view}",
+          "New rituals found: in 66 mins the Black Division Operator figurine returns a First Spear Siege-R plate carrier and the Wedge figurine returns a Model 8230 CS gas grenade. The Black Division Team Leader timer and reward are still unknown. If you know them, post in our {discord}. {view}",
         ),
         {
           discord: (

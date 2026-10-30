@@ -38,7 +38,7 @@ const AVAILABLE_NOTIFICATIONS: Notification[] = [
     id: "black-division-wedge-figurine-recipes",
     title: "New figurine recipes: Black Division and Wedge",
     description:
-      "The Black Division Operator figurine returns a Siege-R plate carrier in 66 mins. Know the Wedge reward or the Team Leader timer and reward? Post it in our Discord.",
+      "In 66 mins the Black Division Operator figurine returns a Siege-R plate carrier and the Wedge figurine returns a CS gas grenade. Know the Team Leader timer and reward? Post it in our Discord.",
     version: CURRENT_APP_VERSION,
     type: "info",
     createdAt: "2026-10-30",

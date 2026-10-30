@@ -77,7 +77,7 @@ const recipeDefinitions: RecipeDefinition[] = [
   {
     requiredItems: ["1x Wedge figurine"],
     craftingTime: "66 mins",
-    producedItems: [],
+    producedItems: ["1x Model 8230 CS gas grenade"],
     isNew: true,
   },
   {
