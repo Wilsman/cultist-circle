@@ -41,6 +41,17 @@ export const SUPPORTED_LANGUAGES: { code: string; label: string }[] = [
   { code: "tr", label: "Türkçe" },
 ];
 
+// Picks the first browser language the app supports, e.g. "pt-BR" -> "pt".
+export function detectBrowserLanguage(
+  browserLanguages: readonly string[],
+): string | null {
+  for (const tag of browserLanguages) {
+    const code = tag.toLowerCase().split("-")[0];
+    if (SUPPORTED_LANGUAGES.some((lang) => lang.code === code)) return code;
+  }
+  return null;
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<string>(() => {
     if (!ENABLE_LANGUAGE_FEATURE) return DEFAULT_LANGUAGE;
@@ -63,6 +74,20 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setAnalyticsProperties({ language: lang });
     captureEvent("language_changed", { language: lang });
   };
+
+  // With no saved choice, follow the browser language. This runs after mount
+  // so the first client render matches the English server HTML. It is not
+  // saved, so a later browser language change still applies.
+  useEffect(() => {
+    if (!ENABLE_LANGUAGE_FEATURE || localStorage.getItem("language")) return;
+    const detected = detectBrowserLanguage(
+      navigator.languages?.length ? navigator.languages : [navigator.language],
+    );
+    if (detected && detected !== DEFAULT_LANGUAGE) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-hydration default
+      setLanguageState(detected);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof document !== "undefined") {

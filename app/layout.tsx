@@ -100,8 +100,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark antialiased" suppressHydrationWarning>
+    // translate="no" stops browser auto-translate from rewriting React's DOM,
+    // which crashed the page. The app has its own translations.
+    <html
+      lang="en"
+      translate="no"
+      className="dark antialiased"
+      suppressHydrationWarning
+    >
       <head>
+        <meta name="google" content="notranslate" />
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065"
