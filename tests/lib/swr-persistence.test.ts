@@ -1,6 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import {
   createSWRPersistMiddleware,
+  estimateSerializedChars,
   isPlaceholderCacheData,
   isTruncatedItemArray,
   pruneStaleSWRCache,
@@ -72,6 +73,73 @@ describe("createSWRPersistMiddleware", () => {
 
     expect(firstData).toHaveLength(1);
     expect(result.current.data).toBe(firstData);
+  });
+
+  const otherModeKey = "swr-cache-tarkov-dev-api/pve/en?v=test-test";
+
+  function renderWithData(data: unknown, maxChars?: number) {
+    const middleware = createSWRPersistMiddleware("test", 60_000, maxChars);
+    const useMiddlewareSWR = middleware(() => ({ data }));
+    return renderHook(() => useMiddlewareSWR(key, null, {}));
+  }
+
+  function makeItems(count: number) {
+    return Array.from({ length: count }, (_, i) => ({
+      id: String(i),
+      name: `Item ${i}`,
+      shortName: `I${i}`,
+      basePrice: i,
+    }));
+  }
+
+  it("persists data that fits the budget", () => {
+    renderWithData(makeItems(2));
+
+    const stored = JSON.parse(localStorage.getItem(storageKey) ?? "null");
+    expect(stored.data).toHaveLength(2);
+  });
+
+  it("skips oversized data without stringifying all of it", () => {
+    localStorage.setItem(storageKey, '{"data":[],"timestamp":0}');
+    localStorage.setItem(otherModeKey, "{}");
+    const items = makeItems(5_000);
+    const stringify = vi.spyOn(JSON, "stringify");
+    const setItem = vi.spyOn(localStorage, "setItem");
+
+    renderWithData(items, 10_000);
+
+    expect(setItem).not.toHaveBeenCalled();
+    expect(stringify.mock.calls.some(([value]) => value === items)).toBe(false);
+    expect(localStorage.getItem(storageKey)).toBeNull();
+    expect(localStorage.getItem(otherModeKey)).toBe("{}");
+  });
+
+  it("keeps other cache entries when localStorage is full", () => {
+    localStorage.setItem(otherModeKey, "{}");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(localStorage, "setItem").mockImplementation(() => {
+      throw new DOMException("full", "QuotaExceededError");
+    });
+
+    expect(() => renderWithData(makeItems(2))).not.toThrow();
+
+    expect(localStorage.getItem(otherModeKey)).toBe("{}");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(storageKey));
+  });
+});
+
+describe("estimateSerializedChars", () => {
+  it("is exact for small values and close for sampled arrays", () => {
+    const small = [{ id: "1", name: "Diary" }];
+    expect(estimateSerializedChars(small)).toBe(JSON.stringify(small).length);
+
+    const large = Array.from({ length: 1_000 }, (_, i) => ({
+      id: String(i).padStart(4, "0"),
+      name: "Item",
+    }));
+    const actual = JSON.stringify(large).length;
+    const estimate = estimateSerializedChars(large);
+    expect(Math.abs(estimate - actual) / actual).toBeLessThan(0.05);
   });
 });
 

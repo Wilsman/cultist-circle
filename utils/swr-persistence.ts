@@ -3,6 +3,33 @@ import { CACHE_TTL } from '@/hooks/use-tarkov-api';
 
 const STORAGE_KEY_PREFIX = 'swr-cache-';
 
+// Browsers cap localStorage at roughly 5M characters per origin, shared with
+// every other setting. A full item list is ~7M characters, so anything above
+// this budget is skipped instead of failing setItem after a costly stringify.
+export const MAX_PERSISTED_CHARS = 1_000_000;
+
+const ESTIMATE_SAMPLE_SIZE = 100;
+
+/**
+ * Estimates the serialized size of a cache entry. Large arrays are sampled so
+ * oversized payloads can be rejected without stringifying all of them.
+ */
+export function estimateSerializedChars(data: unknown): number {
+  if (Array.isArray(data) && data.length > ESTIMATE_SAMPLE_SIZE) {
+    const sampleChars = JSON.stringify(
+      data.slice(0, ESTIMATE_SAMPLE_SIZE),
+    ).length;
+    return Math.ceil((sampleChars / ESTIMATE_SAMPLE_SIZE) * data.length);
+  }
+  return JSON.stringify(data)?.length ?? 0;
+}
+
+function isQuotaExceededError(error: unknown): boolean {
+  // Match by name: DOMException classes differ between realms (e.g. iframes).
+  const name = (error as { name?: unknown } | null)?.name;
+  return name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED';
+}
+
 export function isTruncatedItemArray(data: unknown): boolean {
   if (!Array.isArray(data) || data.length === 0) {
     return false;
@@ -59,6 +86,7 @@ function readPersistedData(storageKey: string, ttl: number): unknown {
  * Creates a middleware for SWR that persists cache data to localStorage
  * @param version Cache version to invalidate when needed
  * @param ttl Time to live in milliseconds (default: 15 minutes)
+ * @param maxChars Largest serialized entry to persist; bigger data stays in memory only
  * @returns SWR middleware function
  */
 /**
@@ -67,7 +95,11 @@ function readPersistedData(storageKey: string, ttl: number): unknown {
  * The middleware is still type-safe at runtime.
  * @eslint-disable @typescript-eslint/no-explicit-any
  */
-export function createSWRPersistMiddleware(version: string, ttl: number = CACHE_TTL) {
+export function createSWRPersistMiddleware(
+  version: string,
+  ttl: number = CACHE_TTL,
+  maxChars: number = MAX_PERSISTED_CHARS,
+) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (useSWRNext: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,23 +125,29 @@ export function createSWRPersistMiddleware(version: string, ttl: number = CACHE_
       useEffect(() => {
         if (swr.data && typeof window !== 'undefined') {
           try {
-            // First check if we're close to the quota limit (14MB is typical limit)
-            const cacheData = {
+            // Skip data that cannot fit, and drop any older copy under this
+            // key so it does not keep holding quota other settings need.
+            if (estimateSerializedChars(swr.data) > maxChars) {
+              localStorage.removeItem(storageKey);
+              return;
+            }
+
+            const serialized = JSON.stringify({
               data: swr.data,
               timestamp: Date.now(),
-            };
-            
-            // Try to set item, catch quota errors
+            });
+            if (serialized.length > maxChars) {
+              localStorage.removeItem(storageKey);
+              return;
+            }
+
             try {
-              localStorage.setItem(storageKey, JSON.stringify(cacheData));
+              localStorage.setItem(storageKey, serialized);
             } catch (error) {
-              if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
-                // If quota exceeded, clear old cache and try again
-                console.warn('Storage quota exceeded, clearing old cache');
-                clearSWRCache();
-              } else {
-                throw error;
-              }
+              if (!isQuotaExceededError(error)) throw error;
+              // Leave other cache entries alone: clearing them all evicts the
+              // data other modes are using without freeing room for this one.
+              console.warn(`Skipping SWR cache for ${storageKey}: localStorage is full`);
             }
           } catch (error) {
             console.error('Error saving SWR cache to localStorage:', error);
