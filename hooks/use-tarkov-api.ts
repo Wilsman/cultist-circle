@@ -28,6 +28,12 @@ const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
 let memoryCooldownUntil = 0;
 
+// tarkov.dev returns a null base price for some items. Treat it as 0 so
+// display code can rely on a number.
+export function normalizeBasePrice(value: number | null | undefined): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
 export type TarkovRequestPhase =
   "idle" | "loading" | "retrying" | "cooldown" | "success" | "error";
 
@@ -326,7 +332,7 @@ interface TarkovJsonItem {
   id: string;
   name: string;
   shortName: string;
-  basePrice: number;
+  basePrice: number | null;
   lastLowPrice: number | null;
   avg24hPrice: number | null;
   updated?: string;
@@ -514,7 +520,7 @@ function mapJsonSimplifiedItem(
       bundle.primaryTranslations,
       bundle.englishTranslations,
     ),
-    basePrice: item.basePrice,
+    basePrice: normalizeBasePrice(item.basePrice),
     lastLowPrice: item.lastLowPrice ?? undefined,
     avg24hPrice: item.avg24hPrice ?? undefined,
     updated: item.updated,
@@ -559,7 +565,7 @@ function mapJsonMinimalItem(
       bundle.primaryTranslations,
       bundle.englishTranslations,
     ),
-    basePrice: item.basePrice,
+    basePrice: normalizeBasePrice(item.basePrice),
     lastLowPrice: item.lastLowPrice,
     avg24hPrice: item.avg24hPrice,
     categories: mapJsonCategories(item, bundle).map(({ name }) => ({ name })),
@@ -766,7 +772,7 @@ export async function fetchCombinedTarkovData(
       id: item.id,
       name: item.name,
       shortName: item.shortName,
-      basePrice: item.basePrice,
+      basePrice: normalizeBasePrice(item.basePrice),
       lastLowPrice: item.lastLowPrice || undefined,
       updated: item.updated,
       lastOfferCount: item.lastOfferCount || undefined,
@@ -1088,9 +1094,14 @@ async function fetchMinimalTarkovDataFromGraphQL(
     console.debug(`✅ Minimal Tarkov data fetched in ${endTime - startTime}ms`);
 
     // Update the cache
+    const normalizeItems = (items: MinimalItem[]) =>
+      items.map((item) => ({
+        ...item,
+        basePrice: normalizeBasePrice(item.basePrice),
+      }));
     const data = {
-      pvpItems: result.data.pvpItems,
-      pveItems: result.data.pveItems,
+      pvpItems: normalizeItems(result.data.pvpItems),
+      pveItems: normalizeItems(result.data.pveItems),
     };
     minimalDataCacheByLang.set(language, { data, time: now });
 

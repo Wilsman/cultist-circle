@@ -237,6 +237,31 @@ describe("Tarkov.dev JSON fetchers", () => {
     ).toBe(false);
   });
 
+  test("treats a null base price from tarkov.dev as 0", async () => {
+    const nullPriceResponse = {
+      ...itemResponse,
+      data: {
+        ...itemResponse.data,
+        items: {
+          item1: { ...itemResponse.data.items.item1, basePrice: null },
+        },
+      },
+    };
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/regular/items")) return response(nullPriceResponse);
+      if (url.endsWith("/regular/items_en")) return response(englishResponse);
+      if (url.endsWith("/regular/traders")) return response(traderResponse);
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    const full = await fetchTarkovData("regular", "en");
+    const minimal = await fetchMinimalTarkovData("regular", "en");
+
+    expect(full.items[0].basePrice).toBe(0);
+    expect(minimal[0].basePrice).toBe(0);
+  });
+
   test("loads Season from its dedicated JSON resources", async () => {
     const fetchMock = installJsonFetchMock();
 
