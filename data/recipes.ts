@@ -83,7 +83,7 @@ const recipeDefinitions: RecipeDefinition[] = [
   {
     requiredItems: ["1x Black Division Team Leader figurine"],
     craftingTime: UNKNOWN_CRAFTING_TIME,
-    producedItems: [],
+    producedItems: ["1x Spiritus Systems LV-119 Plate Carrier (Black Division V1) Default"],
     isNew: true,
   },
   {
