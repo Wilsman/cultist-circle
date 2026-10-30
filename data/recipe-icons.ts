@@ -12,6 +12,10 @@ export const recipeIconMap: Record<string, string> = {
     "/images/recipes/black-division-team-leader-figurine.webp",
   "1x Spiritus Systems LV-119 Plate Carrier (Black Division V1) Default":
     "https://assets.tarkov.dev/68a60485d6099c8c630d7c85-icon.webp",
+  "4x M18 smoke grenade (Green)":
+    "https://assets.tarkov.dev/617aa4dd8166f034d57de9c5-icon.webp",
+  "1x Sudak-Tudak marine repair kit":
+    "https://assets.tarkov.dev/6a8c4c7999baf8bd5802f7fe-icon.webp",
   "1x Model 8230 CS gas grenade":
     "https://assets.tarkov.dev/69f07893e761ac1c200ae15b-icon.webp",
   "1x First Spear Siege-R Optimized M.A.S.S. Plate Carrier (Black Division) Default":

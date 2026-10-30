@@ -11,7 +11,7 @@ describe("launcher promo recipe data", () => {
       (entry) => entry === recipe,
     );
 
-    expect(newFigurineCount).toBe(3);
+    expect(newFigurineCount).toBe(4);
     expect(
       tarkovRecipes.slice(0, newFigurineCount).every((entry) => entry.isNew),
     ).toBe(true);

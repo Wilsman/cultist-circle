@@ -87,6 +87,19 @@ const recipeDefinitions: RecipeDefinition[] = [
     isNew: true,
   },
   {
+    requiredItems: [
+      "1x Wedge figurine",
+      "1x Black Division Team Leader figurine",
+      "1x Black Division Operator figurine",
+    ],
+    craftingTime: "66 mins",
+    producedItems: [
+      "4x M18 smoke grenade (Green)",
+      "1x Sudak-Tudak marine repair kit",
+    ],
+    isNew: true,
+  },
+  {
     requiredItems: ["5x BD dogtag •| Ferrum"],
     craftingTime: "5:55:55",
     producedItems: ["1x Briefcase with documents"],
