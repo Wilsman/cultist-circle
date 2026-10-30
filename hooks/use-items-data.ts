@@ -24,7 +24,7 @@ import {
 } from "@/lib/game-mode";
 
 // Create a single persistence middleware for the combined data
-// The middleware handles localStorage quota errors and clears old cache when needed.
+// The middleware skips entries too large for localStorage and tolerates quota errors.
 // ITEM_CACHE_KEY only changes when the code shaping cached items changes.
 const swrPersistMiddleware = createSWRPersistMiddleware(
   ITEM_CACHE_KEY,
