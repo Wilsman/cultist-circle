@@ -4,12 +4,12 @@ export const recipeIconMap: Record<string, string> = {
   "5x BD dogtag •| Ferrum": "/images/recipes/bd-dogtag-ferrum.png",
   "1x Briefcase with documents":
     "/images/recipes/briefcase-with-documents.png",
-  // Local game icons until tarkov.dev has the new figurines.
-  "1x Wedge figurine": "/images/recipes/wedge-figurine.png",
+  // Game-cache icons framed like tarkov.dev, until tarkov.dev has the figurines.
+  "1x Wedge figurine": "/images/recipes/wedge-figurine.webp",
   "1x Black Division Operator figurine":
-    "/images/recipes/black-division-operator-figurine.png",
+    "/images/recipes/black-division-operator-figurine.webp",
   "1x Black Division Team Leader figurine":
-    "/images/recipes/black-division-team-leader-figurine.png",
+    "/images/recipes/black-division-team-leader-figurine.webp",
   "1x Spiritus Systems LV-119 Plate Carrier (Black Division V1) Default":
     "https://assets.tarkov.dev/68a60485d6099c8c630d7c85-icon.webp",
   "1x Model 8230 CS gas grenade":
