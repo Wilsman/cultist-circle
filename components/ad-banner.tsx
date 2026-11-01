@@ -8,18 +8,18 @@ declare global {
 
 import React, { useEffect, useRef } from "react";
 
+const AD_CLIENT = "ca-pub-4028411901202065";
+
 type AdBannerProps = {
   dataAdSlot: string;
-  dataAdFormat: string;
-  dataFullWidthResponsive: boolean;
-};
+} & (
+  | { dataAdFormat: string; dataFullWidthResponsive: boolean; size?: never }
+  | { size: { width: number; height: number }; dataAdFormat?: never }
+);
 
-const AdBanner: React.FC<AdBannerProps> = ({
-  dataAdSlot,
-  dataAdFormat,
-  dataFullWidthResponsive,
-}) => {
-  const adRef = useRef<HTMLDivElement>(null);
+const AdBanner: React.FC<AdBannerProps> = (props) => {
+  const { dataAdSlot } = props;
+  const adRef = useRef<HTMLModElement>(null);
   const isAdLoaded = useRef(false);
 
   useEffect(() => {
@@ -29,11 +29,13 @@ const AdBanner: React.FC<AdBannerProps> = ({
     const maxRetries = 20;
 
     const loadAd = () => {
+      const ad = adRef.current;
+      // Skip ads hidden by CSS (for example a desktop-only column on mobile).
+      // AdSense can't size them and would log errors.
+      if (!ad || isAdLoaded.current || ad.offsetParent === null) return;
       try {
-        if (adRef.current && !isAdLoaded.current) {
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-          isAdLoaded.current = true;
-        }
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        isAdLoaded.current = true;
       } catch (error) {
         console.error("AdSense error:", error);
       }
@@ -62,9 +64,23 @@ const AdBanner: React.FC<AdBannerProps> = ({
     };
   }, []);
 
-  return (
-    <div ref={adRef} className="w-full overflow-hidden">
+  if (props.size) {
+    const { width, height } = props.size;
+    return (
       <ins
+        ref={adRef}
+        className="adsbygoogle"
+        style={{ display: "inline-block", width, height }}
+        data-ad-client={AD_CLIENT}
+        data-ad-slot={dataAdSlot}
+      />
+    );
+  }
+
+  return (
+    <div className="w-full overflow-hidden">
+      <ins
+        ref={adRef}
         className="adsbygoogle"
         style={{
           display: "block",
@@ -72,10 +88,10 @@ const AdBanner: React.FC<AdBannerProps> = ({
           height: "auto",
           minHeight: "100px",
         }}
-        data-ad-client="ca-pub-4028411901202065"
+        data-ad-client={AD_CLIENT}
         data-ad-slot={dataAdSlot}
-        data-ad-format={dataAdFormat}
-        data-full-width-responsive={dataFullWidthResponsive.toString()}
+        data-ad-format={props.dataAdFormat}
+        data-full-width-responsive={props.dataFullWidthResponsive.toString()}
       />
     </div>
   );

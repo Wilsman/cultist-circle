@@ -20,6 +20,7 @@ import { ModeThreshold } from "@/components/mode-threshold";
 import { AutoSelectButton } from "@/components/auto-select-button";
 import { StashStrip } from "@/components/stash/stash-strip";
 import { ShareButton } from "@/components/share-button";
+import { AdRail } from "@/components/ad-rail";
 import { StartRitualDialog } from "@/components/ritual-tracker/start-ritual-dialog";
 import {
   ALL_ITEM_CATEGORIES,
@@ -2126,13 +2127,7 @@ function AppContent({ contributors = [] }: AppProps) {
     <>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto relative lg:overflow-visible">
         <div className="flex items-start justify-center gap-4 max-w-[1600px] mx-auto">
-          {/* Left Ad Rail - Desktop Only */}
-          <aside className="hidden xl:block w-[160px] flex-shrink-0">
-            <div className="sticky top-4">
-              {/* AdSense will auto-inject side rail ads here */}
-              <div id="left-ad-rail" className="min-h-[600px]" />
-            </div>
-          </aside>
+          <AdRail side="left" showFrom="xl:block" />
 
           {/* Main Content: single column on mobile; on desktop the calculator
               sits beside a sticky column with the summary and hot sacrifices.
@@ -2665,13 +2660,7 @@ function AppContent({ contributors = [] }: AppProps) {
             </div>
           </div>
 
-          {/* Right Ad Rail - Desktop Only */}
-          <aside className="hidden xl:block w-[160px] flex-shrink-0">
-            <div className="sticky top-4">
-              {/* AdSense will auto-inject side rail ads here */}
-              <div id="right-ad-rail" className="min-h-[600px]" />
-            </div>
-          </aside>
+          <AdRail side="right" showFrom="xl:block" />
         </div>
       </div>
       <div className="background-credit">

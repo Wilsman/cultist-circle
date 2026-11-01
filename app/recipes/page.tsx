@@ -75,6 +75,7 @@ import {
 import { getStoredGameMode, type GameMode } from "@/lib/game-mode";
 import { isMissingItemIcon, UNKNOWN_ITEM_ICON } from "@/lib/item-icon";
 import { RecipeSubmissionButton } from "@/components/recipe-submission";
+import { AdRail } from "@/components/ad-rail";
 import {
   Package,
   CheckCircle2,
@@ -1641,335 +1642,340 @@ export default function RecipesPage() {
   return (
     <RecipeFeedbackProvider>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100">
-        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-6xl">
-          <Card className="bg-gray-900/80 backdrop-blur-md border-gray-800 shadow-2xl overflow-hidden">
-            {/* Header */}
-            <div className="bg-gray-900/95 border-b border-gray-800 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-md">
-              <CardHeader className="p-0 mb-4 sm:mb-5 text-center">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-red-400">
-                  {t("Cultist Circle Recipes")}
-                </h1>
-                <p className="text-center text-sm text-gray-400 mt-2">
-                  {t("Discover what you can sacrifice and receive")}
-                </p>
-                <div className="flex justify-center pt-3">
-                  <RecipeSubmissionButton mode={mode} />
-                </div>
-              </CardHeader>
+        {/* Side ads only appear on screens wide enough to keep the full recipe width. */}
+        <div className="mx-auto flex max-w-[1600px] items-start justify-center gap-4">
+          <AdRail side="left" showFrom="2xl:block 2xl:pt-6" />
+          <div className="container mx-auto min-w-0 px-3 sm:px-4 py-4 sm:py-6 max-w-6xl">
+            <Card className="bg-gray-900/80 backdrop-blur-md border-gray-800 shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="bg-gray-900/95 border-b border-gray-800 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-md">
+                <CardHeader className="p-0 mb-4 sm:mb-5 text-center">
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-red-400">
+                    {t("Cultist Circle Recipes")}
+                  </h1>
+                  <p className="text-center text-sm text-gray-400 mt-2">
+                    {t("Discover what you can sacrifice and receive")}
+                  </p>
+                  <div className="flex justify-center pt-3">
+                    <RecipeSubmissionButton mode={mode} />
+                  </div>
+                </CardHeader>
 
-              {/* Search Bar */}
-              <div className="relative max-w-2xl mx-auto">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
-                <Input
-                  type="text"
-                  placeholder={t("Search items or recipes...")}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  ref={searchRef}
-                  className="w-full pl-12 pr-24 py-3 rounded-xl bg-gray-800/70 text-white border-gray-700 focus:border-gray-500 focus:ring-2 focus:ring-gray-600/50 placeholder-gray-500 text-base transition-all"
-                />
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  {searchQuery && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSearchQuery("")}
-                      className="h-8 w-8 p-0 rounded-lg hover:bg-gray-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <kbd className="hidden sm:inline-flex items-center px-2 py-1 rounded bg-gray-800 text-[10px] text-gray-500 border border-gray-700">
-                    /
-                  </kbd>
-                </div>
-              </div>
-
-              {/* Filters, sort, and progress */}
-              <div className="mt-4 border-t border-gray-800/80 pt-3">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-                  <ArrowDownWideNarrow
-                    className="h-3.5 w-3.5 shrink-0 text-gray-600"
-                    aria-hidden
+                {/* Search Bar */}
+                <div className="relative max-w-2xl mx-auto">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
+                  <Input
+                    type="text"
+                    placeholder={t("Search items or recipes...")}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    ref={searchRef}
+                    className="w-full pl-12 pr-24 py-3 rounded-xl bg-gray-800/70 text-white border-gray-700 focus:border-gray-500 focus:ring-2 focus:ring-gray-600/50 placeholder-gray-500 text-base transition-all"
                   />
-                  <Select
-                    value={sortBy}
-                    onValueChange={(value) =>
-                      setSortBy(value as SortOption)
-                    }
-                  >
-                    <SelectTrigger
-                      aria-label={t("Sort recipes")}
-                      className="h-7 w-auto gap-2 rounded-full border-gray-700/80 bg-transparent px-3 text-[11px] text-gray-200 hover:border-gray-600"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="border-gray-700 bg-gray-900 text-gray-100">
-                      {SORT_OPTIONS.map((option) => {
-                        const unavailable =
-                          option.requiresFeedback && !feedbackReady;
-                        return (
-                          <SelectItem
-                            key={option.value}
-                            value={option.value}
-                            disabled={unavailable}
-                            title={
-                              unavailable
-                                ? t("Loading community reports...")
-                                : undefined
-                            }
-                            className="text-[12px]"
-                          >
-                            {t(option.label)}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-pressed={showIncompleteOnly}
-                    onClick={() => setShowIncompleteOnly((current) => !current)}
-                    className={`h-7 rounded-full px-3 text-[11px] transition-all ${
-                      showIncompleteOnly
-                        ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100"
-                        : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
-                    }`}
-                  >
-                    <Filter className="mr-1.5 h-3 w-3" />
-                    {t("Unfinished only")}
-                  </Button>
-                  <div className="ms-auto flex flex-wrap items-center gap-2">
-                    <span
-                      className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-sm text-emerald-300/90"
-                      aria-live="polite"
-                    >
-                      {t("{completed} / {total} done", {
-                        completed: completedRecipeCount,
-                        total: activeRecipeCount,
-                      })}
-                    </span>
-                    {completedRecipeCount > 0 && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-red-950/30 hover:text-red-300"
-                          >
-                            <RotateCcw className="mr-1 h-3 w-3" />
-                            {t("Reset progress")}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="border-gray-700 bg-gray-900 text-gray-100 shadow-2xl sm:max-w-md">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              {t("Reset recipe progress?")}
-                            </AlertDialogTitle>
-                            <AlertDialogDescription className="text-gray-400">
-                              {t(
-                                "This will mark all {count} recipes as unfinished on this device.",
-                                { count: activeRecipeCount },
-                              )}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white">
-                              {t("Cancel")}
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => setStoredCompletedRecipeIds([])}
-                              className="bg-red-600 text-white hover:bg-red-500"
-                            >
-                              {t("Reset progress")}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                    <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5 text-sm text-gray-400">
-                      {t(
-                        activeRecipes.length === 1
-                          ? "{count} recipe"
-                          : "{count} recipes",
-                        { count: activeRecipes.length },
-                      )}
-                    </span>
-                    {hasActiveFilters && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {searchQuery && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setSearchQuery("");
-                          setSortBy("default");
-                          setShowIncompleteOnly(false);
-                        }}
-                        className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-gray-800 hover:text-gray-300"
+                        onClick={() => setSearchQuery("")}
+                        className="h-8 w-8 p-0 rounded-lg hover:bg-gray-700"
                       >
-                        {t("Clear filters")}
+                        <X className="h-4 w-4" />
                       </Button>
                     )}
+                    <kbd className="hidden sm:inline-flex items-center px-2 py-1 rounded bg-gray-800 text-[10px] text-gray-500 border border-gray-700">
+                      /
+                    </kbd>
+                  </div>
+                </div>
+
+                {/* Filters, sort, and progress */}
+                <div className="mt-4 border-t border-gray-800/80 pt-3">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+                    <ArrowDownWideNarrow
+                      className="h-3.5 w-3.5 shrink-0 text-gray-600"
+                      aria-hidden
+                    />
+                    <Select
+                      value={sortBy}
+                      onValueChange={(value) =>
+                        setSortBy(value as SortOption)
+                      }
+                    >
+                      <SelectTrigger
+                        aria-label={t("Sort recipes")}
+                        className="h-7 w-auto gap-2 rounded-full border-gray-700/80 bg-transparent px-3 text-[11px] text-gray-200 hover:border-gray-600"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="border-gray-700 bg-gray-900 text-gray-100">
+                        {SORT_OPTIONS.map((option) => {
+                          const unavailable =
+                            option.requiresFeedback && !feedbackReady;
+                          return (
+                            <SelectItem
+                              key={option.value}
+                              value={option.value}
+                              disabled={unavailable}
+                              title={
+                                unavailable
+                                  ? t("Loading community reports...")
+                                  : undefined
+                              }
+                              className="text-[12px]"
+                            >
+                              {t(option.label)}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      aria-pressed={showIncompleteOnly}
+                      onClick={() => setShowIncompleteOnly((current) => !current)}
+                      className={`h-7 rounded-full px-3 text-[11px] transition-all ${
+                        showIncompleteOnly
+                          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100"
+                          : "border-gray-700/80 bg-transparent text-gray-500 hover:border-gray-600 hover:bg-gray-800/70 hover:text-gray-200"
+                      }`}
+                    >
+                      <Filter className="mr-1.5 h-3 w-3" />
+                      {t("Unfinished only")}
+                    </Button>
+                    <div className="ms-auto flex flex-wrap items-center gap-2">
+                      <span
+                        className="rounded-full border border-emerald-800/50 bg-emerald-950/25 px-3 py-1.5 text-sm text-emerald-300/90"
+                        aria-live="polite"
+                      >
+                        {t("{completed} / {total} done", {
+                          completed: completedRecipeCount,
+                          total: activeRecipeCount,
+                        })}
+                      </span>
+                      {completedRecipeCount > 0 && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-red-950/30 hover:text-red-300"
+                            >
+                              <RotateCcw className="mr-1 h-3 w-3" />
+                              {t("Reset progress")}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="border-gray-700 bg-gray-900 text-gray-100 shadow-2xl sm:max-w-md">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                {t("Reset recipe progress?")}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="text-gray-400">
+                                {t(
+                                  "This will mark all {count} recipes as unfinished on this device.",
+                                  { count: activeRecipeCount },
+                                )}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white">
+                                {t("Cancel")}
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => setStoredCompletedRecipeIds([])}
+                                className="bg-red-600 text-white hover:bg-red-500"
+                              >
+                                {t("Reset progress")}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                      <span className="rounded-full border border-gray-700 bg-gray-800/70 px-3 py-1.5 text-sm text-gray-400">
+                        {t(
+                          activeRecipes.length === 1
+                            ? "{count} recipe"
+                            : "{count} recipes",
+                          { count: activeRecipes.length },
+                        )}
+                      </span>
+                      {hasActiveFilters && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSearchQuery("");
+                            setSortBy("default");
+                            setShowIncompleteOnly(false);
+                          }}
+                          className="h-7 rounded-full px-2 text-[11px] text-gray-600 hover:bg-gray-800 hover:text-gray-300"
+                        >
+                          {t("Clear filters")}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Recipe List */}
-            <CardContent className="p-4 sm:p-6">
-              {activeRecipes.length === 0 && expiredRecipes.length === 0 ? (
-                <div className="py-16 text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800/50 mb-4">
-                    <Search className="h-8 w-8 text-gray-600" />
-                  </div>
-                  <p className="text-lg font-medium text-gray-300 mb-2">
-                    {t("No recipes found")}
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    {t("Try adjusting your search or filters")}
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSortBy("default");
-                      setShowIncompleteOnly(false);
-                    }}
-                    className="border-gray-700 hover:bg-gray-800"
-                  >
-                    {t("Clear all filters")}
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  {activeRecipes.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-gray-500">
-                      {t(
-                        "No active recipes match. Expired matches are listed below.",
-                      )}
-                    </p>
-                  ) : (
-                    <div className="grid gap-3 sm:gap-4">
-                      {activeRecipes.map((recipe) => (
-                        <RecipeCard
-                          key={recipe.id}
-                          recipe={recipe}
-                          getItemByName={getItemByName}
-                          t={t}
-                          isCompleted={completedRecipeIds.has(recipe.id)}
-                          onCompletedChange={handleCompletedChange}
-                          isHighlighted={sharedRecipeId === recipe.id}
-                          onShare={handleShareRecipe}
-                        />
-                      ))}
+              {/* Recipe List */}
+              <CardContent className="p-4 sm:p-6">
+                {activeRecipes.length === 0 && expiredRecipes.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800/50 mb-4">
+                      <Search className="h-8 w-8 text-gray-600" />
                     </div>
-                  )}
-                  {expiredRecipes.length > 0 && (
-                    <section
-                      aria-labelledby="expired-recipes-heading"
-                      className="mt-6 border-t border-gray-800/80 pt-4"
+                    <p className="text-lg font-medium text-gray-300 mb-2">
+                      {t("No recipes found")}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      {t("Try adjusting your search or filters")}
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setSortBy("default");
+                        setShowIncompleteOnly(false);
+                      }}
+                      className="border-gray-700 hover:bg-gray-800"
                     >
-                      <button
-                        type="button"
-                        aria-expanded={isExpiredSectionOpen}
-                        aria-controls="expired-recipes-list"
-                        onClick={() =>
-                          setExpiredSectionOverride(!isExpiredSectionOpen)
-                        }
-                        className="flex w-full items-center gap-2 rounded-lg px-1 py-1.5 text-left text-gray-500 transition-colors hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+                      {t("Clear all filters")}
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {activeRecipes.length === 0 ? (
+                      <p className="py-6 text-center text-sm text-gray-500">
+                        {t(
+                          "No active recipes match. Expired matches are listed below.",
+                        )}
+                      </p>
+                    ) : (
+                      <div className="grid gap-3 sm:gap-4">
+                        {activeRecipes.map((recipe) => (
+                          <RecipeCard
+                            key={recipe.id}
+                            recipe={recipe}
+                            getItemByName={getItemByName}
+                            t={t}
+                            isCompleted={completedRecipeIds.has(recipe.id)}
+                            onCompletedChange={handleCompletedChange}
+                            isHighlighted={sharedRecipeId === recipe.id}
+                            onShare={handleShareRecipe}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {expiredRecipes.length > 0 && (
+                      <section
+                        aria-labelledby="expired-recipes-heading"
+                        className="mt-6 border-t border-gray-800/80 pt-4"
                       >
-                        <ChevronRight
-                          className={`h-4 w-4 flex-shrink-0 transition-transform ${
-                            isExpiredSectionOpen ? "rotate-90" : ""
-                          }`}
-                          aria-hidden="true"
-                        />
-                        <Archive
-                          className="h-4 w-4 flex-shrink-0"
-                          aria-hidden="true"
-                        />
-                        <span
-                          id="expired-recipes-heading"
-                          className="text-xs font-bold uppercase tracking-wider"
+                        <button
+                          type="button"
+                          aria-expanded={isExpiredSectionOpen}
+                          aria-controls="expired-recipes-list"
+                          onClick={() =>
+                            setExpiredSectionOverride(!isExpiredSectionOpen)
+                          }
+                          className="flex w-full items-center gap-2 rounded-lg px-1 py-1.5 text-left text-gray-500 transition-colors hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
                         >
-                          {t("Expired · no longer working")}
-                        </span>
-                        <span className="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-gray-400">
-                          {expiredRecipes.length}
-                        </span>
-                        <span className="ms-auto hidden text-[11px] text-gray-600 sm:inline">
-                          {t("Kept for reference. Vote Worked if one works again.")}
-                        </span>
-                      </button>
-                      {isExpiredSectionOpen && (
-                        <div
-                          id="expired-recipes-list"
-                          className="mt-3 grid gap-2"
-                        >
-                          {expiredRecipes.map((recipe) => (
-                            <ExpiredRecipeRow
-                              key={recipe.id}
-                              recipe={recipe}
-                              getItemByName={getItemByName}
-                              t={t}
-                              isExpanded={expandedExpiredIds.has(recipe.id)}
-                              onToggle={toggleExpiredRecipe}
-                              isHighlighted={sharedRecipeId === recipe.id}
-                              onShare={handleShareRecipe}
-                              workedCount={
-                                feedbackReady
-                                  ? (feedbackStats[recipe.id]?.workedCount ?? 0)
-                                  : null
-                              }
-                              didntWorkCount={
-                                feedbackReady
-                                  ? (feedbackStats[recipe.id]?.didntWorkCount ??
-                                    0)
-                                  : null
-                              }
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </section>
-                  )}
-                </>
-              )}
-            </CardContent>
-
-            {/* Footer */}
-            <CardFooter className="border-t border-gray-800 px-4 sm:px-6 py-4 bg-gray-900/50">
-              <p className="text-center text-xs text-gray-500 w-full">
-                {formatMessageSlots(
-                  t(
-                    "Data sourced from {wiki} and our {discord}. Thank you to all contributors!",
-                  ),
-                  {
-                    wiki: (
-                      <a
-                        href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                      >
-                        {t("Escape from Tarkov Wiki")}
-                      </a>
-                    ),
-                    discord: (
-                      <a
-                        href={DISCORD_INVITE_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                      >
-                        {t("Cultist Circle Discord")}
-                      </a>
-                    ),
-                  },
+                          <ChevronRight
+                            className={`h-4 w-4 flex-shrink-0 transition-transform ${
+                              isExpiredSectionOpen ? "rotate-90" : ""
+                            }`}
+                            aria-hidden="true"
+                          />
+                          <Archive
+                            className="h-4 w-4 flex-shrink-0"
+                            aria-hidden="true"
+                          />
+                          <span
+                            id="expired-recipes-heading"
+                            className="text-xs font-bold uppercase tracking-wider"
+                          >
+                            {t("Expired · no longer working")}
+                          </span>
+                          <span className="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-gray-400">
+                            {expiredRecipes.length}
+                          </span>
+                          <span className="ms-auto hidden text-[11px] text-gray-600 sm:inline">
+                            {t("Kept for reference. Vote Worked if one works again.")}
+                          </span>
+                        </button>
+                        {isExpiredSectionOpen && (
+                          <div
+                            id="expired-recipes-list"
+                            className="mt-3 grid gap-2"
+                          >
+                            {expiredRecipes.map((recipe) => (
+                              <ExpiredRecipeRow
+                                key={recipe.id}
+                                recipe={recipe}
+                                getItemByName={getItemByName}
+                                t={t}
+                                isExpanded={expandedExpiredIds.has(recipe.id)}
+                                onToggle={toggleExpiredRecipe}
+                                isHighlighted={sharedRecipeId === recipe.id}
+                                onShare={handleShareRecipe}
+                                workedCount={
+                                  feedbackReady
+                                    ? (feedbackStats[recipe.id]?.workedCount ?? 0)
+                                    : null
+                                }
+                                didntWorkCount={
+                                  feedbackReady
+                                    ? (feedbackStats[recipe.id]?.didntWorkCount ??
+                                      0)
+                                    : null
+                                }
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </section>
+                    )}
+                  </>
                 )}
-              </p>
-            </CardFooter>
-          </Card>
+              </CardContent>
+
+              {/* Footer */}
+              <CardFooter className="border-t border-gray-800 px-4 sm:px-6 py-4 bg-gray-900/50">
+                <p className="text-center text-xs text-gray-500 w-full">
+                  {formatMessageSlots(
+                    t(
+                      "Data sourced from {wiki} and our {discord}. Thank you to all contributors!",
+                    ),
+                    {
+                      wiki: (
+                        <a
+                          href="https://escapefromtarkov.fandom.com/wiki/Escape_from_Tarkov_Wiki"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                        >
+                          {t("Escape from Tarkov Wiki")}
+                        </a>
+                      ),
+                      discord: (
+                        <a
+                          href={DISCORD_INVITE_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                        >
+                          {t("Cultist Circle Discord")}
+                        </a>
+                      ),
+                    },
+                  )}
+                </p>
+              </CardFooter>
+            </Card>
+          </div>
+          <AdRail side="right" showFrom="2xl:block 2xl:pt-6" />
         </div>
       </div>
     </RecipeFeedbackProvider>
