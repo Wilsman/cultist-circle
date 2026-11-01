@@ -429,3 +429,8 @@
 #bmc-wbtn {
   display: none !important;
 }
+
+/* Google's recommended way to hide ad units that got no ad. */
+ins.adsbygoogle[data-ad-status="unfilled"] {
+  display: none !important;
+}
