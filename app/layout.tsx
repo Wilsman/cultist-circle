@@ -14,6 +14,10 @@ import { SupportWidget } from "@/components/support-widget";
 import { SiteNav } from "@/components/site-nav";
 import { RitualReminderWatcher } from "@/components/ritual-tracker/ritual-reminder-watcher";
 import { ItemLookupCommand } from "@/components/item-lookup-command";
+import { getConsentModeBootstrapScript } from "@/lib/cookie-consent";
+
+const ADSENSE_SCRIPT_SRC =
+  "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065";
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
@@ -110,10 +114,11 @@ export default function RootLayout({
     >
       <head>
         <meta name="google" content="notranslate" />
+        {/* Sets Google cookie consent before any Google tag runs. */}
         <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065"
-          crossOrigin="anonymous"
+          dangerouslySetInnerHTML={{
+            __html: getConsentModeBootstrapScript(),
+          }}
         />
       </head>
       <body
@@ -122,6 +127,11 @@ export default function RootLayout({
         <Script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-MDQ1Z37Y5M"
+        />
+        <Script
+          src={ADSENSE_SCRIPT_SRC}
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
         />
         <Script id="google-analytics" strategy="afterInteractive">
           {`

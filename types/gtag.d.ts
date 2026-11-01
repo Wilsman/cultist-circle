@@ -1,7 +1,7 @@
 interface Window {
   gtag?: (
     command: "consent",
-    action: "update",
+    action: "default" | "update",
     consentParameters: {
       analytics_storage?: "granted" | "denied";
       ad_storage?: "granted" | "denied";
