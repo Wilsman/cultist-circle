@@ -161,7 +161,7 @@ export function PriceRangeFilter({
   return (
     <div className={`space-y-3 ${className}`}>
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">{label}</Label>
+        <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
         <Button
           type="button"
           variant="ghost"
@@ -199,7 +199,7 @@ export function PriceRangeFilter({
             onBlur={() => handleInputBlur(0)}
             min={min}
             max={max}
-            className="h-7 w-20 text-xs"
+            className="h-8 w-24 border-border/60 bg-transparent text-xs tabular-nums shadow-none"
             placeholder={t("Min")}
             aria-label={t("Minimum price")}
           />
@@ -211,7 +211,7 @@ export function PriceRangeFilter({
             onBlur={() => handleInputBlur(1)}
             min={min}
             max={max}
-            className="h-7 w-20 text-xs"
+            className="h-8 w-24 border-border/60 bg-transparent text-xs tabular-nums shadow-none"
             placeholder={t("Max")}
             aria-label={t("Maximum price")}
           />

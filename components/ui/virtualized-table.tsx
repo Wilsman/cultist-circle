@@ -17,7 +17,14 @@ import {
   HoverCardTrigger,
   HoverCardContent,
 } from "@/components/ui/hover-card";
-import { Copy, Lock } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Copy,
+  Lock,
+  Star,
+} from "lucide-react";
 import {
   getItemLevelRequirement,
   getCategoryLevelRequirementByName,
@@ -35,23 +42,97 @@ const TRADER_IMAGES: Record<string, string> = {
   jaeger: "https://assets.tarkov.dev/5c0647fdd443bc2504c2d371.webp",
 };
 
+type SortKey =
+  | "name"
+  | "shortName"
+  | "basePrice"
+  | "lastLowPrice"
+  | "avg24hPrice"
+  | "traderSellPrice"
+  | "traderBuyPrice"
+  | "buyLimit";
+
 interface VirtualizedTableProps {
   items: MinimalItem[];
   sortKey: string;
   sortDir: "asc" | "desc";
-  onHeaderSort?: (
-    sortKey:
-      | "name"
-      | "shortName"
-      | "basePrice"
-      | "lastLowPrice"
-      | "avg24hPrice"
-      | "traderSellPrice"
-      | "traderBuyPrice"
-      | "buyLimit"
-  ) => void;
+  onHeaderSort?: (sortKey: SortKey) => void;
   onToggleFavorite?: (itemId: string) => void;
   isFavorite?: (itemId: string) => boolean;
+}
+
+const ROW_HEIGHT = 40;
+
+// Shared column sizes keep the header and the virtualized rows aligned.
+// Lower-priority columns drop out on narrow screens instead of being clipped.
+const COLUMNS = {
+  name: "min-w-0 flex-1",
+  basePrice: "w-[132px] shrink-0",
+  lastLowPrice: "hidden w-[112px] shrink-0 sm:flex",
+  avg24hPrice: "hidden w-[136px] shrink-0 xl:flex",
+  traderSellPrice: "hidden w-[136px] shrink-0 md:flex",
+  traderBuyPrice: "hidden w-[144px] shrink-0 lg:flex",
+  buyLimit: "hidden w-[104px] shrink-0 lg:flex",
+} as const;
+
+const NUMBER_CELL =
+  "items-center justify-end px-4 text-right tabular-nums text-muted-foreground";
+
+const capitalize = (value: string) =>
+  value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+
+function EmptyValue() {
+  return <span className="text-muted-foreground/40">—</span>;
+}
+
+function SortHeader({
+  label,
+  column,
+  sortKey,
+  sortDir,
+  onSort,
+  align = "right",
+  className,
+}: {
+  label: string;
+  column: SortKey;
+  sortKey: string;
+  sortDir: "asc" | "desc";
+  onSort?: (sortKey: SortKey) => void;
+  align?: "left" | "right";
+  className?: string;
+}) {
+  const active = sortKey === column;
+  const Icon = !active ? ArrowUpDown : sortDir === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <div
+      role="columnheader"
+      aria-sort={
+        active ? (sortDir === "asc" ? "ascending" : "descending") : "none"
+      }
+      className={cn(
+        "flex items-center px-2",
+        align === "right" ? "justify-end" : "justify-start",
+        className,
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onSort?.(column)}
+        className={cn(
+          "inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md px-2 transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          align === "right" && "flex-row-reverse",
+          active && "text-foreground",
+        )}
+      >
+        <span>{label}</span>
+        <Icon
+          className={cn("h-3.5 w-3.5", active ? "opacity-100" : "opacity-40")}
+          aria-hidden="true"
+        />
+      </button>
+    </div>
+  );
 }
 
 export function VirtualizedTable({
@@ -63,49 +144,33 @@ export function VirtualizedTable({
   isFavorite,
 }: VirtualizedTableProps) {
   const { t } = useLanguage();
-  const [tableHeight, setTableHeight] = useState(0); // Default height, will be updated
+  const [tableHeight, setTableHeight] = useState(0);
 
   useEffect(() => {
     function handleResize() {
-      // Assuming 200px for other elements like header/footer/margins
-      setTableHeight(window.innerHeight - 200);
+      // Leave room for the site header and the table header.
+      setTableHeight(Math.max(320, window.innerHeight - 200));
     }
 
-    // Set initial height
     handleResize();
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Custom cell component that uses divs instead of td elements
-  const Cell = React.memo(
-    ({
-      className,
-      children,
-    }: {
-      className?: string;
-      children: React.ReactNode;
-    }) => <div className={cn("px-4 py-2", className)}>{children}</div>
-  );
-
-  // Add display name for ESLint
-  Cell.displayName = "VirtualizedTableCell";
-
-  // Memoize the row renderer to prevent unnecessary re-renders
   const Row = useCallback(
     ({ index, style }: { index: number; style: React.CSSProperties }) => {
       const item = items[index];
       if (!item) return null;
 
-      // Best trader price minus "Flea Market"
+      // Best trader sell price, excluding the flea market
       const bestTraderPrice =
         item.sellFor?.length > 0
           ? item.sellFor
               .filter(
                 (seller) =>
                   seller?.vendor?.normalizedName !== "flea-market" &&
-                  seller?.priceRUB != null
+                  seller?.priceRUB != null,
               )
               .reduce<(typeof item.sellFor)[0] | null>((prev, curr) => {
                 if (!prev) return curr;
@@ -114,14 +179,14 @@ export function VirtualizedTable({
               }, null)
           : null;
 
-      // Best buy price from traders (excluding flea market)
+      // Cheapest trader offer, excluding the flea market
       const bestBuyPrice =
         item.buyFor?.length > 0
           ? item.buyFor
               .filter(
                 (offer) =>
                   offer?.vendor?.normalizedName !== "flea-market" &&
-                  offer?.priceRUB != null
+                  offer?.priceRUB != null,
               )
               .reduce<(typeof item.buyFor)[0] | null>((prev, curr) => {
                 if (!prev) return curr;
@@ -130,192 +195,180 @@ export function VirtualizedTable({
               }, null)
           : null;
 
-      // Calculate Flea Level Requirement
       const itemLevelReq = getItemLevelRequirement(item.name);
-      
       const categoryLevelReqs =
-        item.categories?.map((cat) => getCategoryLevelRequirementByName(cat.name)) ||
-        [];
-      
-      // Get the highest requirement from categories (if multiple)
+        item.categories?.map((cat) =>
+          getCategoryLevelRequirementByName(cat.name),
+        ) || [];
       const maxCategoryReq =
         categoryLevelReqs.length > 0 ? Math.max(...categoryLevelReqs) : 0;
-      
-      // Item specific requirement takes precedence if defined, otherwise use category requirement
+      // An item-specific requirement wins over the category requirement
       const fleaLevelRequirement = itemLevelReq ?? maxCategoryReq;
+
+      const favorite = isFavorite?.(item.id) ?? false;
+      const favoriteLabel = favorite
+        ? t("Remove from favorites")
+        : t("Add to favorites");
 
       return (
         <div
           style={style}
-          className="flex border-b transition-colors hover:bg-muted/50"
-          key={item.id}
+          role="row"
+          className="group flex items-center border-b border-border/40 text-sm transition-colors hover:bg-muted/40"
         >
-          <Cell className="font-medium flex-1 min-w-[200px] truncate flex items-center gap-2">
+          <div
+            role="cell"
+            className={cn(COLUMNS.name, "flex items-center gap-1.5 pl-2 pr-4")}
+          >
             {onToggleFavorite && isFavorite && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleFavorite(item.id);
                 }}
-                className="text-muted-foreground hover:text-yellow-500 transition-colors relative group"
-                aria-label={
-                  isFavorite(item.id)
-                    ? t("Remove from favorites")
-                    : t("Add to favorites")
-                }
+                className={cn(
+                  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  favorite
+                    ? "text-yellow-500"
+                    : "text-muted-foreground/50 hover:text-yellow-500",
+                )}
+                aria-label={favoriteLabel}
+                aria-pressed={favorite}
+                title={favoriteLabel}
               >
-                <span className="absolute hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 -mt-8 left-1/2 transform -translate-x-1/2 opacity-80">
-                  {isFavorite(item.id)
-                    ? t("Remove from favorites")
-                    : t("Add to favorites")}
-                </span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill={isFavorite(item.id) ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={
-                    isFavorite(item.id)
-                      ? "text-yellow-500"
-                      : "text-muted-foreground"
-                  }
-                >
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
+                <Star
+                  className={cn("h-3.5 w-3.5", favorite && "fill-current")}
+                />
               </button>
             )}
-              <HoverCard openDelay={0} closeDelay={0}>
-                <HoverCardTrigger asChild>
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline text-zinc-100 flex-1 truncate"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {item.name}
-                  </a>
-                </HoverCardTrigger>
-                <HoverCardContent
-                  side="right"
-                  align="start"
-                  sideOffset={12}
-                  className="w-[280px] p-0 bg-zinc-950/95 backdrop-blur-xl border-zinc-800/80 shadow-2xl rounded-xl overflow-hidden"
+            <HoverCard openDelay={150} closeDelay={0}>
+              <HoverCardTrigger asChild>
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-0 truncate font-medium text-foreground underline-offset-4 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="relative">
-                    {/* Color bar indicator based on value or rarity could go here, for now just a subtle gradient */}
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-zinc-800 via-zinc-700 to-zinc-800 opacity-50" />
-                    
-                    <div className="p-4 space-y-4">
-                      {/* Header */}
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-semibold text-zinc-100 leading-tight">
-                          {item.name}
-                        </h4>
-                        {item.shortName && item.shortName !== item.name && (
-                          <div className="text-xs text-zinc-500 font-mono tracking-tight">
-                            {item.shortName}
-                          </div>
-                        )}
+                  {item.name}
+                </a>
+              </HoverCardTrigger>
+              <HoverCardContent
+                side="right"
+                align="start"
+                sideOffset={12}
+                className="w-[280px] overflow-hidden rounded-lg border-border/60 bg-popover/95 p-0 shadow-xl backdrop-blur-xl"
+              >
+                <div className="space-y-4 p-4">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold leading-tight text-foreground">
+                      {item.name}
+                    </h4>
+                    {item.shortName && item.shortName !== item.name && (
+                      <div className="text-xs text-muted-foreground">
+                        {item.shortName}
                       </div>
+                    )}
+                  </div>
 
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-2 gap-4 py-3 border-y border-zinc-900/50 bg-zinc-900/20 -mx-4 px-4">
-                        {/* Price */}
-                        <div className="space-y-1">
-                          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                            Base Price
-                          </span>
-                          <div className="font-mono text-sm text-emerald-400/90 font-medium">
-                            ₽{item.basePrice.toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* Flea Req */}
-                        {fleaLevelRequirement > 0 ? (
-                          <div className="space-y-1">
-                            <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                              Flea Req
-                            </span>
-                            <div className="flex items-center gap-1.5 text-orange-400 font-medium text-sm">
-                              <Lock className="w-3 h-3" />
-                              <span>Lvl {fleaLevelRequirement}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                              Flea Req
-                            </span>
-                            <div className="text-sm text-zinc-600">None</div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Categories */}
-                      <div className="space-y-2">
-                        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                          Categories
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {item.categories?.slice(0, 5).map((cat) => (
-                            <span
-                              key={cat.name}
-                              className="px-2 py-0.5 rounded-[4px] bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-400 font-medium"
-                            >
-                              {cat.name}
-                            </span>
-                          ))}
-                          {(item.categories?.length ?? 0) > 5 && (
-                            <span className="px-2 py-0.5 rounded-[4px] bg-zinc-900/50 border border-zinc-800/50 text-[10px] text-zinc-500">
-                              +{(item.categories?.length ?? 0) - 5}
-                            </span>
-                          )}
-                        </div>
+                  <div className="-mx-4 grid grid-cols-2 gap-4 border-y border-border/50 bg-muted/20 px-4 py-3">
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">
+                        Base Price
+                      </span>
+                      <div className="text-sm font-medium tabular-nums text-foreground">
+                        ₽{item.basePrice.toLocaleString()}
                       </div>
                     </div>
+
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">
+                        Flea Req
+                      </span>
+                      {fleaLevelRequirement > 0 ? (
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-orange-400">
+                          <Lock className="h-3 w-3" />
+                          <span>Lvl {fleaLevelRequirement}</span>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground/60">
+                          None
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </HoverCardContent>
-              </HoverCard>
-          </Cell>
-          <Cell className="text-right font-semibold w-[120px]">
-            <div className="flex items-center justify-end gap-2">
-              <span>{item.basePrice.toLocaleString()}</span>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      className="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-background/60 hover:bg-muted/50 text-muted-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void navigator.clipboard.writeText(
-                          String(item.basePrice)
-                        );
-                      }}
-                      aria-label={t("Copy base price")}
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{t("Copy base price")}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </Cell>
-          <Cell className="text-muted-foreground text-right w-[120px]">
-            {item.lastLowPrice?.toLocaleString() ?? "-"}
-          </Cell>
-          <Cell className="text-muted-foreground text-right w-[120px]">
-            {item.avg24hPrice?.toLocaleString() ?? "-"}
-          </Cell>
-          <Cell className="text-muted-foreground text-right w-[120px]">
+
+                  <div className="space-y-2">
+                    <span className="text-xs text-muted-foreground">
+                      Categories
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {item.categories?.slice(0, 5).map((cat) => (
+                        <span
+                          key={cat.name}
+                          className="rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                        >
+                          {cat.name}
+                        </span>
+                      ))}
+                      {(item.categories?.length ?? 0) > 5 && (
+                        <span className="rounded-md border border-border/40 px-2 py-0.5 text-[11px] text-muted-foreground/70">
+                          +{(item.categories?.length ?? 0) - 5}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          </div>
+          <div
+            role="cell"
+            className={cn(
+              COLUMNS.basePrice,
+              "flex items-center justify-end gap-1 pl-2 pr-4 font-medium tabular-nums text-foreground",
+            )}
+          >
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-all hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:opacity-0 sm:group-hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void navigator.clipboard.writeText(
+                        String(item.basePrice),
+                      );
+                    }}
+                    aria-label={t("Copy base price")}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t("Copy base price")}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <span>{item.basePrice.toLocaleString()}</span>
+          </div>
+          <div role="cell" className={cn(COLUMNS.lastLowPrice, NUMBER_CELL)}>
+            {item.lastLowPrice ? (
+              item.lastLowPrice.toLocaleString()
+            ) : (
+              <EmptyValue />
+            )}
+          </div>
+          <div role="cell" className={cn(COLUMNS.avg24hPrice, NUMBER_CELL)}>
+            {item.avg24hPrice ? (
+              item.avg24hPrice.toLocaleString()
+            ) : (
+              <EmptyValue />
+            )}
+          </div>
+          <div role="cell" className={cn(COLUMNS.traderSellPrice, NUMBER_CELL)}>
             {bestTraderPrice ? (
               <TooltipProvider>
                 <Tooltip>
@@ -323,19 +376,19 @@ export function VirtualizedTable({
                     {bestTraderPrice.priceRUB.toLocaleString()}
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{bestTraderPrice.vendor.normalizedName}</p>
+                    <p>{capitalize(bestTraderPrice.vendor.normalizedName)}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             ) : (
-              "-"
+              <EmptyValue />
             )}
-          </Cell>
-          <Cell className="text-muted-foreground text-right w-[120px]">
+          </div>
+          <div role="cell" className={cn(COLUMNS.traderBuyPrice, NUMBER_CELL)}>
             {bestBuyPrice ? (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger className="flex items-center justify-end gap-1">
+                  <TooltipTrigger className="flex items-center justify-end gap-1.5">
                     <span>{bestBuyPrice.priceRUB.toLocaleString()}</span>
                     {TRADER_IMAGES[bestBuyPrice.vendor.normalizedName] && (
                       <img
@@ -343,7 +396,7 @@ export function VirtualizedTable({
                         alt={bestBuyPrice.vendor.normalizedName}
                         width={16}
                         height={16}
-                        className="w-4 h-4 rounded-full"
+                        className="h-4 w-4 rounded-full ring-1 ring-border"
                         fetchPriority="low"
                         loading="lazy"
                       />
@@ -351,96 +404,102 @@ export function VirtualizedTable({
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>
-                      {bestBuyPrice.vendor.normalizedName} (Level{" "}
+                      {capitalize(bestBuyPrice.vendor.normalizedName)} (Level{" "}
                       {bestBuyPrice.vendor.minTraderLevel || 1})
                     </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             ) : (
-              "-"
+              <EmptyValue />
             )}
-          </Cell>
-          <Cell className="text-muted-foreground text-right w-[120px]">
-            {bestBuyPrice?.vendor?.buyLimit
-              ? bestBuyPrice.vendor.buyLimit.toLocaleString()
-              : "∞"}
-          </Cell>
+          </div>
+          <div role="cell" className={cn(COLUMNS.buyLimit, NUMBER_CELL)}>
+            {!bestBuyPrice ? (
+              <EmptyValue />
+            ) : bestBuyPrice.vendor?.buyLimit ? (
+              bestBuyPrice.vendor.buyLimit.toLocaleString()
+            ) : (
+              "∞"
+            )}
+          </div>
         </div>
       );
     },
-    [items, Cell, onToggleFavorite, isFavorite, t]
+    [items, onToggleFavorite, isFavorite, t],
   );
 
-  // Only render if we have items
-  if (!items.length) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">
-        No items found matching your criteria
-      </div>
-    );
-  }
+  const headerProps = { sortKey, sortDir, onSort: onHeaderSort };
 
   return (
-    <div className="rounded-md border overflow-hidden">
-      <div className="flex border-b">
-        <div
-          className="font-medium p-2 flex-1 min-w-[200px] cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => onHeaderSort?.("name")}
-        >
-          Name {sortKey === "name" && (sortDir === "asc" ? "↑" : "↓")}
-        </div>
-        <div
-          className="text-right font-semibold p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => onHeaderSort?.("basePrice")}
-        >
-          Base Value{" "}
-          {sortKey === "basePrice" && (sortDir === "asc" ? "↑" : "↓")}
-        </div>
-        <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => onHeaderSort?.("lastLowPrice")}
-        >
-          Flea Price{" "}
-          {sortKey === "lastLowPrice" && (sortDir === "asc" ? "↑" : "↓")}
-        </div>
-        <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => onHeaderSort?.("avg24hPrice")}
-        >
-          Avg 24h Price{" "}
-          {sortKey === "avg24hPrice" && (sortDir === "asc" ? "↑" : "↓")}
-        </div>
-        <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => onHeaderSort?.("traderSellPrice")}
-        >
-          Sell-to-trader Price{" "}
-          {sortKey === "traderSellPrice" && (sortDir === "asc" ? "↑" : "↓")}
-        </div>
-        <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => onHeaderSort?.("traderBuyPrice")}
-        >
-          Buy From Traders{" "}
-          {sortKey === "traderBuyPrice" && (sortDir === "asc" ? "↑" : "↓")}
-        </div>
-        <div
-          className="text-muted-foreground text-right p-2 w-[120px] cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={() => onHeaderSort?.("buyLimit")}
-        >
-          Buy Limit {sortKey === "buyLimit" && (sortDir === "asc" ? "↑" : "↓")}
-        </div>
-      </div>
-      <List
-        height={tableHeight}
-        width="100%"
-        itemCount={items.length}
-        itemSize={40}
-        overscanCount={5}
+    <div
+      role="table"
+      aria-rowcount={items.length}
+      className="overflow-hidden rounded-lg border border-border/60 bg-background/40"
+    >
+      <div
+        role="row"
+        className="flex h-10 items-center overflow-hidden border-b border-border/60 bg-muted/30 [scrollbar-gutter:stable] text-xs font-medium text-muted-foreground"
       >
-        {Row}
-      </List>
+        <SortHeader
+          {...headerProps}
+          label={t("Name")}
+          column="name"
+          align="left"
+          className={cn(COLUMNS.name, "pl-1")}
+        />
+        <SortHeader
+          {...headerProps}
+          label={t("Base Value")}
+          column="basePrice"
+          className={COLUMNS.basePrice}
+        />
+        <SortHeader
+          {...headerProps}
+          label={t("Flea")}
+          column="lastLowPrice"
+          className={COLUMNS.lastLowPrice}
+        />
+        <SortHeader
+          {...headerProps}
+          label={t("24h Avg Price")}
+          column="avg24hPrice"
+          className={COLUMNS.avg24hPrice}
+        />
+        <SortHeader
+          {...headerProps}
+          label={t("Sell to Trader")}
+          column="traderSellPrice"
+          className={COLUMNS.traderSellPrice}
+        />
+        <SortHeader
+          {...headerProps}
+          label={t("Buy from Trader")}
+          column="traderBuyPrice"
+          className={COLUMNS.traderBuyPrice}
+        />
+        <SortHeader
+          {...headerProps}
+          label={t("Buy Limit")}
+          column="buyLimit"
+          className={COLUMNS.buyLimit}
+        />
+      </div>
+      {items.length ? (
+        <List
+          height={tableHeight}
+          width="100%"
+          itemCount={items.length}
+          itemSize={ROW_HEIGHT}
+          overscanCount={5}
+        >
+          {Row}
+        </List>
+      ) : (
+        <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
+          {t("No items match these filters.")}
+        </div>
+      )}
     </div>
   );
 }

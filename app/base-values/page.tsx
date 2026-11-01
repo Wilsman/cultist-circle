@@ -42,7 +42,9 @@ import {
 import {
   ArrowUp,
   ArrowDown,
+  ChevronDown,
   Loader2,
+  SlidersHorizontal,
   Star,
   Download,
   CircleAlert,
@@ -92,7 +94,22 @@ function getMinMax(
   return [Math.min(...nums), Math.max(...nums)];
 }
 
-const clampQuantity = (qty: number) => Math.min(5, Math.max(1, qty || 1));
+// The excluded list stores item names, so match on lowercased names.
+const EXCLUDED_ITEM_NAMES = new Set(
+  Array.from(DEFAULT_EXCLUDED_ITEMS, (name) => name.toLowerCase()),
+);
+
+// Items with no flea or trader price (quest items, secure containers) only
+// add empty rows to price sorts, so they go to the bottom.
+const hasAnyPrice = (item: MinimalItem) =>
+  (item.lastLowPrice ?? 0) > 0 ||
+  (item.avg24hPrice ?? 0) > 0 ||
+  item.sellFor?.some(
+    (offer) =>
+      offer?.vendor?.normalizedName !== "flea-market" &&
+      (offer?.priceRUB ?? 0) > 0,
+  ) ||
+  item.buyFor?.some((offer) => (offer?.priceRUB ?? 0) > 0);
 
 const TableSkeleton = () => (
   <div className="rounded-md border overflow-hidden">
@@ -195,30 +212,6 @@ export default function ItemsTablePage() {
 
   // State for trader-only filtering
   const [showTraderOnly, setShowTraderOnly] = useState(false);
-
-  // Multiplier Tester state (dev tool)
-  const [testerWeaponSum, setTesterWeaponSum] = useState<number>(0);
-  const [testerOtherSum, setTesterOtherSum] = useState<number>(0);
-  const [testerOutcome, setTesterOutcome] = useState<"6h" | "14h" | "12h">(
-    "6h",
-  );
-  const [testerK, setTesterK] = useState<number>(2);
-  const [showTester, setShowTester] = useState<boolean>(false);
-  // Weapon combobox removed; use main table search to find base prices.
-  const [selectedQty, setSelectedQty] = useState<number>(1);
-  const [singleBasePrice, setSingleBasePrice] = useState<number>(0);
-  const updateTesterComputedSum = useCallback(
-    (basePrice: number, qty: number) => {
-      if (basePrice <= 0) {
-        setTesterWeaponSum(0);
-        return;
-      }
-      const normalizedQty = clampQuantity(qty);
-      setTesterWeaponSum(basePrice * normalizedQty);
-      setTesterOtherSum(0);
-    },
-    [],
-  );
 
   // Initialize favorites functionality
   const {
@@ -604,7 +597,7 @@ export default function ItemsTablePage() {
     // Apply compatibility filter
     if (showCompatibleOnly) {
       filtered = filtered.filter((item) => {
-        const isExcluded = DEFAULT_EXCLUDED_ITEMS.has(item.id);
+        const isExcluded = EXCLUDED_ITEM_NAMES.has(item.name.toLowerCase());
         const hasValidPrice = item.basePrice > 0;
         return !isExcluded && hasValidPrice;
       });
@@ -695,7 +688,7 @@ export default function ItemsTablePage() {
 
     if (parsedFilters.compatibleOnly) {
       filteredItems = filteredItems.filter((item) => {
-        const isExcluded = DEFAULT_EXCLUDED_ITEMS.has(item.id);
+        const isExcluded = EXCLUDED_ITEM_NAMES.has(item.name.toLowerCase());
         const hasValidPrice = item.basePrice > 0;
         return !isExcluded && hasValidPrice;
       });
@@ -848,6 +841,12 @@ export default function ItemsTablePage() {
         return 0;
       });
     }
+    if (filter.sort !== "name" && filter.sort !== "shortName") {
+      filteredItems = [
+        ...filteredItems.filter(hasAnyPrice),
+        ...filteredItems.filter((item) => !hasAnyPrice(item)),
+      ];
+    }
     return filteredItems;
   }, [
     items,
@@ -879,109 +878,112 @@ export default function ItemsTablePage() {
       </div>
 
       {/* Primary Search Surface */}
-      <div className="sticky top-2 z-10 mb-6">
-        <div className="rounded-2xl border bg-background/85 backdrop-blur-md shadow-sm">
-          <div className="p-3 md:p-4 flex flex-col gap-3">
-            <div className="relative">
-              <Input
-                ref={searchInputRef}
-                placeholder={t("Search items by name or short name...")}
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="h-12 w-full pl-11 pr-16 bg-muted/30 border-border/60 focus:bg-background focus:border-primary/50 text-base shadow-sm transition-all rounded-xl"
-                aria-label={t("Search items")}
-              />
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                <Search className="h-5 w-5 opacity-50" />
-              </div>
-              {searchInput ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchInput("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-2 text-xs"
-                >
-                  {t("Clear")}
-                </Button>
-              ) : null}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <div
-                className="flex items-center rounded-full border bg-muted/40 p-1"
-                role="radiogroup"
-                aria-label={t("Game mode")}
+      <div className="sticky top-2 z-10 mb-4">
+        <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background/80 p-3 backdrop-blur-md">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              placeholder={t("Search items by name or short name...")}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="h-10 w-full rounded-lg border-border/60 bg-transparent pl-9 pr-16 text-sm shadow-none transition-colors focus-visible:border-foreground/30 focus-visible:ring-1 focus-visible:ring-ring"
+              aria-label={t("Search items")}
+            />
+            {searchInput ? (
+              <button
+                type="button"
+                onClick={() => setSearchInput("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                {GAME_MODES.map((gameMode) => (
-                  <Button
-                    key={gameMode}
-                    role="radio"
-                    aria-checked={mode === gameMode}
-                    variant={mode === gameMode ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => {
-                      startTransition(() => {
-                        setMode(gameMode);
-                        const newItems = itemsByModeRef.current[gameMode];
-                        setFilter((current) => ({
-                          ...current,
-                          basePrice: getMinMax(newItems, "basePrice"),
-                          lastLowPrice: getMinMax(newItems, "lastLowPrice"),
-                          avg24hPrice: getMinMax(newItems, "avg24hPrice"),
-                        }));
-                      });
-                    }}
-                    className="h-8 rounded-full px-3"
-                  >
-                    {GAME_MODE_LABELS[gameMode]}
-                  </Button>
-                ))}
-              </div>
+                {t("Clear")}
+              </button>
+            ) : (
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border/60 bg-muted/40 px-1.5 font-mono text-[10px] text-muted-foreground sm:block">
+                /
+              </kbd>
+            )}
+          </div>
 
-              <div className="text-xs text-muted-foreground">
-                {isLoading
-                  ? isRetryingTarkovRequest
-                    ? t(
-                        "Retrying Tarkov.dev in {seconds}s... attempt {attempt} of {max}",
-                        {
-                          seconds: retrySeconds,
-                          attempt: requestStatus.attempt,
-                          max: requestStatus.maxAttempts,
-                        },
-                      )
-                    : t("Loading items...")
-                  : debouncedSearchTerm
-                    ? t("{count} items for \"{query}\"", {
-                        count: filtered.length.toLocaleString(),
-                        query: debouncedSearchTerm,
-                      })
-                    : t("{count} items", {
-                        count: filtered.length.toLocaleString(),
-                      })}
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div
+              className="inline-flex items-center rounded-lg bg-muted/50 p-0.5"
+              role="radiogroup"
+              aria-label={t("Game mode")}
+            >
+              {GAME_MODES.map((gameMode) => (
+                <button
+                  key={gameMode}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === gameMode}
+                  onClick={() => {
+                    startTransition(() => {
+                      setMode(gameMode);
+                      const newItems = itemsByModeRef.current[gameMode];
+                      setFilter((current) => ({
+                        ...current,
+                        basePrice: getMinMax(newItems, "basePrice"),
+                        lastLowPrice: getMinMax(newItems, "lastLowPrice"),
+                        avg24hPrice: getMinMax(newItems, "avg24hPrice"),
+                      }));
+                    });
+                  }}
+                  className={`h-7 rounded-md px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+                    mode === gameMode
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {GAME_MODE_LABELS[gameMode]}
+                </button>
+              ))}
             </div>
 
-            <div className="text-[11px] text-muted-foreground">
-              {formatMessageSlots(
-                t(
-                  "Pro tips: use {examples}. Press {focusKey} to focus, {toggleKey} to toggle filters.",
-                ),
-                {
-                  examples: (
-                    <>
-                      <span className="font-mono">bp&gt;50000</span>, <span className="font-mono">avg&lt;200000</span>,{" "}
-                      <span className="font-mono">cat:weapon</span>, <span className="font-mono">trader</span>,{" "}
-                      <span className="font-mono">fav</span>
-                    </>
-                  ),
-                  focusKey: <span className="font-mono">/</span>,
-                  toggleKey: <span className="font-mono">Shift+Enter</span>,
-                },
-              )}
+            <div className="text-xs tabular-nums text-muted-foreground">
+              {isLoading
+                ? isRetryingTarkovRequest
+                  ? t(
+                      "Retrying Tarkov.dev in {seconds}s... attempt {attempt} of {max}",
+                      {
+                        seconds: retrySeconds,
+                        attempt: requestStatus.attempt,
+                        max: requestStatus.maxAttempts,
+                      },
+                    )
+                  : t("Loading items...")
+                : debouncedSearchTerm
+                  ? t("{count} items for \"{query}\"", {
+                      count: filtered.length.toLocaleString(),
+                      query: debouncedSearchTerm,
+                    })
+                  : t("{count} items", {
+                      count: filtered.length.toLocaleString(),
+                    })}
             </div>
           </div>
         </div>
+
+        <p className="mt-2 hidden px-1 text-[11px] text-muted-foreground/70 sm:block">
+          {formatMessageSlots(
+            t(
+              "Pro tips: use {examples}. Press {focusKey} to focus, {toggleKey} to toggle filters.",
+            ),
+            {
+              examples: (
+                <>
+                  <span className="font-mono">bp&gt;50000</span>,{" "}
+                  <span className="font-mono">avg&lt;200000</span>,{" "}
+                  <span className="font-mono">cat:weapon</span>,{" "}
+                  <span className="font-mono">trader</span>,{" "}
+                  <span className="font-mono">fav</span>
+                </>
+              ),
+              focusKey: <span className="font-mono">/</span>,
+              toggleKey: <span className="font-mono">Shift+Enter</span>,
+            },
+          )}
+        </p>
       </div>
 
       {(isRetryingTarkovRequest || isCoolingDownTarkovRequest || loadError) && (
@@ -1030,18 +1032,24 @@ export default function ItemsTablePage() {
 
       {/* Filters & Sorting */}
       <details
-        className="mb-6 rounded-2xl border bg-muted/20"
+        className="group/filters mb-4 rounded-xl border border-border/60"
         open={isAdvancedOpen}
         onToggle={(event) => setIsAdvancedOpen(event.currentTarget.open)}
       >
-        <summary className="list-none cursor-pointer px-4 py-3 text-sm font-medium flex items-center justify-between">
-          {t("Filters and sorting")}
-          <span className="text-xs text-muted-foreground">
-            {t("Expand for advanced controls")}
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted/30 [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            {t("Filters and sorting")}
+          </span>
+          <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
+            <span className="hidden sm:inline">
+              {t("Expand for advanced controls")}
+            </span>
+            <ChevronDown className="h-4 w-4 transition-transform group-open/filters:rotate-180" />
           </span>
         </summary>
-        <div className="border-t px-4 py-4 space-y-4">
-          <div className="bg-background/60 p-4 rounded-lg border">
+        <div className="space-y-5 border-t border-border/60 px-4 py-4">
+          <div>
             <PriceRangeFilter
               min={getMinMax(items, "basePrice")[0]}
               max={getMinMax(items, "basePrice")[1]}
@@ -1070,7 +1078,7 @@ export default function ItemsTablePage() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-8"
+              className="h-8 text-xs shadow-none"
               onClick={() => {
                 startTransition(() => {
                   const [min, max] = getMinMax(items, "basePrice");
@@ -1089,25 +1097,7 @@ export default function ItemsTablePage() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-8"
-              onClick={() => setShowTraderOnly(true)}
-            >
-              {t("Trader only")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-8"
-              onClick={() => setShowCompatibleOnly(true)}
-            >
-              {t("Compatible")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-8"
+              className="h-8 text-xs shadow-none"
               onClick={() => {
                 startTransition(() => {
                   setFilter((f) => ({
@@ -1133,7 +1123,7 @@ export default function ItemsTablePage() {
                 });
               }}
               disabled={!hasFavorites}
-              className="h-8 px-3 border-muted-foreground/30"
+              className="h-8 px-3 text-xs shadow-none"
             >
               <Star
                 className={`h-4 w-4 mr-2 ${
@@ -1166,7 +1156,7 @@ export default function ItemsTablePage() {
             </Toggle>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 border-t border-border/60 pt-4">
             <CategoryFilter
               categories={categories}
               selectedCategory={selectedCategory}
@@ -1201,7 +1191,7 @@ export default function ItemsTablePage() {
                   });
                 }}
               >
-                <SelectTrigger className="h-8 w-[180px]">
+                <SelectTrigger className="h-8 w-[180px] text-xs shadow-none">
                   <SelectValue placeholder={t("Sort by...")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -1249,7 +1239,7 @@ export default function ItemsTablePage() {
               onClick={() => exportToExcel(filtered)}
               variant="outline"
               size="sm"
-              className="h-8 gap-2"
+              className="ml-auto h-8 gap-2 text-xs shadow-none"
             >
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">{t("Export")}</span>
@@ -1257,354 +1247,6 @@ export default function ItemsTablePage() {
           </div>
         </div>
       </details>
-
-      {/* Multiplier Tester (Dev Tool) */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold">
-            {t("Multiplier Tester (Weapons)")}
-          </h2>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setShowTester((v) => !v)}
-            className="h-8"
-            aria-expanded={showTester}
-            aria-controls="multiplier-tester"
-          >
-            {showTester ? t("Hide tester") : t("Show tester")}
-          </Button>
-        </div>
-        {!showTester ? (
-          <div className="text-xs text-muted-foreground border rounded-md p-3">
-            {t(
-              'Experimental tool for weapon value discrepancies. Click "Show tester" to open.',
-            )}
-          </div>
-        ) : null}
-        {showTester && (
-          <>
-            <div
-              id="multiplier-tester"
-              className="mt-2 rounded-lg border bg-muted/20 p-4"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">
-                  {t("Quickly infer k from outcomes")}
-                </span>
-              </div>
-              <div className="text-xs text-muted-foreground mb-3">
-                {t(
-                  "Use the main table's search box to find your weapon and read its base price. Enter totals below.",
-                )}
-              </div>
-            </div>
-            {/* Quick calc: base price × quantity */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
-                  {t("Single weapon base price (RUB)")}
-                </label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  value={Number.isFinite(singleBasePrice) ? singleBasePrice : 0}
-                  onChange={(e) => {
-                    const next = Number(e.target.value) || 0;
-                    setSingleBasePrice(next);
-                    updateTesterComputedSum(next, selectedQty);
-                  }}
-                  placeholder={t("e.g. {example}", { example: "40,000" })}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
-                  {t("Quantity (1–5)")}
-                </label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((q) => (
-                    <Button
-                      key={q}
-                      type="button"
-                      size="sm"
-                      variant={selectedQty === q ? "default" : "outline"}
-                      className="h-9 w-9 p-0"
-                      onClick={() => {
-                        setSelectedQty(q);
-                        updateTesterComputedSum(singleBasePrice, q);
-                      }}
-                    >
-                      {q}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
-                  {t("Computed weapon sum")}
-                </label>
-                <div className="h-9 flex items-center px-3 rounded-md border bg-background/60 text-sm">
-                  {testerWeaponSum.toLocaleString()} RUB
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
-                  {t("Sum of weapon base values (RUB)")}
-                </label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  value={Number.isFinite(testerWeaponSum) ? testerWeaponSum : 0}
-                  onChange={(e) =>
-                    setTesterWeaponSum(Number(e.target.value) || 0)
-                  }
-                  placeholder={t("e.g. {example}", {
-                    example: "207740 (5x MP5 Navy)",
-                  })}
-                />
-              </div>
-              {/* Non-weapon sum hidden for weapon-only testing, still editable if needed */}
-              <div className="space-y-1 hidden">
-                <label className="text-xs text-muted-foreground">
-                  {t("Sum of other items (non-weapons) (RUB)")}
-                </label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  value={Number.isFinite(testerOtherSum) ? testerOtherSum : 0}
-                  onChange={(e) =>
-                    setTesterOtherSum(Number(e.target.value) || 0)
-                  }
-                  placeholder={t("0 if only weapons")}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
-                  {t("Observed outcome")}
-                </label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={testerOutcome === "6h" ? "default" : "outline"}
-                    onClick={() => setTesterOutcome("6h")}
-                    className="h-9"
-                  >
-                    6h
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={testerOutcome === "14h" ? "default" : "outline"}
-                    onClick={() => setTesterOutcome("14h")}
-                    className="h-9"
-                  >
-                    14h
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={testerOutcome === "12h" ? "default" : "outline"}
-                    onClick={() => setTesterOutcome("12h")}
-                    className="h-9"
-                  >
-                    12h
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {(() => {
-              const sumW = Math.max(0, testerWeaponSum || 0);
-              const sumO = Math.max(0, testerOtherSum || 0);
-              const sixH = 400_000;
-              const fourteenH = 350_000;
-              const twelveHMin = 200_000;
-              const kFor6h = sumW > 0 ? (sixH - sumO) / sumW : NaN;
-              const kMin14 = sumW > 0 ? (fourteenH - sumO) / sumW : NaN;
-              const kMax14 = sumW > 0 ? (sixH - sumO) / sumW : NaN;
-              const kMin12 = sumW > 0 ? (twelveHMin - sumO) / sumW : NaN;
-              const kMax12 = sumW > 0 ? (fourteenH - sumO) / sumW : NaN;
-
-              // Prediction for a candidate k
-              const kCandidate = Number.isFinite(testerK) ? testerK : 0;
-              const predictedTotal = sumO + sumW * Math.max(0, kCandidate);
-              const predictedOutcome =
-                predictedTotal >= sixH
-                  ? "6h"
-                  : predictedTotal >= fourteenH
-                    ? "14h"
-                    : predictedTotal >= twelveHMin
-                      ? "12h"
-                      : "<12h";
-              const predictedBand = (() => {
-                if (predictedTotal >= sixH) return "6h (≥ 400,000)";
-                if (predictedTotal >= fourteenH)
-                  return "14h [350,000, 400,000)";
-                if (predictedTotal >= twelveHMin)
-                  return "12h [200,000, 350,000)";
-                if (predictedTotal >= 100_001) return "8h [100,001, 200,000)";
-                if (predictedTotal >= 50_001) return "5h [50,001, 100,000)";
-                if (predictedTotal >= 25_001) return "4h [25,001, 50,000)";
-                if (predictedTotal >= 10_001) return "3h [10,001, 25,000)";
-                return "2h [0, 10,000]";
-              })();
-
-              return (
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="rounded-md border p-3 bg-background/60">
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {t("Implied multiplier")}
-                    </div>
-                    {testerOutcome === "6h" ? (
-                      <div className="text-sm">
-                        <div>
-                          k ≈{" "}
-                          <span className="font-semibold">
-                            {Number.isFinite(kFor6h) ? kFor6h.toFixed(3) : "—"}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {t("Based on effective ≥ 400,000")}
-                        </div>
-                        <div className="mt-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              Number.isFinite(kFor6h) &&
-                              setTesterK(Number(kFor6h.toFixed(3)))
-                            }
-                          >
-                            {t("Use suggested k")}
-                          </Button>
-                        </div>
-                      </div>
-                    ) : testerOutcome === "14h" ? (
-                      <div className="text-sm">
-                        <div>
-                          k ∈ [
-                          <span className="font-semibold">
-                            {Number.isFinite(kMin14) ? kMin14.toFixed(3) : "—"}
-                          </span>
-                          ,
-                          <span className="font-semibold">
-                            {Number.isFinite(kMax14) ? kMax14.toFixed(3) : "—"}
-                          </span>
-                          )
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {t("14h implies total in [350k, 400k)")}
-                        </div>
-                        <div className="mt-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              const mid = (kMin14 + kMax14) / 2;
-                              if (Number.isFinite(mid))
-                                setTesterK(Number(mid.toFixed(3)));
-                            }}
-                          >
-                            {t("Use suggested k (midpoint)")}
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm">
-                        <div>
-                          k ∈ [
-                          <span className="font-semibold">
-                            {Number.isFinite(kMin12) ? kMin12.toFixed(3) : "—"}
-                          </span>
-                          ,
-                          <span className="font-semibold">
-                            {Number.isFinite(kMax12) ? kMax12.toFixed(3) : "—"}
-                          </span>
-                          )
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {t("12h implies total in [200k, 350k)")}
-                        </div>
-                        <div className="mt-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              const mid = (kMin12 + kMax12) / 2;
-                              if (Number.isFinite(mid))
-                                setTesterK(Number(mid.toFixed(3)));
-                            }}
-                          >
-                            {t("Use suggested k (midpoint)")}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="rounded-md border p-3 bg-background/60">
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {t("Try a candidate k")}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        step="0.001"
-                        value={Number.isFinite(testerK) ? testerK : 0}
-                        onChange={(e) => setTesterK(Number(e.target.value))}
-                        className="w-28 h-9"
-                      />
-                      <div className="text-xs text-muted-foreground">
-                        {t("Predicted total:")}
-                      </div>
-                      <div className="text-sm font-medium">
-                        {predictedTotal.toLocaleString()}
-                      </div>
-                      <div className="ml-auto text-xs text-right">
-                        <div>
-                          {t("Outcome:")}{" "}
-                          <span className="font-semibold">
-                            {predictedOutcome}
-                          </span>
-                        </div>
-                        <div className="text-muted-foreground">
-                          {t("Band:")} {predictedBand}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-md border p-3 bg-background/60 text-xs text-muted-foreground">
-                    <div>{t("Tips:")}</div>
-                    <ul className="list-disc list-inside space-y-1">
-                      <li>
-                        {t("Set non-weapon sum to 0 when testing only weapons.")}
-                      </li>
-                      <li>
-                        {t(
-                          "Use 6h to get a single implied k. Use 14h to get bounds.",
-                        )}
-                      </li>
-                      <li>
-                        {t(
-                          "Repeat across trials; compare medians to stabilize k.",
-                        )}
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              );
-            })()}
-          </>
-        )}
-      </div>
 
       {/* Table Section with loading indicator */}
       {isPending && (

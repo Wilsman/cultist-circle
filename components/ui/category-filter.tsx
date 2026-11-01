@@ -23,7 +23,7 @@ export function CategoryFilter({ categories, selectedCategory, onCategoryChange 
           value={selectedCategory || "all"}
           onValueChange={(value) => onCategoryChange(value === "all" ? null : value)}
         >
-          <SelectTrigger className="h-8 w-[160px]">
+          <SelectTrigger className="h-8 w-[160px] text-xs shadow-none">
             <SelectValue placeholder={t("All Categories")} />
           </SelectTrigger>
           <SelectContent>
