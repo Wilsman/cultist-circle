@@ -1,6 +1,7 @@
 import type { SimplifiedItem } from "@/types/SimplifiedItem";
 import type { GraphQLResponse, TarkovItem } from "@/types/GraphQLResponse";
 import { resolveItemIcon } from "@/lib/item-icon";
+import type { CatalogItem } from "@/lib/base-value-rule";
 import {
   fromTarkovJsonGameMode,
   type TarkovGraphqlGameMode,
@@ -344,6 +345,11 @@ interface TarkovJsonItem {
   categories?: string[];
   buyFromTrader?: TarkovJsonTraderOffer[];
   sellToTrader?: TarkovJsonTraderOffer[];
+  types?: string[];
+  containsItems?: { item: string; count?: number }[];
+  properties?: {
+    slots?: { nameId: string; filters?: { allowedItems?: string[] } }[];
+  };
 }
 
 interface TarkovJsonItemsData {
@@ -1129,6 +1135,49 @@ async function fetchMinimalTarkovDataFromJson(
   );
   jsonMinimalDataCache.set(cacheKey, { data: items, time: Date.now() });
   return items;
+}
+
+/**
+ * Base value, attachment slots and preset contents for guns, presets and
+ * parts. Reuses the cached items JSON, so it adds no request.
+ */
+export async function fetchItemCatalog(
+  gameMode: TarkovJsonGameMode,
+  options: TarkovRequestOptions = {},
+): Promise<Map<string, CatalogItem>> {
+  const { items } = await fetchTarkovJsonBundle(gameMode, "en", options);
+  const catalog = new Map<string, CatalogItem>();
+  for (const item of Object.values(items.data.items)) {
+    const slots = item.properties?.slots;
+    const types = item.types ?? [];
+    if (
+      !slots?.length &&
+      !item.containsItems?.length &&
+      !types.includes("mods")
+    )
+      continue;
+    catalog.set(item.id, {
+      id: item.id,
+      basePrice: normalizeBasePrice(item.basePrice),
+      ...(types.includes("gun") ? { gun: true } : {}),
+      ...(slots?.length
+        ? {
+            slots: slots.map((s) => ({
+              name: s.nameId,
+              allowed: s.filters?.allowedItems ?? [],
+            })),
+          }
+        : {}),
+      ...(item.containsItems?.length
+        ? {
+            contains: item.containsItems.flatMap((c) =>
+              Array<string>(c.count ?? 1).fill(c.item),
+            ),
+          }
+        : {}),
+    });
+  }
+  return catalog;
 }
 
 export async function fetchMinimalTarkovData(

@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function BaseValueLabPage() {
-  return <BaseValueLab />;
+  return <BaseValueLab view="test" />;
 }

@@ -883,18 +883,17 @@ export function freeSlots(
   return open;
 }
 
+type Slots = Pick<SlottedItem, "id" | "slots">;
+
 /**
- * For each part on a gun, the chain from the gun out to that part: the part
- * plus everything it hangs from (usually mounts). The parts must fit together
- * on the gun, like a Default preset or a saved build; any order works.
+ * Puts parts on a gun: each takes the first free slot that accepts it, and its
+ * own slots open up. `host` is the index of the part it hangs from, or -1 for
+ * the gun. Parts that fit nowhere are left out. Any order works.
  */
-export function partChains<T extends SlottedItem>(
-  gun: SlottedItem,
-  parts: readonly T[],
-): Map<string, T[]> {
+function placeParts<T extends Slots>(gun: Slots, parts: readonly T[]) {
   const placed: { item: T; host: number }[] = [];
   const open: { host: number; allowed: Set<string> }[] = [];
-  const addSlots = (item: SlottedItem, host: number) => {
+  const addSlots = (item: Slots, host: number) => {
     for (const s of item.slots ?? [])
       open.push({ host, allowed: new Set(s.allowed) });
   };
@@ -912,6 +911,19 @@ export function partChains<T extends SlottedItem>(
       return false;
     });
   }
+  return placed;
+}
+
+/**
+ * For each part on a gun, the chain from the gun out to that part: the part
+ * plus everything it hangs from (usually mounts). The parts must fit together
+ * on the gun, like a Default preset or a saved build; any order works.
+ */
+export function partChains<T extends SlottedItem>(
+  gun: SlottedItem,
+  parts: readonly T[],
+): Map<string, T[]> {
+  const placed = placeParts(gun, parts);
   const chains = new Map<string, T[]>();
   placed.forEach(({ item }, i) => {
     const chain: T[] = [];
@@ -919,6 +931,23 @@ export function partChains<T extends SlottedItem>(
     chains.set(item.id, chain);
   });
   return chains;
+}
+
+/**
+ * How deep each part sits: 1 on the gun, 2 on a part on the gun, and so on.
+ * Null when a part fits nowhere, so the tree can't be trusted.
+ */
+export function partDepths<T extends Slots>(
+  gun: Slots,
+  parts: readonly T[],
+): { item: T; depth: number }[] | null {
+  const placed = placeParts(gun, parts);
+  if (placed.length < parts.length) return null;
+  const depths: number[] = [];
+  return placed.map(({ item, host }, i) => {
+    depths[i] = host < 0 ? 1 : depths[host] + 1;
+    return { item, depth: depths[i] };
+  });
 }
 
 const KINDS: SubjectKind[] = [

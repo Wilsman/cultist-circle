@@ -1,7 +1,7 @@
-// Small formatters and labels shared by the lab's test and results views.
+// Small formatters and colours shared by the lab's test and results views.
 
-import type { Range, Subject, SubjectResult } from "@/lib/base-value-lab";
-import { gunVersion, type GunVersionTone } from "@/lib/base-value-site";
+import type { Range } from "@/lib/base-value-lab";
+import type { GunVersionTone } from "@/lib/base-value-site";
 
 export const mult = (n: number) =>
   n === Infinity ? "∞" : `${n.toFixed(n >= 10 ? 0 : 1)}×`;
@@ -17,36 +17,32 @@ export const k = (n: number) =>
 export const span = (r: Range) =>
   r.hi === Infinity ? `${k(r.lo)}+` : `${k(r.lo)} – ${k(r.hi)}`;
 
-/** "1.5–2.2×", or "≤2.2×" / "≥5×" when one end is open. */
-export function ratioSpan(r: Range, by = 1) {
-  if (r.hi === Infinity) return `≥${mult(r.lo / by)}`;
-  if (r.lo <= 0) return `≤${mult(r.hi / by)}`;
-  return `${(r.lo / by).toFixed(1)}–${mult(r.hi / by)}`;
-}
+export type Mark = "measured" | "nested" | "flat" | "api";
 
-export const STATUS: Record<
-  SubjectResult["status"],
-  { label: string; className: string }
-> = {
-  untested: { label: "Not tested", className: "border-gray-600 text-gray-300" },
-  open: { label: "Narrowing", className: "border-sky-500/50 text-sky-300" },
-  "needs-confirmation": {
-    label: "Needs a re-check",
-    className: "border-amber-500/50 text-amber-300",
-  },
-  confident: {
-    label: "Done",
-    className: "border-emerald-500/50 text-emerald-300",
-  },
-  "too-high": {
-    label: "Above 350k",
-    className: "border-purple-500/50 text-purple-300",
-  },
-  conflict: {
-    label: "Results disagree",
-    className: "border-red-500/50 text-red-300",
-  },
+/** Series colours, shared by the charts and the glyphs. */
+export const COLOR: Record<Mark, string> = {
+  measured: "#fbbf24",
+  nested: "#7dd3fc",
+  flat: "#c4b5fd",
+  api: "#9ca3af",
 };
+
+const MARK_CLASS: Record<Mark, string> = {
+  measured: "h-1.5 w-3 rounded-full bg-amber-400",
+  nested: "size-2.5 rounded-full bg-sky-300",
+  flat: "size-2.5 rounded-full border-2 border-violet-300",
+  api: "h-3 w-0.5 rounded-full bg-gray-400",
+};
+
+/** The marker a chart draws for a series, reused as a legend key. */
+export function Glyph({ mark }: { mark: Mark }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block shrink-0 align-middle ${MARK_CLASS[mark]}`}
+    />
+  );
+}
 
 export const TONE: Record<GunVersionTone, string> = {
   stripped: "border-rose-400/60 bg-rose-500/15 text-rose-200",
@@ -54,21 +50,3 @@ export const TONE: Record<GunVersionTone, string> = {
   build: "border-violet-400/60 bg-violet-500/15 text-violet-200",
   preset: "border-sky-400/60 bg-sky-500/15 text-sky-200",
 };
-
-export function VersionTag({ subject }: { subject: Subject }) {
-  const version = gunVersion(subject);
-  if (!version) return null;
-  return (
-    <span
-      className={`ml-2 inline-block whitespace-nowrap rounded-md border px-1.5 py-0.5 align-middle text-[11px] font-semibold uppercase tracking-wide ${TONE[version.tone]}`}
-    >
-      {version.tag}
-    </span>
-  );
-}
-
-/** Short one-line name for chart labels, e.g. "TOZ-106 · Default". */
-export function shortLabel(subject: Subject) {
-  const version = gunVersion(subject);
-  return version ? `${version.name} · ${version.tag}` : subject.name;
-}

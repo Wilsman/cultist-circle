@@ -14,11 +14,21 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { k, TONE } from "./labels";
-import { ResultsTable } from "./results-charts";
-import { HiddenRule, TimerMeaning } from "./hidden-rule";
+import { LabHeader } from "./lab-nav";
+import { TheoryResults, TimerMeaning } from "./theories";
 import { OtherTestForm, type OtherTest } from "./other-test-form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  fetchLab,
+  LAB_ENDPOINT,
+  labMode,
+  loadPrefs,
+  savePrefs,
+  type ApiBody,
+  type Prefs,
+  type SharedTest,
+} from "./lab-data";
+import {
+  fetchItemCatalog,
   fetchMinimalTarkovData,
   type MinimalItem,
 } from "@/hooks/use-tarkov-api";
@@ -26,9 +36,7 @@ import {
   MAX_HIDEOUT_SKILL,
   TIMERS,
   TIMER_RANGES,
-  parseState,
   solve,
-  type LabMode,
   type LabTest,
   type Subject,
   type Timer,
@@ -38,19 +46,17 @@ import {
   cheapestOffer,
   FLEA_UNLOCK_LEVEL,
   gunVersion,
-  partsValue,
   type SiteFiller,
 } from "@/lib/base-value-site";
-import { pickTest, type PickedTest } from "@/lib/base-value-rule";
-import { baseValueTestSchema } from "@/lib/base-value-submission";
 import {
-  type GameMode,
-  isGameMode,
-  toTarkovJsonGameMode,
-} from "@/lib/game-mode";
+  compareTheories,
+  pickTest,
+  type Catalog,
+  type PickedTest,
+} from "@/lib/base-value-rule";
+import { baseValueTestSchema } from "@/lib/base-value-submission";
+import { type GameMode, toTarkovJsonGameMode } from "@/lib/game-mode";
 
-const ENDPOINT = `${process.env.NODE_ENV === "development" ? "" : "https://cultist-circle-feedback.cultistcircle.workers.dev"}/api/base-value-lab`;
-const PREFS_KEY = "base-value-lab:prefs";
 const MODE_LABELS: Record<GameMode, string> = {
   pvp: "PvP",
   pve: "PvE",
@@ -58,19 +64,6 @@ const MODE_LABELS: Record<GameMode, string> = {
 };
 // Order of the game mode buttons.
 const PLAYED_MODES: readonly GameMode[] = ["pve", "pvp", "season"];
-
-type SharedTest = LabTest & { source?: string; contributor?: string };
-type ApiBody = { success?: boolean; error?: string; data?: unknown };
-interface Prefs {
-  /** Game mode the tester plays, if they said. Optional. */
-  played: GameMode | null;
-  name: string;
-  skill: string;
-  /** Player level, to keep the flea out of suggestions until it unlocks. */
-  level: string;
-  /** Filler items the tester can't get, so suggestions avoid them. */
-  blocked: string[];
-}
 
 async function copyName(name: string) {
   try {
@@ -87,26 +80,6 @@ const timerLabel = (t: Timer) =>
     ? "6h (400k+)"
     : `${t} (${k(TIMER_RANGES[t][0])}–${k(TIMER_RANGES[t][1])})`;
 
-function loadPrefs(): Prefs {
-  try {
-    const raw = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}");
-    return {
-      played:
-        typeof raw.played === "string" && isGameMode(raw.played)
-          ? raw.played
-          : null,
-      name: typeof raw.name === "string" ? raw.name : "",
-      skill: typeof raw.skill === "string" ? raw.skill : "",
-      level: typeof raw.level === "string" ? raw.level : "",
-      blocked: Array.isArray(raw.blocked)
-        ? raw.blocked.filter((id: unknown) => typeof id === "string")
-        : [],
-    };
-  } catch {
-    return { played: null, name: "", skill: "", level: "", blocked: [] };
-  }
-}
-
 /** Name plus version, e.g. "HK MP5 (Navy 3 Round Burst) [Stripped]". */
 function subjectLabel(subject?: Subject) {
   if (!subject) return "Unknown item";
@@ -122,7 +95,7 @@ function describeTest(test: LabTest, subjects: Map<string, Subject>) {
   return parts.join(" + ");
 }
 
-export function BaseValueLab() {
+export function BaseValueLab({ view }: { view: "test" | "results" }) {
   const [prefs, setPrefs] = useState<Prefs>({
     played: null,
     name: "",
@@ -135,13 +108,14 @@ export function BaseValueLab() {
   const [items, setItems] = useState<Partial<Record<GameMode, MinimalItem[]>>>(
     {},
   );
+  // Slot data for the nested rule. Empty when it fails to load.
+  const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [skip, setSkip] = useState<Set<string>>(new Set());
   const [timer, setTimer] = useState<Timer | null>(null);
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
-  const [tab, setTab] = useState("test");
   // Settings saved on an earlier visit start folded into one line.
   const [prefsFolded, setPrefsFolded] = useState(false);
 
@@ -157,39 +131,15 @@ export function BaseValueLab() {
   const updatePrefs = (next: Partial<Prefs>) =>
     setPrefs((current) => {
       const merged = { ...current, ...next };
-      try {
-        localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
-      } catch {
-        // Private mode: the choice just isn't remembered.
-      }
+      savePrefs(merged);
       return merged;
     });
 
   const load = useCallback(async () => {
     try {
-      const response = await fetch(ENDPOINT, { cache: "no-store" });
-      const body = (await response.json()) as ApiBody;
-      if (!response.ok || !body?.success) throw new Error(body?.error);
-      const raw = body.data as { subjects: Subject[]; tests: SharedTest[] };
-      const ids = new Set(raw.subjects.map((s) => s.id));
-      const usable = raw.tests.filter((t) =>
-        t.entries?.every((e) => ids.has(e.subjectId)),
-      );
-      // Validates the rows the same way the local lab's import does.
-      const state = parseState({
-        version: 1,
-        subjects: raw.subjects,
-        tests: usable,
-      });
-      const extra = new Map(usable.map((t) => [t.id, t]));
-      setSubjects(state.subjects);
-      setTests(
-        state.tests.map((t) => ({
-          ...t,
-          source: extra.get(t.id)?.source,
-          contributor: extra.get(t.id)?.contributor,
-        })),
-      );
+      const lab = await fetchLab();
+      setSubjects(lab.subjects);
+      setTests(lab.tests);
     } catch {
       setLoadError("Could not load the lab. Try again in a moment.");
     } finally {
@@ -202,20 +152,8 @@ export function BaseValueLab() {
     void load();
   }, [load]);
 
-  const modes = useMemo(
-    () =>
-      (["pvp", "pve"] as const).filter((m) =>
-        subjects.some((s) => s.mode === m),
-      ),
-    [subjects],
-  );
-  // The set of items under test. Base values don't change between modes, so
-  // a tester's game mode only picks this when that mode has its own items.
   const played = prefs.played;
-  const mode: LabMode =
-    played && played !== "season" && modes.includes(played)
-      ? played
-      : (modes[0] ?? "pve");
+  const mode = useMemo(() => labMode(subjects, played), [subjects, played]);
   // Filler prices follow the mode the tester plays.
   const priceMode: GameMode = played ?? mode;
   useEffect(() => {
@@ -236,6 +174,18 @@ export function BaseValueLab() {
       cancelled = true;
     };
   }, [items, priceMode]);
+  useEffect(() => {
+    if (catalog) return;
+    let cancelled = false;
+    fetchItemCatalog(toTarkovJsonGameMode(priceMode))
+      .catch(() => new Map())
+      .then((c) => {
+        if (!cancelled) setCatalog(c);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [catalog, priceMode]);
   const modeSubjects = useMemo(
     () => subjects.filter((s) => s.mode === mode),
     [subjects, mode],
@@ -256,13 +206,9 @@ export function BaseValueLab() {
       ),
     [modeSubjects, modeTests],
   );
-  const partsRows = useMemo(
-    () =>
-      modeSubjects.flatMap((s) => {
-        const value = partsValue(s, results.get(s.id));
-        return value ? [{ subject: s, value }] : [];
-      }),
-    [modeSubjects, results],
+  const theories = useMemo(
+    () => compareTheories(modeSubjects, results, catalog ?? new Map()),
+    [modeSubjects, results, catalog],
   );
   const itemById = useMemo(
     () => new Map((items[priceMode] ?? []).map((it) => [it.id, it])),
@@ -292,12 +238,13 @@ export function BaseValueLab() {
     [items, priceMode, playerLevel, traderLevels, prefs.blocked],
   );
   const next = useMemo(() => {
-    if (!items[priceMode]) return null;
+    if (!items[priceMode] || !catalog) return null;
     return pickTest({
       subjects: modeSubjects,
       results,
       fillers,
       skip,
+      catalog,
       copyCost: (s) => {
         const it = s.itemId ? itemById.get(s.itemId) : undefined;
         return (
@@ -308,6 +255,7 @@ export function BaseValueLab() {
     });
   }, [
     items,
+    catalog,
     priceMode,
     modeSubjects,
     results,
@@ -383,7 +331,7 @@ export function BaseValueLab() {
     }
     setSending(true);
     try {
-      const response = await fetch(ENDPOINT, {
+      const response = await fetch(LAB_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed.data),
@@ -439,16 +387,9 @@ export function BaseValueLab() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 text-gray-100 lg:max-w-6xl">
-      <header className="mb-6 space-y-2">
-        <h1 className="text-2xl font-bold">Base Value Lab</h1>
-        <p className="max-w-3xl text-sm text-gray-400">
-          The API gets some base values wrong (mostly guns). Each cultist circle
-          timer tells us roughly what went in, so a few tests pin down the true
-          value.
-        </p>
-      </header>
+      <LabHeader />
 
-      {prefsFolded ? (
+      {view === "results" ? null : prefsFolded ? (
         <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-gray-700 bg-gray-900/70 px-4 py-2 text-sm text-gray-300">
           <span className="min-w-0 flex-1">{prefsSummary}</span>
           <Button
@@ -551,17 +492,9 @@ export function BaseValueLab() {
         </div>
       )}
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="test">Test</TabsTrigger>
-          <TabsTrigger value="results">Results</TabsTrigger>
-        </TabsList>
-
-        <TabsContent
-          value="test"
-          className="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-6"
-        >
-          {loading || !items[priceMode] ? (
+      {view === "test" ? (
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-6">
+          {loading || !items[priceMode] || !catalog ? (
             <p
               role="status"
               className="flex items-center gap-2 text-sm text-gray-400"
@@ -614,12 +547,7 @@ export function BaseValueLab() {
                 }
               />
               <aside className="mt-6 space-y-3 rounded-xl border border-gray-700 bg-gray-900/70 p-5 lg:row-span-2 lg:mt-0">
-                <h2 className="font-medium">What each timer tells us</h2>
-                <p className="text-sm text-gray-400">
-                  {next.rule
-                    ? "This test is aimed at the hidden parts multiplier, so any result narrows it for every gun."
-                    : "This test narrows this gun's true value."}
-                </p>
+                <h2 className="font-medium">Each timer means</h2>
                 <TimerMeaning next={next} />
               </aside>
             </>
@@ -634,55 +562,38 @@ export function BaseValueLab() {
               />
             </div>
           )}
-        </TabsContent>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+          <TheoryResults theories={theories} />
 
-        <TabsContent value="results" className="space-y-6">
-          <HiddenRule
-            subjects={modeSubjects}
-            results={results}
-            partsRows={partsRows}
-          />
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-            <ResultsTable
-              subjects={modeSubjects}
-              results={results}
-              partsRows={partsRows}
-            />
-
-            <section className="space-y-2">
-              <h2 className="text-lg font-semibold">Latest tests</h2>
-              <ul className="divide-y divide-gray-800 rounded-xl border border-gray-700 text-sm">
-                {recent.map((t) => (
-                  <li
-                    key={t.id}
-                    className={`flex gap-3 p-3 ${t.excluded ? "opacity-50" : ""}`}
-                  >
-                    <span className="w-12 shrink-0 font-semibold text-amber-300">
-                      {t.timer}
+          <section className="space-y-2">
+            <h2 className="text-sm text-gray-400">Latest tests</h2>
+            <ul className="divide-y divide-gray-800 rounded-xl border border-gray-800 text-sm">
+              {recent.map((t) => (
+                <li
+                  key={t.id}
+                  className={`flex gap-3 p-3 ${t.excluded ? "opacity-50" : ""}`}
+                >
+                  <span className="w-12 shrink-0 font-semibold text-amber-300">
+                    {t.timer}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    {describeTest(t, subjectById)}
+                    <span className="block text-xs text-gray-500">
+                      {t.source === "contributor"
+                        ? t.contributor || "Someone"
+                        : "Owner"}{" "}
+                      · {new Date(t.createdAt).toLocaleDateString()}
+                      {t.excluded ? " · not counted" : ""}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      {describeTest(t, subjectById)}
-                      <span className="block text-xs text-gray-500">
-                        {t.playedMode
-                          ? MODE_LABELS[t.playedMode]
-                          : t.source === "contributor"
-                            ? "Mode not given"
-                            : MODE_LABELS[t.mode]}{" "}
-                        ·{" "}
-                        {t.source === "contributor"
-                          ? t.contributor || "Someone"
-                          : "Owner"}{" "}
-                        · {new Date(t.createdAt).toLocaleDateString()}
-                        {t.excluded ? " · not counted" : ""}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
-        </TabsContent>
-      </Tabs>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
@@ -718,18 +629,9 @@ function TestCard({
   return (
     <div className="space-y-5 rounded-xl border border-amber-400/30 bg-gray-900/70 p-5">
       <div>
-        <p className="text-xs uppercase tracking-wide text-amber-300">
-          Please test this
-        </p>
-        <p className="mt-1 text-sm text-gray-400">
-          Put exactly these in the circle, nothing else, and press sacrifice.
-        </p>
-        {version && version.tone !== "stripped" && (
-          <p className="mt-1 text-sm text-gray-400">
-            Bare gun frames already match the API. This test measures what the
-            attached parts are really worth.
-          </p>
-        )}
+        <h2 className="font-medium">
+          Put exactly these in the circle, nothing else
+        </h2>
       </div>
       <ul className="space-y-2">
         <li

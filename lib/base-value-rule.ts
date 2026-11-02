@@ -1,11 +1,16 @@
-// The hidden rule behind gun base values. A bare frame matches the API, so
-// every candidate rule keeps the frame at its API value and changes only how
-// the attached parts count. Tests rule candidates out; the one left standing
-// gives the calculator its numbers.
+// The hidden rule behind gun base values. Two candidates are tested side by
+// side, and the picker aims each test at a gun where they disagree:
+//
+// - Nested: each item counts its base value once for itself and once more for
+//   every item it hangs from. Gun 1×, a part on the gun 2×, a part on that
+//   part 3×. Nothing is fitted.
+// - Flat: the frame counts as the API says and attached parts count one
+//   shared multiple of their API value, fitted to the tested guns.
 
 import {
   DEFAULT_SETTINGS,
   partChains,
+  partDepths,
   planAt,
   subjectKey,
   type FillerOption,
@@ -23,47 +28,16 @@ import {
   type PartsValue,
 } from "./base-value-site";
 
-/** How tightly the parts multiplier must be pinned, as ± share of its middle. */
-export const RULE_GOAL = 0.025;
-/** Guns that must agree before the calculator relies on the multiplier. */
-export const RULE_MIN_GUNS = 3;
-
-export type RuleId =
-  "whole-gun" | "per-part" | "parts-multiplier" | "by-part-type";
-export type RuleVerdict = "fits" | "ruled-out" | "cant-tell";
-
-export interface RuleCheck {
-  id: RuleId;
-  label: string;
-  verdict: RuleVerdict;
-  /** The rule's number that every tested item allows, when there is one. */
-  range?: Range;
-  /** How many tested items the check used. */
-  used: number;
-  detail: string;
-}
-
 const isMeasured = (r?: SubjectResult): r is SubjectResult =>
   !!r && r.testCount > 0 && r.status !== "conflict" && r.status !== "untested";
+
+const inside = (v: number, r: Range) => r.lo <= v && v <= r.hi;
 
 function intersect(ranges: readonly Range[]): Range | "conflict" | null {
   if (!ranges.length) return null;
   const lo = Math.max(...ranges.map((r) => r.lo));
   const hi = Math.min(...ranges.map((r) => r.hi));
   return lo <= hi ? { lo, hi } : "conflict";
-}
-
-const fmt = (n: number) =>
-  n === Infinity ? "∞" : n >= 10 ? n.toFixed(0) : n.toFixed(1);
-const times = (r: Range) =>
-  r.hi === Infinity ? `at least ${fmt(r.lo)}×` : `${fmt(r.lo)}–${fmt(r.hi)}×`;
-const roubles = (n: number) =>
-  n === Infinity ? "∞" : Math.round(n).toLocaleString("en-US");
-
-/** Attached parts on a gun, counting copies. */
-export function partCount(subject: Subject): number {
-  const list = subject.build?.mods ?? subject.parts ?? [];
-  return list.reduce((n, p) => n + p.count, 0);
 }
 
 const MOUNT = /\b(mount|adapter|rail|rings?|base)\b/i;
@@ -85,6 +59,50 @@ export function mainPart(subject: Subject) {
   return top.count === 1 && mountsOnly && worth(top) >= total * 0.7
     ? top
     : null;
+}
+
+/** An item from json.tarkov.dev with what the nested rule needs. */
+export interface CatalogItem {
+  id: string;
+  basePrice: number;
+  /** A gun receiver: the root of a preset. */
+  gun?: boolean;
+  slots?: { name: string; allowed: string[] }[];
+  /** A preset's items, gun included. */
+  contains?: string[];
+}
+
+export type Catalog = ReadonlyMap<string, CatalogItem>;
+
+/**
+ * A gun's value under the nested rule. Null when the item cache can't place
+ * every part, e.g. a build part without an item id.
+ */
+export function nestedValue(subject: Subject, catalog: Catalog): number | null {
+  if (subject.kind !== "weapon" && subject.kind !== "weapon-bare") return null;
+  const item = subject.itemId ? catalog.get(subject.itemId) : undefined;
+  if (!item) return null;
+  let gun: CatalogItem | undefined = item;
+  let ids: (string | undefined)[] = [];
+  if (subject.build) {
+    ids = subject.build.mods.flatMap((m) => Array(m.count).fill(m.itemId));
+  } else if (item.gun) {
+    // A receiver lists its factory parts too; a default gun carries them.
+    if (subject.kind === "weapon") ids = item.contains ?? [];
+  } else if (item.contains?.length) {
+    gun = item.contains.map((id) => catalog.get(id)).find((c) => c?.gun);
+    const at = gun ? item.contains.indexOf(gun.id) : -1;
+    ids = item.contains.filter((_, i) => i !== at);
+  }
+  if (!gun) return null;
+  const parts = ids.map((id) => (id ? catalog.get(id) : undefined));
+  if (parts.some((p) => !p)) return null;
+  const placed = partDepths(gun, parts as CatalogItem[]);
+  if (!placed) return null;
+  return placed.reduce(
+    (n, { item: p, depth }) => n + p.basePrice * (depth + 1),
+    gun.basePrice,
+  );
 }
 
 export interface MultiplierFit {
@@ -121,148 +139,145 @@ export function fitMultiplier(
   };
 }
 
-/** ± share of the middle, e.g. 0.19 for 3.28–4.78×. */
-export function precision(range: Range): number {
-  if (range.hi === Infinity) return Infinity;
-  const mid = (range.lo + range.hi) / 2;
-  return mid > 0 ? (range.hi - range.lo) / 2 / mid : Infinity;
+/** One gun's measured value next to what each rule predicts. */
+export interface TheoryRow {
+  subject: Subject;
+  result?: SubjectResult;
+  /** Set once tests agree on a range. */
+  measured?: Range;
+  nested: number | null;
+  flat: number | null;
+  /** API and measured worth of the attached parts. */
+  parts: PartsValue | null;
 }
 
-/** What a gun is worth under "frame + multiplier × API parts". */
-export function predict(value: PartsValue, band: Range): Range {
-  return {
-    lo: value.frame + band.lo * value.apiParts,
-    hi: value.frame + band.hi * value.apiParts,
-  };
+export interface Theories {
+  /** The parts multiplier the flat rule uses, fitted to the tested guns. */
+  multiplier: number | null;
+  /** The multiplier range the most tested guns agree on. */
+  band: Range | null;
+  rows: TheoryRow[];
 }
 
-/** Checks each candidate rule against every tested gun. */
-export function checkRules(
+/** Both rules' predictions for every subject. */
+export function compareTheories(
   subjects: readonly Subject[],
   results: Map<string, SubjectResult>,
-): RuleCheck[] {
-  const guns = subjects.flatMap((s) => {
-    const r = results.get(s.id);
-    if (!isMeasured(r)) return [];
-    if (s.kind !== "weapon" && s.kind !== "weapon-bare") return [];
-    return [{ s, r, value: partsValue(s, r) }];
+  catalog: Catalog,
+): Theories {
+  const values = subjects.map((subject) => {
+    const result = results.get(subject.id);
+    return { subject, result, value: partsValue(subject, result) };
   });
-
-  // 1. The whole gun counts some multiple of its API value.
-  const whole = guns.flatMap(({ s, r }) =>
-    s.apiBaseValue
-      ? [{ lo: r.range.lo / s.apiBaseValue, hi: r.range.hi / s.apiBaseValue }]
-      : [],
-  );
-  const wholeFit = intersect(whole);
-
-  // 2. Each attached part adds a flat amount on top of its API value.
-  const perPart = guns.flatMap(({ s, r, value }) => {
-    const n = partCount(s);
-    if (!value || value.apiParts <= 0 || !n) return [];
-    const extra = value.frame + value.apiParts;
-    return [{ lo: (r.range.lo - extra) / n, hi: (r.range.hi - extra) / n }];
-  });
-  const perPartFit = intersect(perPart);
-
-  // 3. Every attached part counts the same multiple of its API value.
-  const multipliers = guns.flatMap(({ value }) =>
-    value?.multiplier ? [value.multiplier] : [],
-  );
-  const shared = intersect(multipliers);
-
-  // 4. Parts count differently by type. Only single-part builds can show it.
-  const singles = guns.flatMap(({ s, value }) => {
-    const part = mainPart(s);
-    return part && value?.multiplier ? [{ part, m: value.multiplier }] : [];
-  });
-  const kinds = new Set(singles.map((x) => x.part.itemId ?? x.part.name));
-  const singleFit = intersect(singles.map((x) => x.m));
-
-  const verdict = (
-    fit: Range | "conflict" | null,
-    used: number,
-  ): RuleVerdict =>
-    fit === "conflict" ? "ruled-out" : fit && used >= 2 ? "fits" : "cant-tell";
-
-  return [
-    {
-      id: "parts-multiplier",
-      label: "One multiplier for every attached part",
-      verdict: verdict(shared, multipliers.length),
-      range: shared && shared !== "conflict" ? shared : undefined,
-      used: multipliers.length,
-      detail:
-        shared === "conflict"
-          ? "No single multiplier fits every tested gun."
-          : shared && multipliers.length >= 2
-            ? `Parts count ${times(shared)} their API value on all ${multipliers.length} tested guns.`
-            : "Needs at least two tested guns with parts.",
-    },
-    {
-      id: "by-part-type",
-      label: "A different multiplier for each kind of part",
-      verdict:
-        singleFit === "conflict" && kinds.size >= 2 ? "fits" : "cant-tell",
-      used: singles.length,
-      detail:
-        singleFit === "conflict" && kinds.size >= 2
-          ? "Single-part builds disagree, so parts count differently by type."
-          : singles.length && shared !== "conflict"
-            ? "Single-part builds agree with one multiplier so far."
-            : "Needs builds with one main part (plus the mounts it needs).",
-    },
-    {
-      id: "whole-gun",
-      label: "The whole gun counts a multiple of its API value",
-      verdict: verdict(wholeFit, whole.length),
-      range: wholeFit && wholeFit !== "conflict" ? wholeFit : undefined,
-      used: whole.length,
-      detail:
-        wholeFit === "conflict"
-          ? "Bare frames match the API but guns with parts don't, so one multiple can't fit both."
-          : wholeFit && whole.length >= 2
-            ? `Guns count ${times(wholeFit)} their API value.`
-            : "Needs at least two tested guns.",
-    },
-    {
-      id: "per-part",
-      label: "Each attached part adds a flat amount",
-      verdict: verdict(perPartFit, perPart.length),
-      range: perPartFit && perPartFit !== "conflict" ? perPartFit : undefined,
-      used: perPart.length,
-      detail:
-        perPartFit === "conflict"
-          ? "No flat amount per part fits every tested gun."
-          : perPartFit && perPart.length >= 2
-            ? `Each part adds ${roubles(perPartFit.lo)} to ${roubles(perPartFit.hi)} ₽ of base value.`
-            : "Needs at least two tested guns with parts.",
-    },
-  ];
-}
-
-export interface RuleState {
-  fit: MultiplierFit | null;
-  /** ± share of the multiplier's middle. */
-  precision: number;
-  /** Multiplier pinned to RULE_GOAL and enough guns agree. */
-  ready: boolean;
-}
-
-export function ruleState(
-  rows: readonly { subject: Subject; value: PartsValue | null }[],
-): RuleState {
-  const fit = fitMultiplier(rows);
-  const p = fit ? precision(fit.band) : Infinity;
+  const band = fitMultiplier(values)?.band ?? null;
+  const multiplier = !band
+    ? null
+    : band.hi === Infinity
+      ? band.lo
+      : (band.lo + band.hi) / 2;
   return {
-    fit,
-    precision: p,
-    ready:
-      !!fit &&
-      fit.fit.length === fit.tested.length &&
-      fit.fit.length >= RULE_MIN_GUNS &&
-      p <= RULE_GOAL,
+    multiplier,
+    band,
+    rows: values.map(({ subject, result, value }) => ({
+      subject,
+      result,
+      measured: isMeasured(result) ? result.range : undefined,
+      nested: nestedValue(subject, catalog),
+      flat:
+        subject.kind === "weapon-bare"
+          ? (subject.apiBaseValue ?? null)
+          : value && multiplier !== null
+            ? value.frame + multiplier * Math.max(0, value.apiParts)
+            : null,
+      parts: value,
+    })),
   };
+}
+
+/** Whether a rule's prediction falls inside the measured range, once both exist. */
+export function fits(row: TheoryRow, rule: "nested" | "flat"): boolean | null {
+  const v = row[rule];
+  return v === null || !row.measured ? null : inside(v, row.measured);
+}
+
+/** What the two rules predict for the gun under test. */
+export interface TheoryTest {
+  nested: number;
+  flat: number;
+  /** The flat rule's parts multiplier. */
+  multiplier: number | null;
+}
+
+export type PickedTest = NextTest & { theory?: TheoryTest };
+
+const ITEM_PENALTY = 2_000;
+// Roubles a split right between the two predictions is worth.
+const MARGIN_WEIGHT = 400_000;
+
+/**
+ * The next test: a gun where the two rules predict different timers, split
+ * between them so the result backs one rule. Falls back to narrowing guns
+ * one at a time once no gun can tell them apart.
+ */
+export function pickTest({
+  subjects,
+  results,
+  fillers,
+  skip,
+  copyCost,
+  catalog,
+  settings = DEFAULT_SETTINGS,
+}: {
+  subjects: readonly Subject[];
+  results: Map<string, SubjectResult>;
+  fillers: readonly FillerOption[];
+  skip: ReadonlySet<string>;
+  copyCost: (subject: Subject) => number;
+  catalog: Catalog;
+  settings?: LabSettings;
+}): PickedTest | null {
+  const { multiplier, rows } = compareTheories(subjects, results, catalog);
+  let best: { pick: PickedTest; score: number } | null = null;
+  for (const { subject, result, measured, nested, flat } of rows) {
+    if (skip.has(subject.id) || nested === null || flat === null) continue;
+    if (result?.status === "conflict") continue;
+    const lo = Math.min(nested, flat);
+    const hi = Math.max(nested, flat);
+    if (hi - lo < 100) continue;
+    // This gun's own tests already back one rule.
+    const range = measured ?? { lo: 0, hi: Infinity };
+    if (!inside(nested, range) || !inside(flat, range)) continue;
+    const cost = copyCost(subject);
+    const plan = planAt(
+      { subject, result, fillers, settings, copyCost: cost },
+      range,
+      (lo + hi) / 2,
+      (hi - lo) * 0.4,
+    );
+    if (!plan || plan.splitAt <= lo || plan.splitAt >= hi) continue;
+    // Room on each side, so a small error in either rule can't flip it.
+    const margin = Math.min(plan.splitAt - lo, hi - plan.splitAt) / hi;
+    const items = plan.qty + plan.fillers.reduce((n, f) => n + f.qty, 0);
+    const score =
+      plan.fillerCost +
+      (plan.qty - 1) * cost +
+      items * ITEM_PENALTY -
+      margin * MARGIN_WEIGHT;
+    if (!best || score < best.score)
+      best = {
+        pick: {
+          subject,
+          result,
+          plan,
+          theory: { nested, flat, multiplier },
+        },
+        score,
+      };
+  }
+  return (
+    best?.pick ??
+    pickNextTest({ subjects, results, fillers, skip, copyCost, settings })
+  );
 }
 
 /** An item with slot data and its API base value, from the item cache. */
@@ -323,121 +338,4 @@ export function singlePartBuilds({
   return out
     .sort((a, b) => mainPart(b)!.baseValue - mainPart(a)!.baseValue)
     .slice(0, limit);
-}
-
-/** A rule-aware test, with what it means for the multiplier. */
-export interface RuleTest {
-  /** The multiplier range before this test. */
-  band: Range;
-  frame: number;
-  apiParts: number;
-}
-
-export type PickedTest = NextTest & { rule?: RuleTest };
-
-/** Multiplier range a gun's value range implies. */
-export const toMultiplier = (rule: RuleTest, value: Range): Range => ({
-  lo: (value.lo - rule.frame) / rule.apiParts,
-  hi: (value.hi - rule.frame) / rule.apiParts,
-});
-
-const ITEM_PENALTY = 2_000;
-// Roubles a split that leaves the whole band is worth avoiding.
-const SPLIT_WEIGHT = 400_000;
-
-/**
- * The next test, aimed at the parts multiplier when every tested gun agrees
- * on one: each gun is planned at the value the middle of that range predicts,
- * so any gun's result narrows the multiplier for all of them. Falls back to
- * narrowing guns one at a time when the guns disagree or it is pinned down.
- */
-export function pickTest({
-  subjects,
-  results,
-  fillers,
-  skip,
-  copyCost,
-  settings = DEFAULT_SETTINGS,
-}: {
-  subjects: readonly Subject[];
-  results: Map<string, SubjectResult>;
-  fillers: readonly FillerOption[];
-  skip: ReadonlySet<string>;
-  copyCost: (subject: Subject) => number;
-  settings?: LabSettings;
-}): PickedTest | null {
-  return (
-    pickRuleTest({ subjects, results, fillers, skip, copyCost, settings }) ??
-    pickNextTest({ subjects, results, fillers, skip, copyCost, settings })
-  );
-}
-
-function pickRuleTest({
-  subjects,
-  results,
-  fillers,
-  skip,
-  copyCost,
-  settings,
-}: {
-  subjects: readonly Subject[];
-  results: Map<string, SubjectResult>;
-  fillers: readonly FillerOption[];
-  skip: ReadonlySet<string>;
-  copyCost: (subject: Subject) => number;
-  settings: LabSettings;
-}): PickedTest | null {
-  const rows = subjects.map((subject) => {
-    const result = results.get(subject.id);
-    return { subject, result, value: partsValue(subject, result) };
-  });
-  const state = ruleState(rows);
-  const band = state.fit?.band;
-  if (
-    !state.fit ||
-    !band ||
-    state.fit.fit.length < state.fit.tested.length ||
-    band.hi === Infinity ||
-    state.precision <= RULE_GOAL
-  )
-    return null;
-
-  let best: { pick: PickedTest; score: number } | null = null;
-  for (const { subject, result, value } of rows) {
-    if (skip.has(subject.id) || !value || value.apiParts <= 0) continue;
-    if (result?.status === "conflict") continue;
-    const rule = { band, frame: value.frame, apiParts: value.apiParts };
-    let range = predict(value, band);
-    if (isMeasured(result))
-      range = {
-        lo: Math.max(range.lo, result.range.lo),
-        hi: Math.min(range.hi, result.range.hi),
-      };
-    if (range.hi - range.lo < 1) continue;
-    const cost = copyCost(subject);
-    const plan = planAt(
-      { subject, result, fillers, settings, copyCost: cost },
-      range,
-      (range.lo + range.hi) / 2,
-      // A tight aim: the cheapest fillers within it win, so keep it near half.
-      Math.max(50, (range.hi - range.lo) / 8),
-    );
-    if (!plan) continue;
-    // Share of the band left in the worse case: 0.5 is a perfect half.
-    const k = toMultiplier(rule, { lo: plan.splitAt, hi: plan.splitAt }).lo;
-    const worst = Math.max(k - band.lo, band.hi - k) / (band.hi - band.lo);
-    if (worst >= 0.9) continue;
-    const items = plan.qty + plan.fillers.reduce((n, f) => n + f.qty, 0);
-    // An untested gun also checks the rule on a gun it wasn't fitted to.
-    const fresh = !isMeasured(result) ? -SPLIT_WEIGHT / 8 : 0;
-    const score =
-      plan.fillerCost +
-      (plan.qty - 1) * cost +
-      items * ITEM_PENALTY +
-      worst * SPLIT_WEIGHT +
-      fresh;
-    if (!best || score < best.score)
-      best = { pick: { subject, result, plan, rule }, score };
-  }
-  return best?.pick ?? null;
 }

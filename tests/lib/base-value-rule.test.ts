@@ -8,18 +8,16 @@ import {
   type Timer,
 } from "@/lib/base-value-lab";
 import {
-  checkRules,
+  compareTheories,
   fitMultiplier,
+  fits,
   mainPart,
+  nestedValue,
   pickTest,
-  precision,
-  predict,
-  ruleState,
   singlePartBuilds,
-  toMultiplier,
+  type CatalogItem,
   type PricedItem,
 } from "@/lib/base-value-rule";
-import { partsValue } from "@/lib/base-value-site";
 
 const mod = (name: string, baseValue: number) => ({
   itemId: name,
@@ -34,6 +32,7 @@ const subjects: Subject[] = [
   {
     id: "toz-bare",
     mode: "pve",
+    itemId: "toz-frame",
     name: "TOZ-106 20ga bolt-action shotgun",
     kind: "weapon-bare",
     apiBaseValue: 3_526,
@@ -41,6 +40,7 @@ const subjects: Subject[] = [
   {
     id: "toz-default",
     mode: "pve",
+    itemId: "toz-preset",
     name: "TOZ-106 20ga bolt-action shotgun Default",
     kind: "weapon",
     apiBaseValue: 6_763,
@@ -54,6 +54,7 @@ const subjects: Subject[] = [
   {
     id: "toz-build",
     mode: "pve",
+    itemId: "toz-frame",
     name: "TOZ-106 20ga bolt-action shotgun + sight",
     kind: "weapon",
     apiBaseValue: 32_903,
@@ -108,10 +109,6 @@ const tests: LabTest[] = [
 ];
 
 const results = solve(subjects, tests);
-const rows = subjects.map((subject) => ({
-  subject,
-  value: partsValue(subject, results.get(subject.id)),
-}));
 
 // Junk in steps of 100, 1k and 5k, all cheap to buy.
 const fillers: FillerOption[] = [100, 1_000, 5_000].map((baseValue) => ({
@@ -123,30 +120,82 @@ const fillers: FillerOption[] = [100, 1_000, 5_000].map((baseValue) => ({
   owned: false,
 }));
 
+// The TOZ's slot tree: the grip sits on the stock, the sight on a rail on a
+// dovetail mount. Parts on the gun are depth 1, parts on those depth 2, ...
+const slotted = (
+  id: string,
+  basePrice: number,
+  slots: string[][] = [],
+): CatalogItem => ({
+  id,
+  basePrice,
+  slots: slots.map((allowed, i) => ({ name: `mod_${i}`, allowed })),
+});
+const catalog = new Map(
+  [
+    {
+      ...slotted("toz-frame", 3_526, [
+        ["magazine"],
+        ["stock"],
+        ["dovetail mount"],
+      ]),
+      gun: true,
+      // Like json.tarkov.dev, a receiver lists its factory parts.
+      contains: ["magazine", "stock", "grip"],
+    },
+    slotted("magazine", 785),
+    slotted("stock", 1_702, [["grip"]]),
+    slotted("grip", 750),
+    slotted("dovetail mount", 1_100, [["rail scope mount"]]),
+    slotted("rail scope mount", 2_300, [["sight"]]),
+    slotted("sight", 22_740),
+    {
+      id: "toz-preset",
+      basePrice: 6_763,
+      contains: ["magazine", "toz-frame", "stock", "grip"],
+    },
+  ].map((c) => [c.id, c]),
+);
+
 describe("Base Value Lab hidden rule", () => {
-  test("one parts multiplier fits; whole-gun and flat per-part rules don't", () => {
-    const checks = new Map(checkRules(subjects, results).map((c) => [c.id, c]));
-    const shared = checks.get("parts-multiplier")!;
-    expect(shared.verdict).toBe("fits");
-    expect(shared.used).toBe(3);
-    expect(shared.range!.lo).toBeCloseTo(3.28, 2);
-    expect(shared.range!.hi).toBeCloseTo(4.78, 2);
-    expect(checks.get("whole-gun")!.verdict).toBe("ruled-out");
-    expect(checks.get("per-part")!.verdict).toBe("ruled-out");
-    expect(checks.get("by-part-type")!.verdict).toBe("cant-tell");
+  test("nested: each part counts once more per part it hangs from", () => {
+    const [bare, preset, build, mp5] = subjects;
+    expect(nestedValue(bare, catalog)).toBe(3_526);
+    // Frame 1×, magazine and stock 2×, grip (on the stock) 3×.
+    expect(nestedValue(preset, catalog)).toBe(
+      3_526 + 2 * (785 + 1_702) + 3 * 750,
+    );
+    // Plus the dovetail 2×, the rail 3× and the sight on it 4×.
+    expect(nestedValue(build, catalog)).toBe(110_810);
+    // Not in the item cache.
+    expect(nestedValue(mp5, catalog)).toBeNull();
   });
 
-  test("precision and predictions come from the shared range", () => {
-    const state = ruleState(rows);
-    expect(state.fit!.fit).toHaveLength(3);
-    expect(state.precision).toBeCloseTo(0.186, 2);
-    expect(state.ready).toBe(false);
-    const toz = partsValue(subjects[1])!;
-    expect(predict(toz, { lo: 3, hi: 4 })).toEqual({
-      lo: 3_526 + 3 * 3_237,
-      hi: 3_526 + 4 * 3_237,
-    });
-    expect(precision({ lo: 3.9, hi: 4.1 })).toBeCloseTo(0.025, 5);
+  test("nested: a part that fits nowhere gives no prediction", () => {
+    const odd: Subject = {
+      ...subjects[2],
+      build: { gunValue: 3_526, mods: [mod("sight", 22_740)] },
+    };
+    expect(nestedValue(odd, catalog)).toBeNull();
+  });
+
+  test("both rules are scored against the measured range", () => {
+    const {
+      multiplier,
+      band,
+      rows: theory,
+    } = compareTheories(subjects, results, catalog);
+    // The three tested guns share 3.28–4.78×; flat uses the middle.
+    expect(band?.lo).toBeCloseTo(3.28, 1);
+    expect(band?.hi).toBeCloseTo(4.78, 1);
+    expect(multiplier).toBeCloseTo((3.28 + 4.78) / 2, 1);
+    const toz = theory.find((r) => r.subject.id === "toz-default")!;
+    expect(toz.measured).toEqual({ lo: 10_001, hi: 19_000 });
+    expect(toz.parts?.multiplier).toBeDefined();
+    expect(fits(toz, "nested")).toBe(true);
+    expect(fits(toz, "flat")).toBe(true);
+    const mp5 = theory.find((r) => r.subject.id === "mp5-default")!;
+    expect(fits(mp5, "nested")).toBeNull();
   });
 
   test("fitMultiplier keeps the largest group of guns that agree", () => {
@@ -165,6 +214,41 @@ describe("Base Value Lab hidden rule", () => {
     expect(fit.tested).toHaveLength(3);
   });
 
+  test("the picker splits a gun between the two predictions", () => {
+    const pick = pickTest({
+      subjects,
+      results,
+      fillers,
+      skip: new Set(),
+      copyCost: () => 50_000,
+      catalog,
+    })!;
+    const { nested, flat } = pick.theory!;
+    const lo = Math.min(nested, flat);
+    const hi = Math.max(nested, flat);
+    expect(pick.plan.splitAt).toBeGreaterThan(lo);
+    expect(pick.plan.splitAt).toBeLessThan(hi);
+    // One timer backs each rule.
+    const backs = (v: number) =>
+      pick.plan.outcomes.filter((o) => o.implies.lo <= v && v <= o.implies.hi);
+    expect(backs(nested)).toHaveLength(1);
+    expect(backs(flat)).toHaveLength(1);
+    expect(backs(nested)[0].timer).not.toBe(backs(flat)[0].timer);
+  });
+
+  test("without slot data the picker narrows guns one at a time", () => {
+    const pick = pickTest({
+      subjects,
+      results,
+      fillers,
+      skip: new Set(),
+      copyCost: () => 50_000,
+      catalog: new Map(),
+    });
+    expect(pick).not.toBeNull();
+    expect(pick!.theory).toBeUndefined();
+  });
+
   test("a build is a single-part build when one part carries its value", () => {
     expect(mainPart(subjects[2])).toBeNull();
     const single: Subject = {
@@ -179,91 +263,6 @@ describe("Base Value Lab hidden rule", () => {
       },
     };
     expect(mainPart(single)?.name).toBe("sight");
-  });
-
-  test("single-part builds that disagree point to a multiplier by type", () => {
-    const sight: Subject = {
-      id: "sight-only",
-      mode: "pve",
-      name: "TOZ + sight",
-      kind: "weapon",
-      apiBaseValue: 3_526 + 22_740,
-      build: { gunValue: 3_526, mods: [mod("sight", 22_740)] },
-    };
-    const stock: Subject = {
-      id: "stock-only",
-      mode: "pve",
-      name: "TOZ + stock",
-      kind: "weapon",
-      apiBaseValue: 3_526 + 1_702,
-      build: { gunValue: 3_526, mods: [mod("stock", 1_702)] },
-    };
-    const solved = solve(
-      [sight, stock],
-      [
-        // Sight: 26.3k–51.5k total, so 1–2× its API value.
-        run([["sight-only", 1]], "4h"),
-        run([["sight-only", 1]], "4h", [3_000]),
-        // Stock: 10k–25k total, so 3.8–12.6×.
-        run([["stock-only", 1]], "3h"),
-      ],
-    );
-    const check = checkRules([sight, stock], solved).find(
-      (c) => c.id === "by-part-type",
-    )!;
-    expect(check.verdict).toBe("fits");
-  });
-
-  test("the picker aims at the middle of the shared multiplier", () => {
-    const pick = pickTest({
-      subjects,
-      results,
-      fillers,
-      skip: new Set(),
-      copyCost: () => 50_000,
-    })!;
-    expect(pick.rule).toBeDefined();
-    const { band } = pick.rule!;
-    const k = toMultiplier(pick.rule!, {
-      lo: pick.plan.splitAt,
-      hi: pick.plan.splitAt,
-    }).lo;
-    // The split lands well inside the band, near its middle.
-    expect(k).toBeGreaterThan(band.lo + (band.hi - band.lo) * 0.25);
-    expect(k).toBeLessThan(band.hi - (band.hi - band.lo) * 0.25);
-    // Each timer it can show maps to a narrower multiplier range.
-    expect(pick.plan.outcomes.length).toBeGreaterThanOrEqual(2);
-    for (const o of pick.plan.outcomes) {
-      const m = toMultiplier(pick.rule!, o.implies);
-      expect(m.lo).toBeGreaterThanOrEqual(band.lo - 1e-9);
-      expect(m.hi).toBeLessThanOrEqual(band.hi + 1e-9);
-      expect(m.hi - m.lo).toBeLessThan(band.hi - band.lo);
-    }
-  });
-
-  test("the picker falls back to single guns when the guns disagree", () => {
-    const disagree = solve(subjects, [
-      ...tests.filter((t) => t.entries[0].subjectId !== "toz-default"),
-      // The TOZ Default under 10k means its parts count under 2×, which
-      // the other two guns rule out.
-      run([["toz-default", 1]], "2h"),
-    ]);
-    expect(
-      ruleState(
-        subjects.map((subject) => ({
-          subject,
-          value: partsValue(subject, disagree.get(subject.id)),
-        })),
-      ).fit!.fit,
-    ).toHaveLength(2);
-    const pick = pickTest({
-      subjects,
-      results: disagree,
-      fillers,
-      skip: new Set(),
-      copyCost: () => 50_000,
-    });
-    expect(pick?.rule).toBeUndefined();
   });
 
   describe("single-part builds", () => {

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  fetchItemCatalog,
   fetchMinimalTarkovData,
   fetchTarkovData,
   resetTarkovApiCachesForTests,
@@ -353,6 +354,61 @@ describe("Tarkov.dev JSON fetchers", () => {
           String(input).includes("graphql") && init?.method === "POST",
       ),
     ).toHaveLength(1);
+  });
+
+  test("fetchItemCatalog keeps guns, presets and parts with their slots", async () => {
+    const base = itemResponse.data.items.item1;
+    const items = {
+      item1: base,
+      gun: {
+        ...base,
+        id: "gun",
+        basePrice: 3000,
+        types: ["gun", "weapon"],
+        properties: {
+          slots: [
+            { nameId: "mod_magazine", filters: { allowedItems: ["mag"] } },
+            { nameId: "mod_stock" },
+          ],
+        },
+      },
+      mag: { ...base, id: "mag", basePrice: 500, types: ["mods"] },
+      preset: {
+        ...base,
+        id: "preset",
+        types: ["preset"],
+        containsItems: [{ item: "gun" }, { item: "mag", count: 2 }],
+      },
+    };
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (input) => {
+        const url = String(input);
+        if (url.endsWith("/regular/items"))
+          return response({
+            ...itemResponse,
+            data: { ...itemResponse.data, items },
+          });
+        if (url.endsWith("/regular/items_en")) return response(englishResponse);
+        if (url.endsWith("/regular/traders")) return response(traderResponse);
+        throw new Error(`Unexpected request: ${url}`);
+      });
+
+    const catalog = await fetchItemCatalog("regular");
+
+    expect([...catalog.keys()].sort()).toEqual(["gun", "mag", "preset"]);
+    expect(catalog.get("gun")).toEqual({
+      id: "gun",
+      basePrice: 3000,
+      gun: true,
+      slots: [
+        { name: "mod_magazine", allowed: ["mag"] },
+        { name: "mod_stock", allowed: [] },
+      ],
+    });
+    expect(catalog.get("mag")).toEqual({ id: "mag", basePrice: 500 });
+    expect(catalog.get("preset")?.contains).toEqual(["gun", "mag", "mag"]);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   test("all application languages are supported by the JSON API", () => {
