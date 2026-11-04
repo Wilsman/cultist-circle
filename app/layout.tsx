@@ -15,6 +15,7 @@ import { SiteNav } from "@/components/site-nav";
 import { RitualReminderWatcher } from "@/components/ritual-tracker/ritual-reminder-watcher";
 import { ItemLookupCommand } from "@/components/item-lookup-command";
 import { getConsentModeBootstrapScript } from "@/lib/cookie-consent";
+import { HalloweenCursor } from "@/components/halloween-cursor";
 
 const ADSENSE_SCRIPT_SRC =
   "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4028411901202065";
@@ -165,6 +166,7 @@ export default function RootLayout({
                 <RitualReminderWatcher />
                 <ItemLookupCommand />
               </div>
+              <HalloweenCursor />
             </main>
             </StashScanStoreProvider>
           </LanguageProvider>

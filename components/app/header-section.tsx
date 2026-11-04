@@ -2,6 +2,7 @@
 "use client";
 
 import { VersionTag } from "@/components/version-tag";
+import { HalloweenCursorToggle } from "@/components/halloween-cursor-toggle";
 import { useLanguage } from "@/contexts/language-context";
 import { UpdateAlertBar } from "@/components/app/update-alert-bar";
 import { ScavInvadersEasterEgg } from "@/components/scav-invaders/scav-invaders-easter-egg.component";
@@ -49,6 +50,9 @@ export function HeaderSection() {
             />
           </a>
         </div>
+      </div>
+      <div className="flex justify-center">
+        <HalloweenCursorToggle />
       </div>
       <UpdateAlertBar className="mx-auto max-w-3xl" />
       <ScavInvadersEasterEgg />
