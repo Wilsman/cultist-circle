@@ -1234,5 +1234,34 @@
   "Tapes": "Kazetták",
   "Thermal Vision": "Hőkamera",
   "UBGL": "Csőalatti gránátvető",
-  "Volumetric Throw Weapon": "Térfogati dobófegyver"
+  "Volumetric Throw Weapon": "Térfogati dobófegyver",
+
+  // Search tags and item risk warning
+  "Unverified": "Nem ellenőrzött",
+  "Base value isn't confirmed, so the timer may not match": "Az alapérték nincs megerősítve, az időzítő eltérhet",
+  "Has uses": "Használatos",
+  "The cheapest flea listing may be a partly used copy": "A legolcsóbb bolhapiaci ajánlat lehet részben használt példány",
+  "Per round": "Töltényenként",
+  "Price and base value are for a single round": "Az ár és az alapérték egyetlen töltényre vonatkozik",
+  "Flea Lv {level}": "Bolhapiac Szint {level}",
+  "You can't buy this on the flea market until level {level}": "A bolhapiacon csak {level}. szinttől veheted meg",
+  "Few offers": "Kevés ajánlat",
+  "Fewer than {count} flea offers, so the price may not hold": "Kevesebb mint {count} bolhapiaci ajánlat, az ár nem biztos, hogy tartja magát",
+  "Can't be sacrificed: {names}": "Nem Ã¡ldozhatÃ³ fel: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "A kÃ¶r nem fogadja el ezeket a tÃ¡rgyakat, ezÃ©rt nincsenek a listÃ¡ban.",
+  "These items may not give the expected result": "Ezek a tárgyak nem biztos, hogy a várt eredményt adják",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "A fegyverek, páncélok és mellények alapértékei nincsenek megerősítve, így az időzítő eltérhet.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "A legolcsóbb bolhapiaci ajánlat lehet részben használt példány. Egy teli sokkal többe kerülhet.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "A megjelenített ár és alapérték egyetlen töltényre vonatkozik. Egy köteg többet ér és többe kerül.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "Az Auto választás kihagyja az 5-nél kevesebb bolhapiaci ajánlattal rendelkező tárgyakat. A keresés inkább megjelöli őket.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "Az Auto választás kihagyja a szinteden nem megvásárolható tárgyakat. A keresés inkább megjelöli őket.",
+  "Auto Select uses items you can buy at level {level}": "Az Auto választás a {level}. szinten megvehető tárgyakat használja",
+  "Set your level so Auto Select skips items you can't buy yet": "Add meg a szinted, hogy az Auto választás kihagyja a még nem megvehető tárgyakat",
+  "Auto Select skips these categories": "Az Auto választás kihagyja ezeket a kategóriákat",
+  "Auto Select won't pick from these. Search still shows them.": "Az Auto választás nem választ ezekből. A keresés továbbra is mutatja őket.",
+
+  // Item selector quick picks
+  "Add {name} again": "{name} hozzÃ¡adÃ¡sa Ãºjra",
+  "Same as above": "Ugyanaz, mint fent",
+  "Enter": "Enter"
 }

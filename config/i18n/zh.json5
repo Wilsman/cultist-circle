@@ -1233,5 +1233,34 @@
   "Spring Driven Cylinder": "弹簧驱动弹巢",
   "Tapes": "磁带",
   "Thermal Vision": "热成像仪",
-  "Volumetric Throw Weapon": "大型投掷武器"
+  "Volumetric Throw Weapon": "大型投掷武器",
+
+  // Search tags and item risk warning
+  "Unverified": "未验证",
+  "Base value isn't confirmed, so the timer may not match": "基础价值未确认,计时可能不符",
+  "Has uses": "有使用次数",
+  "The cheapest flea listing may be a partly used copy": "跳蚤市场最便宜的报价可能是部分用过的",
+  "Per round": "每发",
+  "Price and base value are for a single round": "价格和基础价值按单发计算",
+  "Flea Lv {level}": "跳蚤市场 Lv {level}",
+  "You can't buy this on the flea market until level {level}": "需要达到 {level} 级才能在跳蚤市场购买",
+  "Few offers": "报价少",
+  "Fewer than {count} flea offers, so the price may not hold": "跳蚤市场报价少于 {count} 个,价格可能不稳定",
+  "Can't be sacrificed: {names}": "æ— æ³•çŒ®ç¥­:{names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "ç¥­å�›ä¸�æŽ¥å�—è¿™äº›ç‰©å“�,å› æ­¤å®ƒä»¬ä¸�åœ¨æ­¤åˆ—è¡¨ä¸­ã€‚",
+  "These items may not give the expected result": "这些物品可能达不到预期结果",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "武器、护甲和胸挂的基础价值未确认,因此计时可能不符。",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "跳蚤市场最便宜的报价可能是部分用过的。全新的可能贵很多。",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "显示的价格和基础价值按单发计算。一组的价值更高,价格也更高。",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "自动选择会跳过跳蚤市场报价少于 5 个的物品。搜索则会为它们加标签。",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "自动选择会跳过你当前等级买不到的物品。搜索则会为它们加标签。",
+  "Auto Select uses items you can buy at level {level}": "自动选择使用 {level} 级可购买的物品",
+  "Set your level so Auto Select skips items you can't buy yet": "设置你的等级,让自动选择跳过你还买不到的物品",
+  "Auto Select skips these categories": "自动选择会跳过这些分类",
+  "Auto Select won't pick from these. Search still shows them.": "自动选择不会从中挑选。搜索仍会显示它们。",
+
+  // Item selector quick picks
+  "Add {name} again": "å†�æ¬¡æ·»åŠ  {name}",
+  "Same as above": "ä¸Žä¸Šæ–¹ç›¸å�Œ",
+  "Enter": "å›žè½¦"
 }

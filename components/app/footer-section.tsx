@@ -31,7 +31,8 @@ function ContributorAvatars({
   const { t } = useLanguage();
   return (
     <TooltipProvider>
-      <div className={`flex items-center ${className}`}>
+      {/* isolate keeps the overlap z-indexes from rising above page dropdowns */}
+      <div className={`isolate flex items-center ${className}`}>
         {contributors.map((contributor, index) => (
           <Tooltip key={contributor.login}>
             <TooltipTrigger asChild>

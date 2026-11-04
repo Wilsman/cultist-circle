@@ -1236,5 +1236,34 @@
   "Tapes": "テープ",
   "Thermal Vision": "サーマルビジョン",
   "UBGL": "アンダーバレルグレネードランチャー",
-  "Volumetric Throw Weapon": "大型投擲武器"
+  "Volumetric Throw Weapon": "大型投擲武器",
+
+  // Search tags and item risk warning
+  "Unverified": "未検証",
+  "Base value isn't confirmed, so the timer may not match": "基本価値が未確認のため、タイマーが合わない場合があります",
+  "Has uses": "使用回数あり",
+  "The cheapest flea listing may be a partly used copy": "フリマの最安出品は一部使用済みの可能性があります",
+  "Per round": "1発あたり",
+  "Price and base value are for a single round": "価格と基本価値は弾1発分です",
+  "Flea Lv {level}": "フリマ Lv {level}",
+  "You can't buy this on the flea market until level {level}": "レベル {level} になるまでフリマで購入できません",
+  "Few offers": "出品少",
+  "Fewer than {count} flea offers, so the price may not hold": "フリマの出品が {count} 件未満のため、価格が維持されない可能性があります",
+  "Can't be sacrificed: {names}": "æ�§ã�’ã‚‰ã‚Œã�¾ã�›ã‚“: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "ã‚µãƒ¼ã‚¯ãƒ«ã�¯ã�“ã‚Œã‚‰ã�®ã‚¢ã‚¤ãƒ†ãƒ ã‚’å�—ã�‘ä»˜ã�‘ã�ªã�„ã�Ÿã‚�ã€�ã�“ã�®ãƒªã‚¹ãƒˆã�«ã�¯è¡¨ç¤ºã�•ã‚Œã�¾ã�›ã‚“ã€‚",
+  "These items may not give the expected result": "これらのアイテムは期待どおりの結果にならない可能性があります",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "武器、アーマー、リグの基本価値は未確認のため、タイマーが合わない場合があります。",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "フリマの最安出品は一部使用済みの可能性があります。未使用品はかなり高くなることがあります。",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "表示中の価格と基本価値は弾1発分です。スタックはより価値が高く、価格も高くなります。",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "自動選択はフリマの出品が5件未満のアイテムを除外します。検索ではタグ表示されます。",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "自動選択は現在のレベルで購入できないアイテムを除外します。検索ではタグ表示されます。",
+  "Auto Select uses items you can buy at level {level}": "自動選択はレベル {level} で購入できるアイテムを使います",
+  "Set your level so Auto Select skips items you can't buy yet": "レベルを設定すると、自動選択はまだ購入できないアイテムを除外します",
+  "Auto Select skips these categories": "自動選択はこれらのカテゴリを除外します",
+  "Auto Select won't pick from these. Search still shows them.": "自動選択はこれらから選びません。検索には引き続き表示されます。",
+
+  // Item selector quick picks
+  "Add {name} again": "{name} ã‚’ã‚‚ã�†ä¸€åº¦è¿½åŠ ",
+  "Same as above": "ä¸Šã�¨å�Œã�˜",
+  "Enter": "Enter"
 }

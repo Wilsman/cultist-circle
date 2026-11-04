@@ -1203,5 +1203,34 @@
 
   // Item category names tarkov.dev leaves in English
   "Battle Pass Document": "Document du Battle Pass",
-  "Volumetric Throw Weapon": "Arme de lancer volumétrique"
+  "Volumetric Throw Weapon": "Arme de lancer volumétrique",
+
+  // Search tags and item risk warning
+  "Unverified": "Non vérifié",
+  "Base value isn't confirmed, so the timer may not match": "La valeur de base n'est pas confirmée, le minuteur peut ne pas correspondre",
+  "Has uses": "A des utilisations",
+  "The cheapest flea listing may be a partly used copy": "L'offre la moins chère du marché peut être un exemplaire partiellement utilisé",
+  "Per round": "Par balle",
+  "Price and base value are for a single round": "Le prix et la valeur de base sont pour une seule balle",
+  "Flea Lv {level}": "Marché Nv {level}",
+  "You can't buy this on the flea market until level {level}": "Achetable sur le marché seulement à partir du niveau {level}",
+  "Few offers": "Peu d'offres",
+  "Fewer than {count} flea offers, so the price may not hold": "Moins de {count} offres sur le marché, le prix peut ne pas tenir",
+  "Can't be sacrificed: {names}": "Impossible Ã  sacrifier : {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "Le cercle n'accepte pas ces objets, ils ne figurent donc pas dans cette liste.",
+  "These items may not give the expected result": "Ces objets peuvent ne pas donner le résultat attendu",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "Les valeurs de base des armes, armures et gilets ne sont pas confirmées, le minuteur peut donc ne pas correspondre.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "L'offre la moins chère du marché peut être un exemplaire partiellement utilisé. Un exemplaire plein peut coûter bien plus.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "Le prix et la valeur de base affichés sont pour une seule balle. Une pile vaut plus et coûte plus.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "La sélection automatique ignore les objets avec moins de 5 offres sur le marché. La recherche les signale à la place.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "La sélection automatique ignore les objets que vous ne pouvez pas acheter à votre niveau. La recherche les signale à la place.",
+  "Auto Select uses items you can buy at level {level}": "La sélection automatique utilise les objets achetables au niveau {level}",
+  "Set your level so Auto Select skips items you can't buy yet": "Indiquez votre niveau pour que la sélection automatique ignore les objets pas encore achetables",
+  "Auto Select skips these categories": "La sélection automatique ignore ces catégories",
+  "Auto Select won't pick from these. Search still shows them.": "La sélection automatique ne choisira pas parmi celles-ci. La recherche les affiche toujours.",
+
+  // Item selector quick picks
+  "Add {name} again": "Ajouter Ã  nouveau {name}",
+  "Same as above": "Comme ci-dessus",
+  "Enter": "EntrÃ©e"
 }

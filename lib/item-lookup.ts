@@ -18,6 +18,8 @@ import type { GameMode } from "@/lib/game-mode";
 export const ITEM_LOOKUP_RESULT_LIMIT = 50;
 
 const RECENTS_STORAGE_KEY = "itemLookupRecents";
+/** Items recently picked into calculator slots, kept apart from lookups. */
+export const SELECTOR_RECENTS_STORAGE_KEY = "selectorRecentItemIds";
 const RECENTS_LIMIT = 8;
 const FLEA_VENDOR = "flea-market";
 
@@ -221,17 +223,20 @@ function readStoredIds(key: string): string[] {
   }
 }
 
-export function readRecentItemIds(): string[] {
-  return readStoredIds(RECENTS_STORAGE_KEY);
+export function readRecentItemIds(key = RECENTS_STORAGE_KEY): string[] {
+  return readStoredIds(key);
 }
 
-export function pushRecentItemId(itemId: string): string[] {
+export function pushRecentItemId(
+  itemId: string,
+  key = RECENTS_STORAGE_KEY,
+): string[] {
   const next = [
     itemId,
-    ...readRecentItemIds().filter((id) => id !== itemId),
+    ...readRecentItemIds(key).filter((id) => id !== itemId),
   ].slice(0, RECENTS_LIMIT);
   try {
-    localStorage.setItem(RECENTS_STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(key, JSON.stringify(next));
   } catch {
     // Storage full or unavailable; recents are best-effort
   }

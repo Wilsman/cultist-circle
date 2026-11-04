@@ -1232,5 +1232,34 @@
   "Spring Driven Cylinder": "Yaylı silindir",
   "Tapes": "Kasetler",
   "Thermal Vision": "Termal görüş",
-  "Volumetric Throw Weapon": "Hacimli fırlatma silahı"
+  "Volumetric Throw Weapon": "Hacimli fırlatma silahı",
+
+  // Search tags and item risk warning
+  "Unverified": "Doğrulanmadı",
+  "Base value isn't confirmed, so the timer may not match": "Taban değer doğrulanmadı, zamanlayıcı tutmayabilir",
+  "Has uses": "Kullanım hakkı var",
+  "The cheapest flea listing may be a partly used copy": "Bit pazarındaki en ucuz ilan kısmen kullanılmış bir kopya olabilir",
+  "Per round": "Mermi başına",
+  "Price and base value are for a single round": "Fiyat ve taban değer tek bir mermi içindir",
+  "Flea Lv {level}": "Bit pazarı Sv {level}",
+  "You can't buy this on the flea market until level {level}": "Bunu bit pazarından {level}. seviyeye kadar alamazsın",
+  "Few offers": "Az ilan",
+  "Fewer than {count} flea offers, so the price may not hold": "Bit pazarında {count} ilandan az var, fiyat tutmayabilir",
+  "Can't be sacrificed: {names}": "Kurban edilemez: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "Ã‡ember bu eÅŸyalarÄ± kabul etmez, bu yÃ¼zden bu listede yer almazlar.",
+  "These items may not give the expected result": "Bu eşyalar beklenen sonucu vermeyebilir",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "Silah, zırh ve yeleklerin taban değerleri doğrulanmadı, bu yüzden zamanlayıcı tutmayabilir.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "Bit pazarındaki en ucuz ilan kısmen kullanılmış bir kopya olabilir. Dolu olanı çok daha pahalı olabilir.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "Gösterilen fiyat ve taban değer tek bir mermi içindir. Bir yığın daha değerli ve daha pahalıdır.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "Otomatik Seçim, bit pazarında 5'ten az ilanı olan eşyaları atlar. Arama bunun yerine onları etiketler.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "Otomatik Seçim, seviyende alamadığın eşyaları atlar. Arama bunun yerine onları etiketler.",
+  "Auto Select uses items you can buy at level {level}": "Otomatik Seçim, {level}. seviyede alabileceğin eşyaları kullanır",
+  "Set your level so Auto Select skips items you can't buy yet": "Seviyeni ayarla, Otomatik Seçim henüz alamadığın eşyaları atlasın",
+  "Auto Select skips these categories": "Otomatik Seçim bu kategorileri atlar",
+  "Auto Select won't pick from these. Search still shows them.": "Otomatik Seçim bunlardan seçmez. Arama yine de gösterir.",
+
+  // Item selector quick picks
+  "Add {name} again": "{name} tekrar ekle",
+  "Same as above": "YukarÄ±dakiyle aynÄ±",
+  "Enter": "Enter"
 }

@@ -1209,5 +1209,34 @@
   "Rocket": "Ракета",
   "Rocket Launcher": "Реактивный гранатомёт",
   "Tapes": "Кассеты",
-  "Volumetric Throw Weapon": "Объёмное метательное оружие"
+  "Volumetric Throw Weapon": "Объёмное метательное оружие",
+
+  // Search tags and item risk warning
+  "Unverified": "Не проверено",
+  "Base value isn't confirmed, so the timer may not match": "Базовая стоимость не подтверждена, таймер может не совпасть",
+  "Has uses": "Есть использования",
+  "The cheapest flea listing may be a partly used copy": "Самый дешёвый лот на барахолке может быть частично использованным",
+  "Per round": "За патрон",
+  "Price and base value are for a single round": "Цена и базовая стоимость указаны за один патрон",
+  "Flea Lv {level}": "Барахолка ур. {level}",
+  "You can't buy this on the flea market until level {level}": "Купить на барахолке можно только с {level} уровня",
+  "Few offers": "Мало лотов",
+  "Fewer than {count} flea offers, so the price may not hold": "Меньше {count} лотов на барахолке, цена может не удержаться",
+  "Can't be sacrificed: {names}": "Ð�ÐµÐ»ÑŒÐ·Ñ� Ð¿Ð¾Ð¶ÐµÑ€Ñ‚Ð²Ð¾Ð²Ð°Ñ‚ÑŒ: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "ÐšÑ€ÑƒÐ³ Ð½Ðµ Ð¿Ñ€Ð¸Ð½Ð¸Ð¼Ð°ÐµÑ‚ Ñ�Ñ‚Ð¸ Ð¿Ñ€ÐµÐ´Ð¼ÐµÑ‚Ñ‹, Ð¿Ð¾Ñ�Ñ‚Ð¾Ð¼Ñƒ Ð¸Ñ… Ð½ÐµÑ‚ Ð² Ñ�Ñ‚Ð¾Ð¼ Ñ�Ð¿Ð¸Ñ�ÐºÐµ.",
+  "These items may not give the expected result": "Эти предметы могут дать не тот результат",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "Базовая стоимость оружия, брони и разгрузок не подтверждена, поэтому таймер может не совпасть.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "Самый дешёвый лот на барахолке может быть частично использованным. Полный может стоить гораздо дороже.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "Показанные цена и базовая стоимость указаны за один патрон. Стопка стоит больше и дороже.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "Авто-выбор пропускает предметы, у которых меньше 5 лотов на барахолке. Поиск вместо этого помечает их.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "Авто-выбор пропускает предметы, которые нельзя купить на вашем уровне. Поиск вместо этого помечает их.",
+  "Auto Select uses items you can buy at level {level}": "Авто-выбор использует предметы, доступные для покупки на уровне {level}",
+  "Set your level so Auto Select skips items you can't buy yet": "Укажите уровень, чтобы авто-выбор пропускал предметы, которые пока нельзя купить",
+  "Auto Select skips these categories": "Авто-выбор пропускает эти категории",
+  "Auto Select won't pick from these. Search still shows them.": "Авто-выбор не будет выбирать из них. Поиск по-прежнему их показывает.",
+
+  // Item selector quick picks
+  "Add {name} again": "Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ {name} ÐµÑ‰Ñ‘ Ñ€Ð°Ð·",
+  "Same as above": "ÐšÐ°Ðº Ð²Ñ‹ÑˆÐµ",
+  "Enter": "Enter"
 }

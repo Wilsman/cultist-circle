@@ -1213,5 +1213,34 @@
   "Rocket": "Rakieta",
   "Rocket Launcher": "Wyrzutnia rakiet",
   "Tapes": "Taśmy",
-  "Volumetric Throw Weapon": "Objętościowa broń miotana"
+  "Volumetric Throw Weapon": "Objętościowa broń miotana",
+
+  // Search tags and item risk warning
+  "Unverified": "Niezweryfikowane",
+  "Base value isn't confirmed, so the timer may not match": "Wartość bazowa nie jest potwierdzona, licznik może się nie zgadzać",
+  "Has uses": "Ma użycia",
+  "The cheapest flea listing may be a partly used copy": "Najtańsza oferta na pchlim targu może być częściowo zużytym egzemplarzem",
+  "Per round": "Za nabój",
+  "Price and base value are for a single round": "Cena i wartość bazowa dotyczą jednego naboju",
+  "Flea Lv {level}": "Pchli targ Lv {level}",
+  "You can't buy this on the flea market until level {level}": "Na pchlim targu kupisz to dopiero od poziomu {level}",
+  "Few offers": "Mało ofert",
+  "Fewer than {count} flea offers, so the price may not hold": "Mniej niż {count} ofert na pchlim targu, cena może się nie utrzymać",
+  "Can't be sacrificed: {names}": "Nie moÅ¼na poÅ›wiÄ™ciÄ‡: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "KrÄ…g nie przyjmuje tych przedmiotÃ³w, wiÄ™c nie ma ich na tej liÅ›cie.",
+  "These items may not give the expected result": "Te przedmioty mogą nie dać oczekiwanego wyniku",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "Wartości bazowe broni, pancerzy i kamizelek nie są potwierdzone, więc licznik może się nie zgadzać.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "Najtańsza oferta na pchlim targu może być częściowo zużytym egzemplarzem. Pełny może kosztować dużo więcej.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "Pokazana cena i wartość bazowa dotyczą jednego naboju. Stos jest wart więcej i kosztuje więcej.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "Auto wybór pomija przedmioty z mniej niż 5 ofertami na pchlim targu. Wyszukiwanie zamiast tego je oznacza.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "Auto wybór pomija przedmioty, których nie kupisz na swoim poziomie. Wyszukiwanie zamiast tego je oznacza.",
+  "Auto Select uses items you can buy at level {level}": "Auto wybór używa przedmiotów, które kupisz na poziomie {level}",
+  "Set your level so Auto Select skips items you can't buy yet": "Ustaw swój poziom, aby Auto wybór pomijał przedmioty, których jeszcze nie kupisz",
+  "Auto Select skips these categories": "Auto wybór pomija te kategorie",
+  "Auto Select won't pick from these. Search still shows them.": "Auto wybór nie wybiera z nich. Wyszukiwanie nadal je pokazuje.",
+
+  // Item selector quick picks
+  "Add {name} again": "Dodaj ponownie: {name}",
+  "Same as above": "To samo co wyÅ¼ej",
+  "Enter": "Enter"
 }

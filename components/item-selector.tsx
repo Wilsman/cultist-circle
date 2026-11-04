@@ -21,8 +21,17 @@ import {
   ListFilter,
   ExternalLink,
   MoreHorizontal,
+  Ban,
+  CopyPlus,
+  CornerDownLeft,
 } from "lucide-react";
 import Fuse from "fuse.js";
+import { rankSearchResults } from "@/lib/item-search-rank";
+import {
+  pushRecentItemId,
+  readRecentItemIds,
+  SELECTOR_RECENTS_STORAGE_KEY,
+} from "@/lib/item-lookup";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { TraderLevels } from "@/components/ui/trader-level-selector";
 import {
@@ -62,6 +71,11 @@ import {
   type SelectorTraderFilter,
   WEAPON_CATEGORY_ID,
 } from "@/lib/item-selector-filters";
+import {
+  getItemFleaLevel,
+  getItemRisks,
+  isBrokenExcludedItem,
+} from "@/lib/item-risk";
 
 const TRADER_FILTERS: Array<{
   value: keyof TraderLevels;
@@ -77,7 +91,7 @@ const TRADER_FILTERS: Array<{
 ];
 
 export interface ItemSelectorProps {
-  items: SimplifiedItem[];
+  /** Every item search can offer; built-in broken exclusions are hidden here. */
   manualDiscoveryItems: SimplifiedItem[];
   selectedItem: SimplifiedItem | null;
   onSelect: (
@@ -107,7 +121,21 @@ export interface ItemSelectorProps {
   stashCounts?: ReadonlyMap<string, number>;
   /** How many calculator slots currently hold each item id. */
   stashSelectedCounts?: ReadonlyMap<string, number>;
+  /** Player level for "Flea Lv" tags; null when the level filter is off. */
+  playerLevel?: number | null;
+  /** Tag items with fewer than {@link LOW_OFFER_COUNT} flea offers. */
+  flagLowOffers?: boolean;
+  /** Nearest filled slot above this one, offered as a one-click repeat. */
+  itemAbove?: SimplifiedItem | null;
 }
+
+export const LOW_OFFER_COUNT = 5;
+
+/** Recent picks shown when an empty slot's search opens. */
+const QUICK_PICK_RECENT_LIMIT = 5;
+
+/** Shortest hidden-item search that gets a "not shown" note. */
+const MIN_HIDDEN_MATCH_LENGTH = 3;
 
 export interface ItemSelectorHandle {
   focus: () => void;
@@ -116,7 +144,6 @@ export interface ItemSelectorHandle {
 const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
   (
     {
-      items,
       manualDiscoveryItems,
       selectedItem,
       onSelect,
@@ -140,24 +167,25 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       traderFilter,
       stashCounts,
       stashSelectedCounts,
+      playerLevel = null,
+      flagLowOffers = false,
+      itemAbove = null,
     },
     ref
   ) => {
     const { t } = useLanguage();
-    // Validate that items is an array
     useEffect(() => {
-      if (!Array.isArray(items)) {
-        console.debug("Items prop is not an array, defaulting to empty array");
-      }
       if (!Array.isArray(manualDiscoveryItems)) {
         console.debug(
           "Manual discovery items prop is not an array, defaulting to empty array"
         );
       }
-    }, [items, manualDiscoveryItems]);
+    }, [manualDiscoveryItems]);
 
     const [searchTerm, setSearchTerm] = useState("");
     const [isFocused, setIsFocused] = useState(false);
+    // Read on focus so picks made in other slots show up here.
+    const [recentIds, setRecentIds] = useState<string[]>([]);
     const [showThresholdMatchesOnly, setShowThresholdMatchesOnly] =
       useState(false);
 
@@ -268,38 +296,50 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
     }, [selectedItem, overriddenPrice]);
 
     const filteredDiscoveryItems = useMemo(() => {
-      const sourceItems =
-        categoryFilter === ALL_CATEGORIES_FILTER
-          ? Array.isArray(items)
-            ? items
-            : []
-          : Array.isArray(manualDiscoveryItems)
-          ? manualDiscoveryItems
-          : [];
-
       return filterManualDiscoveryItems(
-        sourceItems,
+        Array.isArray(manualDiscoveryItems) ? manualDiscoveryItems : [],
         categoryFilter === ALL_CATEGORIES_FILTER ? null : categoryFilter,
         traderFilter === "any" ? null : traderFilter,
         traderLevels
       );
-    }, [
-      categoryFilter,
-      items,
-      manualDiscoveryItems,
-      traderFilter,
-      traderLevels,
-    ]);
+    }, [categoryFilter, manualDiscoveryItems, traderFilter, traderLevels]);
 
-    const normalCandidateItems = useMemo(() => {
-      return filteredDiscoveryItems.filter(
-        (item) =>
-          item.basePrice > 0 &&
-          !getSearchableNames(item).some((name) =>
-            excludedLookup.has(name.toLowerCase())
-          )
+    // Search shows everything except the built-in items that can't be used
+    // in the circle; those are kept aside so a search can explain them.
+    const { normalCandidateItems, hiddenBrokenItems } = useMemo(() => {
+      const shown: SimplifiedItem[] = [];
+      const hidden: SimplifiedItem[] = [];
+      for (const item of filteredDiscoveryItems) {
+        if (isBrokenExcludedItem(item, excludedLookup)) {
+          hidden.push(item);
+        } else if (item.basePrice > 0) {
+          shown.push(item);
+        }
+      }
+      return { normalCandidateItems: shown, hiddenBrokenItems: hidden };
+    }, [excludedLookup, filteredDiscoveryItems]);
+
+    // Quick picks ignore the search filters: they are items the user chose.
+    const quickPicks = useMemo(() => {
+      const usable = (item: SimplifiedItem | null | undefined) =>
+        !!item &&
+        item.basePrice > 0 &&
+        !isBrokenExcludedItem(item, excludedLookup);
+      const above = usable(itemAbove) ? itemAbove : null;
+      const byId = new Map(
+        (Array.isArray(manualDiscoveryItems) ? manualDiscoveryItems : []).map(
+          (item) => [item.id, item] as const
+        )
       );
-    }, [excludedLookup, filteredDiscoveryItems, getSearchableNames]);
+      const recents: SimplifiedItem[] = [];
+      for (const id of recentIds) {
+        if (recents.length >= QUICK_PICK_RECENT_LIMIT) break;
+        if (id === above?.id) continue;
+        const item = byId.get(id);
+        if (usable(item)) recents.push(item as SimplifiedItem);
+      }
+      return { above, recents };
+    }, [excludedLookup, itemAbove, manualDiscoveryItems, recentIds]);
 
     const thresholdCandidateItems = useMemo(() => {
       return [...normalCandidateItems]
@@ -375,7 +415,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
     useEffect(() => {
       const handler = setTimeout(() => {
         setDebouncedSearchTerm(searchTerm);
-      }, 300);
+      }, 150);
       return () => {
         clearTimeout(handler);
       };
@@ -404,7 +444,11 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       } else if (!fuse) {
         results = searchableItems;
       } else {
-        results = fuse.search(debouncedSearchTerm).map((result) => result.item);
+        results = rankSearchResults(
+          fuse.search(debouncedSearchTerm),
+          debouncedSearchTerm,
+          getSearchableNames
+        );
       }
       if (!showThresholdMatchesOnly) {
         return stashFirst(
@@ -443,6 +487,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       debouncedSearchTerm,
       fuse,
       getEffectivePriceInfo,
+      getSearchableNames,
       isFocused,
       searchableItems,
       showThresholdMatchesOnly,
@@ -475,8 +520,10 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       : "";
 
     useEffect(() => {
+      // Nothing is pre-highlighted before typing, so Enter on an empty search
+      // repeats the item above instead of picking the first of 5,000 items.
       let nextIndex = -1;
-      if (isFocused && filteredItems.length > 0) {
+      if (isFocused && filteredItems.length > 0 && debouncedSearchTerm.trim()) {
         nextIndex = 0;
       }
       let cancelled = false;
@@ -506,6 +553,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       (item: SimplifiedItem | null) => {
         let overriddenPriceToPass: number | undefined | null = undefined;
         if (item) {
+          pushRecentItemId(item.id, SELECTOR_RECENTS_STORAGE_KEY);
           if (overriddenPrice !== undefined) {
             overriddenPriceToPass = overriddenPrice;
           } else if (priceOverride) {
@@ -644,6 +692,11 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
           if (inlineSuggestionItem) {
             event.preventDefault();
             handleSelect(inlineSuggestionItem);
+            return;
+          }
+          if (!searchTerm.trim() && quickPicks.above) {
+            event.preventDefault();
+            handleSelect(quickPicks.above);
           }
           return;
         }
@@ -681,6 +734,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
         hasInlineSuggestion,
         highlightedIndex,
         inlineSuggestionItem,
+        quickPicks.above,
         searchTerm,
       ]
     );
@@ -775,6 +829,85 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       [debouncedSearchTerm]
     );
 
+    const getRowTags = useCallback(
+      (item: SimplifiedItem) => {
+        const tags: Array<{
+          key: string;
+          label: string;
+          title: string;
+          tone: "warn" | "info";
+        }> = [];
+        for (const risk of getItemRisks(item)) {
+          if (risk === "unverified-value") {
+            tags.push({
+              key: risk,
+              label: t("Unverified"),
+              title: t("Base value isn't confirmed, so the timer may not match"),
+              tone: "warn",
+            });
+          } else if (risk === "has-uses") {
+            tags.push({
+              key: risk,
+              label: t("Has uses"),
+              title: t("The cheapest flea listing may be a partly used copy"),
+              tone: "warn",
+            });
+          } else {
+            tags.push({
+              key: risk,
+              label: t("Per round"),
+              title: t("Price and base value are for a single round"),
+              tone: "info",
+            });
+          }
+        }
+        if (playerLevel !== null) {
+          const fleaLevel = getItemFleaLevel(item);
+          if (fleaLevel > playerLevel) {
+            tags.push({
+              key: "flea-level",
+              label: t("Flea Lv {level}", { level: fleaLevel }),
+              title: t("You can't buy this on the flea market until level {level}", {
+                level: fleaLevel,
+              }),
+              tone: "info",
+            });
+          }
+        }
+        if (
+          flagLowOffers &&
+          priceMode === "flea" &&
+          (item.lastOfferCount ?? 0) < LOW_OFFER_COUNT
+        ) {
+          tags.push({
+            key: "few-offers",
+            label: t("Few offers"),
+            title: t("Fewer than {count} flea offers, so the price may not hold", {
+              count: LOW_OFFER_COUNT,
+            }),
+            tone: "info",
+          });
+        }
+        return tags;
+      },
+      [flagLowOffers, playerLevel, priceMode, t]
+    );
+
+    // Built-in broken items that match the search, named so users know why
+    // they are missing.
+    const hiddenSearchMatches = useMemo(() => {
+      const term = debouncedSearchTerm.trim().toLowerCase();
+      if (term.length < MIN_HIDDEN_MATCH_LENGTH) return [];
+      return hiddenBrokenItems
+        .filter((item) =>
+          getSearchableNames(item).some((name) =>
+            name.toLowerCase().includes(term)
+          )
+        )
+        .slice(0, 3)
+        .map((item) => item.name);
+    }, [debouncedSearchTerm, getSearchableNames, hiddenBrokenItems]);
+
     // Row component for react-window (dropdown list item)
     const Row = useCallback(
       ({ index, style }: ListChildComponentProps<SimplifiedItem>) => {
@@ -817,11 +950,30 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
               </div>
             )}
             <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <span className="truncate font-semibold text-sm text-slate-100 group-hover:text-primary transition-colors">
-                {highlightMatch(item.name)}
-              </span>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate font-semibold text-sm text-slate-100 group-hover:text-primary transition-colors">
+                  {highlightMatch(item.name)}
+                </span>
+                {getRowTags(item).map((tag) => (
+                  <span
+                    key={tag.key}
+                    title={tag.title}
+                    className={cn(
+                      "shrink-0 rounded border px-1 text-[9px] font-bold uppercase tracking-wider",
+                      tag.tone === "warn"
+                        ? "border-amber-400/25 bg-amber-400/[0.08] text-amber-300/90"
+                        : "border-white/15 bg-white/5 text-slate-300/80"
+                    )}
+                  >
+                    {tag.label}
+                  </span>
+                ))}
+              </div>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[10px] font-extrabold text-emerald-500/90 uppercase tracking-wider">
+                  <span className="mr-1 font-semibold text-emerald-500/60">
+                    {t("Base")}
+                  </span>
                   ₽{(item.basePrice || 0).toLocaleString()}
                 </span>
                 {stashCounts?.has(item.id) && (
@@ -870,6 +1022,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
       [
         filteredItems,
         getEffectivePriceInfo,
+        getRowTags,
         handleSelect,
         highlightMatch,
         highlightedIndex,
@@ -918,7 +1071,12 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                   <div className="flex items-center gap-2">
                     <input
                       ref={inputRef}
-                      onFocus={() => setIsFocused(true)}
+                      onFocus={() => {
+                        setRecentIds(
+                          readRecentItemIds(SELECTOR_RECENTS_STORAGE_KEY)
+                        );
+                        setIsFocused(true);
+                      }}
                       onBlur={() =>
                         setTimeout(() => {
                           setIsFocused(false);
@@ -936,7 +1094,9 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                           : "sm:pr-6"
                       )}
                     />
-                    {!isFocused && !searchTerm && (
+                    {!isFocused &&
+                      !searchTerm &&
+                      (activeDiscoveryFilterCount > 0 || !quickPicks.above) && (
                       <div className="pointer-events-none absolute right-0 flex items-center">
                         {activeDiscoveryFilterCount > 0 ? (
                           <span
@@ -960,6 +1120,35 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                     )}
                   </div>
                 </div>
+                {!isFocused && !searchTerm && quickPicks.above && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSelect(quickPicks.above)}
+                    title={t("Add {name} again", {
+                      name: quickPicks.above.name,
+                    })}
+                    className="group/repeat flex max-w-[60%] shrink-0 items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 py-1 pl-2 pr-1 text-primary transition-colors hover:border-primary/60 hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+                  >
+                    <CopyPlus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider">
+                      {t("Same as above")}
+                    </span>
+                    <span className="flex min-w-0 items-center gap-1 rounded-md bg-black/30 py-0.5 pl-0.5 pr-0.5 text-[11px] font-semibold text-slate-200 group-hover/repeat:text-white sm:pr-1.5">
+                      {quickPicks.above.iconLink && (
+                        <img
+                          src={quickPicks.above.iconLink}
+                          alt=""
+                          aria-hidden
+                          className="h-5 w-5 shrink-0 object-contain"
+                        />
+                      )}
+                      <span className="hidden truncate sm:inline">
+                        {quickPicks.above.shortName || quickPicks.above.name}
+                      </span>
+                    </span>
+                  </button>
+                )}
               </div>
 
               {isFocused && hasInlineSuggestion && (
@@ -976,7 +1165,7 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
               )}
 
               {isFocused && (
-                <div className="absolute top-full left-0 right-0 z-[100] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+                <div className="absolute top-full left-0 right-0 z-[100] bg-black backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
                   <div
                     className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3"
                     onMouseDown={(e) => e.preventDefault()}
@@ -1038,6 +1227,102 @@ const ItemSelector = forwardRef<ItemSelectorHandle, ItemSelectorProps>(
                       {filteredItems.length.toLocaleString()}
                     </span>
                   </div>
+                  {!searchTerm.trim() &&
+                    (quickPicks.above || quickPicks.recents.length > 0) && (
+                      <div
+                        className="flex flex-wrap items-center gap-1.5 border-b border-white/10 bg-slate-950/40 px-3 py-2"
+                        onMouseDown={(e) => e.preventDefault()}
+                        data-testid="selector-quick-picks"
+                      >
+                        {quickPicks.above && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelect(quickPicks.above)}
+                            aria-label={t("Add {name} again", {
+                              name: quickPicks.above.name,
+                            })}
+                            className="flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 py-1 pl-1.5 pr-2 text-[11px] font-semibold text-white transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+                          >
+                            <CopyPlus
+                              className="h-3.5 w-3.5 shrink-0 text-primary"
+                              aria-hidden
+                            />
+                            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-primary/90">
+                              {t("Same as above")}
+                            </span>
+                            {quickPicks.above.iconLink && (
+                              <img
+                                src={quickPicks.above.iconLink}
+                                alt=""
+                                aria-hidden
+                                className="h-5 w-5 shrink-0 object-contain"
+                              />
+                            )}
+                            <span className="truncate">
+                              {quickPicks.above.shortName ||
+                                quickPicks.above.name}
+                            </span>
+                            <CornerDownLeft
+                              className="hidden h-3 w-3 shrink-0 text-white/40 sm:block"
+                              aria-label={t("Enter")}
+                            />
+                          </button>
+                        )}
+                        {quickPicks.recents.length > 0 && (
+                          <span className="px-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            {t("Recent")}
+                          </span>
+                        )}
+                        {quickPicks.recents.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleSelect(item)}
+                            title={item.name}
+                            aria-label={t("Add {name} again", {
+                              name: item.name,
+                            })}
+                            className="flex min-w-0 max-w-[10rem] items-center gap-1 rounded-md border border-white/10 bg-white/5 py-1 pl-1 pr-2 text-[11px] font-semibold text-slate-300 transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+                          >
+                            {item.iconLink && (
+                              <img
+                                src={item.iconLink}
+                                alt=""
+                                aria-hidden
+                                className="h-5 w-5 shrink-0 object-contain"
+                              />
+                            )}
+                            <span className="truncate">
+                              {item.shortName || item.name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  {hiddenSearchMatches.length > 0 && (
+                    <div
+                      role="status"
+                      className="flex items-start gap-2.5 border-b border-amber-400/25 bg-amber-500/10 px-4 py-2.5"
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      <Ban
+                        className="mt-0.5 h-4 w-4 shrink-0 text-amber-300"
+                        aria-hidden
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-amber-100">
+                          {t("Can't be sacrificed: {names}", {
+                            names: hiddenSearchMatches.join(", "),
+                          })}
+                        </p>
+                        <p className="text-[11px] text-amber-200/70">
+                          {t(
+                            "The circle doesn't accept these items, so they aren't in this list."
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div className="max-h-[268px]">
                     {filteredItems.length > 0 ? (
                       <AutoSizer disableHeight>

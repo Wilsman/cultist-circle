@@ -1204,5 +1204,34 @@
   // Item category names tarkov.dev leaves in English
   "Battle Pass Document": "Battle-Pass-Dokument",
   "Mark of the Unheard": "Mal der Ungehörten",
-  "Volumetric Throw Weapon": "Volumetrische Wurfwaffe"
+  "Volumetric Throw Weapon": "Volumetrische Wurfwaffe",
+
+  // Search tags and item risk warning
+  "Unverified": "Ungeprüft",
+  "Base value isn't confirmed, so the timer may not match": "Basiswert ist nicht bestätigt, der Timer kann abweichen",
+  "Has uses": "Hat Nutzungen",
+  "The cheapest flea listing may be a partly used copy": "Das günstigste Flohmarkt-Angebot kann ein teilweise benutztes Exemplar sein",
+  "Per round": "Pro Patrone",
+  "Price and base value are for a single round": "Preis und Basiswert gelten für eine einzelne Patrone",
+  "Flea Lv {level}": "Flohmarkt Lv {level}",
+  "You can't buy this on the flea market until level {level}": "Auf dem Flohmarkt erst ab Level {level} kaufbar",
+  "Few offers": "Wenige Angebote",
+  "Fewer than {count} flea offers, so the price may not hold": "Weniger als {count} Flohmarkt-Angebote, der Preis hält evtl. nicht",
+  "Can't be sacrificed: {names}": "Kann nicht geopfert werden: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "Der Kreis nimmt diese GegenstÃ¤nde nicht an, deshalb fehlen sie in dieser Liste.",
+  "These items may not give the expected result": "Diese Gegenstände liefern evtl. nicht das erwartete Ergebnis",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "Basiswerte für Waffen, Rüstungen und Westen sind nicht bestätigt, daher kann der Timer abweichen.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "Das günstigste Flohmarkt-Angebot kann ein teilweise benutztes Exemplar sein. Ein volles kann deutlich mehr kosten.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "Preis und Basiswert gelten für eine einzelne Patrone. Ein Stapel ist mehr wert und kostet mehr.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "Auto-Auswahl überspringt Gegenstände mit weniger als 5 Flohmarkt-Angeboten. Die Suche markiert sie stattdessen.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "Auto-Auswahl überspringt Gegenstände, die du auf deinem Level nicht kaufen kannst. Die Suche markiert sie stattdessen.",
+  "Auto Select uses items you can buy at level {level}": "Auto-Auswahl nutzt Gegenstände, die du auf Level {level} kaufen kannst",
+  "Set your level so Auto Select skips items you can't buy yet": "Lege dein Level fest, damit Auto-Auswahl nicht kaufbare Gegenstände überspringt",
+  "Auto Select skips these categories": "Auto-Auswahl überspringt diese Kategorien",
+  "Auto Select won't pick from these. Search still shows them.": "Auto-Auswahl wählt nicht aus diesen. Die Suche zeigt sie weiterhin.",
+
+  // Item selector quick picks
+  "Add {name} again": "{name} erneut hinzufÃ¼gen",
+  "Same as above": "Wie oben",
+  "Enter": "Eingabe"
 }

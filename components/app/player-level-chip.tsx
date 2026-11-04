@@ -59,8 +59,8 @@ export function PlayerLevelChip({
           aria-label={t("Set your player level")}
           title={
             useLevelFilter
-              ? t("Only items available at level {level}", { level })
-              : t("Set your level to hide items you cannot buy yet")
+              ? t("Auto Select uses items you can buy at level {level}", { level })
+              : t("Set your level so Auto Select skips items you can't buy yet")
           }
           className={cn(
             "flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] font-medium transition-colors",
@@ -116,7 +116,7 @@ export function PlayerLevelChip({
                   count: filteredCount.toLocaleString(),
                 })
               : t("All items are available at this level")
-            : t("Set your level to hide items you cannot buy yet")}
+            : t("Set your level so Auto Select skips items you can't buy yet")}
         </p>
         {useLevelFilter && (
           <button
