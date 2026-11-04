@@ -1234,5 +1234,34 @@
   "Stimulant": "Stimulent",
   "Tapes": "Casete",
   "Thermal Vision": "Vedere termică",
-  "Volumetric Throw Weapon": "Armă de aruncare volumetrică"
+  "Volumetric Throw Weapon": "Armă de aruncare volumetrică",
+
+  // Search tags and item risk warning
+  "Unverified": "Neverificat",
+  "Base value isn't confirmed, so the timer may not match": "Valoarea de bază nu este confirmată, cronometrul poate să nu corespundă",
+  "Has uses": "Are utilizări",
+  "The cheapest flea listing may be a partly used copy": "Cea mai ieftină ofertă din piață poate fi un exemplar parțial folosit",
+  "Per round": "Per glonț",
+  "Price and base value are for a single round": "Prețul și valoarea de bază sunt pentru un singur glonț",
+  "Flea Lv {level}": "Piață Nv {level}",
+  "You can't buy this on the flea market until level {level}": "Nu îl poți cumpăra din piață până la nivelul {level}",
+  "Few offers": "Puține oferte",
+  "Fewer than {count} flea offers, so the price may not hold": "Mai puțin de {count} oferte în piață, prețul poate să nu se mențină",
+  "Can't be sacrificed: {names}": "Nu poate fi sacrificat: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "Cercul nu acceptÄƒ aceste obiecte, aÈ™a cÄƒ nu apar Ã®n aceastÄƒ listÄƒ.",
+  "These items may not give the expected result": "Aceste obiecte pot să nu dea rezultatul așteptat",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "Valorile de bază pentru arme, armuri și veste nu sunt confirmate, așa că cronometrul poate să nu corespundă.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "Cea mai ieftină ofertă din piață poate fi un exemplar parțial folosit. Unul plin poate costa mult mai mult.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "Prețul și valoarea de bază afișate sunt pentru un singur glonț. Un teanc valorează mai mult și costă mai mult.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "Selectarea automată sare peste obiectele cu mai puțin de 5 oferte în piață. Căutarea le marchează în schimb.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "Selectarea automată sare peste obiectele pe care nu le poți cumpăra la nivelul tău. Căutarea le marchează în schimb.",
+  "Auto Select uses items you can buy at level {level}": "Selectarea automată folosește obiecte pe care le poți cumpăra la nivelul {level}",
+  "Set your level so Auto Select skips items you can't buy yet": "Setează-ți nivelul ca selectarea automată să sară peste obiectele pe care nu le poți cumpăra încă",
+  "Auto Select skips these categories": "Selectarea automată sare peste aceste categorii",
+  "Auto Select won't pick from these. Search still shows them.": "Selectarea automată nu va alege din acestea. Căutarea încă le afișează.",
+
+  // Item selector quick picks
+  "Add {name} again": "AdaugÄƒ din nou {name}",
+  "Same as above": "La fel ca mai sus",
+  "Enter": "Enter"
 }

@@ -1234,5 +1234,34 @@
   "Spring Driven Cylinder": "Cilindro de resorte",
   "Tapes": "Cintas",
   "Thermal Vision": "Visión térmica",
-  "Volumetric Throw Weapon": "Arma arrojadiza volumétrica"
+  "Volumetric Throw Weapon": "Arma arrojadiza volumétrica",
+
+  // Search tags and item risk warning
+  "Unverified": "Sin verificar",
+  "Base value isn't confirmed, so the timer may not match": "El valor base no está confirmado, el temporizador puede no coincidir",
+  "Has uses": "Tiene usos",
+  "The cheapest flea listing may be a partly used copy": "La oferta más barata del mercado puede ser una copia parcialmente usada",
+  "Per round": "Por bala",
+  "Price and base value are for a single round": "El precio y el valor base son de una sola bala",
+  "Flea Lv {level}": "Mercado Nv {level}",
+  "You can't buy this on the flea market until level {level}": "No puedes comprarlo en el mercado hasta el nivel {level}",
+  "Few offers": "Pocas ofertas",
+  "Fewer than {count} flea offers, so the price may not hold": "Menos de {count} ofertas en el mercado, el precio puede no mantenerse",
+  "Can't be sacrificed: {names}": "No se puede sacrificar: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "El cÃ­rculo no acepta estos objetos, asÃ­ que no aparecen en esta lista.",
+  "These items may not give the expected result": "Estos objetos pueden no dar el resultado esperado",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "Los valores base de armas, armaduras y chalecos no están confirmados, así que el temporizador puede no coincidir.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "La oferta más barata del mercado puede ser una copia parcialmente usada. Una completa puede costar mucho más.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "El precio y el valor base mostrados son de una sola bala. Una pila vale más y cuesta más.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "La selección automática omite objetos con menos de 5 ofertas en el mercado. La búsqueda los etiqueta en su lugar.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "La selección automática omite objetos que no puedes comprar a tu nivel. La búsqueda los etiqueta en su lugar.",
+  "Auto Select uses items you can buy at level {level}": "La selección automática usa objetos que puedes comprar en el nivel {level}",
+  "Set your level so Auto Select skips items you can't buy yet": "Indica tu nivel para que la selección automática omita objetos que aún no puedes comprar",
+  "Auto Select skips these categories": "La selección automática omite estas categorías",
+  "Auto Select won't pick from these. Search still shows them.": "La selección automática no elegirá de estas. La búsqueda las sigue mostrando.",
+
+  // Item selector quick picks
+  "Add {name} again": "AÃ±adir {name} de nuevo",
+  "Same as above": "Igual que arriba",
+  "Enter": "Intro"
 }

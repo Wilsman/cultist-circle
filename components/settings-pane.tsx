@@ -776,7 +776,7 @@ export default function SettingsPane({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold text-lg">
-                            {t("Excluded Categories")}
+                            {t("Auto Select skips these categories")}
                           </h4>
                           <Link href="/faq" target="_blank">
                             <Button
@@ -790,7 +790,7 @@ export default function SettingsPane({
                         </div>
                         <p className="text-sm text-gray-400">
                           {t(
-                            "Selection will be hidden from the auto-selector and items lists.",
+                            "Auto Select won't pick from these. Search still shows them.",
                           )}
                         </p>
                       </div>

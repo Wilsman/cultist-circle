@@ -57,8 +57,6 @@ function renderPopover(
     lowOfferCountFilteredCount: 0,
     playerLevel: 15,
     onPlayerLevelChange: vi.fn(),
-    ignoreFilters: false,
-    onIgnoreFiltersChange: vi.fn(),
     categories,
     categoryFilter: "all",
     onCategoryFilterChange: vi.fn(),

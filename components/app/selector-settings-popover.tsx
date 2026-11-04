@@ -75,8 +75,6 @@ interface SelectorSettingsPopoverProps {
   lowOfferCountFilteredCount: number;
   playerLevel: number;
   onPlayerLevelChange: (level: number) => void;
-  ignoreFilters: boolean;
-  onIgnoreFiltersChange: (value: boolean) => void;
   categories: ItemCategory[];
   categoryFilter: string;
   onCategoryFilterChange: (categoryId: string) => void;
@@ -156,8 +154,6 @@ export function SelectorSettingsPopover({
   lowOfferCountFilteredCount,
   playerLevel,
   onPlayerLevelChange,
-  ignoreFilters,
-  onIgnoreFiltersChange,
   categories,
   categoryFilter,
   onCategoryFilterChange,
@@ -165,7 +161,6 @@ export function SelectorSettingsPopover({
   onTraderFilterChange,
 }: SelectorSettingsPopoverProps) {
   const { t } = useLanguage();
-  const filtersAreOverridden = ignoreFilters;
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const selectedCategory = useMemo(
     () => categories.find((category) => category.id === categoryFilter),
@@ -212,7 +207,7 @@ export function SelectorSettingsPopover({
           size="sm"
           className={cn(
             "h-7 gap-2 rounded-md border px-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors",
-            filtersAreOverridden || searchFiltersAreActive
+            searchFiltersAreActive
               ? "border-amber-500/40 bg-amber-500/12 text-amber-200 hover:border-amber-400/60 hover:bg-amber-500/18"
               : "border-slate-600/40 bg-slate-900/70 text-slate-300 hover:border-slate-500/60 hover:bg-slate-800/80 hover:text-slate-100",
           )}
@@ -226,11 +221,6 @@ export function SelectorSettingsPopover({
           {sacrificeSlotCount !== MAX_SACRIFICE_SLOTS && (
             <span className="rounded-full border border-amber-300/40 bg-amber-200/12 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-[0.14em] text-amber-100">
               {t("{count} slots", { count: sacrificeSlotCount })}
-            </span>
-          )}
-          {filtersAreOverridden && (
-            <span className="rounded-full border border-amber-300/40 bg-amber-200/12 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-[0.14em] text-amber-100">
-              {t("All Items")}
             </span>
           )}
           {searchFiltersAreActive && (
@@ -433,19 +423,6 @@ export function SelectorSettingsPopover({
             )}
           </section>
 
-          {filtersAreOverridden && (
-            <div className="mb-3 rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2">
-              <p className="text-[11px] font-medium text-amber-200">
-                {t("Base selector filters are currently bypassed")}
-              </p>
-              <p className="mt-1 text-[10px] text-amber-100/80">
-                {searchFiltersAreActive
-                  ? t("Search Filters above still apply to manual searches")
-                  : t("Every item is shown in the selector list")}
-              </p>
-            </div>
-          )}
-
           <div className="space-y-3">
             <section className="rounded-md border border-slate-700 bg-slate-900/70 p-2.5">
               <div className="flex items-center justify-between gap-2">
@@ -635,12 +612,7 @@ export function SelectorSettingsPopover({
               </RadioGroup>
             </section>
 
-            <section
-              className={cn(
-                "rounded-md border border-slate-700 bg-slate-900/70 p-2.5 transition-opacity",
-                filtersAreOverridden && "opacity-55",
-              )}
-            >
+            <section className="rounded-md border border-slate-700 bg-slate-900/70 p-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-[11px] text-slate-300">
@@ -650,7 +622,6 @@ export function SelectorSettingsPopover({
                     {t("Exclude items invalid for the cultist circle")}
                   </span>
                   {excludeIncompatible &&
-                    !filtersAreOverridden &&
                     incompatibleFilteredCount > 0 && (
                       <span className="mt-1 text-[10px] font-medium text-amber-300">
                         {t("Filtered {count} incompatible items", {
@@ -667,22 +638,18 @@ export function SelectorSettingsPopover({
               </div>
             </section>
 
-            <section
-              className={cn(
-                "rounded-md border border-slate-700 bg-slate-900/70 p-2.5 transition-opacity",
-                filtersAreOverridden && "opacity-55",
-              )}
-            >
+            <section className="rounded-md border border-slate-700 bg-slate-900/70 p-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-[11px] text-slate-300">
                     {t("Flea Level Filter")}
                   </span>
                   <span className="text-[10px] text-slate-500">
-                    {t("Hide items you cannot access at your current level")}
+                    {t(
+                      "Auto Select skips items you can't buy at your level. Search tags them instead.",
+                    )}
                   </span>
                   {useLevelFilter &&
-                    !filtersAreOverridden &&
                     fleaLevelFilteredCount > 0 && (
                       <span className="mt-1 text-[10px] font-medium text-amber-300">
                         {t("Filtered {count} inaccessible items", {
@@ -721,22 +688,18 @@ export function SelectorSettingsPopover({
             </section>
 
             {priceMode === "flea" && (
-              <section
-                className={cn(
-                  "rounded-md border border-slate-700 bg-slate-900/70 p-2.5 transition-opacity",
-                  filtersAreOverridden && "opacity-55",
-                )}
-              >
+              <section className="rounded-md border border-slate-700 bg-slate-900/70 p-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-[11px] text-slate-300">
                       {t("Exclude Low Offer Count")}
                     </span>
                     <span className="text-[10px] text-slate-500">
-                      {t("Filters items with fewer than 5 active flea offers")}
+                      {t(
+                        "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.",
+                      )}
                     </span>
                     {useLastOfferCountFilter &&
-                      !filtersAreOverridden &&
                       lowOfferCountFilteredCount > 0 && (
                         <span className="mt-1 text-[10px] font-medium text-amber-300">
                           {t("Filtered {count} low-offer items", {
@@ -754,29 +717,6 @@ export function SelectorSettingsPopover({
               </section>
             )}
 
-            <section className="rounded-md border border-slate-700 bg-slate-900/70 p-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[11px] text-slate-300">
-                    {t("Show all items")}
-                  </span>
-                  <span className="text-[10px] text-slate-500">
-                    {filtersAreOverridden
-                      ? t(
-                          "All item-list filters are ignored and every item is shown",
-                        )
-                      : t(
-                          "Only items allowed by your current filters are shown",
-                        )}
-                  </span>
-                </div>
-                <Switch
-                  checked={filtersAreOverridden}
-                  onCheckedChange={onIgnoreFiltersChange}
-                  className="data-[state=checked]:bg-amber-400 data-[state=unchecked]:bg-slate-700"
-                />
-              </div>
-            </section>
           </div>
         </div>
       </PopoverContent>

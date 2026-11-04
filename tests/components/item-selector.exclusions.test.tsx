@@ -71,6 +71,7 @@ function makeItem(partial: Partial<SimplifiedItem>): SimplifiedItem {
     categories: partial.categories ?? [],
     categories_display: partial.categories_display ?? [],
     categories_display_en: partial.categories_display_en ?? [],
+    maxUses: partial.maxUses,
   } as SimplifiedItem;
 }
 
@@ -162,7 +163,7 @@ describe("ItemSelector dropdown behavior", () => {
       makeItem({ id: "alpha", name: "Alpha badge", basePrice: 100_000 }),
     ];
 
-    renderWithLanguage(<ItemSelector items={items} {...baseProps} />);
+    renderWithLanguage(<ItemSelector {...baseProps} manualDiscoveryItems={items} />);
     focusSelector();
 
     expect(screen.getByText("Zulu cache")).toBeInTheDocument();
@@ -199,7 +200,7 @@ describe("ItemSelector dropdown behavior", () => {
       }),
     ];
 
-    renderWithLanguage(<ItemSelector items={items} {...baseProps} />);
+    renderWithLanguage(<ItemSelector {...baseProps} manualDiscoveryItems={items} />);
     focusSelector();
     toggleThresholdFilter();
 
@@ -220,7 +221,7 @@ describe("ItemSelector dropdown behavior", () => {
       }),
     ];
 
-    renderWithLanguage(<ItemSelector items={items} {...baseProps} />);
+    renderWithLanguage(<ItemSelector {...baseProps} manualDiscoveryItems={items} />);
     focusSelector();
 
     act(() => {
@@ -245,7 +246,7 @@ describe("ItemSelector dropdown behavior", () => {
       makeItem({ id: "silver", name: "Silver badge", basePrice: 220_000 }),
     ];
 
-    renderWithLanguage(<ItemSelector items={items} {...baseProps} />);
+    renderWithLanguage(<ItemSelector {...baseProps} manualDiscoveryItems={items} />);
     const input = focusSelector();
     toggleThresholdFilter();
 
@@ -256,7 +257,10 @@ describe("ItemSelector dropdown behavior", () => {
 
     expect(screen.queryByText("Silk roll")).not.toBeInTheDocument();
     expect(
-      screen.getByText((_, element) => element?.textContent === "Silver badge")
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === "SPAN" && element.textContent === "Silver badge"
+      )
     ).toBeInTheDocument();
 
     fireEvent.keyDown(input, { key: "Tab" });
@@ -270,7 +274,7 @@ describe("ItemSelector dropdown behavior", () => {
     ];
 
     renderWithLanguage(
-      <ItemSelector items={items} {...baseProps} remainingThreshold={500_000} />
+      <ItemSelector {...baseProps} manualDiscoveryItems={items} remainingThreshold={500_000} />
     );
     focusSelector();
     toggleThresholdFilter();
@@ -303,7 +307,7 @@ describe("ItemSelector dropdown behavior", () => {
     ];
 
     renderWithLanguage(
-      <ItemSelector items={items} {...baseProps} remainingThreshold={0} />
+      <ItemSelector {...baseProps} manualDiscoveryItems={items} remainingThreshold={0} />
     );
     focusSelector();
     toggleThresholdFilter();
@@ -318,7 +322,7 @@ describe("ItemSelector dropdown behavior", () => {
       makeItem({ id: "roubles", name: "Roubles", englishName: "Roubles" }),
     ];
 
-    renderWithLanguage(<ItemSelector items={items} {...baseProps} />);
+    renderWithLanguage(<ItemSelector {...baseProps} manualDiscoveryItems={items} />);
     focusSelector();
 
     expect(screen.queryByText(/Roubles/i)).toBeNull();
@@ -329,7 +333,7 @@ describe("ItemSelector dropdown behavior", () => {
       makeItem({ id: "roubles", name: "Rubel", englishName: "Roubles" }),
     ];
 
-    renderWithLanguage(<ItemSelector items={items} {...baseProps} />, "de");
+    renderWithLanguage(<ItemSelector {...baseProps} manualDiscoveryItems={items} />, "de");
     focusSelector();
 
     expect(screen.queryByText(/Rubel/i)).toBeNull();
@@ -345,7 +349,7 @@ describe("ItemSelector dropdown behavior", () => {
       }),
     ];
 
-    renderWithLanguage(<ItemSelector items={items} {...baseProps} />);
+    renderWithLanguage(<ItemSelector {...baseProps} manualDiscoveryItems={items} />);
     focusSelector();
 
     expect(screen.queryByText(/Final Moment poster/i)).toBeNull();
@@ -361,7 +365,7 @@ describe("ItemSelector dropdown behavior", () => {
     ];
 
     renderWithLanguage(
-      <ItemSelector items={items} {...baseProps} excludedItems={new Set()} />
+      <ItemSelector {...baseProps} manualDiscoveryItems={items} excludedItems={new Set()} />
     );
     focusSelector();
 
@@ -378,7 +382,6 @@ describe("ItemSelector dropdown behavior", () => {
 
     renderWithLanguage(
       <ItemSelector
-        items={[regularItem]}
         {...baseProps}
         manualDiscoveryItems={[regularItem, gun]}
         categoryFilter="5422acb9af1c889c16000029"
@@ -407,7 +410,6 @@ describe("ItemSelector dropdown behavior", () => {
 
     renderWithLanguage(
       <ItemSelector
-        items={[]}
         {...baseProps}
         manualDiscoveryItems={[gun, component]}
         categoryFilter="5448fe124bdc2da5018b4567"
@@ -439,7 +441,6 @@ describe("ItemSelector dropdown behavior", () => {
 
     renderWithLanguage(
       <ItemSelector
-        items={[]}
         {...baseProps}
         manualDiscoveryItems={[baseGun, exceptionGun, defaultGun]}
         categoryFilter="5422acb9af1c889c16000029"
@@ -478,7 +479,6 @@ describe("ItemSelector dropdown behavior", () => {
 
     renderWithLanguage(
       <ItemSelector
-        items={[]}
         {...baseProps}
         manualDiscoveryItems={[accessibleGun, lockedGun]}
         traderLevels={{ ...defaultTraderLevels, prapor: 2 }}
@@ -508,7 +508,6 @@ describe("ItemSelector dropdown behavior", () => {
 
     renderWithLanguage(
       <ItemSelector
-        items={[]}
         {...baseProps}
         manualDiscoveryItems={[component, gun]}
         categoryFilter="5422acb9af1c889c16000029"
@@ -537,7 +536,6 @@ describe("ItemSelector dropdown behavior", () => {
 
     renderWithLanguage(
       <ItemSelector
-        items={[regularItem]}
         {...baseProps}
         manualDiscoveryItems={[regularItem, gun]}
         onSelect={onSelect}
@@ -554,7 +552,8 @@ describe("ItemSelector dropdown behavior", () => {
     ).toBeInTheDocument();
 
     focusSelector();
-    expect(screen.getByText("HK MP5 Navy Default")).toBeInTheDocument();
+    // Listed once in the results and once as a recent pick
+    expect(screen.getAllByText("HK MP5 Navy Default")).toHaveLength(2);
     expect(screen.queryByText("Golden rooster")).not.toBeInTheDocument();
   });
 
@@ -573,7 +572,6 @@ describe("ItemSelector dropdown behavior", () => {
 
     renderWithLanguage(
       <ItemSelector
-        items={[]}
         {...baseProps}
         manualDiscoveryItems={[gun]}
         categoryFilter="550aa4cd4bdc2dd8348b456c"
@@ -586,5 +584,186 @@ describe("ItemSelector dropdown behavior", () => {
     expect(
       screen.getByText("No Silencer items match this search and Prapor")
     ).toBeInTheDocument();
+  });
+
+  it("shows weapons and items with uses in search with warning tags", () => {
+    const gun = makeItem({
+      id: "gun",
+      name: "AK-74N Default",
+      categories: ["5422acb9af1c889c16000029"],
+    });
+    const key = makeItem({ id: "key", name: "Dorm room 314 key", maxUses: 10 });
+
+    renderWithLanguage(
+      <ItemSelector {...baseProps} manualDiscoveryItems={[gun, key]} />
+    );
+    focusSelector();
+
+    expect(screen.getByText("AK-74N Default")).toBeInTheDocument();
+    expect(screen.getByText("Unverified")).toBeInTheDocument();
+    expect(screen.getByText("Dorm room 314 key")).toBeInTheDocument();
+    expect(screen.getByText("Has uses")).toBeInTheDocument();
+  });
+
+  it("keeps the user's own exclusions in search", () => {
+    const item = makeItem({ id: "rooster", name: "Golden rooster" });
+
+    renderWithLanguage(
+      <ItemSelector
+        {...baseProps}
+        manualDiscoveryItems={[item]}
+        excludedItems={new Set([...DEFAULT_EXCLUDED_ITEMS, "Golden rooster"])}
+      />
+    );
+    focusSelector();
+
+    expect(screen.getByText("Golden rooster")).toBeInTheDocument();
+  });
+
+  it("explains when a search matches a hidden built-in item", async () => {
+    const roubles = makeItem({ id: "roubles", name: "Roubles" });
+    const other = makeItem({ id: "rouble-bag", name: "Rouble bag charm" });
+
+    renderWithLanguage(
+      <ItemSelector {...baseProps} manualDiscoveryItems={[roubles, other]} />
+    );
+    const input = focusSelector();
+    fireEvent.change(input, { target: { value: "roub" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    const note = screen.getByRole("status");
+    expect(note).toHaveTextContent("Can't be sacrificed: Roubles");
+    // The note sits above the results so it is seen before scrolling.
+    const [firstResult] = screen.getAllByText(
+      (_, element) => element?.textContent === "Rouble bag charm"
+    );
+    expect(
+      note.compareDocumentPosition(firstResult) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("tags items above the player's flea level and with few offers", () => {
+    const gun = makeItem({
+      id: "gun",
+      name: "Locked rifle",
+      // Assault rifle: flea level 25
+      categories: ["5447b5f14bdc2d61278b4567", "5422acb9af1c889c16000029"],
+      lastOfferCount: 2,
+    });
+
+    renderWithLanguage(
+      <ItemSelector
+        {...baseProps}
+        manualDiscoveryItems={[gun]}
+        playerLevel={1}
+        flagLowOffers
+      />
+    );
+    focusSelector();
+
+    expect(screen.getByText("Locked rifle")).toBeInTheDocument();
+    expect(screen.getByText("Flea Lv 25")).toBeInTheDocument();
+    expect(screen.getByText("Few offers")).toBeInTheDocument();
+  });
+
+  describe("quick picks", () => {
+    const above = makeItem({ id: "above", name: "Graphics card", shortName: "GPU" });
+    const other = makeItem({ id: "other", name: "Tetriz", shortName: "Tetriz" });
+
+    it("offers the item from the row above on an empty slot", () => {
+      const onSelect = vi.fn();
+      renderWithLanguage(
+        <ItemSelector
+          {...baseProps}
+          manualDiscoveryItems={[above, other]}
+          itemAbove={above}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Same as above/ })
+      );
+
+      expect(onSelect).toHaveBeenCalledWith(above, undefined);
+    });
+
+    it("repeats the item above on Enter with an empty search", () => {
+      const onSelect = vi.fn();
+      renderWithLanguage(
+        <ItemSelector
+          {...baseProps}
+          manualDiscoveryItems={[other, above]}
+          itemAbove={above}
+          onSelect={onSelect}
+        />
+      );
+      const input = focusSelector();
+
+      expect(screen.getByTestId("selector-quick-picks")).toHaveTextContent(
+        "Same as above"
+      );
+      fireEvent.keyDown(input, { key: "Enter" });
+
+      expect(onSelect).toHaveBeenCalledWith(above, undefined);
+    });
+
+    it("lists recently picked items when the search is empty", () => {
+      renderWithLanguage(
+        <ItemSelector {...baseProps} manualDiscoveryItems={[above, other]} />
+      );
+      focusSelector();
+      fireEvent.click(screen.getByText("Tetriz", { selector: "span *, span" }));
+      expect(screen.queryByText("Recent")).not.toBeInTheDocument();
+
+      focusSelector();
+
+      const strip = screen.getByTestId("selector-quick-picks");
+      expect(strip).toHaveTextContent("Recent");
+      expect(strip).toHaveTextContent("Tetriz");
+    });
+
+    it("hides quick picks once the user types", async () => {
+      renderWithLanguage(
+        <ItemSelector
+          {...baseProps}
+          manualDiscoveryItems={[above, other]}
+          itemAbove={above}
+        />
+      );
+      const input = focusSelector();
+      fireEvent.change(input, { target: { value: "tet" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+
+      expect(screen.queryByTestId("selector-quick-picks")).not.toBeInTheDocument();
+    });
+  });
+
+  it("puts plain name matches ahead of fuzzy ones", async () => {
+    const items = [
+      makeItem({ id: "sledge", name: "Sledgehammer", shortName: "Sledge" }),
+      makeItem({ id: "ledx", name: "LEDX Skin Transilluminator", shortName: "LEDX" }),
+    ];
+    renderWithLanguage(
+      <ItemSelector {...baseProps} manualDiscoveryItems={items} />
+    );
+    const input = focusSelector();
+    fireEvent.change(input, { target: { value: "ledx" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    expect(
+      screen.getAllByText((_, el) => el?.textContent === "LEDX Skin Transilluminator")
+        .length
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryAllByText((_, el) => el?.textContent === "Sledgehammer")
+    ).toHaveLength(0);
   });
 });

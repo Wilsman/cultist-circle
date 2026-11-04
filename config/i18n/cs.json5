@@ -1232,5 +1232,34 @@
   "Spring Driven Cylinder": "Pružinový válec",
   "Tapes": "Kazety",
   "Thermal Vision": "Termovize",
-  "Volumetric Throw Weapon": "Objemová vrhací zbraň"
+  "Volumetric Throw Weapon": "Objemová vrhací zbraň",
+
+  // Search tags and item risk warning
+  "Unverified": "Neověřeno",
+  "Base value isn't confirmed, so the timer may not match": "Základní hodnota není potvrzená, časovač nemusí sedět",
+  "Has uses": "Má použití",
+  "The cheapest flea listing may be a partly used copy": "Nejlevnější nabídka na Flea může být částečně použitý kus",
+  "Per round": "Za náboj",
+  "Price and base value are for a single round": "Cena a základní hodnota platí pro jeden náboj",
+  "Flea Lv {level}": "Flea Lv {level}",
+  "You can't buy this on the flea market until level {level}": "Na Flea to koupíš až od úrovně {level}",
+  "Few offers": "Málo nabídek",
+  "Fewer than {count} flea offers, so the price may not hold": "Méně než {count} nabídek na Flea, cena nemusí vydržet",
+  "Can't be sacrificed: {names}": "Nelze obÄ›tovat: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "Kruh tyto pÅ™edmÄ›ty nepÅ™ijÃ­mÃ¡, proto nejsou v tomto seznamu.",
+  "These items may not give the expected result": "Tyto předměty nemusí dát očekávaný výsledek",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "Základní hodnoty zbraní, brnění a vest nejsou potvrzené, takže časovač nemusí sedět.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "Nejlevnější nabídka na Flea může být částečně použitý kus. Plný může stát mnohem víc.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "Cena a základní hodnota platí pro jeden náboj. Balík má vyšší hodnotu a stojí víc.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "Auto výběr přeskakuje předměty s méně než 5 nabídkami na Flea. Hledání je místo toho označí.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "Auto výběr přeskakuje předměty, které na své úrovni nekoupíš. Hledání je místo toho označí.",
+  "Auto Select uses items you can buy at level {level}": "Auto výběr používá předměty, které koupíš na úrovni {level}",
+  "Set your level so Auto Select skips items you can't buy yet": "Nastav svou úroveň, aby Auto výběr přeskakoval předměty, které ještě nekoupíš",
+  "Auto Select skips these categories": "Auto výběr přeskakuje tyto kategorie",
+  "Auto Select won't pick from these. Search still shows them.": "Auto výběr z nich nevybírá. Hledání je stále zobrazuje.",
+
+  // Item selector quick picks
+  "Add {name} again": "PÅ™idat znovu: {name}",
+  "Same as above": "StejnÃ© jako vÃ½Å¡e",
+  "Enter": "Enter"
 }

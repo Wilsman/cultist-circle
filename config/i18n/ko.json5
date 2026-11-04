@@ -1233,5 +1233,34 @@
   "Spring Driven Cylinder": "스프링 구동 실린더",
   "Tapes": "테이프",
   "Thermal Vision": "열화상 장비",
-  "Volumetric Throw Weapon": "대형 투척 무기"
+  "Volumetric Throw Weapon": "대형 투척 무기",
+
+  // Search tags and item risk warning
+  "Unverified": "미검증",
+  "Base value isn't confirmed, so the timer may not match": "기본 가치가 확인되지 않아 타이머가 맞지 않을 수 있습니다",
+  "Has uses": "사용 횟수 있음",
+  "The cheapest flea listing may be a partly used copy": "가장 싼 플리마켓 매물은 일부 사용된 물건일 수 있습니다",
+  "Per round": "1발당",
+  "Price and base value are for a single round": "가격과 기본 가치는 탄 1발 기준입니다",
+  "Flea Lv {level}": "플리마켓 Lv {level}",
+  "You can't buy this on the flea market until level {level}": "레벨 {level}부터 플리마켓에서 구매할 수 있습니다",
+  "Few offers": "매물 적음",
+  "Fewer than {count} flea offers, so the price may not hold": "플리마켓 매물이 {count}개 미만이라 가격이 유지되지 않을 수 있습니다",
+  "Can't be sacrificed: {names}": "ë°”ì¹  ìˆ˜ ì—†ì�Œ: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "ì„œí�´ì�´ ì�´ ì•„ì�´í…œì�„ ë°›ì§€ ì•Šì•„ ëª©ë¡�ì—� í‘œì‹œë�˜ì§€ ì•ŠìŠµë‹ˆë‹¤.",
+  "These items may not give the expected result": "이 아이템들은 예상한 결과가 나오지 않을 수 있습니다",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "무기, 방어구, 리그의 기본 가치는 확인되지 않아 타이머가 맞지 않을 수 있습니다.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "가장 싼 플리마켓 매물은 일부 사용된 물건일 수 있습니다. 새것은 훨씬 비쌀 수 있습니다.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "표시된 가격과 기본 가치는 탄 1발 기준입니다. 묶음은 가치도 가격도 더 높습니다.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "자동 선택은 플리마켓 매물이 5개 미만인 아이템을 건너뜁니다. 검색에서는 대신 태그로 표시합니다.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "자동 선택은 현재 레벨에서 살 수 없는 아이템을 건너뜁니다. 검색에서는 대신 태그로 표시합니다.",
+  "Auto Select uses items you can buy at level {level}": "자동 선택은 레벨 {level}에서 살 수 있는 아이템을 사용합니다",
+  "Set your level so Auto Select skips items you can't buy yet": "레벨을 설정하면 자동 선택이 아직 살 수 없는 아이템을 건너뜁니다",
+  "Auto Select skips these categories": "자동 선택은 이 카테고리를 건너뜁니다",
+  "Auto Select won't pick from these. Search still shows them.": "자동 선택은 여기서 고르지 않습니다. 검색에는 계속 표시됩니다.",
+
+  // Item selector quick picks
+  "Add {name} again": "{name} ë‹¤ì‹œ ì¶”ê°€",
+  "Same as above": "ìœ„ì™€ ë�™ì�¼",
+  "Enter": "Enter"
 }

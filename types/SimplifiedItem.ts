@@ -33,6 +33,8 @@ export interface SimplifiedItem {
   iconLink?: string;
   avg24hPrice?: number;
   link?: string;
+  /** Uses or resource units when full (keys, meds, food and drink). */
+  maxUses?: number;
   // Trader offers (buy prices from traders). Present when fetched via minimal data merge.
   buyFor?: TraderBuyOffer[];
   // Trader offers for selling the item. Used to snapshot realised reward value.

@@ -349,7 +349,23 @@ interface TarkovJsonItem {
   containsItems?: { item: string; count?: number }[];
   properties?: {
     slots?: { nameId: string; filters?: { allowedItems?: string[] } }[];
-  };
+  } & ItemUsesProperties;
+}
+
+/** The per-type fields tarkov.dev uses for an item's uses or resource. */
+interface ItemUsesProperties {
+  uses?: number | null;
+  units?: number | null;
+  hitpoints?: number | null;
+}
+
+/** Full uses or resource units, from whichever field the item type has. */
+export function getItemMaxUses(
+  properties: ItemUsesProperties | null | undefined,
+): number | undefined {
+  if (!properties) return undefined;
+  const value = properties.uses ?? properties.units ?? properties.hitpoints;
+  return typeof value === "number" && value > 0 ? value : undefined;
 }
 
 interface TarkovJsonItemsData {
@@ -535,6 +551,7 @@ function mapJsonSimplifiedItem(
     lastOfferCount: item.lastOfferCount ?? undefined,
     iconLink: resolveItemIcon(item.iconLink),
     link: item.link,
+    maxUses: getItemMaxUses(item.properties),
     categories: categories.map((category) => category.id),
     categories_display: categories,
     buyFor: (item.buyFromTrader ?? []).map((offer) => ({

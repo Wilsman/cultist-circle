@@ -1237,5 +1237,34 @@
   "Tapes": "Fitas",
   "Thermal Vision": "Visão térmica",
   "UBGL": "Lança-granadas acoplado",
-  "Volumetric Throw Weapon": "Arma de arremesso volumétrica"
+  "Volumetric Throw Weapon": "Arma de arremesso volumétrica",
+
+  // Search tags and item risk warning
+  "Unverified": "Não verificado",
+  "Base value isn't confirmed, so the timer may not match": "O valor base não está confirmado, o temporizador pode não coincidir",
+  "Has uses": "Tem usos",
+  "The cheapest flea listing may be a partly used copy": "A oferta mais barata do mercado pode ser uma cópia parcialmente usada",
+  "Per round": "Por munição",
+  "Price and base value are for a single round": "Preço e valor base são de uma única munição",
+  "Flea Lv {level}": "Mercado Nv {level}",
+  "You can't buy this on the flea market until level {level}": "Só pode ser comprado no mercado a partir do nível {level}",
+  "Few offers": "Poucas ofertas",
+  "Fewer than {count} flea offers, so the price may not hold": "Menos de {count} ofertas no mercado, o preço pode não se manter",
+  "Can't be sacrificed: {names}": "NÃ£o pode ser sacrificado: {names}",
+  "The circle doesn't accept these items, so they aren't in this list.": "O cÃ­rculo nÃ£o aceita esses itens, por isso eles nÃ£o estÃ£o nesta lista.",
+  "These items may not give the expected result": "Estes itens podem não dar o resultado esperado",
+  "Base values for weapons, armour and rigs aren't confirmed, so the timer may not match.": "Os valores base de armas, armaduras e coletes não estão confirmados, então o temporizador pode não coincidir.",
+  "The cheapest flea listing may be a partly used copy. A full one can cost a lot more.": "A oferta mais barata do mercado pode ser uma cópia parcialmente usada. Uma completa pode custar muito mais.",
+  "Price and base value shown are for a single round. A stack is worth more and costs more.": "O preço e o valor base mostrados são de uma única munição. Uma pilha vale mais e custa mais.",
+  "Auto Select skips items with fewer than 5 flea offers. Search tags them instead.": "A seleção automática ignora itens com menos de 5 ofertas no mercado. A busca os marca em vez disso.",
+  "Auto Select skips items you can't buy at your level. Search tags them instead.": "A seleção automática ignora itens que você não pode comprar no seu nível. A busca os marca em vez disso.",
+  "Auto Select uses items you can buy at level {level}": "A seleção automática usa itens que você pode comprar no nível {level}",
+  "Set your level so Auto Select skips items you can't buy yet": "Defina seu nível para a seleção automática ignorar itens que você ainda não pode comprar",
+  "Auto Select skips these categories": "A seleção automática ignora estas categorias",
+  "Auto Select won't pick from these. Search still shows them.": "A seleção automática não escolherá destas. A busca continua mostrando-as.",
+
+  // Item selector quick picks
+  "Add {name} again": "Adicionar {name} novamente",
+  "Same as above": "Igual ao de cima",
+  "Enter": "Enter"
 }

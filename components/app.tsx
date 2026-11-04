@@ -38,9 +38,11 @@ import {
   USE_LEVEL_FILTER_KEY,
   DEFAULT_PLAYER_LEVEL,
   DEFAULT_USE_LEVEL_FILTER,
-  getInaccessibleCategoriesAtLevel,
-  getItemLevelRequirement,
 } from "@/config/flea-level-requirements";
+import {
+  getItemCategoryIds,
+  getItemFleaLevel,
+} from "@/lib/item-risk";
 import { SimplifiedItem } from "@/types/SimplifiedItem";
 import { doItemsFitInBox } from "../lib/fit-items-in-box";
 import {
@@ -49,7 +51,7 @@ import {
 } from "@/components/ui/trader-level-selector";
 import { PlacementPreviewModal } from "./placement-preview-modal";
 import { PlacementPreviewInline } from "./placement-preview-inline";
-import { WeaponWarning } from "./weapon-warning";
+import { ItemRiskWarning } from "./item-risk-warning";
 import { RecipeWarning } from "./recipe-warning";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resetUserData } from "@/utils/resetUserData";
@@ -158,6 +160,7 @@ interface AppProps {
 const OVERRIDDEN_PRICES_KEY = "overriddenPrices";
 const FLEA_PRICE_TYPE_KEY = "fleaPriceType";
 const USE_LAST_OFFER_COUNT_FILTER_KEY = "useLastOfferCountFilter";
+const EMPTY_EXCLUDED_ITEMS = new Set<string>();
 const PRICE_MODE_KEY = "priceMode";
 const TRADER_LEVELS_KEY = "traderLevels";
 const LOW_OFFER_COUNT_THRESHOLD = 5;
@@ -321,7 +324,6 @@ function AppContent({ contributors = [] }: AppProps) {
   >({});
   const [hasAutoSelected, setHasAutoSelected] = useState<boolean>(false);
   const [itemBonus, setItemBonus] = useState<number>(0);
-  const [ignoreFilters, setIgnoreFilters] = useState(false);
   const [sacrificeSlotCount, setSacrificeSlotCountState] = useState<number>(
     () => {
       if (typeof window !== "undefined") {
@@ -908,95 +910,40 @@ function AppContent({ contributors = [] }: AppProps) {
       };
     }
 
-    // First filter by excluded categories (by category ID)
+    // Auto Select's pool applies every filter. Manual search shows every item
+    // except the built-in ones that can't be used in the circle; it tags
+    // risky items instead of hiding them.
     const categoryFiltered = rawItemsData.filter((item: SimplifiedItem) => {
       if (item.name.toLowerCase() === "pestily plague mask") return true; // TEMP FIX
-      if (ignoreFilters) return true; // Bypass category filters
-      const ids =
-        item.categories && item.categories.length > 0
-          ? item.categories
-          : (item.categories_display_en ?? [])
-              .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
-              .filter((x): x is string => Boolean(x));
-      return !ids.some((id) => excludedCategories.has(id));
+      return !getItemCategoryIds(item).some((id) => excludedCategories.has(id));
     });
 
-    const filterByPlayerLevel = (candidateItems: SimplifiedItem[]) =>
-      useLevelFilter
-        ? candidateItems.filter((item: SimplifiedItem) => {
-            // First check individual item requirements (takes priority)
-            const itemNames = [
-              item.englishName,
-              item.name,
-              item.englishShortName,
-              item.shortName,
-            ].filter(Boolean) as string[];
+    const levelFiltered = useLevelFilter
+      ? categoryFiltered.filter(
+          (item: SimplifiedItem) => playerLevel >= getItemFleaLevel(item),
+        )
+      : categoryFiltered;
+    const fleaLevelFilteredCount = categoryFiltered.length - levelFiltered.length;
 
-            for (const name of itemNames) {
-              const itemReq = getItemLevelRequirement(name);
-              if (itemReq !== undefined) {
-                // Item has a specific level requirement
-                return playerLevel >= itemReq;
-              }
-            }
-
-            // Fall back to category-level filtering
-            const ids =
-              item.categories && item.categories.length > 0
-                ? item.categories
-                : (item.categories_display_en ?? [])
-                    .map((c) => c.id ?? CATEGORY_ID_BY_NAME.get(c.name) ?? null)
-                    .filter((x): x is string => Boolean(x));
-            // Get categories that are inaccessible at current level
-            const inaccessibleCategories =
-              getInaccessibleCategoriesAtLevel(playerLevel);
-            // Item passes if none of its categories are inaccessible
-            return !ids.some((id) => inaccessibleCategories.includes(id));
-          })
-        : candidateItems;
-
-    // The default pool applies category exclusions. The manual discovery pool
-    // deliberately bypasses only category exclusions so users can find guns
-    // and components without changing Auto Select's candidate list.
-    const levelFiltered = filterByPlayerLevel(categoryFiltered);
-    const manualLevelFiltered = filterByPlayerLevel(rawItemsData);
-    const fleaLevelFilteredCount =
-      useLevelFilter && !ignoreFilters
-        ? categoryFiltered.length - levelFiltered.length
-        : 0;
-
-    const filterByOfferCount = (candidateItems: SimplifiedItem[]) =>
-      priceMode === "flea" && useLastOfferCountFilter && !ignoreFilters
-        ? candidateItems.filter(
+    const lowOfferFiltered =
+      priceMode === "flea" && useLastOfferCountFilter
+        ? levelFiltered.filter(
             (item: SimplifiedItem) =>
               typeof item.lastOfferCount !== "number" ||
               item.lastOfferCount >= LOW_OFFER_COUNT_THRESHOLD,
           )
-        : candidateItems;
-
-    const lowOfferFiltered = filterByOfferCount(levelFiltered);
-    const manualLowOfferFiltered = filterByOfferCount(manualLevelFiltered);
+        : levelFiltered;
     const lowOfferCountFilteredCount =
-      priceMode === "flea" && useLastOfferCountFilter && !ignoreFilters
-        ? levelFiltered.length - lowOfferFiltered.length
-        : 0;
+      levelFiltered.length - lowOfferFiltered.length;
 
-    // Then filter out individually excluded items (case-insensitive, language-agnostic)
-    const filterExcludedItems = (candidateItems: SimplifiedItem[]) =>
-      excludeIncompatible
-        ? candidateItems.filter(
-            (item: SimplifiedItem) =>
-              ignoreFilters || // Bypass individual exclusions
-              !isItemNameExcluded(item, excludedNameLookup),
-          )
-        : candidateItems;
-
-    const excludedFiltered = filterExcludedItems(lowOfferFiltered);
-    const manualExcludedFiltered = filterExcludedItems(manualLowOfferFiltered);
+    // Individually excluded items (case-insensitive, language-agnostic)
+    const excludedFiltered = excludeIncompatible
+      ? lowOfferFiltered.filter(
+          (item: SimplifiedItem) => !isItemNameExcluded(item, excludedNameLookup),
+        )
+      : lowOfferFiltered;
     const incompatibleFilteredCount =
-      excludeIncompatible && !ignoreFilters
-        ? lowOfferFiltered.length - excludedFiltered.length
-        : 0;
+      lowOfferFiltered.length - excludedFiltered.length;
 
     const sortSelectorItems = (candidateItems: SimplifiedItem[]) => {
       const sortedItems = [...candidateItems];
@@ -1024,7 +971,8 @@ function AppContent({ contributors = [] }: AppProps) {
 
     return {
       items: sortSelectorItems(excludedFiltered),
-      manualDiscoveryItems: sortSelectorItems(manualExcludedFiltered),
+      // Search offers everything; the selector hides built-in broken items.
+      manualDiscoveryItems: sortSelectorItems(rawItemsData),
       fleaLevelFilteredCount,
       lowOfferCountFilteredCount,
       incompatibleFilteredCount,
@@ -1038,7 +986,6 @@ function AppContent({ contributors = [] }: AppProps) {
     loading,
     useLevelFilter,
     playerLevel,
-    ignoreFilters,
     priceMode,
     useLastOfferCountFilter,
   ]);
@@ -1327,7 +1274,7 @@ function AppContent({ contributors = [] }: AppProps) {
             threshold,
             pricing: stashPricing,
             excludedNames: excludedItems,
-            ignoreFilters,
+            ignoreFilters: false,
           }
         : null,
     [
@@ -1339,7 +1286,6 @@ function AppContent({ contributors = [] }: AppProps) {
       threshold,
       stashPricing,
       excludedItems,
-      ignoreFilters,
     ],
   );
 
@@ -1632,7 +1578,7 @@ function AppContent({ contributors = [] }: AppProps) {
           item.basePrice < threshold * 0.1 ||
           pinnedIds.has(item.id) ||
           isRecipeOverrideItem(item) ||
-          (!ignoreFilters && isItemNameExcluded(item, excludedNameLookup))
+          isItemNameExcluded(item, excludedNameLookup)
         )
           continue;
         itemsById.set(item.id, item);
@@ -1764,7 +1710,6 @@ function AppContent({ contributors = [] }: AppProps) {
     mode,
     priceMode,
     setPriceMode,
-    ignoreFilters,
     effectiveAutoSelectSource,
     stashPlanInput,
     handleStashAutoPick,
@@ -2140,7 +2085,7 @@ function AppContent({ contributors = [] }: AppProps) {
 
             {/* Main Calculator Card. Below lg it joins the summary card under
                 it so mobile still reads as one panel. */}
-            <Card className="min-w-0 overflow-hidden rounded-b-none border-b-0 border-slate-700/40 bg-slate-800/60 backdrop-blur-md lg:col-start-1 lg:row-start-2 lg:rounded-b-lg lg:border-b lg:shadow-xl">
+            <Card className="relative z-[1] min-w-0 overflow-x-clip rounded-b-none border-b-0 border-slate-700/40 bg-slate-800/60 backdrop-blur-md lg:col-start-1 lg:row-start-2 lg:rounded-b-lg lg:border-b lg:shadow-xl">
               <CardContent className="space-y-4 p-4 pb-0 sm:p-6 sm:pb-0 lg:p-5">
                 {/* Controls Section - Clean & Focused */}
                 <div className="space-y-3">
@@ -2192,8 +2137,8 @@ function AppContent({ contributors = [] }: AppProps) {
                   }
                 />
 
-                {/* Items Don't Fit Warning */}
-                <WeaponWarning
+                {/* Items whose value or price may be off */}
+                <ItemRiskWarning
                   selectedItems={
                     selectedItems.filter(Boolean) as SimplifiedItem[]
                   }
@@ -2287,8 +2232,6 @@ function AppContent({ contributors = [] }: AppProps) {
                       lowOfferCountFilteredCount={lowOfferCountFilteredCount}
                       playerLevel={playerLevel}
                       onPlayerLevelChange={setPlayerLevel}
-                      ignoreFilters={ignoreFilters}
-                      onIgnoreFiltersChange={setIgnoreFilters}
                       categories={allCategoriesLocalized}
                       categoryFilter={selectorCategoryFilter}
                       onCategoryFilterChange={setSelectorCategoryFilter}
@@ -2423,7 +2366,6 @@ function AppContent({ contributors = [] }: AppProps) {
                                 ref={(el: ItemSelectorHandle | null) => {
                                   selectorRefs.current[index] = el;
                                 }}
-                                items={items}
                                 manualDiscoveryItems={manualDiscoveryItems}
                                 selectedItem={item}
                                 onSelect={(
@@ -2444,7 +2386,20 @@ function AppContent({ contributors = [] }: AppProps) {
                                 onToggleExclude={() =>
                                   item && toggleExcludedItem(item)
                                 }
-                                excludedItems={excludedItems}
+                                excludedItems={
+                                  excludeIncompatible
+                                    ? excludedItems
+                                    : EMPTY_EXCLUDED_ITEMS
+                                }
+                                playerLevel={
+                                  useLevelFilter ? playerLevel : null
+                                }
+                                flagLowOffers={useLastOfferCountFilter}
+                                itemAbove={
+                                  index > 0
+                                    ? (selectedItems[index - 1] ?? null)
+                                    : null
+                                }
                                 fleaPriceType={fleaPriceType}
                                 priceMode={priceMode}
                                 traderLevels={traderLevels}
