@@ -7,6 +7,10 @@ const BASE_VALUE_LAB_PATH = "/api/base-value-lab";
 const BASE_VALUE_MAX_TESTS = 5000;
 const RECIPE_SUBMISSIONS_PATH = "/api/recipe-submissions";
 const RECIPE_FEEDBACK_PATH = "/api/recipe-feedback";
+const PUBLIC_RECIPES_PATH = "/api/recipes";
+// The public endpoint shares one cached vote read per colo, whatever the query.
+const PUBLIC_RECIPES_CACHE_KEY = "https://cache.internal/public-recipe-votes";
+const PUBLIC_RECIPES_CACHE_SECONDS = 60;
 const MAX_BODY_BYTES = 8 * 1024;
 const RATE_LIMIT_SECONDS = 60;
 const FEEDBACK_TYPES = ["Issue", "Feature", "Suggestion", "Recipe"] as const;
@@ -806,11 +810,134 @@ async function handleBaseValueLab(
   }
 }
 
+async function loadPublicRecipeVotes(
+  env: Env,
+): Promise<Map<string, PublicRecipeVotes>> {
+  // Workers expose caches.default; the root tsconfig's DOM types do not.
+  const cache =
+    typeof caches === "undefined"
+      ? null
+      : (caches as unknown as { default: Cache }).default;
+  const cached = await cache?.match(PUBLIC_RECIPES_CACHE_KEY);
+  let rows: RecipeStatsRow[];
+
+  if (cached) {
+    rows = await cached.json<RecipeStatsRow[]>();
+  } else {
+    const result = await env.DB.prepare(
+      `SELECT ${RECIPE_STATS_COLUMNS}
+       FROM recipe_feedback_stats`,
+    ).all<RecipeStatsRow>();
+    rows = result.results;
+    await cache?.put(
+      PUBLIC_RECIPES_CACHE_KEY,
+      Response.json(rows, {
+        headers: {
+          "Cache-Control": `public, max-age=${PUBLIC_RECIPES_CACHE_SECONDS}`,
+        },
+      }),
+    );
+  }
+
+  return new Map(
+    rows.map((row) => {
+      const stats = mapRecipeStats(row.recipe_id, row);
+      return [
+        row.recipe_id,
+        {
+          worked: stats.workedCount,
+          didntWork: stats.didntWorkCount,
+          lastWorkedAt: stats.lastWorkedAt,
+          lastWorkedMode: stats.lastWorkedMode,
+          lastDidntWorkAt: stats.lastDidntWorkAt,
+          lastDidntWorkMode: stats.lastDidntWorkMode,
+        },
+      ] as const;
+    }),
+  );
+}
+
+/**
+ * Public read-only recipe lookup for chat bots and other tools:
+ * GET /api/recipes?q=<item>&format=text|json&limit=<n>
+ * Without `q` it returns the whole catalog. JSON splits active recipes
+ * (`recipes`) from ones that no longer work (`expired`).
+ */
+async function handlePublicRecipes(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET",
+  };
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: { ...corsHeaders, "Access-Control-Max-Age": "86400" },
+    });
+  }
+  if (request.method !== "GET") {
+    return jsonResponse({ success: false, error: "Method not allowed" }, 405, {
+      ...corsHeaders,
+      Allow: "GET, OPTIONS",
+    });
+  }
+
+  const query = parsePublicRecipeQuery(new URL(request.url));
+  const matches = searchRecipes(tarkovRecipes, query.q);
+  let votes: Map<string, PublicRecipeVotes>;
+  try {
+    votes = await loadPublicRecipeVotes(env);
+  } catch (error) {
+    // Recipes are still useful without votes, so answer with what we have.
+    console.error(
+      JSON.stringify({
+        event: "public_recipes_votes_failed",
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+    );
+    votes = new Map();
+  }
+
+  const headers = {
+    ...corsHeaders,
+    "Cache-Control": `public, max-age=${PUBLIC_RECIPES_CACHE_SECONDS}`,
+  };
+  if (query.format === "text") {
+    return new Response(formatRecipeText(matches, votes, query.q), {
+      headers: { ...headers, "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  const publish = (list: Recipe[]) =>
+    (query.limit === null ? list : list.slice(0, query.limit)).map((recipe) =>
+      toPublicRecipe(recipe, votes.get(recipe.id)),
+    );
+  const active = matches.filter((recipe) => !recipe.expiredAt);
+  const expired = matches.filter((recipe) => recipe.expiredAt);
+
+  return jsonResponse(
+    {
+      success: true,
+      total: active.length,
+      expiredTotal: expired.length,
+      recipes: publish(active),
+      expired: publish(expired),
+    },
+    200,
+    headers,
+  );
+}
+
 export async function handleRequest(
   request: Request,
   env: Env,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === PUBLIC_RECIPES_PATH) {
+    return handlePublicRecipes(request, env);
+  }
   if (url.pathname === RECIPE_FEEDBACK_PATH) {
     return handleRecipeFeedback(request, env);
   }
@@ -1030,5 +1157,12 @@ export default {
     return handleRequest(request, env);
   },
 } satisfies ExportedHandler<Env>;
-import { tarkovRecipes } from "../../../data/recipes";
+import { tarkovRecipes, type Recipe } from "../../../data/recipes";
+import {
+  formatRecipeText,
+  parsePublicRecipeQuery,
+  searchRecipes,
+  toPublicRecipe,
+  type PublicRecipeVotes,
+} from "./public-recipes";
 import { RESTRICTED_RECIPE_MODE } from "../../../lib/recipe-mode-restriction";
