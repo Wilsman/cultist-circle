@@ -61,9 +61,9 @@ function createEnv(
   return { env, prepareMock };
 }
 
-function get(query: string, init?: RequestInit) {
+function get(query: string, init?: RequestInit, path = "/api/recipes") {
   return new Request(
-    `https://cultist-circle-feedback.cultistcircle.workers.dev/api/recipes${query}`,
+    `https://cultist-circle-feedback.cultistcircle.workers.dev${path}${query}`,
     init,
   );
 }
@@ -160,6 +160,35 @@ describe("Public recipes endpoint", () => {
     expect(body.total).toBe(
       tarkovRecipes.filter((recipe) => !recipe.expiredAt).length,
     );
+  });
+});
+
+describe("Public endpoints listing", () => {
+  test("lists the public endpoints and rejects writes", async () => {
+    const { env, prepareMock } = createEnv();
+    const response = await handleRequest(
+      get("", undefined, "/api/endpoints"),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    const body = (await response.json()) as {
+      baseUrl: string;
+      endpoints: { path: string }[];
+    };
+    expect(body.baseUrl).toBe(
+      "https://cultist-circle-feedback.cultistcircle.workers.dev",
+    );
+    expect(body.endpoints.map((endpoint) => endpoint.path)).toEqual([
+      "/api/endpoints",
+      "/api/recipes",
+    ]);
+    expect(prepareMock).not.toHaveBeenCalled();
+    expect(
+      (await handleRequest(get("", { method: "POST" }, "/api/endpoints"), env))
+        .status,
+    ).toBe(405);
   });
 });
 

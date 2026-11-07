@@ -8,6 +8,7 @@ const BASE_VALUE_MAX_TESTS = 5000;
 const RECIPE_SUBMISSIONS_PATH = "/api/recipe-submissions";
 const RECIPE_FEEDBACK_PATH = "/api/recipe-feedback";
 const PUBLIC_RECIPES_PATH = "/api/recipes";
+const PUBLIC_ENDPOINTS_PATH = "/api/endpoints";
 // The public endpoint shares one cached vote read per colo, whatever the query.
 const PUBLIC_RECIPES_CACHE_KEY = "https://cache.internal/public-recipe-votes";
 const PUBLIC_RECIPES_CACHE_SECONDS = 60;
@@ -930,11 +931,44 @@ async function handlePublicRecipes(
   );
 }
 
+/** Lists the public endpoints so bots and tools can discover them. */
+function handlePublicEndpoints(request: Request): Response {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET",
+  };
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: { ...corsHeaders, "Access-Control-Max-Age": "86400" },
+    });
+  }
+  if (request.method !== "GET") {
+    return jsonResponse({ success: false, error: "Method not allowed" }, 405, {
+      ...corsHeaders,
+      Allow: "GET, OPTIONS",
+    });
+  }
+
+  return jsonResponse(
+    {
+      success: true,
+      baseUrl: new URL(request.url).origin,
+      endpoints: PUBLIC_ENDPOINTS,
+    },
+    200,
+    { ...corsHeaders, "Cache-Control": "public, max-age=3600" },
+  );
+}
+
 export async function handleRequest(
   request: Request,
   env: Env,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === PUBLIC_ENDPOINTS_PATH) {
+    return handlePublicEndpoints(request);
+  }
   if (url.pathname === PUBLIC_RECIPES_PATH) {
     return handlePublicRecipes(request, env);
   }
@@ -1159,6 +1193,7 @@ export default {
 } satisfies ExportedHandler<Env>;
 import { tarkovRecipes, type Recipe } from "../../../data/recipes";
 import {
+  PUBLIC_ENDPOINTS,
   formatRecipeText,
   parsePublicRecipeQuery,
   searchRecipes,

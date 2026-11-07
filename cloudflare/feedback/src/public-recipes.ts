@@ -234,3 +234,40 @@ export function formatRecipeText(
   if (text.length > room) text = `${text.slice(0, room - 1).trimEnd()}…`;
   return `${text} · ${link}`;
 }
+
+/** Public, read-only endpoints described by GET /api/endpoints. */
+export const PUBLIC_ENDPOINTS = [
+  {
+    method: "GET",
+    path: "/api/endpoints",
+    description: "Lists the public endpoints and their parameters.",
+    params: [],
+  },
+  {
+    method: "GET",
+    path: "/api/recipes",
+    description:
+      "Cultist Circle recipes with community vote stats. Without q it returns every recipe; JSON lists active recipes under `recipes` and ones that no longer work under `expired`. Cached for 60 seconds.",
+    params: [
+      {
+        name: "q",
+        description:
+          "Search sacrifice and reward item names, e.g. `fence` or `wedge figurine`.",
+      },
+      {
+        name: "limit",
+        description: `Cap each list (1-${MAX_RECIPE_LIMIT}). Defaults to ${DEFAULT_RECIPE_LIMIT} with q, no cap without.`,
+      },
+      {
+        name: "format",
+        description:
+          "`json` (default) or `text` for one chat-ready line about the best match.",
+      },
+    ],
+    examples: [
+      "/api/recipes",
+      "/api/recipes?q=fence",
+      "/api/recipes?q=fence&format=text",
+    ],
+  },
+];
