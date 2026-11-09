@@ -64,9 +64,9 @@ export const recipeIconMap: Record<string, string> = {
   "1x BNTI Module-3M body armor":
     "https://assets.tarkov.dev/59e7635f86f7742cbf2c1095-icon.webp",
   "1x Mosin 7.62x54R bolt-action rifle (Infantry)":
-    "https://assets.tarkov.dev/5bfd297f0db834001a669119-icon.webp",
+    "https://assets.tarkov.dev/5c0c1e7486f7744dba7a289b-icon.webp",
   "1x Kalashnikov AK-74 5.45x39 assault rifle":
-    "https://assets.tarkov.dev/5bf3e03b0db834001d2c4a9c-icon.webp",
+    "https://assets.tarkov.dev/5c0c1ce886f77401c119d014-icon.webp",
   "1x WARTECH TV-109 + TV-106 chest rig (A-TACS FG)":
     "https://assets.tarkov.dev/59e7643b86f7742cbf2c109a-icon.webp",
   "1x FORT Kiver-M bulletproof helmet":
