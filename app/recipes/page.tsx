@@ -887,7 +887,8 @@ const RecipeCard = React.memo(function RecipeCard({
         explanation: string;
       };
       if (content.explanation.includes("You get 1 item")) return 1;
-      if (content.explanation.includes("You always get 2 items")) return 2;
+      const alwaysCount = content.explanation.match(/You always get (\d+) items/);
+      if (alwaysCount) return parseInt(alwaysCount[1], 10);
       return content.items.reduce((sum, item) => {
         const match = item.match(/^(\d+)x/);
         return sum + (match ? parseInt(match[1], 10) : 1);

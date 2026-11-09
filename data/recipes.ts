@@ -236,9 +236,20 @@ const recipeDefinitions: RecipeDefinition[] = [
     requiredItems: ["1x Walking Tank figurine"],
     craftingTime: "66 mins",
     producedItems: [
-      "2x BNTI Module-3M body armor",
-      "2x Kalashnikov AK-74 5.45x39 assault rifle",
+      {
+        type: "multiple_possible",
+        items: [
+          "1x BNTI Module-3M body armor",
+          "1x Mosin 7.62x54R bolt-action rifle (Infantry)",
+          "1x Kalashnikov AK-74 5.45x39 assault rifle",
+          "1x WARTECH TV-109 + TV-106 chest rig (A-TACS FG)",
+          "1x FORT Kiver-M bulletproof helmet",
+        ],
+        explanation:
+          "You always get 5 items from this pool. Possible combinations can include duplicates.",
+      },
     ],
+    isUpdated: true,
   },
   {
     requiredItems: ["1x Mastichin figurine"],
