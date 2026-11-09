@@ -1264,5 +1264,7 @@
   // Item selector quick picks
   "Add {name} again": "AdaugÄƒ din nou {name}",
   "Same as above": "La fel ca mai sus",
-  "Enter": "Enter"
+  "Enter": "Enter",
+  "{count} random items from this pool": "{count} obiecte aleatorii din acest set",
+  "Duplicates possible": "Sunt posibile duplicate",
 }

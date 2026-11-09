@@ -1239,5 +1239,7 @@
   // Item selector quick picks
   "Add {name} again": "Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ {name} ÐµÑ‰Ñ‘ Ñ€Ð°Ð·",
   "Same as above": "ÐšÐ°Ðº Ð²Ñ‹ÑˆÐµ",
-  "Enter": "Enter"
+  "Enter": "Enter",
+  "{count} random items from this pool": "{count} случайных предметов из этого набора",
+  "Duplicates possible": "Возможны повторы",
 }

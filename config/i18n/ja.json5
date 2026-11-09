@@ -1266,5 +1266,7 @@
   // Item selector quick picks
   "Add {name} again": "{name} ã‚’ã‚‚ã�†ä¸€åº¦è¿½åŠ ",
   "Same as above": "ä¸Šã�¨å�Œã�˜",
-  "Enter": "Enter"
+  "Enter": "Enter",
+  "{count} random items from this pool": "このプールからランダムに{count}個",
+  "Duplicates possible": "重複の可能性あり",
 }

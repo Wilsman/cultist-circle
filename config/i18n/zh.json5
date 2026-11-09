@@ -1263,5 +1263,7 @@
   // Item selector quick picks
   "Add {name} again": "å†�æ¬¡æ·»åŠ  {name}",
   "Same as above": "ä¸Žä¸Šæ–¹ç›¸å�Œ",
-  "Enter": "å›žè½¦"
+  "Enter": "å›žè½¦",
+  "{count} random items from this pool": "从此物品池中随机获得 {count} 件",
+  "Duplicates possible": "可能重复",
 }

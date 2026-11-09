@@ -1262,5 +1262,7 @@
   // Item selector quick picks
   "Add {name} again": "PridaÅ¥ znova: {name}",
   "Same as above": "RovnakÃ© ako vyÅ¡Å¡ie",
-  "Enter": "Enter"
+  "Enter": "Enter",
+  "{count} random items from this pool": "{count} náhodných predmetov z tohto výberu",
+  "Duplicates possible": "Možné duplikáty",
 }

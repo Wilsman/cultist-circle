@@ -1263,5 +1263,7 @@
   // Item selector quick picks
   "Add {name} again": "{name} ë‹¤ì‹œ ì¶”ê°€",
   "Same as above": "ìœ„ì™€ ë�™ì�¼",
-  "Enter": "Enter"
+  "Enter": "Enter",
+  "{count} random items from this pool": "이 풀에서 무작위 아이템 {count}개",
+  "Duplicates possible": "중복 가능",
 }

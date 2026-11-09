@@ -1260,7 +1260,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "Auto výběr z nich nevybírá. Hledání je stále zobrazuje.",
     "Add {name} again": "PÅ™idat znovu: {name}",
     "Same as above": "StejnÃ© jako vÃ½Å¡e",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "{count} náhodných předmětů z tohoto výběru",
+    "Duplicates possible": "Možné duplikáty"
   },
   "de": {
     "· no time recorded": "· keine Zeit erfasst",
@@ -2492,13 +2494,17 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "Auto-Auswahl wählt nicht aus diesen. Die Suche zeigt sie weiterhin.",
     "Add {name} again": "{name} erneut hinzufÃ¼gen",
     "Same as above": "Wie oben",
-    "Enter": "Eingabe"
+    "Enter": "Eingabe",
+    "{count} random items from this pool": "{count} zufällige Gegenstände aus diesem Pool",
+    "Duplicates possible": "Duplikate möglich"
   },
   "en": {
     "FiR": "FiR",
     "Found in Raid": "Found in Raid",
     "PVP ONLY": "PVP ONLY",
-    "This recipe is available in PvP mode only.": "This recipe is available in PvP mode only."
+    "This recipe is available in PvP mode only.": "This recipe is available in PvP mode only.",
+    "{count} random items from this pool": "{count} random items from this pool",
+    "Duplicates possible": "Duplicates possible"
   },
   "es": {
     "· no time recorded": "· sin hora registrada",
@@ -3760,7 +3766,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "La selección automática no elegirá de estas. La búsqueda las sigue mostrando.",
     "Add {name} again": "AÃ±adir {name} de nuevo",
     "Same as above": "Igual que arriba",
-    "Enter": "Intro"
+    "Enter": "Intro",
+    "{count} random items from this pool": "{count} objetos aleatorios de este grupo",
+    "Duplicates possible": "Puede haber duplicados"
   },
   "fr": {
     "· no time recorded": "· aucune heure enregistrée",
@@ -4991,7 +4999,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "La sélection automatique ne choisira pas parmi celles-ci. La recherche les affiche toujours.",
     "Add {name} again": "Ajouter Ã  nouveau {name}",
     "Same as above": "Comme ci-dessus",
-    "Enter": "EntrÃ©e"
+    "Enter": "EntrÃ©e",
+    "{count} random items from this pool": "{count} objets aléatoires de cette liste",
+    "Duplicates possible": "Doublons possibles"
   },
   "hu": {
     "· no time recorded": "· nincs rögzített idő",
@@ -6253,7 +6263,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "Az Auto választás nem választ ezekből. A keresés továbbra is mutatja őket.",
     "Add {name} again": "{name} hozzÃ¡adÃ¡sa Ãºjra",
     "Same as above": "Ugyanaz, mint fent",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "{count} véletlenszerű tárgy ebből a készletből",
+    "Duplicates possible": "Ismétlődés lehetséges"
   },
   "it": {
     "· no time recorded": "· nessun orario registrato",
@@ -7515,7 +7527,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "La selezione automatica non sceglierà da queste. La ricerca le mostra comunque.",
     "Add {name} again": "Aggiungi di nuovo {name}",
     "Same as above": "Come sopra",
-    "Enter": "Invio"
+    "Enter": "Invio",
+    "{count} random items from this pool": "{count} oggetti casuali da questo gruppo",
+    "Duplicates possible": "Possibili duplicati"
   },
   "ja": {
     "· no time recorded": "· 時間未記録",
@@ -8779,7 +8793,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "自動選択はこれらから選びません。検索には引き続き表示されます。",
     "Add {name} again": "{name} ã‚’ã‚‚ã�†ä¸€åº¦è¿½åŠ ",
     "Same as above": "ä¸Šã�¨å�Œã�˜",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "このプールからランダムに{count}個",
+    "Duplicates possible": "重複の可能性あり"
   },
   "ko": {
     "· no time recorded": "· 기록된 시간 없음",
@@ -10040,7 +10056,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "자동 선택은 여기서 고르지 않습니다. 검색에는 계속 표시됩니다.",
     "Add {name} again": "{name} ë‹¤ì‹œ ì¶”ê°€",
     "Same as above": "ìœ„ì™€ ë�™ì�¼",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "이 풀에서 무작위 아이템 {count}개",
+    "Duplicates possible": "중복 가능"
   },
   "pl": {
     "· no time recorded": "· brak zapisanej godziny",
@@ -11281,7 +11299,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "Auto wybór nie wybiera z nich. Wyszukiwanie nadal je pokazuje.",
     "Add {name} again": "Dodaj ponownie: {name}",
     "Same as above": "To samo co wyÅ¼ej",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "{count} losowych przedmiotów z tej puli",
+    "Duplicates possible": "Możliwe duplikaty"
   },
   "pt": {
     "· no time recorded": "· sem horário registado",
@@ -12546,7 +12566,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "A seleção automática não escolherá destas. A busca continua mostrando-as.",
     "Add {name} again": "Adicionar {name} novamente",
     "Same as above": "Igual ao de cima",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "{count} itens aleatórios deste grupo",
+    "Duplicates possible": "Pode haver duplicados"
   },
   "ro": {
     "· no time recorded": "· fără oră înregistrată",
@@ -13808,7 +13830,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "Selectarea automată nu va alege din acestea. Căutarea încă le afișează.",
     "Add {name} again": "AdaugÄƒ din nou {name}",
     "Same as above": "La fel ca mai sus",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "{count} obiecte aleatorii din acest set",
+    "Duplicates possible": "Sunt posibile duplicate"
   },
   "ru": {
     "· no time recorded": "· время не записано",
@@ -15045,7 +15069,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "Авто-выбор не будет выбирать из них. Поиск по-прежнему их показывает.",
     "Add {name} again": "Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ {name} ÐµÑ‰Ñ‘ Ñ€Ð°Ð·",
     "Same as above": "ÐšÐ°Ðº Ð²Ñ‹ÑˆÐµ",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "{count} случайных предметов из этого набора",
+    "Duplicates possible": "Возможны повторы"
   },
   "sk": {
     "· no time recorded": "· čas nezaznamenaný",
@@ -16305,7 +16331,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "Auto výber z nich nevyberá. Vyhľadávanie ich stále zobrazuje.",
     "Add {name} again": "PridaÅ¥ znova: {name}",
     "Same as above": "RovnakÃ© ako vyÅ¡Å¡ie",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "{count} náhodných predmetov z tohto výberu",
+    "Duplicates possible": "Možné duplikáty"
   },
   "tr": {
     "· no time recorded": "· kayıtlı zaman yok",
@@ -17565,7 +17593,9 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "Otomatik Seçim bunlardan seçmez. Arama yine de gösterir.",
     "Add {name} again": "{name} tekrar ekle",
     "Same as above": "YukarÄ±dakiyle aynÄ±",
-    "Enter": "Enter"
+    "Enter": "Enter",
+    "{count} random items from this pool": "Bu havuzdan {count} rastgele eşya",
+    "Duplicates possible": "Tekrarlar olabilir"
   },
   "zh": {
     "· no time recorded": "· 未记录时间",
@@ -18826,6 +18856,8 @@ export const GENERATED_MESSAGES = {
     "Auto Select won't pick from these. Search still shows them.": "自动选择不会从中挑选。搜索仍会显示它们。",
     "Add {name} again": "å†�æ¬¡æ·»åŠ  {name}",
     "Same as above": "ä¸Žä¸Šæ–¹ç›¸å�Œ",
-    "Enter": "å›žè½¦"
+    "Enter": "å›žè½¦",
+    "{count} random items from this pool": "从此物品池中随机获得 {count} 件",
+    "Duplicates possible": "可能重复"
   }
 } as const;

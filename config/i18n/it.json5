@@ -1264,5 +1264,7 @@
   // Item selector quick picks
   "Add {name} again": "Aggiungi di nuovo {name}",
   "Same as above": "Come sopra",
-  "Enter": "Invio"
+  "Enter": "Invio",
+  "{count} random items from this pool": "{count} oggetti casuali da questo gruppo",
+  "Duplicates possible": "Possibili duplicati",
 }

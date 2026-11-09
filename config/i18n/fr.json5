@@ -1233,5 +1233,7 @@
   // Item selector quick picks
   "Add {name} again": "Ajouter Ã  nouveau {name}",
   "Same as above": "Comme ci-dessus",
-  "Enter": "EntrÃ©e"
+  "Enter": "EntrÃ©e",
+  "{count} random items from this pool": "{count} objets aléatoires de cette liste",
+  "Duplicates possible": "Doublons possibles",
 }

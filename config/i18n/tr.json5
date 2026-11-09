@@ -1262,5 +1262,7 @@
   // Item selector quick picks
   "Add {name} again": "{name} tekrar ekle",
   "Same as above": "YukarÄ±dakiyle aynÄ±",
-  "Enter": "Enter"
+  "Enter": "Enter",
+  "{count} random items from this pool": "Bu havuzdan {count} rastgele eşya",
+  "Duplicates possible": "Tekrarlar olabilir",
 }

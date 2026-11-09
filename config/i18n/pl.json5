@@ -1243,5 +1243,7 @@
   // Item selector quick picks
   "Add {name} again": "Dodaj ponownie: {name}",
   "Same as above": "To samo co wyÅ¼ej",
-  "Enter": "Enter"
+  "Enter": "Enter",
+  "{count} random items from this pool": "{count} losowych przedmiotów z tej puli",
+  "Duplicates possible": "Możliwe duplikaty",
 }

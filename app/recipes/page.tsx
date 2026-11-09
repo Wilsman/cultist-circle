@@ -100,6 +100,7 @@ import {
   ThumbsUp,
   HelpCircle,
   MessageCircle,
+  Shuffle,
 } from "lucide-react";
 
 // ============================================================================
@@ -735,6 +736,50 @@ const MultipleOutputBadge = React.memo(function MultipleOutputBadge({
     name: string,
   ) => ReturnType<ReturnType<typeof useRecipeItemData>["getItemByName"]>;
 }) {
+  const { t } = useLanguage();
+  const drawMatch = explanation.match(/You always get (\d+) items/);
+  const drawCount = drawMatch ? parseInt(drawMatch[1], 10) : null;
+
+  // Several items are drawn from the pool, so list it as one group instead
+  // of "or" connectors that read like a single pick.
+  if (drawCount && drawCount > 1) {
+    return (
+      <div className="rounded-lg border border-dashed border-green-500/30 bg-green-500/[0.04] p-2">
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="mb-2 flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-green-300">
+                <Shuffle className="h-3.5 w-3.5" aria-hidden="true" />
+                {t("{count} random items from this pool", {
+                  count: drawCount,
+                })}
+                <Info className="h-3 w-3 text-gray-500" aria-hidden="true" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs text-xs">
+              <p>{explanation}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <div className="flex flex-col gap-2">
+          {items.map((item, idx) => (
+            <ItemBadge
+              key={idx}
+              itemName={item}
+              isOutput={true}
+              getItemByName={getItemByName}
+            />
+          ))}
+        </div>
+        {/duplicate/i.test(explanation) && (
+          <p className="mt-2 text-center text-[10px] text-gray-500">
+            {t("Duplicates possible")}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
       {items.map((item, idx) => {

@@ -446,7 +446,7 @@ const recipeDefinitions: RecipeDefinition[] = [
         type: "multiple_possible",
         items: ["Deadlyslob's beard oil", "Baddie's red beard"],
         explanation:
-          "You always get 2 items. Possible combinations: oil + beard, oil + oil, or beard + beard",
+          "You always get 2 items. Possible combinations: oil + beard, oil + oil, or beard + beard. Duplicates possible.",
       },
     ],
   },
@@ -463,7 +463,7 @@ const recipeDefinitions: RecipeDefinition[] = [
         type: "multiple_possible",
         items: ["Scav backpack", "Scav Vest"],
         explanation:
-          "You always get 2 items. Possible combinations: backpack + vest, backpack + backpack, or vest + vest",
+          "You always get 2 items. Possible combinations: backpack + vest, backpack + backpack, or vest + vest. Duplicates possible.",
       },
     ],
   },
