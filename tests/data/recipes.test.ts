@@ -3,17 +3,17 @@ import { describe, expect, it } from "vitest";
 import { tarkovRecipes } from "@/data/recipes";
 
 describe("launcher promo recipe data", () => {
-  it("keeps the Ferrum recipe active, below the new figurine recipes and limited to PvP Season", () => {
+  it("keeps the Ferrum recipe active, below the new recipes and limited to PvP Season", () => {
     const recipe = tarkovRecipes.find(
       (entry) => entry.specialFlow?.type === "launcher-promo",
     )!;
-    const newFigurineCount = tarkovRecipes.findIndex(
+    const newRecipeCount = tarkovRecipes.findIndex(
       (entry) => entry === recipe,
     );
 
-    expect(newFigurineCount).toBe(4);
+    expect(newRecipeCount).toBe(5);
     expect(
-      tarkovRecipes.slice(0, newFigurineCount).every((entry) => entry.isNew),
+      tarkovRecipes.slice(0, newRecipeCount).every((entry) => entry.isNew),
     ).toBe(true);
 
     expect(recipe).toMatchObject({

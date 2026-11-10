@@ -67,6 +67,13 @@ function createRecipeId(requiredItems: string[]): string {
  */
 const recipeDefinitions: RecipeDefinition[] = [
   {
+    requiredItems: ["1x Icebreaker model"],
+    craftingTime: "16:06:06",
+    // Reward not confirmed yet; timer seen once so far.
+    producedItems: [],
+    isNew: true,
+  },
+  {
     requiredItems: ["1x Black Division Operator figurine"],
     craftingTime: "66 mins",
     producedItems: [
