@@ -92,6 +92,20 @@ describe("Public recipes endpoint", () => {
     );
   });
 
+  test("reports unconfirmed repeatability as null", async () => {
+    const { env } = createEnv();
+    const body = await readBody(await handleRequest(get(""), env));
+    const repeatability = (id: string) =>
+      body.recipes.find((r) => r.id === id)?.isRepeatable;
+    const unknownRecipe = tarkovRecipes.find(
+      (r) => r.isRepeatable === "unknown" && !r.expiredAt,
+    );
+
+    expect(unknownRecipe).toBeDefined();
+    expect(repeatability(unknownRecipe!.id)).toBeNull();
+    expect(repeatability(fenceRecipe.id)).toBe(false);
+  });
+
   test("answers with one chat-ready line in text mode", async () => {
     const { env } = createEnv();
     const response = await handleRequest(

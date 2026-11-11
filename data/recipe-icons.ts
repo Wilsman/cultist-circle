@@ -1,6 +1,8 @@
 // Static icon mappings for recipe items
 // Generated from Tarkov API data to avoid runtime API calls
 export const recipeIconMap: Record<string, string> = {
+  "1x Icebreaker model kit":
+    "https://assets.tarkov.dev/6a3d38063357ef2b260d1891-icon.webp",
   "1x Icebreaker model":
     "https://assets.tarkov.dev/6a4ff1e23e95f68a650fcb13-icon.webp",
   "5x BD dogtag •| Ferrum": "/images/recipes/bd-dogtag-ferrum.png",
