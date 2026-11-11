@@ -135,7 +135,9 @@ export function toPublicRecipe(
     modeRestriction: recipe.modeRestriction ?? null,
     isNew: Boolean(recipe.isNew),
     isUpdated: Boolean(recipe.isUpdated),
-    isRepeatable: Boolean(recipe.isRepeatable),
+    // null until the community confirms whether it can be repeated.
+    isRepeatable:
+      recipe.isRepeatable === "unknown" ? null : Boolean(recipe.isRepeatable),
     expired: Boolean(recipe.expiredAt),
     expiredAt: recipe.expiredAt ?? null,
     votes: votes ?? {

@@ -186,6 +186,20 @@ describe("RecipesPage completion tracker", () => {
     }
   });
 
+  it("shows an unknown badge until repeatability is confirmed", () => {
+    const alpha = mockRecipes[1] as { isRepeatable?: boolean | "unknown" };
+    alpha.isRepeatable = "unknown";
+    try {
+      render(<RecipesPage />);
+
+      expect(screen.getByLabelText("Repeatability unknown")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Repeatable")).not.toBeInTheDocument();
+      expect(screen.getAllByLabelText("Non-repeatable")).toHaveLength(2);
+    } finally {
+      delete alpha.isRepeatable;
+    }
+  });
+
   it("checks recipes independently and restores progress after remount", () => {
     render(<RecipesPage />);
 

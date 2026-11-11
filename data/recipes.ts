@@ -22,7 +22,8 @@ export interface Recipe {
    * collapsed "Expired" section, drop NEW/UPDATED and leave progress totals.
    */
   expiredAt?: string;
-  isRepeatable?: boolean;
+  /** Use "unknown" until the community confirms whether it can be repeated. */
+  isRepeatable?: boolean | "unknown";
   modeRestriction?: RecipeModeRestriction;
   roomInfo?: {
     itemName: string;
@@ -42,6 +43,12 @@ export const UNKNOWN_CRAFTING_TIME = "Unknown";
 
 export function hasUnknownCraftingTime(recipe: Pick<Recipe, "craftingTime">) {
   return recipe.craftingTime === UNKNOWN_CRAFTING_TIME;
+}
+
+export function hasUnknownRepeatability(
+  recipe: Pick<Recipe, "isRepeatable">,
+) {
+  return recipe.isRepeatable === "unknown";
 }
 
 export function hasUnknownReward(recipe: Pick<Recipe, "producedItems">) {

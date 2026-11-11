@@ -55,6 +55,7 @@ import { useLanguage } from "@/contexts/language-context";
 import { formatMessageSlots } from "@/lib/format-message-slots";
 import {
   hasUnknownCraftingTime,
+  hasUnknownRepeatability,
   hasUnknownReward,
   tarkovRecipes,
   type Recipe,
@@ -389,6 +390,49 @@ const NonRepeatableBadge = React.memo(function NonRepeatableBadge() {
             </div>
             <p className="whitespace-normal leading-relaxed text-gray-300">
               {t("This sacrifice can only be completed once per wipe/prestige.")}
+            </p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+});
+
+const UnknownRepeatableBadge = React.memo(function UnknownRepeatableBadge() {
+  const { t } = useLanguage();
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className="relative inline-flex cursor-help items-center justify-center rounded border border-dashed border-amber-400/40 bg-amber-500/10 p-1 text-amber-200/80 shadow-lg"
+            aria-label={t("Repeatability unknown")}
+            title={t("Repeatability unknown")}
+          >
+            <Repeat2 className="h-3.5 w-3.5" />
+            <span
+              aria-hidden="true"
+              className="absolute -right-1 -top-1.5 text-[10px] font-bold leading-none text-amber-300"
+            >
+              ?
+            </span>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          sideOffset={8}
+          className="w-[250px] overflow-hidden rounded-lg border border-gray-700/80 bg-gray-900/98 p-0 text-left text-xs text-gray-200 shadow-2xl backdrop-blur-md"
+        >
+          <div className="space-y-2 p-3">
+            <div className="border-b border-gray-700/60 pb-2">
+              <p className="text-sm font-semibold text-amber-300">
+                {t("Repeatability unknown")}
+              </p>
+            </div>
+            <p className="whitespace-normal leading-relaxed text-gray-300">
+              {t(
+                "Not confirmed yet whether this sacrifice can be repeated or only completed once per wipe/prestige.",
+              )}
             </p>
           </div>
         </TooltipContent>
@@ -1045,7 +1089,13 @@ const RecipeCard = React.memo(function RecipeCard({
             t={t}
             modeRestriction={recipe.modeRestriction}
           />
-          {recipe.isRepeatable ? <RepeatableBadge /> : <NonRepeatableBadge />}
+          {hasUnknownRepeatability(recipe) ? (
+            <UnknownRepeatableBadge />
+          ) : recipe.isRepeatable ? (
+            <RepeatableBadge />
+          ) : (
+            <NonRepeatableBadge />
+          )}
         </div>
 
         <div

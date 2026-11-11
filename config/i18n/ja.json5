@@ -706,6 +706,8 @@
   "Offers": "出品",
   "One countdown per game mode.": "ゲームモードごとに1つのカウントダウン。",
   "One-time recipe": "1回限りのレシピ",
+  "Repeatability unknown": "ç¹°ã‚Šè¿”ã�—å�¯å�¦ã�¯ä¸�æ˜Ž",
+  "Not confirmed yet whether this sacrifice can be repeated or only completed once per wipe/prestige.": "ã�“ã�®ç”Ÿè´„ã�Œç¹°ã‚Šè¿”ã�—å�¯èƒ½ã�‹ã€�ãƒ¯ã‚¤ãƒ—/ãƒ—ãƒ¬ã‚¹ãƒ†ãƒ¼ã‚¸ã�”ã�¨ã�«1å›žé™�ã‚Šã�‹ã�¯ã�¾ã� ç¢ºèª�ã�•ã‚Œã�¦ã�„ã�¾ã�›ã‚“ã€‚",
   "Only {count} in stash": "スタッシュには {count} 個のみ",
   "Only applies when Price Mode is set to Flea Market.": "価格モードがフリーマーケットのときのみ適用されます。",
   "Only items allowed by your current filters are shown": "現在のフィルターで許可されたアイテムのみ表示します",
