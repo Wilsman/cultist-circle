@@ -15,11 +15,6 @@ const ItemLookupPalette = dynamic(
   { ssr: false },
 );
 
-const isEditableTarget = (target: EventTarget | null) =>
-  target instanceof HTMLElement &&
-  (target.isContentEditable ||
-    ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
-
 export function openItemLookup() {
   document.dispatchEvent(new CustomEvent(ITEM_LOOKUP_OPEN_EVENT));
 }
@@ -56,18 +51,8 @@ export function ItemLookupCommand() {
         event.preventDefault();
         setActivated(true);
         setOpen((current) => !current);
-        return;
       }
-      if (
-        key === "/" &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !event.altKey &&
-        !isEditableTarget(event.target)
-      ) {
-        event.preventDefault();
-        show();
-      }
+      // "/" is left to each page: it focuses the page's own search or slot.
     };
 
     window.addEventListener("keydown", onKeyDown);
