@@ -76,8 +76,7 @@ const recipeDefinitions: RecipeDefinition[] = [
   {
     requiredItems: ["1x Icebreaker model kit"],
     craftingTime: "6:06:06",
-    // Reward not confirmed yet.
-    producedItems: [],
+    producedItems: ["1x Icebreaker model"],
     isNew: true,
     isRepeatable: true,
   },
