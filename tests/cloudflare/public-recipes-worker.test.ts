@@ -3,6 +3,7 @@ import { handleRequest } from "@/cloudflare/feedback/src/index";
 import {
   formatRecipeText,
   searchRecipes,
+  toPublicRecipe,
 } from "@/cloudflare/feedback/src/public-recipes";
 import { tarkovRecipes, type Recipe } from "@/data/recipes";
 
@@ -92,18 +93,13 @@ describe("Public recipes endpoint", () => {
     );
   });
 
-  test("reports unconfirmed repeatability as null", async () => {
-    const { env } = createEnv();
-    const body = await readBody(await handleRequest(get(""), env));
-    const repeatability = (id: string) =>
-      body.recipes.find((r) => r.id === id)?.isRepeatable;
-    const unknownRecipe = tarkovRecipes.find(
-      (r) => r.isRepeatable === "unknown" && !r.expiredAt,
-    );
+  test("reports unconfirmed repeatability as null", () => {
+    const repeatability = (isRepeatable: Recipe["isRepeatable"]) =>
+      toPublicRecipe({ ...fenceRecipe, isRepeatable }, undefined).isRepeatable;
 
-    expect(unknownRecipe).toBeDefined();
-    expect(repeatability(unknownRecipe!.id)).toBeNull();
-    expect(repeatability(fenceRecipe.id)).toBe(false);
+    expect(repeatability("unknown")).toBeNull();
+    expect(repeatability(true)).toBe(true);
+    expect(repeatability(undefined)).toBe(false);
   });
 
   test("answers with one chat-ready line in text mode", async () => {

@@ -79,14 +79,14 @@ const recipeDefinitions: RecipeDefinition[] = [
     // Reward not confirmed yet.
     producedItems: [],
     isNew: true,
-    isRepeatable: "unknown",
+    isRepeatable: true,
   },
   {
     requiredItems: ["1x Icebreaker model"],
     craftingTime: "16:06:06",
     producedItems: ["1x Icebreaker model kit"],
     isNew: true,
-    isRepeatable: "unknown",
+    isRepeatable: true,
   },
   {
     requiredItems: ["1x Black Division Operator figurine"],
