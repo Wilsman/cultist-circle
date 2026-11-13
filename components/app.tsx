@@ -2071,13 +2071,13 @@ function AppContent({ contributors = [] }: AppProps) {
   return (
     <>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100 px-3 pb-6 pt-2 overflow-auto relative lg:overflow-visible">
-        <div className="flex items-start justify-center gap-4 max-w-[1600px] mx-auto">
-          <AdRail side="left" showFrom="xl:block" />
+        <div className="flex items-start justify-center gap-4">
+          <AdRail side="left" showFrom="xl:flex" />
 
           {/* Main Content: single column on mobile; on desktop the calculator
               sits beside a sticky column with the summary and hot sacrifices.
               (The wrapper above drops overflow-auto at lg so sticky works.) */}
-          <div className="grid w-full min-w-0 max-w-3xl grid-cols-1 items-start gap-3 py-4 mx-auto lg:max-w-none lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-5 lg:gap-y-4 xl:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="grid w-full min-w-0 max-w-3xl grid-cols-1 items-start gap-3 py-4 mx-auto lg:max-w-none xl:max-w-[1248px] lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-5 lg:gap-y-4 xl:grid-cols-[minmax(0,1fr)_400px]">
             {/* Header Section */}
             <div className="lg:col-span-2">
               <HeaderSection />
@@ -2615,7 +2615,7 @@ function AppContent({ contributors = [] }: AppProps) {
             </div>
           </div>
 
-          <AdRail side="right" showFrom="xl:block" />
+          <AdRail side="right" showFrom="xl:flex" />
         </div>
       </div>
       <div className="background-credit">

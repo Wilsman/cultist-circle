@@ -1739,9 +1739,9 @@ export default function RecipesPage() {
     <RecipeFeedbackProvider>
       <div className="min-h-screen bg-my_bg_image bg-no-repeat bg-cover bg-fixed text-gray-100">
         {/* Side ads only appear on screens wide enough to keep the full recipe width. */}
-        <div className="mx-auto flex max-w-[1600px] items-start justify-center gap-4">
-          <AdRail side="left" showFrom="2xl:block 2xl:pt-6" />
-          <div className="container mx-auto min-w-0 px-3 sm:px-4 py-4 sm:py-6 max-w-6xl">
+        <div className="flex items-start justify-center gap-4">
+          <AdRail side="left" showFrom="2xl:flex 2xl:pt-6" />
+          <div className="container mx-auto w-full min-w-0 px-3 sm:px-4 py-4 sm:py-6 max-w-6xl">
             <Card className="bg-gray-900/80 backdrop-blur-md border-gray-800 shadow-2xl overflow-hidden">
               {/* Header */}
               <div className="bg-gray-900/95 border-b border-gray-800 px-4 sm:px-6 py-4 sm:py-5 backdrop-blur-md">
@@ -2071,7 +2071,7 @@ export default function RecipesPage() {
               </CardFooter>
             </Card>
           </div>
-          <AdRail side="right" showFrom="2xl:block 2xl:pt-6" />
+          <AdRail side="right" showFrom="2xl:flex 2xl:pt-6" />
         </div>
       </div>
     </RecipeFeedbackProvider>
